@@ -46,7 +46,6 @@ def eval_neuron(tau_e = 1.2, spikethresh = 3.0, plotting = 'off'):
     spikes = []
     time = 0
     for intensity in intensities: #TODO change to for time_curr in times:
-        time += 1
         if len(voltages) == 0:
             voltages.append(0)
             spikes.append(0)
@@ -61,6 +60,7 @@ def eval_neuron(tau_e = 1.2, spikethresh = 3.0, plotting = 'off'):
                     spikes.append(1)
                 else:
                     spikes.append(0)
+        time += 1
     if plotting == 'on':
         eval_neuron_plotter(spikes, voltages)
     for timepoint, value in enumerate(spikes):
@@ -85,7 +85,7 @@ def agentflight(total_velo_max = 5, total_velo_min = 1, wind_velo = 0, y_offset_
     y_velocities = []
     x_velocities = []
     for time_curr in times:
-        y_pos_curr = amplitude_max * sin (angular_velo * time_curr) + y_offset_curr
+        y_pos_curr = amplitude_max * sin (angular_velo * time_curr) #+ y_offset_curr #disabled
         agent_y_pos.append(y_pos_curr)
         y_offset_prev = y_offset_curr #test this with print statements
         if time_curr == 0:
@@ -103,10 +103,10 @@ def agentflight(total_velo_max = 5, total_velo_min = 1, wind_velo = 0, y_offset_
         y_pos_prev = y_pos_curr
         time_index += 1
     if plotting == "on":
-        agentflightplotter(x_velocities, y_velocities)
+        agentflightplotter(agent_y_pos, x_velocities, y_velocities)
     return times, agent_y_pos, x_velocities, y_velocities    
     
-def agentflightplotter(x_velocities, y_velocities):
+def agentflightplotter(agent_y_pos, x_velocities, y_velocities):
         figure(2)
         plot(times,agent_y_pos,'k',label= 'agent y_pos over time' )
         plot(times,y_velocities, 'b',label= 'y velocity')
