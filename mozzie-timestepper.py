@@ -26,7 +26,7 @@ class plume(object):
         self.X = np.linspace(0, BOX_SIZE[0], self.res) #X locs of plume
         self.Y = np.linspace(0, BOX_SIZE[1],self.res) #Y of odor slices
         self.xx, self.yy = np.meshgrid(self.X, self.Y, sparse=True)
-        self.Z = 0 * (self.xx + self.yy) #odor intensity at x,y
+        self.zz = 0 * (self.xx + self.yy) #odor intensity at x,y
         #self.source = list(source) #Y/Z of the source
         #self.original = source #Initial source location
         #self.cross = np.zeros((2, len(self.X)))
@@ -34,34 +34,34 @@ class plume(object):
 # Set up a plume
 plume = plume()
       
-#def animate_plume(plume):
-#    # Set up a figure
-#    fig = plt.figure(0, figsize=(6,6))
-#    ax = axes3d.Axes3D(fig)
-#    lines = []
-#    x, y, z = plume.X, plume.Y, plume.Z
-#    lines.append(ax.plot(x, y, z)[0])
-#    ax.plot_wireframe(x , y , z, rstride=10, cstride=10)
-##    def update_plume(num, plumes, lines):
-##        for plume, line in zip(plumes, lines):
-##            plume.update()
-##            x, y, z = plume.X, plume.Y, plume.Z
-##            line.set_data(np.array([x,y]))
-##            line.set_3d_properties(z)
-##        return lines
-##    # Make the figure nice
-#    ax.set_xlim3d([0.0, BOX_SIZE[0]])
-#    ax.set_ylim3d([0.0, BOX_SIZE[1]])
-#    ax.set_zlim3d([0.0, BOX_SIZE[2]])
-#    ax.set_xlabel('X')
-#    ax.set_ylabel('Y')
-#    ax.set_zlabel('intensity')
-#    ax.set_title("robomozzie")
-# #   plume_ani = FuncAnimation(fig, func=update_plume, frames=100, 
-#  #                           fargs=(plumes,lines), interval=10)
-#    plt.show()
-#    
-#animate_plume(plume)
+def animate_plume(plume):
+    # Set up a figure
+    fig = plt.figure(0, figsize=(6,6))
+    ax = axes3d.Axes3D(fig)
+    #lines = []
+    x, y, z = plume.xx, plume.yy, plume.zz
+    #lines.append(ax.plot(x, y, z)[0])
+    ax.plot_wireframe(x , y , z, rstride=10, cstride=10)
+#    def update_plume(num, plumes, lines):
+#        for plume, line in zip(plumes, lines):
+#            plume.update()
+#            x, y, z = plume.X, plume.Y, plume.Z
+#            line.set_data(np.array([x,y]))
+#            line.set_3d_properties(z)
+#        return lines
+#    # Make the figure nice
+    ax.set_xlim3d([0.0, BOX_SIZE[0]])
+    ax.set_ylim3d([0.0, BOX_SIZE[1]])
+    ax.set_zlim3d([0.0, BOX_SIZE[2]])
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('intensity')
+    ax.set_title("robomozzie")
+ #   plume_ani = FuncAnimation(fig, func=update_plume, frames=100, 
+  #                           fargs=(plumes,lines), interval=10)
+    plt.show()
+    
+animate_plume(plume)
 
 #make this fluctuating
 #intensities = ([0] * 5 ) + ([1] * 10 ) + ([0] * 20 ) + ([5] * 15) + ([1] * 150 )
