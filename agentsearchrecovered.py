@@ -37,6 +37,11 @@ times = numpy.arange(0, flight_dur, timestep)
 intensities = ([0] * 5 ) + ([1] * 10 ) + ([0] * 20 ) + ([5] * 15) + ([1] * 150 )
 spiketime_index = []
 
+#BOX_SIZE = (100, 20)
+
+#make into class, maybe
+#def intensityfield
+
 def eval_neuron(tau_e = 1.2, spikethresh = 3.0, plotting = 'off'): 
     '''evaluator leaky integrate and fire neuron. stimulus intensity -> cellular voltages -> spikes
     

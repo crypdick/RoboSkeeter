@@ -1,0 +1,149 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Oct 24 18:14:50 2014
+
+@author: richard
+"""
+import numpy as np
+from numpy import pi, sin, cos
+import matplotlib.pyplot as plt
+import mpl_toolkits.mplot3d.axes3d as axes3d
+from matplotlib import cm
+
+
+flight_dur = 100.0
+timestep = 0.5
+times = np.arange(0, flight_dur, timestep)
+time_indexes = list(enumerate(times))
+
+BOX_SIZE = (1.0,1.0,1.0)
+
+
+class plume(object):
+    def __init__(self):
+        """A time-evolving odorant for our little guy to flap around in"""
+        self.res = 100.0      #Split into 100 straight segments
+        self.X = self.steps(0, BOX_SIZE[0], self.res) #X locs of plume
+        self.Y = self.steps(0, BOX_SIZE[1],self.res) #Y of odor slices
+        self.Z = np.zeros_like(self.X) #odor intensity at x,y
+        print "x" , self.X
+        print "y" , self.Y
+        print "z" , self.Z
+        #self.source = list(source) #Y/Z of the source
+        #self.original = source #Initial source location
+        #self.cross = np.zeros((2, len(self.X)))
+       # [self.update() for i in np.arange(self.res)]
+        
+    @staticmethod
+    def steps(lower, upper, steps):
+        """A one, and a two; get from here to there in this many"""
+        l,u,s = lower, upper, steps
+        return np.arange(l,u*(1+0.5*(u-l)/s), float(u-l)/s)
+  
+# Set up a plume
+plume = plume()
+      
+def animate_plume(plume):
+    # Set up a figure
+    fig = plt.figure(0, figsize=(6,6))
+    ax = axes3d.Axes3D(fig)
+    lines = []
+    x, y, z = plume.X, plume.Y, plume.Z
+    lines.append(ax.plot(x, y, z)[0])
+    ax.plot_wireframe(x , y , z, rstride=10, cstride=10)
+#    def update_plume(num, plumes, lines):
+#        for plume, line in zip(plumes, lines):
+#            plume.update()
+#            x, y, z = plume.X, plume.Y, plume.Z
+#            line.set_data(np.array([x,y]))
+#            line.set_3d_properties(z)
+#        return lines
+#    # Make the figure nice
+    ax.set_xlim3d([0.0, BOX_SIZE[0]])
+    ax.set_ylim3d([0.0, BOX_SIZE[1]])
+    ax.set_zlim3d([0.0, BOX_SIZE[2]])
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('intensity')
+    ax.set_title("robomozzie")
+ #   plume_ani = FuncAnimation(fig, func=update_plume, frames=100, 
+  #                           fargs=(plumes,lines), interval=10)
+    plt.show()
+    
+animate_plume(plume)
+
+#make this fluctuating
+#intensities = ([0] * 5 ) + ([1] * 10 ) + ([0] * 20 ) + ([5] * 15) + ([1] * 150 )
+#intensities_indexed = list(enumerate(intensities))
+#print intensities_indexed
+#def intensity(time_index):
+#    pass 
+
+##intensities = ([0] * 5 ) + ([1] * 10 ) + ([0] * 20 ) + ([5] * 15) + ([1] * 150 )
+#spiketime_index = []
+#
+#class mozzie(object):
+#    pass
+#
+#class neuron(object):
+#    pass
+#
+#sensor_neuron = neuron()
+
+
+
+#def agentflight(total_velo_max = 5, total_velo_min = 1, wind_velo = 0, y_offset_curr = 0, angular_velo = 0.1, tau_y = 1, plotting = 'off'):
+#    """
+#    plots the mosquito's path in space
+#    input: total_velo_max, total_velo_min, wind_velo, y_offset_curr, angular_velo, flight_dur, timestep
+#    output: times, agent_y_pos, x_velocities, y_velocities 
+#    TODO: impliment agent_x_pos using velocity max and min
+#    TODO: implement y offset, and wind velocity
+#    TODO: make agent_pos list where each item is an (x,y) coord
+#    TODO: make eval_neuron control agent flight
+#    """
+#    amplitude_max = 10 # TODO: impliment the amplitude fxn
+#    agent_y_pos = []
+#    y_velocities = []
+#    x_velocities = []
+#    for time_curr in times:
+#        y_pos_curr = amplitude_max * sin (angular_velo * time_curr) #+ y_offset_curr #disabled
+#        agent_y_pos.append(y_pos_curr)
+#        y_offset_prev = y_offset_curr #test this with print statements
+#        if time_curr == 0:
+#            time_prev = 0
+#            y_pos_prev = 0
+#            time_index = 0
+#        y_velocity = (y_pos_curr - y_pos_prev) / timestep
+#        y_velocities.append(y_velocity)
+#        ## TODO: make x_velocities as in Sharri's
+#        x_velocities.append((time_curr - time_prev)/ timestep)
+#        if time_index in spiketime_index:         # if we spiked at this time_curr, set y_aim = y_post_cur
+#            y_aim = y_pos_curr
+#            y_offset_curr = (y_aim - y_offset_prev) / tau_y
+#        time_prev = time_curr
+#        y_pos_prev = y_pos_curr
+#        time_index += 1
+#    if plotting == "on":
+#        agentflightplotter(agent_y_pos, x_velocities, y_velocities)
+#    return times, agent_y_pos, x_velocities, y_velocities    
+
+    
+#def agentflightplotter(agent_y_pos, x_velocities, y_velocities):
+#    """
+#    TODO: animate this, using def update_mozzie and FuncAnimation
+#    """
+#    fig = plt.figure(2)
+#    plot(times,agent_y_pos,'k',label= 'agent y_pos over time' )
+#    plot(times,y_velocities, 'b',label= 'y velocity')
+#    plot(times,x_velocities, 'r',label= 'x velocity')    
+#    xlabel('time')
+#    ylabel('Y position')
+#    legend()
+#    title("Flying mosquito")
+#    plt.show()
+
+if __name__ == "__main__":
+    #timestepper()
+#    agentflightplotter() 
+    pass
