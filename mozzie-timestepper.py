@@ -25,21 +25,12 @@ class plume(object):
         self.res = 100.0      #Split into 100 straight segments
         self.X = np.linspace(0, BOX_SIZE[0], self.res) #X locs of plume
         self.Y = np.linspace(0, BOX_SIZE[1],self.res) #Y of odor slices
-        self.Z = np.zeros_like(self.X) #odor intensity at x,y
-        print "x" , self.X
-        print "y" , self.Y
-        print "z" , self.Z
+        self.xx, self.yy = np.meshgrid(self.X, self.Y, sparse=True)
+        self.Z = 0 * (self.xx + self.yy) #odor intensity at x,y
         #self.source = list(source) #Y/Z of the source
         #self.original = source #Initial source location
         #self.cross = np.zeros((2, len(self.X)))
-       # [self.update() for i in np.arange(self.res)]
-        
-#    @staticmethod
-#    def steps(lower, upper, steps):
-#        """A one, and a two; get from here to there in this many"""
-#        l,u,s = lower, upper, steps
-#        return np.arange(l,u*(1+0.5*(u-l)/s), float(u-l)/s)
-  
+
 # Set up a plume
 plume = plume()
       
@@ -69,7 +60,7 @@ plume = plume()
 # #   plume_ani = FuncAnimation(fig, func=update_plume, frames=100, 
 #  #                           fargs=(plumes,lines), interval=10)
 #    plt.show()
-    
+#    
 #animate_plume(plume)
 
 #make this fluctuating
