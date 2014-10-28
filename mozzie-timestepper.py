@@ -60,6 +60,24 @@ class Plume(object):
         intensitygrid = plume_curr[2]
         return intensitygrid[x][y]
 
+def plume_plotter(plume, plotting = False):
+    if plotting == False:
+        pass
+    else:
+        # Set up a figure
+        fig = plt.figure(0, figsize=(6,6))
+        ax = axes3d.Axes3D(fig)
+        x, y, z = plume.xx, plume.yy, plume.zz
+        ax.plot_wireframe(x , y , z, rstride=10, cstride=10)
+        ax.set_xlim3d([0.0, BOX_SIZE[0]])
+        ax.set_ylim3d([0.0, BOX_SIZE[1]])
+        ax.set_zlim3d([0.0, BOX_SIZE[2]])
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('intensity')
+        ax.set_title("robomozzie")
+        plt.show()
+
 class Mozzie(object):
     """our brave mosquito
     """
@@ -78,6 +96,22 @@ class Mozzie(object):
         output: none (location history updates)
         TODO: put in sin equations
         """
+#        y_pos_curr = amplitude_max * sin (angular_velo * time_curr) #+ y_offset_curr #disabled
+#        agent_y_pos.append(y_pos_curr)
+#        y_offset_prev = y_offset_curr #test this with print statements
+#        if time_curr == 0:
+#            time_prev = 0
+#            y_pos_prev = 0
+#            time_index = 0
+#        y_velocity = (y_pos_curr - y_pos_prev) / timestep
+#        y_velocities.append(y_velocity)
+#        ## TODO: make x_velocities as in Sharri's
+#        x_velocities.append((time_curr - time_prev)/ timestep)
+#        if time_index in spiketime_index:         # if we spiked at this time_curr, set y_aim = y_post_cur
+#            y_aim = y_pos_curr
+#            y_offset_curr = (y_aim - y_offset_prev) / tau_y
+#        time_prev = time_curr
+#        y_pos_prev = y_pos_curr
         self.loc_history.append((time,self.loc_curr))
     # def _xspeedcalc
         
@@ -147,24 +181,25 @@ class Sensor_neuron(Neuron):
                 else:
                     self.spike_history.append((time,0))
 
-
-def plume_plotter(plume, plotting = False):
+def eval_neuron_plotter(plotting = False):
     if plotting == False:
         pass
     else:
-        # Set up a figure
-        fig = plt.figure(0, figsize=(6,6))
-        ax = axes3d.Axes3D(fig)
-        x, y, z = plume.xx, plume.yy, plume.zz
-        ax.plot_wireframe(x , y , z, rstride=10, cstride=10)
-        ax.set_xlim3d([0.0, BOX_SIZE[0]])
-        ax.set_ylim3d([0.0, BOX_SIZE[1]])
-        ax.set_zlim3d([0.0, BOX_SIZE[2]])
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_zlabel('intensity')
-        ax.set_title("robomozzie")
+        voltagetimes, voltages = sensor_neuron.voltage_history[0], sensor_neuron.voltage_history[1]
+        spiketimes, spikes = sensor_neuron.spike_history[0], sensor_neuron.spike_history[1]
+        y = max(voltages)    
+        fig = plt.figure(1)
+        plt.plot(voltagetimes, voltages, 'r',label='soma voltage')
+        plt.plot(spiketimes, spikes, 'b', label= 'spikes')
+        plt.xlabel('time')
+        plt.ylabel('voltage')
+        plt.legend()
+        plt.title("Neuron voltage and spikes")   
         plt.show()
+
+class Amplitude_neuron(Neuron):
+    pass
+
         
 #def agentflightplotter(agent_y_pos, x_velocities, y_velocities):
 #    """
@@ -197,22 +232,7 @@ def plume_plotter(plume, plotting = False):
 #        ax.set_zlabel('intensity')
 #        ax.set_title("robomozzie")
 #        plt.show()
- 
-def eval_neuron_plotter(plotting = False):
-    if plotting == False:
-        pass
-    else:
-        voltagetimes, voltages = sensor_neuron.voltage_history[0], sensor_neuron.voltage_history[1]
-        spiketimes, spikes = sensor_neuron.spike_history[0], sensor_neuron.spike_history[1]
-        y = max(voltages)    
-        fig = plt.figure(1)
-        plt.plot(voltagetimes, voltages, 'r',label='soma voltage')
-        plt.plot(spiketimes, spikes, 'b', label= 'spikes')
-        plt.xlabel('time')
-        plt.ylabel('voltage')
-        plt.legend()
-        plt.title("Neuron voltage and spikes")   
-        plt.show()
+
 
 def timestepper():
     times = np.arange(0, flight_dur, timestep)
