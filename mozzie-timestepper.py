@@ -63,24 +63,57 @@ class Plume(object):
 class Mozzie(object):
     """our brave mosquito
     """
-    def __init__(self):
-        self.pos =  0, 0
+    def __init__(self,total_velo_max = 5, total_velo_min = 1, wind_velo = 0, y_offset_curr = 0, angular_velo = 0.1, tau_y = 1):
+        self.loc_curr =  0, 0
         self.loc_history = []
     def where(self, time):
         """ where the mozzie is right now
         input: time in seconds
         output: x,y coords
         TODO: make real"""
-        return self.pos
+        return self.loc_curr
     def move(self,time):
         """move the mosquito in a cast, add to location history
         input: time in secs
         output: none (location history updates)
         TODO: put in sin equations
         """
-        self.loc_history.append((time,self.pos))
+        self.loc_history.append((time,self.loc_curr))
     # def _xspeedcalc
         
+#def agentflight(total_velo_max = 5, total_velo_min = 1, wind_velo = 0, y_offset_curr = 0, angular_velo = 0.1, tau_y = 1, plotting = 'off'):
+#    """
+#    plots the mosquito's path in space
+#    input: total_velo_max, total_velo_min, wind_velo, y_offset_curr, angular_velo, flight_dur, timestep
+#    output: times, agent_y_pos, x_velocities, y_velocities 
+#    TODO: impliment agent_x_pos using velocity max and min
+#    TODO: implement y offset, and wind velocity
+#    TODO: make agent_pos list where each item is an (x,y) coord
+#    TODO: make sensor_neuron control agent flight
+#    """
+#    amplitude_max = 10 # TODO: impliment the amplitude fxn
+#    agent_y_pos = []
+#    y_velocities = []
+#    x_velocities = []
+#    for time_curr in times:
+#        y_pos_curr = amplitude_max * sin (angular_velo * time_curr) #+ y_offset_curr #disabled
+#        agent_y_pos.append(y_pos_curr)
+#        y_offset_prev = y_offset_curr #test this with print statements
+#        if time_curr == 0:
+#            time_prev = 0
+#            y_pos_prev = 0
+#            time_index = 0
+#        y_velocity = (y_pos_curr - y_pos_prev) / timestep
+#        y_velocities.append(y_velocity)
+#        ## TODO: make x_velocities as in Sharri's
+#        x_velocities.append((time_curr - time_prev)/ timestep)
+#        if time_index in spiketime_index:         # if we spiked at this time_curr, set y_aim = y_post_cur
+#            y_aim = y_pos_curr
+#            y_offset_curr = (y_aim - y_offset_prev) / tau_y
+#        time_prev = time_curr
+#        y_pos_prev = y_pos_curr
+#        time_index += 1
+#    return times, agent_y_pos, x_velocities, y_velocities   
 
 class Neuron(object):
     def __init__(self, tau_e = 1.2, spikethresh = 3.0):
@@ -115,57 +148,6 @@ class Sensor_neuron(Neuron):
                     self.spike_history.append((time,0))
 
 
-#def agentflight(total_velo_max = 5, total_velo_min = 1, wind_velo = 0, y_offset_curr = 0, angular_velo = 0.1, tau_y = 1, plotting = 'off'):
-#    """
-#    plots the mosquito's path in space
-#    input: total_velo_max, total_velo_min, wind_velo, y_offset_curr, angular_velo, flight_dur, timestep
-#    output: times, agent_y_pos, x_velocities, y_velocities 
-#    TODO: impliment agent_x_pos using velocity max and min
-#    TODO: implement y offset, and wind velocity
-#    TODO: make agent_pos list where each item is an (x,y) coord
-#    TODO: make sensor_neuron control agent flight
-#    """
-#    amplitude_max = 10 # TODO: impliment the amplitude fxn
-#    agent_y_pos = []
-#    y_velocities = []
-#    x_velocities = []
-#    for time_curr in times:
-#        y_pos_curr = amplitude_max * sin (angular_velo * time_curr) #+ y_offset_curr #disabled
-#        agent_y_pos.append(y_pos_curr)
-#        y_offset_prev = y_offset_curr #test this with print statements
-#        if time_curr == 0:
-#            time_prev = 0
-#            y_pos_prev = 0
-#            time_index = 0
-#        y_velocity = (y_pos_curr - y_pos_prev) / timestep
-#        y_velocities.append(y_velocity)
-#        ## TODO: make x_velocities as in Sharri's
-#        x_velocities.append((time_curr - time_prev)/ timestep)
-#        if time_index in spiketime_index:         # if we spiked at this time_curr, set y_aim = y_post_cur
-#            y_aim = y_pos_curr
-#            y_offset_curr = (y_aim - y_offset_prev) / tau_y
-#        time_prev = time_curr
-#        y_pos_prev = y_pos_curr
-#        time_index += 1
-#    if plotting == "on":
-#        agentflightplotter(agent_y_pos, x_velocities, y_velocities)
-#    return times, agent_y_pos, x_velocities, y_velocities    
-
-    
-#def agentflightplotter(agent_y_pos, x_velocities, y_velocities):
-#    """
-#    TODO: animate this, using def update_mozzie and FuncAnimation
-#    """
-#    fig = plt.figure(2)
-#    plot(times,agent_y_pos,'k',label= 'agent y_pos over time' )
-#    plot(times,y_velocities, 'b',label= 'y velocity')
-#    plot(times,x_velocities, 'r',label= 'x velocity')    
-#    xlabel('time')
-#    ylabel('Y position')
-#    legend()
-#    title("Flying mosquito")
-#    plt.show()
-
 def plume_plotter(plume, plotting = False):
     if plotting == False:
         pass
@@ -183,6 +165,38 @@ def plume_plotter(plume, plotting = False):
         ax.set_zlabel('intensity')
         ax.set_title("robomozzie")
         plt.show()
+        
+#def agentflightplotter(agent_y_pos, x_velocities, y_velocities):
+#    """
+#    TODO: animate this, using def update_mozzie and FuncAnimation
+#    """
+#    fig = plt.figure(2)
+#    plot(times,agent_y_pos,'k',label= 'agent y_pos over time' )
+#    plot(times,y_velocities, 'b',label= 'y velocity')
+#    plot(times,x_velocities, 'r',label= 'x velocity')    
+#    xlabel('time')
+#    ylabel('Y position')
+#    legend()
+#    title("Flying mosquito")
+#    plt.show()
+#
+#def mozzie_plotter(plotting = False):
+#    if plotting == False:
+#        pass
+#    else:
+#        # Set up a figure
+#        fig = plt.figure(0, figsize=(6,6))
+#        ax = axes3d.Axes3D(fig)
+#        x, y, z = plume.xx, plume.yy, plume.zz
+#        ax.plot_wireframe(x , y , z, rstride=10, cstride=10)
+#        ax.set_xlim3d([0.0, BOX_SIZE[0]])
+#        ax.set_ylim3d([0.0, BOX_SIZE[1]])
+#        ax.set_zlim3d([0.0, BOX_SIZE[2]])
+#        ax.set_xlabel('X')
+#        ax.set_ylabel('Y')
+#        ax.set_zlabel('intensity')
+#        ax.set_title("robomozzie")
+#        plt.show()
  
 def eval_neuron_plotter(plotting = False):
     if plotting == False:
