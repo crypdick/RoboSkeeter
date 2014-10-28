@@ -82,8 +82,9 @@ class Mozzie(object):
     """our brave mosquito
     """
     def __init__(self,total_velo_max = 5, total_velo_min = 1, wind_velo = 0, y_offset_curr = 0, angular_velo = 0.1):
+        self.angular_velo = angular_velo
         self.loc_curr =  0, 0
-        self.loc_history = {0,(self.loc_curr)}
+        self.loc_history = {0 : self.loc_curr}
         self.y_velocities = {}
         self.x_velocities = {}
     def where(self, time):
@@ -98,7 +99,7 @@ class Mozzie(object):
         output: none (location history updates)
         TODO: put in sin equations
         """
-        y_pos_curr = amplitude_neuron.amplitude_curr * sin (angular_velo * time_curr) +amplitude_neuron.y_offset_curr
+        y_pos_curr = amplitude_neuron.amplitude_curr * sin (self.angular_velo * time_curr) + amplitude_neuron.y_offset_curr
 #        agent_y_pos.append(y_pos_curr)
 #        y_offset_prev = y_offset_curr #test this with print statements
 #        if time_curr == 0:
@@ -114,7 +115,7 @@ class Mozzie(object):
 #            y_offset_curr = (y_aim - y_offset_prev) / tau_y
 #        time_prev = time_curr
 #        y_pos_prev = y_pos_curr
-        self.loc_history[time] = self.loc_curr
+        self.loc_history[time_curr] = self.loc_curr
     # def _xspeedcalc
         
 #def agentflight(total_velo_max = 5, total_velo_min = 1, wind_velo = 0, y_offset_curr = 0, angular_velo = 0.1, tau_y = 1, plotting = 'off'):
@@ -213,6 +214,7 @@ class Amplitude_neuron(Neuron):
         self.amplitude_curr = self.amplitude_max
         self.y_aim = 0
         self.y_aim_history = {(0,0)}
+        self.y_offset_curr = 0.0
         self.y_offset_history = {(0,0)}
     def y_aimer(self,time):
         """if spike, recompute y_aim"""
