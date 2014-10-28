@@ -26,8 +26,6 @@ timestep = 1.0
 
 BOX_SIZE = (flight_dur,(amplitude_neuron.amplitude_max/2),5.0) 
 
-#current_time_index = -1
-
 class Plume(object):
     def __init__(self,):
         """Our odor plume in x,y, z
@@ -38,9 +36,6 @@ class Plume(object):
         self.X = np.linspace(0, BOX_SIZE[0], self.res) #X locs of plume
         self.Y = np.linspace(0, BOX_SIZE[1],self.res) #Y of odor slices
         self.xx, self.yy = np.meshgrid(self.X, self.Y, sparse=True)
-        #self.source = list(source) #Y/Z of the source
-        #self.original = source #Initial source location
-        #self.cross = np.zeros((2, len(self.X)))
     def current_plume(self,curr_time): #uses current time, not index
         """given the timeindex, return plume intensity values
         currently always returns 0
@@ -70,8 +65,11 @@ class Mozzie(object):
     TODO: make agent_pos list where each item is an (x,y) coord
     TODO: make sensor_neuron control agent flight
     """
-    def __init__(self,total_velo_max = 5, total_velo_min = 1, wind_velo = 0, y_offset_curr = 0, angular_velo = 0.1):
+    def __init__(self,total_velo_max = 5, total_velo_min = 1, wind_velocity = 0, y_offset_curr = 0, angular_velo = 0.1):
+        self.total_velo_max = total_velo_max
+        self.total_velo_min = total_velo_min
         self.angular_velo = angular_velo
+        self.wind_velo = wind_velocity
         self.loc_curr =  0, 0
         self.loc_history = {0 : self.loc_curr}
         self.y_velocities = {}
@@ -90,8 +88,6 @@ class Mozzie(object):
         TODO: put in sin equations
         """
         y_pos_curr = amplitude_neuron.amplitude_curr * sin (self.angular_velo * time_curr) + amplitude_neuron.y_offset_curr
-#        agent_y_pos.append(y_pos_curr)
-#        y_offset_prev = y_offset_curr #test this with print statements
         crap, y_pos_prev = self.loc_history[self.time_prev]
         y_velocity_curr = (y_pos_curr - y_pos_prev) / timestep
         self.y_velocities[time_curr] = y_velocity_curr
@@ -127,12 +123,12 @@ def mozzie_plotter(plotting = False):
         # Set up a figure
         fig = plt.figure(1, figsize=(6,6))
         location_times, locations = mozzie.loc_history.keys(), mozzie.loc_history.values()
-        x = [float(xycoord[0]) for xycoord in mozzie.loc_history.values() ]
+        #x = [float(xycoord[0]) for xycoord in mozzie.loc_history.values() ] #don't need this since x is just = locationtimes
         y = [float(xycoord[1]) for xycoord in mozzie.loc_history.values() ]
         y_velocity_times, y_velocities = mozzie.y_velocities.keys(), mozzie.y_velocities.values()
         x_velocities_times, x_velocities = mozzie.x_velocities.keys(), mozzie.x_velocities.values()
         #print max(voltages)+5    
-        plt.plot(x, y, 'k',label= 'agent y_pos over time' )
+        plt.plot(location_times, y, 'k',label= 'agent y_pos over time' )
         plt.plot(y_velocity_times, y_velocities,'b',label= 'y velocity over t')
         plt.plot(x_velocities_times,x_velocities,'r',label= 'x velocity over t')
         plt.xlabel('time')
@@ -202,24 +198,25 @@ class Amplitude_neuron(Neuron):
     """
     def __init__(self):
         self.tau_y = 1
-        self.amplitude_max = 10
-        self.amplitude_curr = self.amplitude_max
         self.y_aim = 0
         self.y_aim_history = {(0,0)}
         self.y_offset_curr = 0.0
         self.y_offset_history = {(0,0)}
+        self.angular_velo = mozzie.angular_velo
+        self.amplitude_max = (2**0.5 / self.angular_velo) * (((mozzie.total_velo_max + mozzie.wind_velo) **2) - ((mozzie.total_velo_min + mozzie.wind_velo)**2))**0.5 #TODO add vwind
+        self.amplitude_curr = self.amplitude_max
     def y_aimer(self,time):
         """if spike, recompute y_aim"""
         if time in sensor_neuron.spiketime_index: #if spiking, recompute y_aim
             x_curr, y_curr = mozzie.where(time)
             self.y_aim = y_curr
-            self.y_aim_history[time] = y_aim
+            self.y_aim_history[time] = self.y_aim
     def y_offsetter(self,time):
         self.y_offset_curr = (self.y_aim - self.y_offset_prev) / self.tau_y
     def amplitude_controller(self):
-        """TODO"""
-        #amplitude_curr = MATH
+        """TODO add vwind"""
         pass
+        
 
 
 def timestepper():
