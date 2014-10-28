@@ -42,45 +42,80 @@ class Plume(object):
         #self.original = source #Initial source location
         #self.cross = np.zeros((2, len(self.X)))
     def current_plume(self,curr_time): #uses current time, not index
-        """given the timeindex, return plume intensity values at that pt in move
+        """given the timeindex, return plume intensity values
         currently always returns 0
+        input curr_time
+        output plume at that frame
         TODO: make vary over time"""
         self.zz = 0 * (self.xx + self.yy) # odor intensity at x,y, set to 0 everywhere
         plume_curr = self.xx, self.yy, self.zz
         return plume_curr
     def intensity_val(self, plume_curr, location):
+        """
+        given a plume at a certain frame and x,y coords, give intensity at that coord
+        input plume, (x,y) coords
+        output: plume intensity at x,y
+        """
         x, y = location
         intensitygrid = plume_curr[2]
         return intensitygrid[x][y]
 
 class Mozzie(object):
+    """our brave mosquito
+    """
     def __init__(self):
         self.pos =  0, 0
+        self.loc_history = []
     def where(self, time):
-        """ TODO: make real"""
+        """ where the mozzie is right now
+        input: time in seconds
+        output: x,y coords
+        TODO: make real"""
         return self.pos
     def move(self,time):
-        pass
+        """move the mosquito in a cast, add to location history
+        input: time in secs
+        output: none (location history updates)
+        TODO: put in sin equations
+        """
+        self.loc_history.append(time,self.pos)
+    # def _xspeedcalc
+        
 
 class Neuron(object):
     def __init__(self, tau_e = 1.2, spikethresh = 3.0):
-        self.voltages = []
-        self.spikes = []   
+        self.voltage_history = []
+        self.spike_history = []   
         self.spiketime_index = []
         #if spiking, return true
-        pass
 
 class Sensor_neuron(Neuron):
     def __init__(self):
         pass        
-    def spiker(self,intensity_now):
-        pass
+    def spiker(self,time, intensity_now):
+        '''evaluator leaky integrate and fire neuron. stimulus intensity -> cellular voltages -> spikes
+        
+        TODO: feed in intensities
+        '''
+        if len(self.voltage_history) == 0:
+            self.voltage_history.append(0)
+           # spike_history.append(0)
+        else:
+            if self.voltage_history[-1] > spikethresh: #crossing threshold discharges neuron
+                self.voltage_history.append(0)
+                self.spike_history.append(0)
+            else:
+                self.voltage = (1/tau_e) * self.voltage_history[-1] + intensity_now #intensity at this timestep + weighted past intensity
+                self.voltage_history.append(self.voltage)
+                if self.voltage > spikethresh:
+                    self.spike_history.append(1)
+                else:
+                    self.spike_history.append(0)
+        for timepoint, value in enumerate(self.spike_history):
+            if value == 1:
+                spiketime_index.append(timepoint)
 
 def sensor_neuron_old(tau_e = 1.2, spikethresh = 3.0, plotting = 'off'): 
-    '''evaluator leaky integrate and fire neuron. stimulus intensity -> cellular voltages -> spikes
-    
-    #TODO: feed in intensities
-    '''
     voltages = []
     spikes = []
     time = 0
@@ -180,13 +215,13 @@ def plume_plotter(plume, plotting = False):
 def timestepper():
     times = np.arange(0, flight_dur, timestep)
     time_indexes = list(enumerate(times))
-    for index in time_indexes:
-        plume_curr = plume.current_plume(index[1]) #intensity value of plume at this time
-        loc = mozzie.where(index[1])
+    for time in time_indexes:
+        plume_curr = plume.current_plume(time[1]) #intensity value of plume at this time
+        loc = mozzie.where(time[1])
         intensity_now = plume.intensity_val(plume_curr,loc)
-        if sensor_neuron.spiker(intensity_now) == True: #if sensor neuron spikes
-            amplitude_neuron(index[1])
-        mozzie.move(index[1])
+        if sensor_neuron.spiker(time[1], intensity_now) == True: #if sensor neuron spikes
+            amplitude_neuron(time[1])
+        mozzie.move(time[1])
             
 
 if __name__ == "__main__":
@@ -195,5 +230,5 @@ if __name__ == "__main__":
     amplitude_neuron = Neuron()
     mozzie = Mozzie()
     timestepper()
-    plume_plotter(plume)
+    plume_plotter(plume, plotting = False)
 #    agentflightplotter() 
