@@ -79,7 +79,14 @@ def plume_plotter(plume, plotting = False):
         plt.show()
 
 class Mozzie(object):
-    """our brave mosquito
+    """our brave mosquito, moving in 2D
+        plots the mosquito's path in space
+    input: total_velo_max, total_velo_min, wind_velo, y_offset_curr, angular_velo, flight_dur, timestep
+    output: times, agent_y_pos, x_velocities, y_velocities 
+    TODO: impliment agent_x_pos using velocity max and min
+    TODO: implement y offset, and wind velocity
+    TODO: make agent_pos list where each item is an (x,y) coord
+    TODO: make sensor_neuron control agent flight
     """
     def __init__(self,total_velo_max = 5, total_velo_min = 1, wind_velo = 0, y_offset_curr = 0, angular_velo = 0.1):
         self.angular_velo = angular_velo
@@ -87,6 +94,7 @@ class Mozzie(object):
         self.loc_history = {0 : self.loc_curr}
         self.y_velocities = {}
         self.x_velocities = {}
+        self.time_prev = 0
     def where(self, time):
         """ where the mozzie is right now
         input: time in seconds
@@ -102,53 +110,16 @@ class Mozzie(object):
         y_pos_curr = amplitude_neuron.amplitude_curr * sin (self.angular_velo * time_curr) + amplitude_neuron.y_offset_curr
 #        agent_y_pos.append(y_pos_curr)
 #        y_offset_prev = y_offset_curr #test this with print statements
-#        if time_curr == 0:
-#            time_prev = 0
-#            y_pos_prev = 0
-#            time_index = 0
-#        y_velocity = (y_pos_curr - y_pos_prev) / timestep
-#        y_velocities.append(y_velocity)
+        crap, y_pos_prev = self.loc_history[self.time_prev]
+        y_velocity_curr = (y_pos_curr - y_pos_prev) / timestep
+        self.y_velocities[time_curr] = y_velocity_curr
 #        ## TODO: make x_velocities as in Sharri's
-#        x_velocities.append((time_curr - time_prev)/ timestep)
-#        if time_index in spiketime_index:         # if we spiked at this time_curr, set y_aim = y_post_cur
-#            y_aim = y_pos_curr
-#            y_offset_curr = (y_aim - y_offset_prev) / tau_y
-#        time_prev = time_curr
-#        y_pos_prev = y_pos_curr
+        self.x_velocities[time_curr] = (time_curr - self.time_prev)/ timestep
+        self.loc_curr = time_curr, y_pos_curr #TODO: make x coord not the time!
+        self.time_prev = time_curr
         self.loc_history[time_curr] = self.loc_curr
     # def _xspeedcalc
-        
-#def agentflight(total_velo_max = 5, total_velo_min = 1, wind_velo = 0, y_offset_curr = 0, angular_velo = 0.1, tau_y = 1, plotting = 'off'):
-#    """
-#    plots the mosquito's path in space
-#    input: total_velo_max, total_velo_min, wind_velo, y_offset_curr, angular_velo, flight_dur, timestep
-#    output: times, agent_y_pos, x_velocities, y_velocities 
-#    TODO: impliment agent_x_pos using velocity max and min
-#    TODO: implement y offset, and wind velocity
-#    TODO: make agent_pos list where each item is an (x,y) coord
-#    TODO: make sensor_neuron control agent flight
-#    """
 
-#    agent_y_pos = []
-#    y_velocities = []
-#    x_velocities = []
-#    for time_curr in times:
-#        y_pos_curr = amplitude_max * sin (angular_velo * time_curr) #+ y_offset_curr #disabled
-#        agent_y_pos.append(y_pos_curr)
-#        y_offset_prev = y_offset_curr #test this with print statements
-#        if time_curr == 0:
-#            time_prev = 0
-#            y_pos_prev = 0
-#            time_index = 0
-#        y_velocity = (y_pos_curr - y_pos_prev) / timestep
-#        y_velocities.append(y_velocity)
-#        ## TODO: make x_velocities as in Sharri's
-#        x_velocities.append((time_curr - time_prev)/ timestep)
-
-#        time_prev = time_curr
-#        y_pos_prev = y_pos_curr
-#        time_index += 1
-#    return times, agent_y_pos, x_velocities, y_velocities   
 
 class Neuron(object):
     def __init__(self, tau_e = 1.2, spikethresh = 3.0):
