@@ -127,10 +127,12 @@ def mozzie_plotter(plotting = False):
         # Set up a figure
         fig = plt.figure(1, figsize=(6,6))
         location_times, locations = mozzie.loc_history.keys(), mozzie.loc_history.values()
+        x = [float(xycoord[0]) for xycoord in mozzie.loc_history.values() ]
+        y = [float(xycoord[1]) for xycoord in mozzie.loc_history.values() ]
         y_velocity_times, y_velocities = mozzie.y_velocities.keys(), mozzie.y_velocities.values()
         x_velocities_times, x_velocities = mozzie.x_velocities.keys(), mozzie.x_velocities.values()
         #print max(voltages)+5    
-        plt.plot(location_times, locations, 'k',label= 'agent y_pos over time' )
+        plt.plot(x, y, 'k',label= 'agent y_pos over time' )
         plt.plot(y_velocity_times, y_velocities,'b',label= 'y velocity over t')
         plt.plot(x_velocities_times,x_velocities,'r',label= 'x velocity over t')
         plt.xlabel('time')
