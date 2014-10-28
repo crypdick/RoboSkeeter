@@ -38,35 +38,45 @@ class Plume(object):
         self.X = np.linspace(0, BOX_SIZE[0], self.res) #X locs of plume
         self.Y = np.linspace(0, BOX_SIZE[1],self.res) #Y of odor slices
         self.xx, self.yy = np.meshgrid(self.X, self.Y, sparse=True)
-        self.zz = 0 * (self.xx + self.yy) # odor intensity at x,y, set to 0 everywhere
         #self.source = list(source) #Y/Z of the source
         #self.original = source #Initial source location
         #self.cross = np.zeros((2, len(self.X)))
-    def intensity_val(self,location):
-        #x, y = location
-        #too
-        return self.zz
-
-      
+    def current_plume(self,curr_time): #uses current time, not index
+        """given the timeindex, return plume intensity values at that pt in move
+        currently always returns 0
+        TODO: make vary over time"""
+        self.zz = 0 * (self.xx + self.yy) # odor intensity at x,y, set to 0 everywhere
+        plume_curr = self.xx, self.yy, self.zz
+        return plume_curr
+    def intensity_val(self, plume_curr, location):
+        x, y = location
+        intensitygrid = plume_curr[2]
+        return intensitygrid[x][y]
 
 class Mozzie(object):
     def __init__(self):
         self.pos =  0, 0
-        print self.pos
     def where(self, time):
         """ TODO: make real"""
         return self.pos
+    def move(self,time):
+        pass
 
-class neuron(object):
+class Neuron(object):
     def __init__(self, tau_e = 1.2, spikethresh = 3.0):
         self.voltages = []
         self.spikes = []   
         self.spiketime_index = []
+        #if spiking, return true
         pass
 
-sensor_neuron = neuron()
+class Sensor_neuron(Neuron):
+    def __init__(self):
+        pass        
+    def spiker(self,intensity_now):
+        pass
 
-def sensor_neuron(tau_e = 1.2, spikethresh = 3.0, plotting = 'off'): 
+def sensor_neuron_old(tau_e = 1.2, spikethresh = 3.0, plotting = 'off'): 
     '''evaluator leaky integrate and fire neuron. stimulus intensity -> cellular voltages -> spikes
     
     #TODO: feed in intensities
@@ -148,38 +158,41 @@ def sensor_neuron(tau_e = 1.2, spikethresh = 3.0, plotting = 'off'):
 #    title("Flying mosquito")
 #    plt.show()
 
-def plume_plotter(plume):
-    # Set up a figure
-    fig = plt.figure(0, figsize=(6,6))
-    ax = axes3d.Axes3D(fig)
-    x, y, z = plume.xx, plume.yy, plume.zz
-    ax.plot_wireframe(x , y , z, rstride=10, cstride=10)
-    ax.set_xlim3d([0.0, BOX_SIZE[0]])
-    ax.set_ylim3d([0.0, BOX_SIZE[1]])
-    ax.set_zlim3d([0.0, BOX_SIZE[2]])
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('intensity')
-    ax.set_title("robomozzie")
-    plt.show()
+def plume_plotter(plume, plotting = False):
+    if plotting == False:
+        pass
+    else:
+        # Set up a figure
+        fig = plt.figure(0, figsize=(6,6))
+        ax = axes3d.Axes3D(fig)
+        x, y, z = plume.xx, plume.yy, plume.zz
+        ax.plot_wireframe(x , y , z, rstride=10, cstride=10)
+        ax.set_xlim3d([0.0, BOX_SIZE[0]])
+        ax.set_ylim3d([0.0, BOX_SIZE[1]])
+        ax.set_zlim3d([0.0, BOX_SIZE[2]])
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('intensity')
+        ax.set_title("robomozzie")
+        plt.show()
     
 
 def timestepper():
     times = np.arange(0, flight_dur, timestep)
     time_indexes = list(enumerate(times))
     for index in time_indexes:
-        plume_now = plume.intensity_val(index[1]) #intensity value of plume at this time
+        plume_curr = plume.current_plume(index[1]) #intensity value of plume at this time
         loc = mozzie.where(index[1])
-        intensity_now = Plume.intensity_val(loc)
-        print loc
-        
-        #return index[1] set global absolute time
-#    while current_time_index < 
-#    for time in times:
-#        pass
+        intensity_now = plume.intensity_val(plume_curr,loc)
+        if sensor_neuron.spiker(intensity_now) == True: #if sensor neuron spikes
+            amplitude_neuron(index[1])
+        mozzie.move(index[1])
+            
 
 if __name__ == "__main__":
     plume = Plume()
+    sensor_neuron = Sensor_neuron()
+    amplitude_neuron = Neuron()
     mozzie = Mozzie()
     timestepper()
     plume_plotter(plume)
