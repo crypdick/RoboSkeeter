@@ -22,11 +22,11 @@ from matplotlib import cm
 
 
 flight_dur = 100.0
-timestep = 1
+timestep = 1.0
 
 BOX_SIZE = (10.0,10.0,1.0) 
 
-current_time_index = -1
+#current_time_index = -1
 
 class Plume(object):
     def __init__(self, time = 0):
@@ -94,53 +94,26 @@ class Neuron(object):
 class Sensor_neuron(Neuron):     
     def spiker(self,time, intensity_now):
         '''evaluator leaky integrate and fire neuron. stimulus intensity -> cellular voltages -> spikes
-        
-        TODO: feed in intensities
+        input time (sec) and intensity
+        updates spiking history and voltage history
+        output spiking True and timestep
         '''
-        if len(self.voltage_history) == 0:
-            self.voltage_history.append(0)
-           # spike_history.append(0)
+        if len(self.voltage_history) == 0: #TODO: could this be avoided? remove self.tau weighted computation
+            self.voltage_history.append((time,0))
+            self.spike_history.append((time,0))
         else:
             if self.voltage_history[-1] > self.spikethresh: #crossing threshold discharges neuron
-                self.voltage_history.append(0)
-                self.spike_history.append(0)
+                self.voltage_history.append((time,0))
+                self.spike_history.append((time,0))
             else:
                 self.voltage = (1/self.tau_e) * self.voltage_history[-1] + intensity_now #intensity at this timestep + weighted past intensity
-                self.voltage_history.append(self.voltage)
+                self.voltage_history.append((time,self.voltage))
                 if self.voltage > self.spikethresh:
-                    self.spike_history.append(1)
+                    self.spike_history.append((time,1))
+                    self.spiktime_index.append((time,1))
                 else:
-                    self.spike_history.append(0)
-        for timepoint, value in enumerate(self.spike_history):
-            if value == 1:
-                spiketime_index.append(timepoint)
+                    self.spike_history.append((time,0))
 
-def sensor_neuron_old(tau_e = 1.2, spikethresh = 3.0, plotting = 'off'): 
-    voltages = []
-    spikes = []
-    time = 0
-    for intensity in intensities: #TODO change to for time_curr in times:
-        if len(voltages) == 0:
-            voltages.append(0)
-            spikes.append(0)
-        else:
-            if voltages[-1] > spikethresh: #crossing threshold discharges neuron
-                voltages.append(0)
-                spikes.append(0)
-            else:
-                voltage = (1/tau_e) * voltages[-1] + intensity #intensity at this timestep + weighted past intensity
-                voltages.append(voltage)
-                if voltage > spikethresh:
-                    spikes.append(1)
-                else:
-                    spikes.append(0)
-        time += 1
-    if plotting == 'on':
-        sensor_neuron_plotter(spikes, voltages)
-    for timepoint, value in enumerate(spikes):
-        if value == 1:
-            spiketime_index.append(timepoint)
-    return
 
 #def agentflight(total_velo_max = 5, total_velo_min = 1, wind_velo = 0, y_offset_curr = 0, angular_velo = 0.1, tau_y = 1, plotting = 'off'):
 #    """
@@ -210,7 +183,22 @@ def plume_plotter(plume, plotting = False):
         ax.set_zlabel('intensity')
         ax.set_title("robomozzie")
         plt.show()
-    
+ 
+def eval_neuron_plotter(plotting = False):
+    if plotting == False:
+        pass
+    else:
+        voltagetimes, voltages = sensor_neuron.voltage_history[0], sensor_neuron.voltage_history[1]
+        spiketimes, spikes = sensor_neuron.spike_history[0], sensor_neuron.spike_history[1]
+        y = max(voltages)    
+        fig = plt.figure(1)
+        plt.plot(voltagetimes, voltages, 'r',label='soma voltage')
+        plt.plot(spiketimes, spikes, 'b', label= 'spikes')
+        plt.xlabel('time')
+        plt.ylabel('voltage')
+        plt.legend()
+        plt.title("Neuron voltage and spikes")   
+        plt.show()
 
 def timestepper():
     times = np.arange(0, flight_dur, timestep)
@@ -231,4 +219,5 @@ if __name__ == "__main__":
     mozzie = Mozzie()
     timestepper()
     plume_plotter(plume, plotting = False)
+    eval_neuron_plotter(plotting = False)
 #    agentflightplotter() 

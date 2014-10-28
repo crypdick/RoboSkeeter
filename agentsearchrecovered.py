@@ -121,6 +121,8 @@ def agentflightplotter(agent_y_pos, x_velocities, y_velocities):
         legend()
         title("Flying mosquito")
 
+
+
 def eval_neuron_plotter(spikes, voltages):
         y = max(voltages)    
         figure(1)
