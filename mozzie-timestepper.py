@@ -200,12 +200,19 @@ class Amplitude_neuron(Neuron):
     else, decay teleporter
 
     """
-    self.tau_y = 1
-    self.amplitude_max = 10
-    self.amplitude_curr = 10
-    self.y_aim = 0
-    self.y_aim_history = [(0,0)]
-    self.y_offset_history = [(0,0)]
+    def __init__(self, tau_e = 1.2, spikethresh = 3.0):
+        self.spikethresh = spikethresh
+        self.tau_e = tau_e
+        self.voltage_history = []
+        self.spike_history = []   
+        self.spiketime_index = []
+        #everything before this is redundant
+        self.tau_y = 1
+        self.amplitude_max = 10
+        self.amplitude_curr = 10
+        self.y_aim = 0
+        self.y_aim_history = [(0,0)]
+        self.y_offset_history = [(0,0)]
     def amplitude_controller(self):
         """TODO"""
         #amplitude_curr = MATH
