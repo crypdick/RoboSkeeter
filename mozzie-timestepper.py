@@ -15,7 +15,7 @@ at each time index:
 
 """
 import numpy as np
-#from numpy import pi, sin, cos
+from numpy import pi, sin, cos
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.axes3d as axes3d
 #from matplotlib import cm
@@ -83,20 +83,22 @@ class Mozzie(object):
     """
     def __init__(self,total_velo_max = 5, total_velo_min = 1, wind_velo = 0, y_offset_curr = 0, angular_velo = 0.1):
         self.loc_curr =  0, 0
-        self.loc_history = []
+        self.loc_history = {0,(self.loc_curr)}
+        self.y_velocities = {}
+        self.x_velocities = {}
     def where(self, time):
         """ where the mozzie is right now
         input: time in seconds
         output: x,y coords
         TODO: make real"""
         return self.loc_curr
-    def move(self,time):
+    def move(self,time_curr):
         """move the mosquito in a cast, add to location history
         input: time in secs
         output: none (location history updates)
         TODO: put in sin equations
         """
-#        y_pos_curr = amplitude_max * sin (angular_velo * time_curr) #+ y_offset_curr #disabled
+        y_pos_curr = amplitude_neuron.amplitude_curr * sin (angular_velo * time_curr) +amplitude_neuron.y_offset_curr
 #        agent_y_pos.append(y_pos_curr)
 #        y_offset_prev = y_offset_curr #test this with print statements
 #        if time_curr == 0:
@@ -112,7 +114,7 @@ class Mozzie(object):
 #            y_offset_curr = (y_aim - y_offset_prev) / tau_y
 #        time_prev = time_curr
 #        y_pos_prev = y_pos_curr
-        self.loc_history.append((time,self.loc_curr))
+        self.loc_history[time] = self.loc_curr
     # def _xspeedcalc
         
 #def agentflight(total_velo_max = 5, total_velo_min = 1, wind_velo = 0, y_offset_curr = 0, angular_velo = 0.1, tau_y = 1, plotting = 'off'):
@@ -205,32 +207,25 @@ class Amplitude_neuron(Neuron):
     else, decay teleporter
 
     """
-    def __init__(self, tau_e = 1.2, spikethresh = 3.0):
-        self.spikethresh = spikethresh
-        self.tau_e = tau_e
-        self.voltage_history = []
-        self.spike_history = []   
-        self.spiketime_index = []
-        #everything before this is redundant
+    def __init__(self):
         self.tau_y = 1
         self.amplitude_max = 10
-        self.amplitude_curr = 10
+        self.amplitude_curr = self.amplitude_max
         self.y_aim = 0
-        self.y_aim_history = [(0,0)]
-        self.y_offset_history = [(0,0)]
-    def amplitude_controller(self):
-        """TODO"""
-        #amplitude_curr = MATH
-        pass
+        self.y_aim_history = {(0,0)}
+        self.y_offset_history = {(0,0)}
     def y_aimer(self,time):
         """if spike, recompute y_aim"""
         if time in sensor_neuron.spiketime_index: #if spiking, recompute y_aim
             x_curr, y_curr = mozzie.where(time)
             self.y_aim = y_curr
-            self.y_aim_history.append((time,self.y_aim))
+            self.y_aim_history[time] = y_aim
     def y_offsetter(self,time):
         self.y_offset_curr = (self.y_aim - self.y_offset_prev) / self.tau_y
-
+    def amplitude_controller(self):
+        """TODO"""
+        #amplitude_curr = MATH
+        pass
         
 #def agentflightplotter(agent_y_pos, x_velocities, y_velocities):
 #    """
@@ -266,6 +261,8 @@ class Amplitude_neuron(Neuron):
 
 
 def timestepper():
+    #TODO: need to move the mozzie at the timestep before it senses
+    # otherise mozzie(where) data doesnt exist yet
     times = np.arange(0, flight_dur, timestep)
     time_indexes = list(enumerate(times))
     for time in time_indexes:
@@ -281,7 +278,7 @@ def timestepper():
 if __name__ == "__main__":
     plume = Plume()
     sensor_neuron = Sensor_neuron()
-    amplitude_neuron = Neuron()
+    amplitude_neuron = Amplitude_neuron()
     mozzie = Mozzie()
     timestepper()
     plume_plotter(plume, plotting = True)
