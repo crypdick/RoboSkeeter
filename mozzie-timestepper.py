@@ -81,7 +81,7 @@ def plume_plotter(plume, plotting = False):
 class Mozzie(object):
     """our brave mosquito
     """
-    def __init__(self,total_velo_max = 5, total_velo_min = 1, wind_velo = 0, y_offset_curr = 0, angular_velo = 0.1, tau_y = 1):
+    def __init__(self,total_velo_max = 5, total_velo_min = 1, wind_velo = 0, y_offset_curr = 0, angular_velo = 0.1):
         self.loc_curr =  0, 0
         self.loc_history = []
     def where(self, time):
@@ -125,7 +125,7 @@ class Mozzie(object):
 #    TODO: make agent_pos list where each item is an (x,y) coord
 #    TODO: make sensor_neuron control agent flight
 #    """
-#    amplitude_max = 10 # TODO: impliment the amplitude fxn
+
 #    agent_y_pos = []
 #    y_velocities = []
 #    x_velocities = []
@@ -141,9 +141,7 @@ class Mozzie(object):
 #        y_velocities.append(y_velocity)
 #        ## TODO: make x_velocities as in Sharri's
 #        x_velocities.append((time_curr - time_prev)/ timestep)
-#        if time_index in spiketime_index:         # if we spiked at this time_curr, set y_aim = y_post_cur
-#            y_aim = y_pos_curr
-#            y_offset_curr = (y_aim - y_offset_prev) / tau_y
+
 #        time_prev = time_curr
 #        y_pos_prev = y_pos_curr
 #        time_index += 1
@@ -198,7 +196,28 @@ def eval_neuron_plotter(plotting = False):
         plt.show()
 
 class Amplitude_neuron(Neuron):
-    pass
+    """if sensor neuron fires,m amplitude control neuron recompute y_targ and amplitude val.
+    else, decay teleporter
+
+    """
+    self.tau_y = 1
+    self.amplitude_max = 10
+    self.amplitude_curr = 10
+    self.y_aim = 0
+    self.y_aim_history = [(0,0)]
+    self.y_offset_history = [(0,0)]
+    def amplitude_controller(self):
+        """TODO"""
+        #amplitude_curr = MATH
+        pass
+    def y_aimer(self,time):
+        """if spike, recompute y_aim"""
+        if time in sensor_neuron.spiketime_index: #if spiking, recompute y_aim
+            x_curr, y_curr = mozzie.where(time)
+            self.y_aim = y_curr
+            self.y_aim_history.append((time,self.y_aim))
+    def y_offsetter(self,time):
+        self.y_offset_curr = (self.y_aim - self.y_offset_prev) / self.tau_y
 
         
 #def agentflightplotter(agent_y_pos, x_velocities, y_velocities):
