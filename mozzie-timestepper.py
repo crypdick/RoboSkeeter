@@ -15,21 +15,21 @@ at each time index:
 
 """
 import numpy as np
-from numpy import pi, sin, cos
+#from numpy import pi, sin, cos
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.axes3d as axes3d
-from matplotlib import cm
+#from matplotlib import cm
 
 
 flight_dur = 100.0
 timestep = 1.0
 
-BOX_SIZE = (10.0,10.0,1.0) 
+BOX_SIZE = (10.0,10.0,10.0) 
 
 #current_time_index = -1
 
 class Plume(object):
-    def __init__(self, time = 0):
+    def __init__(self,):
         """Our odor plume in x,y, z
         Currenty 0 everywhere at all timesteps
         TODO: feed plume a time parameter, which then calcs all the intensities 
@@ -47,7 +47,7 @@ class Plume(object):
         input curr_time
         output plume at that frame
         TODO: make vary over time"""
-        self.zz = 0 * (self.xx + self.yy) # odor intensity at x,y, set to 0 everywhere
+        self.zz = 0 * (self.xx + self.yy) + 1.1 # odor intensity at x,y, set to 0 everywhere
         plume_curr = self.xx, self.yy, self.zz
         return plume_curr
     def intensity_val(self, plume_curr, location):
@@ -163,19 +163,23 @@ class Sensor_neuron(Neuron):
         updates spiking history and voltage history
         output spiking True and timestep
         '''
-        if len(self.voltage_history) == 0: #TODO: could this be avoided? remove self.tau weighted computation
+        if len(self.voltage_history) == 0: 
+            """at very first timestep, start neuron fresh
+            TODO: could this be avoided? remove self.tau weighted computation"""
             self.voltage_history.append((time,0))
             self.spike_history.append((time,0))
+            print "step 1"
         else:
-            if self.voltage_history[-1] > self.spikethresh: #crossing threshold discharges neuron
+            voltage_prev = self.voltage_history[-1]
+            if voltage_prev[1] > self.spikethresh: #crossing threshold discharges neuron
                 self.voltage_history.append((time,0))
                 self.spike_history.append((time,0))
             else:
-                self.voltage = (1/self.tau_e) * self.voltage_history[-1] + intensity_now #intensity at this timestep + weighted past intensity
+                self.voltage = (1/self.tau_e) * voltage_prev[1] + intensity_now #intensity at this timestep + weighted past intensity
                 self.voltage_history.append((time,self.voltage))
                 if self.voltage > self.spikethresh:
                     self.spike_history.append((time,1))
-                    self.spiktime_index.append((time,1))
+                    self.spiketime_index.append((time,1))
                 else:
                     self.spike_history.append((time,0))
 
@@ -267,6 +271,7 @@ def timestepper():
         plume_curr = plume.current_plume(time[1]) #intensity value of plume at this time
         loc = mozzie.where(time[1])
         intensity_now = plume.intensity_val(plume_curr,loc)
+#        print sensor_neuron.spiker(time[1], intensity_now)
         if sensor_neuron.spiker(time[1], intensity_now) == True: #if sensor neuron spikes
             amplitude_neuron(time[1])
         mozzie.move(time[1])
@@ -278,6 +283,6 @@ if __name__ == "__main__":
     amplitude_neuron = Neuron()
     mozzie = Mozzie()
     timestepper()
-    plume_plotter(plume, plotting = False)
-    eval_neuron_plotter(plotting = False)
+    plume_plotter(plume, plotting = True)
+    eval_neuron_plotter(plotting = True)
 #    agentflightplotter() 
