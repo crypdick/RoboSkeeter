@@ -78,20 +78,20 @@ class Mozzie(object):
         output: none (location history updates)
         TODO: put in sin equations
         """
-        self.loc_history.append(time,self.pos)
+        self.loc_history.append((time,self.pos))
     # def _xspeedcalc
         
 
 class Neuron(object):
     def __init__(self, tau_e = 1.2, spikethresh = 3.0):
+        self.spikethresh = spikethresh
+        self.tau_e = tau_e
         self.voltage_history = []
         self.spike_history = []   
         self.spiketime_index = []
         #if spiking, return true
 
-class Sensor_neuron(Neuron):
-    def __init__(self):
-        pass        
+class Sensor_neuron(Neuron):     
     def spiker(self,time, intensity_now):
         '''evaluator leaky integrate and fire neuron. stimulus intensity -> cellular voltages -> spikes
         
@@ -101,13 +101,13 @@ class Sensor_neuron(Neuron):
             self.voltage_history.append(0)
            # spike_history.append(0)
         else:
-            if self.voltage_history[-1] > spikethresh: #crossing threshold discharges neuron
+            if self.voltage_history[-1] > self.spikethresh: #crossing threshold discharges neuron
                 self.voltage_history.append(0)
                 self.spike_history.append(0)
             else:
-                self.voltage = (1/tau_e) * self.voltage_history[-1] + intensity_now #intensity at this timestep + weighted past intensity
+                self.voltage = (1/self.tau_e) * self.voltage_history[-1] + intensity_now #intensity at this timestep + weighted past intensity
                 self.voltage_history.append(self.voltage)
-                if self.voltage > spikethresh:
+                if self.voltage > self.spikethresh:
                     self.spike_history.append(1)
                 else:
                     self.spike_history.append(0)
