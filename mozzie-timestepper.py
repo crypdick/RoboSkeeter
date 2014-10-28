@@ -151,9 +151,9 @@ class Neuron(object):
     def __init__(self, tau_e = 1.2, spikethresh = 3.0):
         self.spikethresh = spikethresh
         self.tau_e = tau_e
-        self.voltage_history = []
-        self.spike_history = []   
-        self.spiketime_index = []
+        self.voltage_history = {}
+        self.spike_history = {} 
+        self.spiketime_index = {}
         #if spiking, return true
 
 class Sensor_neuron(Neuron):     
@@ -166,30 +166,31 @@ class Sensor_neuron(Neuron):
         if len(self.voltage_history) == 0: 
             """at very first timestep, start neuron fresh
             TODO: could this be avoided? remove self.tau weighted computation"""
-            self.voltage_history.append((time,0))
-            self.spike_history.append((time,0))
-            print "step 1"
+            self.voltage_history[time] = 0.0
+            self.spike_history[time] = 0
+            self.time_prev = time
         else:
-            voltage_prev = self.voltage_history[-1]
-            if voltage_prev[1] > self.spikethresh: #crossing threshold discharges neuron
-                self.voltage_history.append((time,0))
-                self.spike_history.append((time,0))
+            voltage_prev = self.voltage_history[self.time_prev]
+            if voltage_prev > self.spikethresh: #crossing threshold discharges neuron
+                self.voltage_history[time] = 0
+                self.spike_history[time] = 0
             else:
-                self.voltage = (1/self.tau_e) * voltage_prev[1] + intensity_now #intensity at this timestep + weighted past intensity
-                self.voltage_history.append((time,self.voltage))
+                self.voltage = (1/self.tau_e) * voltage_prev + intensity_now #intensity at this timestep + weighted past intensity
+                self.voltage_history[time] = self.voltage
                 if self.voltage > self.spikethresh:
-                    self.spike_history.append((time,1))
-                    self.spiketime_index.append((time,1))
+                    self.spike_history[time] = 1
+                    self.spiketime_index[time] = 1
                 else:
-                    self.spike_history.append((time,0))
+                    self.spike_history[time] = 0
+            self.time_prev = time
 
 def eval_neuron_plotter(plotting = False):
     if plotting == False:
         pass
     else:
-        voltagetimes, voltages = sensor_neuron.voltage_history[0], sensor_neuron.voltage_history[1]
-        spiketimes, spikes = sensor_neuron.spike_history[0], sensor_neuron.spike_history[1]
-        y = max(voltages)    
+        voltagetimes, voltages = sensor_neuron.voltage_history.keys(), sensor_neuron.voltage_history.values()
+        spiketimes, spikes = sensor_neuron.spike_history.keys(), sensor_neuron.spike_history.values()
+        #print max(voltages)+5    
         fig = plt.figure(1)
         plt.plot(voltagetimes, voltages, 'r',label='soma voltage')
         plt.plot(spiketimes, spikes, 'b', label= 'spikes')
