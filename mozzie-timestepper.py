@@ -24,7 +24,7 @@ import mpl_toolkits.mplot3d.axes3d as axes3d
 flight_dur = 100.0
 timestep = 1.0
 
-BOX_SIZE = (10.0,10.0,10.0) 
+BOX_SIZE = (flight_dur,(amplitude_neuron.amplitude_max/2),5.0) 
 
 #current_time_index = -1
 
@@ -59,24 +59,6 @@ class Plume(object):
         x, y = location
         intensitygrid = plume_curr[2]
         return intensitygrid[x][y]
-
-def plume_plotter(plume, plotting = False):
-    if plotting == False:
-        pass
-    else:
-        # Set up a figure
-        fig = plt.figure(0, figsize=(6,6))
-        ax = axes3d.Axes3D(fig)
-        x, y, z = plume.xx, plume.yy, plume.zz
-        ax.plot_wireframe(x , y , z, rstride=10, cstride=10)
-        ax.set_xlim3d([0.0, BOX_SIZE[0]])
-        ax.set_ylim3d([0.0, BOX_SIZE[1]])
-        ax.set_zlim3d([0.0, BOX_SIZE[2]])
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_zlabel('intensity')
-        ax.set_title("robomozzie")
-        plt.show()
 
 class Mozzie(object):
     """our brave mosquito, moving in 2D
@@ -119,6 +101,43 @@ class Mozzie(object):
         self.time_prev = time_curr
         self.loc_history[time_curr] = self.loc_curr
     # def _xspeedcalc
+
+def plume_plotter(plume, plotting = False):
+    if plotting == False:
+        pass
+    else:
+        # Set up a figure
+        fig = plt.figure(0, figsize=(6,6))
+        ax = axes3d.Axes3D(fig)
+        x, y, z = plume.xx, plume.yy, plume.zz
+        ax.plot_wireframe(x , y , z, rstride=10, cstride=10)
+        ax.set_xlim3d([0.0, BOX_SIZE[0]])
+        ax.set_ylim3d([0.0, BOX_SIZE[1]])
+        ax.set_zlim3d([0.0, BOX_SIZE[2]])
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('intensity')
+        ax.set_title("plume intensity in space")
+        plt.show()
+
+def mozzie_plotter(plotting = False):
+    if plotting == False:
+        pass
+    else:
+        # Set up a figure
+        fig = plt.figure(1, figsize=(6,6))
+        location_times, locations = mozzie.loc_history.keys(), mozzie.loc_history.values()
+        y_velocity_times, y_velocities = mozzie.y_velocities.keys(), mozzie.y_velocities.values()
+        x_velocities_times, x_velocities = mozzie.x_velocities.keys(), mozzie.x_velocities.values()
+        #print max(voltages)+5    
+        plt.plot(location_times, locations, 'k',label= 'agent y_pos over time' )
+        plt.plot(y_velocity_times, y_velocities,'b',label= 'y velocity over t')
+        plt.plot(x_velocities_times,x_velocities,'r',label= 'x velocity over t')
+        plt.xlabel('time')
+        plt.ylabel('Y position')
+        plt.legend()
+        plt.title("Flying mosquito")   
+        plt.show()
 
 
 class Neuron(object):
@@ -165,7 +184,7 @@ def eval_neuron_plotter(plotting = False):
         voltagetimes, voltages = sensor_neuron.voltage_history.keys(), sensor_neuron.voltage_history.values()
         spiketimes, spikes = sensor_neuron.spike_history.keys(), sensor_neuron.spike_history.values()
         #print max(voltages)+5    
-        fig = plt.figure(1)
+        fig = plt.figure(2)
         plt.plot(voltagetimes, voltages, 'r',label='soma voltage')
         plt.plot(spiketimes, spikes, 'b', label= 'spikes')
         plt.xlabel('time')
@@ -199,38 +218,6 @@ class Amplitude_neuron(Neuron):
         """TODO"""
         #amplitude_curr = MATH
         pass
-        
-#def agentflightplotter(agent_y_pos, x_velocities, y_velocities):
-#    """
-#    TODO: animate this, using def update_mozzie and FuncAnimation
-#    """
-#    fig = plt.figure(2)
-#    plot(times,agent_y_pos,'k',label= 'agent y_pos over time' )
-#    plot(times,y_velocities, 'b',label= 'y velocity')
-#    plot(times,x_velocities, 'r',label= 'x velocity')    
-#    xlabel('time')
-#    ylabel('Y position')
-#    legend()
-#    title("Flying mosquito")
-#    plt.show()
-#
-#def mozzie_plotter(plotting = False):
-#    if plotting == False:
-#        pass
-#    else:
-#        # Set up a figure
-#        fig = plt.figure(0, figsize=(6,6))
-#        ax = axes3d.Axes3D(fig)
-#        x, y, z = plume.xx, plume.yy, plume.zz
-#        ax.plot_wireframe(x , y , z, rstride=10, cstride=10)
-#        ax.set_xlim3d([0.0, BOX_SIZE[0]])
-#        ax.set_ylim3d([0.0, BOX_SIZE[1]])
-#        ax.set_zlim3d([0.0, BOX_SIZE[2]])
-#        ax.set_xlabel('X')
-#        ax.set_ylabel('Y')
-#        ax.set_zlabel('intensity')
-#        ax.set_title("robomozzie")
-#        plt.show()
 
 
 def timestepper():
@@ -256,4 +243,4 @@ if __name__ == "__main__":
     timestepper()
     plume_plotter(plume, plotting = True)
     eval_neuron_plotter(plotting = True)
-#    agentflightplotter() 
+    mozzie_plotter(plotting = True)
