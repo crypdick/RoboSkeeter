@@ -6,12 +6,12 @@ Created on Fri Oct 24 18:14:50 2014
 
 at each time index:
     generate intensity values x,y,z
+    mosquito moves to it's position in t
     where is mozzie x y t
     intensity at x,y,t
     sensor neuron responds to stimulus.
-        if it fires, saves the spike in [(time_index, 1)] and
+        if it fires, store the spike [(time_index, 1)] and
         amplitude control neuron recompute y_targ
-    mosquito moves.
 
 """
 import numpy as np
@@ -23,8 +23,6 @@ import mpl_toolkits.mplot3d.axes3d as axes3d
 
 flight_dur = 100.0
 timestep = 1.0
-
-BOX_SIZE = (flight_dur,(amplitude_neuron.amplitude_max/2),5.0) 
 
 class Plume(object):
     def __init__(self,):
@@ -75,12 +73,6 @@ class Mozzie(object):
         self.y_velocities = {}
         self.x_velocities = {}
         self.time_prev = 0
-    def where(self, time):
-        """ where the mozzie is right now
-        input: time in seconds
-        output: x,y coords
-        TODO: make real"""
-        return self.loc_curr
     def move(self,time_curr):
         """move the mosquito in a cast, add to location history
         input: time in secs
@@ -96,6 +88,13 @@ class Mozzie(object):
         self.loc_curr = time_curr, y_pos_curr #TODO: make x coord not the time!
         self.time_prev = time_curr
         self.loc_history[time_curr] = self.loc_curr
+    def where(self, time):
+        """ given time, where was the mozzie?
+        input: time in seconds
+        output: x,y coords
+        TODO: make real"""
+        where = self.loc_history[time]
+        return where
     # def _xspeedcalc
 
 def plume_plotter(plume, plotting = False):
@@ -145,6 +144,7 @@ class Neuron(object):
         self.voltage_history = {}
         self.spike_history = {} 
         self.spiketime_index = {}
+        self.time_prev = 0
         #if spiking, return true
 
 class Sensor_neuron(Neuron):     
@@ -165,15 +165,17 @@ class Sensor_neuron(Neuron):
             if voltage_prev > self.spikethresh: #crossing threshold discharges neuron
                 self.voltage_history[time] = 0
                 self.spike_history[time] = 0
+                self.time_prev = time
             else:
                 self.voltage = (1/self.tau_e) * voltage_prev + intensity_now #intensity at this timestep + weighted past intensity
                 self.voltage_history[time] = self.voltage
-                if self.voltage > self.spikethresh:
+                if self.voltage > self.spikethresh: #if spiking
                     self.spike_history[time] = 1
                     self.spiketime_index[time] = 1
+                    self.time_prev = time
                 else:
                     self.spike_history[time] = 0
-            self.time_prev = time
+                    self.time_prev = time        
 
 def eval_neuron_plotter(plotting = False):
     if plotting == False:
@@ -218,27 +220,28 @@ class Amplitude_neuron(Neuron):
         pass
         
 
-
 def timestepper():
-    #TODO: need to move the mozzie at the timestep before it senses
-    # otherise mozzie(where) data doesnt exist yet
     times = np.arange(0, flight_dur, timestep)
     time_indexes = list(enumerate(times))
     for time in time_indexes:
         plume_curr = plume.current_plume(time[1]) #intensity value of plume at this time
+        mozzie.move(time[1])
         loc = mozzie.where(time[1])
         intensity_now = plume.intensity_val(plume_curr,loc)
 #        print sensor_neuron.spiker(time[1], intensity_now)
+#        print sensor_neuron.spiker(time[1], intensity_now)
         if sensor_neuron.spiker(time[1], intensity_now) == True: #if sensor neuron spikes
-            amplitude_neuron(time[1])
-        mozzie.move(time[1])
+            pass
+#            amplitude_neuron(time[1])
+        
             
 
 if __name__ == "__main__":
-    plume = Plume()
     sensor_neuron = Sensor_neuron()
-    amplitude_neuron = Amplitude_neuron()
     mozzie = Mozzie()
+    amplitude_neuron = Amplitude_neuron()
+    BOX_SIZE = (flight_dur,(amplitude_neuron.amplitude_max/2),5.0)
+    plume = Plume()
     timestepper()
     plume_plotter(plume, plotting = True)
     eval_neuron_plotter(plotting = True)
