@@ -214,18 +214,19 @@ class Amplitude_neuron(Neuron):
         self.amplitude_curr = self.amplitude_max
     def y_aimer(self,time):
         """if spike, recompute y_aim"""
-        print "y_aimer time is ", time
+#        print "y_aimer time is ", time
         x_curr, y_curr = mozzie.where(time)
         self.y_aim = y_curr
         self.y_aim_history[time] = self.y_aim
     def y_offsetter(self,time):
-        print self.y_offset_history[self.time_prev], "this is the prev offset"
+#        print self.y_offset_history[self.time_prev], "this is the prev offset"
         self.y_offset_curr = (self.y_aim - self.y_offset_history[self.time_prev]) / self.tau_y
-        print self.y_offset_curr, "new current y_offset!"
+#        print self.y_offset_curr, "new current y_offset!"
         self.y_offset_history[time] = self.y_offset_curr
         self.time_prev = time
     def amplitude_controller(self):
-        """TODO add vwind"""
+        """TODO add vwind
+        constrain mosquito to the box no matter what"""
         pass
         
 
@@ -233,13 +234,11 @@ def timestepper():
     times = np.arange(0, flight_dur, timestep)
     time_indexes = list(enumerate(times))
     for time in time_indexes:
-        print time[1], "time in stepper"
+#        print time[1], "time in stepper"
         plume_curr = plume.current_plume(time[1]) #intensity value of plume at this time
         mozzie.move(time[1])
         loc = mozzie.where(time[1])
         intensity_now = plume.intensity_val(plume_curr,loc)
-#        print sensor_neuron.spiker(time[1], intensity_now)
-#        print sensor_neuron.spiker(time[1], intensity_now)
         if sensor_neuron.spiker(time[1], intensity_now) == "spike!": #if sensor neuron spikes
             amplitude_neuron.y_aimer(time[1])
 #        amplitude_neuron.y_offsetter(time[1])
