@@ -32,7 +32,7 @@ class Plume(object):
         """
         self.res = 100.0      #Split into 100 straight segments
         self.X = np.linspace(0, BOX_SIZE[0], self.res) #X locs of plume
-        self.Y = np.linspace(0, BOX_SIZE[1],self.res) #Y of odor slices
+        self.Y = np.linspace(-1*BOX_SIZE[1], BOX_SIZE[1],self.res) #Y of odor slices
         self.xx, self.yy = np.meshgrid(self.X, self.Y, sparse=True)
     def current_plume(self,curr_time): #uses current time, not index
         """given the timeindex, return plume intensity values
@@ -67,9 +67,9 @@ class Mozzie(object):
     TODO: make agent_pos list where each item is an (x,y) coord
     TODO: make sensor_neuron control agent flight
     """
-    def __init__(self,total_velo_max = 5, total_velo_min = 1, wind_velocity = 0, y_offset_curr = 0, angular_velo = 0.1):
+    def __init__(self,total_velo_max = 6.6, wind_velocity = 0, y_offset_curr = 0, angular_velo = pi / 15):
         self.total_velo_max = total_velo_max
-        self.total_velo_min = total_velo_min
+        self.total_velo_min = total_velo_max / 5
         self.angular_velo = angular_velo
         self.wind_velo = wind_velocity
         self.loc_curr =  0, 0
@@ -111,7 +111,7 @@ def plume_plotter(plume, plotting = False):
         x, y, z = plume.xx, plume.yy, plume.zz
         ax.plot_wireframe(x , y , z, rstride=10, cstride=10)
         ax.set_xlim3d([0.0, BOX_SIZE[0]])
-        ax.set_ylim3d([0.0, BOX_SIZE[1]])
+        ax.set_ylim3d([-1*BOX_SIZE[1], BOX_SIZE[1]])
         ax.set_zlim3d([0.0, BOX_SIZE[2]])
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
@@ -132,8 +132,10 @@ def mozzie_plotter(plotting = False):
         x_velocities_times, x_velocities = mozzie.x_velocities.keys(), mozzie.x_velocities.values()
         #print max(voltages)+5    
         plt.plot(location_times, y, 'k',label= 'agent y_pos over time' )
-        plt.plot(y_velocity_times, y_velocities,'b',label= 'y velocity over t')
+#        plt.plot(y_velocity_times, y_velocities,'b',label= 'y velocity over t')
         plt.plot(x_velocities_times,x_velocities,'r',label= 'x velocity over t')
+        plt.plot(x_velocities_times,len(x_velocities_times)*[BOX_SIZE[1]])
+        plt.plot(x_velocities_times,len(x_velocities_times)*[-1*BOX_SIZE[1]])
         plt.xlabel('time')
         plt.ylabel('Y position')
         plt.legend()
@@ -166,21 +168,18 @@ class Sensor_neuron(Neuron):
             self.time_prev = time
         else:
             voltage_prev = self.voltage_history[self.time_prev]
-            if voltage_prev > self.spikethresh: #crossing threshold discharges neuron
+            if voltage_prev > self.spikethresh: #crossing threshold at prev timestep discharges neuron voltage
                 self.voltage_history[time] = 0
-                self.spike_history[time] = 0
+                self.spike_history[time] = 1
+                self.spiketime_index[time] = 1
                 self.time_prev = time
+                return "spike!"
             else:
+                #updating voltage
                 self.voltage = (1/self.tau_e) * voltage_prev + intensity_now #intensity at this timestep + weighted past intensity
                 self.voltage_history[time] = self.voltage
-                if self.voltage > self.spikethresh: #if spiking
-                    self.spike_history[time] = 1
-                    self.spiketime_index[time] = 1
-                    self.time_prev = time
-                    return "spike!"
-                else:
-                    self.spike_history[time] = 0
-                    self.time_prev = time        
+                self.spike_history[time] = 0
+                self.time_prev = time        
 
 def eval_neuron_plotter(plotting = False):
     if plotting == False:
@@ -204,7 +203,7 @@ class Amplitude_neuron(Neuron):
     """
     def __init__(self):
         self.time_prev = 0.0
-        self.tau_y = 1
+        self.tau_y = 10
         self.y_aim = 0.0
         self.y_aim_history = {0.0:self.y_aim}
         self.y_offset_curr = 0.0
@@ -241,7 +240,7 @@ def timestepper():
         intensity_now = plume.intensity_val(plume_curr,loc)
         if sensor_neuron.spiker(time[1], intensity_now) == "spike!": #if sensor neuron spikes
             amplitude_neuron.y_aimer(time[1])
-#        amplitude_neuron.y_offsetter(time[1])
+        amplitude_neuron.y_offsetter(time[1])
         amplitude_neuron.amplitude_controller()
         
             
@@ -250,7 +249,7 @@ if __name__ == "__main__":
     sensor_neuron = Sensor_neuron()
     mozzie = Mozzie()
     amplitude_neuron = Amplitude_neuron()
-    BOX_SIZE = (flight_dur,(amplitude_neuron.amplitude_max/2),5.0)
+    BOX_SIZE = (flight_dur,(amplitude_neuron.amplitude_max),5.0)
     plume = Plume()
     timestepper()
     plume_plotter(plume, plotting = True)
