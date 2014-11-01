@@ -18,11 +18,13 @@ import numpy as np
 from numpy import pi, sin, cos
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.axes3d as axes3d
+from scipy import spatial
 #from matplotlib import cm
 
 
 flight_dur = 100.0
 timestep = 1.0
+
 
 class Plume(object):
     def __init__(self,):
@@ -33,6 +35,7 @@ class Plume(object):
         self.res = 100.0      #Split into 100 straight segments
         self.X = np.linspace(0, BOX_SIZE[0], self.res) #X locs of plume
         self.Y = np.linspace(-1*BOX_SIZE[1], BOX_SIZE[1],self.res) #Y of odor slices
+#        self.coordinates_list = [(x,y) for x in self.X for y in self.Y]
         self.xx, self.yy = np.meshgrid(self.X, self.Y, sparse=True)
     def current_plume(self,curr_time): #uses current time, not index
         """given the timeindex, return plume intensity values
@@ -40,22 +43,38 @@ class Plume(object):
         input curr_time
         output plume at that frame
         TODO: make vary over time"""
-        self.zz = 0 * (self.xx + self.yy) + 1.1 # odor intensity at x,y, set to 0 everywhere
+        #odor intensity at x,y
+#        self.zz = 0 * (self.xx + self.yy) + 1.1 # PLUME1 set to 1.1 everywhere
+        foo = self.xx + self.yy
+        foo1 = (0 * foo[:len(foo)/2 -10])
+        foo2 = (0 * foo[len(foo)/2 -10:(len(foo)/2 + 20)]+ 3 )
+        foo3 = (0 * foo[len(foo)/2 + 20:])
+        self.zz = np.vstack((foo1,foo2,foo3)) # PLUME2 half 0 half 1.1
+        self.zz = self.zz.ravel()
+        self.plumexyz = [(x,y,z) for x in self.X for y in self.Y for z in self.zz.ravel()]
         plume_curr = self.xx, self.yy, self.zz
         return plume_curr
+#    def find_nearest_intensity(self,loc):
+#        """uses kd tree to find closest intensity coord to a given location
+#        """
+#        mytree = spatial.cKDTree(self.coordinates_list)
+#        dist, index = mytree.query(loc)
+#        return self.coordinates_list[index]
     def intensity_val(self, plume_curr, location):
         """
         given a plume at a certain frame and x,y coords, give intensity at that coord
         input plume, (x,y) coords
         output: plume intensity at x,y
         """
-        x, y = location
-        intensitygrid = plume_curr[2]
+        x, y = self.find_nearest_intensity(location)
+        intensitygrid = plume_curr[2] #THIS IS THE SOURCE OF THE ERROR!
+        print intensitygrid
         try: 
             return intensitygrid[x][y]
         except IndexError:
             print "mozzie sniffing outside the box"
             return 0.0
+
 
 class Mozzie(object):
     """our brave mosquito, moving in 2D
@@ -74,6 +93,7 @@ class Mozzie(object):
         self.wind_velo = wind_velocity
         self.loc_curr =  0, 0
         self.loc_history = {0 : self.loc_curr}
+        self.loc_list = []
         self.y_velocities = {}
         self.x_velocities = {}
         self.time_prev = 0
@@ -92,6 +112,7 @@ class Mozzie(object):
         self.loc_curr = time_curr, y_pos_curr #TODO: make x coord not the time!
         self.time_prev = time_curr
         self.loc_history[time_curr] = self.loc_curr
+        self.loc_list.append(self.loc_curr)
     def where(self, time):
         """ given time, where was the mozzie?
         input: time in seconds
@@ -136,6 +157,9 @@ def mozzie_plotter(plotting = False):
         plt.plot(x_velocities_times,x_velocities,'r',label= 'x velocity over t')
         plt.plot(x_velocities_times,len(x_velocities_times)*[BOX_SIZE[1]])
         plt.plot(x_velocities_times,len(x_velocities_times)*[-1*BOX_SIZE[1]])
+        for spot in sniffspots:
+            plt.scatter(spot[0], spot[1])
+#        plt.scatter[sniffspots]
         plt.xlabel('time')
         plt.ylabel('Y position')
         plt.legend()
@@ -153,7 +177,9 @@ class Neuron(object):
         self.time_prev = 0
         #if spiking, return true
 
-class Sensor_neuron(Neuron):     
+sniffspots = []
+
+class Sensor_neuron(Neuron):
     def spiker(self,time, intensity_now):
         '''evaluator leaky integrate and fire neuron. stimulus intensity -> cellular voltages -> spikes
         input time (sec) and intensity
@@ -172,6 +198,7 @@ class Sensor_neuron(Neuron):
                 self.voltage_history[time] = 0
                 self.spike_history[time] = 1
                 self.spiketime_index[time] = 1
+                sniffspots.append(mozzie.where(time))
                 self.time_prev = time
                 return "spike!"
             else:
@@ -255,3 +282,18 @@ if __name__ == "__main__":
     plume_plotter(plume, plotting = True)
     eval_neuron_plotter(plotting = True)
     mozzie_plotter(plotting = True)
+    
+#####
+    """
+functioning nd array lookup
+    intensity_array = plume.coordinates_list
+    mozzie_path = mozzie.loc_list
+    
+    def do_kdtree(intensity_array, mozzie_path):
+        mytree = spatial.cKDTree(intensity_array)
+        dist, indexes = mytree.query(mozzie_path)
+        return dist, indexes
+        
+    distances, results2 = do_kdtree(intensity_array, mozzie_path)
+    """
+
