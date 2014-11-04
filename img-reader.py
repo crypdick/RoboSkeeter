@@ -5,6 +5,7 @@ Created on Mon Nov  3 15:25:28 2014
 @author: richard
 """
 
+#v1
 #from PIL import Image
 #import numpy as np
 #im=Image.open("vid1-000.png")
@@ -14,10 +15,21 @@ Created on Mon Nov  3 15:25:28 2014
 #with open('out.txt', 'w') as f:
 #    f.write(pixels)
 
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
-import numpy as np
 
-imgasarray=mpimg.imread('vid1-000.png')
-imgasarray.tofile('arrayfile.txt')
-#np.savetxt('test.txt', imgasarray)
+## v2
+#import matplotlib.pyplot as plt
+#import matplotlib.image as mpimg
+#import numpy as np
+#
+#imgasarray=mpimg.imread('vid1-000.png')
+#imgasarray.tofile('arrayfile.txt')
+##np.savetxt('test.txt', imgasarray)
+
+from PIL import Image
+from glob import glob
+import numpy as np
+img =Image.open("vid1-000.png").convert('L')
+img.getpixel((60,0))
+
+for filename in glob('./vid1/*'):
+    print filename

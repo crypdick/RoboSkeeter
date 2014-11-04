@@ -51,7 +51,9 @@ class Plume(object):
         foo3 = (0 * foo[len(foo)/2 + 20:])
         self.zz = np.vstack((foo1,foo2,foo3)) # PLUME2 half 0 half 1.1
         self.zz = self.zz.ravel()
-        self.plumexyz = [(x,y,z) for x in self.X for y in self.Y for z in self.zz.ravel()]
+#        self.plumexyz = [(x,y,z) for x in self.X for y in self.Y for z in self.zz.ravel()]
+        #TODO save 3d array to file so I don't need to recompute every time.
+
         plume_curr = self.xx, self.yy, self.zz
         return plume_curr
 #    def find_nearest_intensity(self,loc):
