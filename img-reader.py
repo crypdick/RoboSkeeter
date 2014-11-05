@@ -14,7 +14,13 @@ from PIL import Image
 
 def pixel_intensity(coord, imgdir): #coord is (x,y)
     img =Image.open(imgdir).convert('L')
+#    print img.getpixel(coord)
     return img.getpixel(coord)
+
+pixel_intensity((0,0), "./example_vids/fullstim.png")
+
+def xycoord2pixcoord(xycoord):
+    pass #need to get y value and take abs value
 
 #img =Image.open("vid1-000.png").convert('L')
 #files = []
