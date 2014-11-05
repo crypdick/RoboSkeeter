@@ -18,17 +18,13 @@ import numpy as np
 from numpy import pi, sin, cos
 from PIL import Image
 import matplotlib.pyplot as plt
-import mpl_toolkits.mplot3d.axes3d as axes3d
-from scipy import spatial
-#from matplotlib import cm
+
 
 
 #==============================================================================
 # TODAYS GOALS 
 #
 # Talk to Sharri about mozzie movement
-# note: mozzie will never not move towards fans
-# re-implement kd tree search
 # 
 #==============================================================================
 
@@ -58,26 +54,34 @@ class Plume(object):
 #        imgdir = "./example_vids/realplume.png"
         img =Image.open(imgdir).convert('L')
         return img
-    def find_nearest_intensity(self,loc):
-        """uses kd tree to find closest intensity coord to a given location
-        given a (x,y) location, return index of nearest intensity value
-        """
-        plumetree = spatial.cKDTree(self.coordinates_list)
-        distance, index = plumetree.query(loc)
-        return self.coordinates_list[index]
+#==============================================================================
+#find nearest intensity. not required for now because getpixel(x,y) already rounds
+#     def find_nearest_intensity(self,loc):
+#         """uses kd tree to find closest intensity coord to a given location
+#         given a (x,y) location, return index of nearest intensity value
+#         """
+#         plumetree = spatial.cKDTree(self.coordinates_list)
+#         distance, index = plumetree.query(loc)
+#         print "xy2PIL", loc, "nearest intensity", self.coordinates_list[index]
+#         return self.coordinates_list[index]
+#==============================================================================
     def coord2PILarray(self,xycoords):
         """takes coords in our standard x,y coord system and returns them
         in the coordinate system for the PIL package"""
         x, y = xycoords
         y = abs(y - BOX_SIZE[1]) #correcting for the coordinate axis of the PIL array
-        return x, y
+#==============================================================================
+#        ##not needed until we use kd trees
+#         nearest_x, nearest_y = self.find_nearest_intensity((x,y))
+#         return nearest_x, nearest_y
+#==============================================================================
+        return x,y
     def intensity_val(self,plume_curr,coord):
         """given a plume img and a coord, returns the intensity value at that pixel
         converts coordinate axis to the corresponding one on the PIL array first
         """
         x,y = self.coord2PILarray(coord)
         try: 
-             #print plume_curr.getpixel(coord)  
              return plume_curr.getpixel((x,y))  
         except IndexError:
              print "mozzie sniffing outside the box"
@@ -136,50 +140,40 @@ def plume_plotter(plume, plotting = False):
          pass
      else:
          debugplume.show()
-#         # Set up a figure
-#         fig = plt.figure(0, figsize=(6,6))
-#         ax = axes3d.Axes3D(fig)
-#         x, y, z = plume.xx, plume.yy, plume.zz
-#         ax.plot_wireframe(x , y , z, rstride=10, cstride=10)
-#         ax.set_xlim3d([0.0, BOX_SIZE[0]])
-#         ax.set_ylim3d([-1*BOX_SIZE[1], BOX_SIZE[1]])
-#         ax.set_zlim3d([0.0, BOX_SIZE[2]])
-#         ax.set_xlabel('X')
-#         ax.set_ylabel('Y')
-#         ax.set_zlabel('intensity')
-#         ax.set_title("plume intensity in space")
-#        plt.show()
 
 def mozzie_plotter(plotting = False):
     if plotting == False:
         pass
     else:
-        # Set up a figure
         fig = plt.figure(1, figsize=(6,6))
+        plt.xlabel('time')
+        plt.ylabel('Y position')
+        plt.legend()
+        plt.title("Flying mosquito")  
+        
+        #plot the mozzie
         location_times, locations = mozzie.loc_history.keys(), mozzie.loc_history.values()
         x = [float(xycoord[0]) for xycoord in mozzie.loc_history.values() ] #THIS IS CURRENTLY TIME!!
         y = [float(xycoord[1]) for xycoord in mozzie.loc_history.values() ]
-        y_velocity_times, y_velocities = mozzie.y_velocities.keys(), mozzie.y_velocities.values()
-        x_velocities_times, x_velocities = mozzie.x_velocities.keys(), mozzie.x_velocities.values()
         plt.plot(x, y, 'k',label= 'agent y_pos over time' )
-#        plt.plot(y_velocity_times, y_velocities,'b',label= 'y velocity over t')
-#        plt.plot(x_velocities_times,x_velocities,'r',label= 'x velocity over t')
         
-        #plot boundaries
-        plt.plot(x_velocities_times,len(x_velocities_times)*[BOX_SIZE[1]])
-        plt.plot(x_velocities_times,len(x_velocities_times)*[0])
+        #plot box boundaries
+        plt.plot(location_times,len(location_times)*[BOX_SIZE[1]])
+        plt.plot(location_times,len(location_times)*[0])
         
         #Plot sniff spots
         try: 
              sniffx, sniffy = zip(*sniffspots)
              plt.scatter(sniffx, sniffy,color='orange', marker="^")  
         except ValueError: #if no sniffs, no sniff scatterplot
-             pass       
-
-        plt.xlabel('time')
-        plt.ylabel('Y position')
-        plt.legend()
-        plt.title("Flying mosquito")   
+             pass  
+        
+        #plot velocity calculations
+#        y_velocity_times, y_velocities = mozzie.y_velocities.keys(), mozzie.y_velocities.values()
+#        x_velocities_times, x_velocities = mozzie.x_velocities.keys(), mozzie.x_velocities.values()
+#        plt.plot(y_velocity_times, y_velocities,'b',label= 'y velocity over t')
+#        plt.plot(x_velocities_times,x_velocities,'r',label= 'x velocity over t')
+        
         plt.show()
 
 
@@ -299,8 +293,8 @@ if __name__ == "__main__":
     
 #==============================================================================
 #     FOR DEBUGGING
-    debugplume = plume.current_plume(0) 
-    plume_plotter(debugplume, plotting = True)
+#    debugplume = plume.current_plume(0) 
+#    plume_plotter(debugplume, plotting = True)
 #     
 #     
 # #==============================================================================
