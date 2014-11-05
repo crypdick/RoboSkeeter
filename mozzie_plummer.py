@@ -22,6 +22,19 @@ from scipy import spatial
 #from matplotlib import cm
 
 
+#==============================================================================
+# TODAYS GOALS 
+#
+# Make axis hacks for intensity videos
+# Talk to Sharri about mozzie movement
+# re-implement kd tree search
+# 
+#==============================================================================
+
+
+
+
+
 flight_dur = 100.0
 timestep = 1.0
 
@@ -37,51 +50,37 @@ class Plume(object):
         self.Y = np.linspace(0, BOX_SIZE[1],self.res) #Y of odor slices
 #        self.coordinates_list = [(x,y) for x in self.X for y in self.Y]
         self.xx, self.yy = np.meshgrid(self.X, self.Y, sparse=True)
-#    def current_plume_OLD(self,curr_time): #uses current time, not index
-#        """given the timeindex, return plume intensity values
-#        currently always returns 0
-#        input curr_time
-#        output plume at that frame
-#        TODO: make vary over time"""
-#        #odor intensity at x,y
-##        self.zz = 0 * (self.xx + self.yy) + 1.1 # PLUME1 set to 1.1 everywhere
-#        foo = self.xx + self.yy
-#        foo1 = (0 * foo[:len(foo)/2 -10])
-#        foo2 = (0 * foo[len(foo)/2 -10:(len(foo)/2 + 20)]+ 3 )
-#        foo3 = (0 * foo[len(foo)/2 + 20:])
-#        self.zz = np.vstack((foo1,foo2,foo3)) # PLUME2 half 0 half 1.1
-#        self.zz = self.zz.ravel()
-##        self.plumexyz = [(x,y,z) for x in self.X for y in self.Y for z in self.zz.ravel()]
-#        #TODO save 3d array to file so I don't need to recompute every time.
-#
-#        plume_curr = self.xx, self.yy, self.zz
-#        return plume_curr
     def current_plume(self, curr_time):
         imgdir = "./example_vids/fullstim.png"
         img =Image.open(imgdir).convert('L')
         return img
 #    def find_nearest_intensity(self,loc):
+        #TODO: match with coords in picture
 #        """uses kd tree to find closest intensity coord to a given location
 #        """
 #        mytree = spatial.cKDTree(self.coordinates_list)
 #        dist, index = mytree.query(loc)
 #        return self.coordinates_list[index]
     def intensity_val(self,plume_curr,coord):
+            x, y = coord
+            y = abs(y - 210) #correcting for the coordinate axis of the PIL array
             return plume_curr.getpixel(coord)  
-    def intensity_valOLD(self, plume_curr, location):
-        """
-        given a plume at a certain frame and x,y coords, give intensity at that coord
-        input plume, (x,y) coords
-        output: plume intensity at x,y
-        """
-        x, y = self.find_nearest_intensity(location)
-        intensitygrid = plume_curr[2] #THIS IS THE SOURCE OF THE ERROR!
-        print intensitygrid
-        try: 
-            return intensitygrid[x][y]
-        except IndexError:
-            print "mozzie sniffing outside the box"
-            return 0.0
+#==============================================================================
+#     def intensity_valOLD(self, plume_curr, location):
+#         """
+#         given a plume at a certain frame and x,y coords, give intensity at that coord
+#         input plume, (x,y) coords
+#         output: plume intensity at x,y
+#         """
+#         x, y = self.find_nearest_intensity(location)
+#         intensitygrid = plume_curr[2] #THIS IS THE SOURCE OF THE ERROR!
+#         print intensitygrid
+#         try: 
+#             return intensitygrid[x][y]
+#         except IndexError:
+#             print "mozzie sniffing outside the box"
+#             return 0.0
+#==============================================================================
 
 
 class Mozzie(object):
@@ -130,25 +129,28 @@ class Mozzie(object):
         return where
     # def _xspeedcalc
 
-#def plume_plotter(plume, plotting = False):
-#    if plotting == False:
-#        pass
-#    else:
-#        # Set up a figure
-#        fig = plt.figure(0, figsize=(6,6))
-#        ax = axes3d.Axes3D(fig)
-#        x, y, z = plume.xx, plume.yy, plume.zz
-#        ax.plot_wireframe(x , y , z, rstride=10, cstride=10)
-#        ax.set_xlim3d([0.0, BOX_SIZE[0]])
-#        ax.set_ylim3d([-1*BOX_SIZE[1], BOX_SIZE[1]])
-#        ax.set_zlim3d([0.0, BOX_SIZE[2]])
-#        ax.set_xlabel('X')
-#        ax.set_ylabel('Y')
-#        ax.set_zlabel('intensity')
-#        ax.set_title("plume intensity in space")
+#==============================================================================
+# #def plume_plotter(plume, plotting = False):
+# #    if plotting == False:
+# #        pass
+# #    else:
+# #        # Set up a figure
+# #        fig = plt.figure(0, figsize=(6,6))
+# #        ax = axes3d.Axes3D(fig)
+# #        x, y, z = plume.xx, plume.yy, plume.zz
+# #        ax.plot_wireframe(x , y , z, rstride=10, cstride=10)
+# #        ax.set_xlim3d([0.0, BOX_SIZE[0]])
+# #        ax.set_ylim3d([-1*BOX_SIZE[1], BOX_SIZE[1]])
+# #        ax.set_zlim3d([0.0, BOX_SIZE[2]])
+# #        ax.set_xlabel('X')
+# #        ax.set_ylabel('Y')
+# #        ax.set_zlabel('intensity')
+# #        ax.set_title("plume intensity in space")
 #        plt.show()
+#==============================================================================
 
 def mozzie_plotter(plotting = False):
+    # TODO: add half the height to plot it in the right hemisphere
     if plotting == False:
         pass
     else:
@@ -272,11 +274,12 @@ def timestepper():
         plume_curr = plume.current_plume(time[1]) #intensity value of plume at this time
         mozzie.move(time[1])
         loc = mozzie.where(time[1])
-        intensity_now = plume.intensity_val(plume_curr,loc)
-        if sensor_neuron.spiker(time[1], intensity_now) == "spike!": #if sensor neuron spikes
-            amplitude_neuron.y_aimer(time[1])
-        amplitude_neuron.y_offsetter(time[1])
-        amplitude_neuron.amplitude_controller()
+        print loc
+#        intensity_now = plume.intensity_val(plume_curr,loc)
+#        if sensor_neuron.spiker(time[1], intensity_now) == "spike!": #if sensor neuron spikes
+#            amplitude_neuron.y_aimer(time[1])
+#        amplitude_neuron.y_offsetter(time[1])
+#        amplitude_neuron.amplitude_controller()
         
             
 
@@ -291,17 +294,16 @@ if __name__ == "__main__":
     eval_neuron_plotter(plotting = True)
     mozzie_plotter(plotting = True)
     
-#####
-    """
-functioning nd array lookup
-    intensity_array = plume.coordinates_list
-    mozzie_path = mozzie.loc_list
-    
-    def do_kdtree(intensity_array, mozzie_path):
-        mytree = spatial.cKDTree(intensity_array)
-        dist, indexes = mytree.query(mozzie_path)
-        return dist, indexes
-        
-    distances, results2 = do_kdtree(intensity_array, mozzie_path)
-    """
-
+#==============================================================================
+#     
+# functioning nd array lookup
+#     intensity_array = plume.coordinates_list
+#     mozzie_path = mozzie.loc_list
+#     
+#     def do_kdtree(intensity_array, mozzie_path):
+#         mytree = spatial.cKDTree(intensity_array)
+#         dist, indexes = mytree.query(mozzie_path)
+#         return dist, indexes
+#         
+#     distances, results2 = do_kdtree(intensity_array, mozzie_path)
+#==============================================================================

@@ -35,7 +35,7 @@ class Plume(object):
         self.res = 100.0      #Split into 100 straight segments
         self.X = np.linspace(0, BOX_SIZE[0], self.res) #X locs of plume
         self.Y = np.linspace(-1*BOX_SIZE[1], BOX_SIZE[1],self.res) #Y of odor slices
-#        self.coordinates_list = [(x,y) for x in self.X for y in self.Y]
+        self.coordinates_list = [(x,y) for x in self.X for y in self.Y]
         self.xx, self.yy = np.meshgrid(self.X, self.Y, sparse=True)
     def current_plume(self,curr_time): #uses current time, not index
         """given the timeindex, return plume intensity values
@@ -44,24 +44,27 @@ class Plume(object):
         output plume at that frame
         TODO: make vary over time"""
         #odor intensity at x,y
-#        self.zz = 0 * (self.xx + self.yy) + 1.1 # PLUME1 set to 1.1 everywhere
-        foo = self.xx + self.yy
-        foo1 = (0 * foo[:len(foo)/2 -10])
-        foo2 = (0 * foo[len(foo)/2 -10:(len(foo)/2 + 20)]+ 3 )
-        foo3 = (0 * foo[len(foo)/2 + 20:])
-        self.zz = np.vstack((foo1,foo2,foo3)) # PLUME2 half 0 half 1.1
-        self.zz = self.zz.ravel()
-#        self.plumexyz = [(x,y,z) for x in self.X for y in self.Y for z in self.zz.ravel()]
+        self.zz = 0 * (self.xx + self.yy) + 1.1 # PLUME1 set to 1.1 everywhere
+#==============================================================================
+# # un-uniform plume      
+#         foo = self.xx + self.yy
+#         foo1 = (0 * foo[:len(foo)/2 -10])
+#         foo2 = (0 * foo[len(foo)/2 -10:(len(foo)/2 + 20)]+ 3 )
+#         foo3 = (0 * foo[len(foo)/2 + 20:])
+#         self.zz = np.vstack((foo1,foo2,foo3)) # PLUME2 half 0 half 1.1
+#         self.zz = self.zz.ravel()
+        #        self.plumexyz = [(x,y,z) for x in self.X for y in self.Y for z in self.zz.ravel()]
         #TODO save 3d array to file so I don't need to recompute every time.
 
+#==============================================================================
         plume_curr = self.xx, self.yy, self.zz
         return plume_curr
-#    def find_nearest_intensity(self,loc):
-#        """uses kd tree to find closest intensity coord to a given location
-#        """
-#        mytree = spatial.cKDTree(self.coordinates_list)
-#        dist, index = mytree.query(loc)
-#        return self.coordinates_list[index]
+    def find_nearest_intensity(self,loc):
+        """uses kd tree to find closest intensity coord to a given location
+        """
+        mytree = spatial.cKDTree(self.coordinates_list)
+        dist, index = mytree.query(loc)
+        return self.coordinates_list[index]
     def intensity_val(self, plume_curr, location):
         """
         given a plume at a certain frame and x,y coords, give intensity at that coord
@@ -70,7 +73,6 @@ class Plume(object):
         """
         x, y = self.find_nearest_intensity(location)
         intensitygrid = plume_curr[2] #THIS IS THE SOURCE OF THE ERROR!
-        print intensitygrid
         try: 
             return intensitygrid[x][y]
         except IndexError:
