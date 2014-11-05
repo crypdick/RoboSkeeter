@@ -16,6 +16,7 @@ at each time index:
 """
 import numpy as np
 from numpy import pi, sin, cos
+from PIL import Image
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.axes3d as axes3d
 from scipy import spatial
@@ -37,6 +38,7 @@ from scipy import spatial
 
 flight_dur = 100.0
 timestep = 1.0
+sniffspots = []
 
 
 class Plume(object):
@@ -45,12 +47,12 @@ class Plume(object):
         Currenty 0 everywhere at all timesteps
         TODO: feed plume a time parameter, which then calcs all the intensities 
         """
-        self.res = 100.0      #Split into 100 straight segments
-        self.X = np.linspace(0, BOX_SIZE[0], self.res) #X locs of plume
-        self.Y = np.linspace(0, BOX_SIZE[1],self.res) #Y of odor slices
+        self.X = range(0, BOX_SIZE[0]) #X locs of plume
+        self.Y = range(0, BOX_SIZE[1]) #Y of odor slices
 #        self.coordinates_list = [(x,y) for x in self.X for y in self.Y]
         self.xx, self.yy = np.meshgrid(self.X, self.Y, sparse=True)
     def current_plume(self, curr_time):
+        #TODO: use curr_time
         imgdir = "./example_vids/fullstim.png"
         img =Image.open(imgdir).convert('L')
         return img
@@ -62,26 +64,18 @@ class Plume(object):
 #        dist, index = mytree.query(loc)
 #        return self.coordinates_list[index]
     def intensity_val(self,plume_curr,coord):
-            x, y = coord
-            y = abs(y - 210) #correcting for the coordinate axis of the PIL array
-            return plume_curr.getpixel(coord)  
-#==============================================================================
-#     def intensity_valOLD(self, plume_curr, location):
-#         """
-#         given a plume at a certain frame and x,y coords, give intensity at that coord
-#         input plume, (x,y) coords
-#         output: plume intensity at x,y
-#         """
-#         x, y = self.find_nearest_intensity(location)
-#         intensitygrid = plume_curr[2] #THIS IS THE SOURCE OF THE ERROR!
-#         print intensitygrid
-#         try: 
-#             return intensitygrid[x][y]
-#         except IndexError:
-#             print "mozzie sniffing outside the box"
-#             return 0.0
-#==============================================================================
-
+        """given a plume img and a coord, returns the intensity value at that pixel
+        converts coordinate axis to the corresponding one on the PIL array first
+        """
+        x, y = coord
+        y = abs(y - BOX_SIZE[1]/2) #correcting for the coordinate axis of the PIL array
+        try: 
+             #print plume_curr.getpixel(coord)  
+             return plume_curr.getpixel(coord)  
+        except IndexError:
+             print "mozzie sniffing outside the box"
+             return 0.0
+        
 
 class Mozzie(object):
     """our brave mosquito, moving in 2D
@@ -150,26 +144,30 @@ class Mozzie(object):
 #==============================================================================
 
 def mozzie_plotter(plotting = False):
-    # TODO: add half the height to plot it in the right hemisphere
     if plotting == False:
         pass
     else:
         # Set up a figure
         fig = plt.figure(1, figsize=(6,6))
         location_times, locations = mozzie.loc_history.keys(), mozzie.loc_history.values()
-        #x = [float(xycoord[0]) for xycoord in mozzie.loc_history.values() ] #don't need this since x is just = locationtimes
+        x = [float(xycoord[0]) for xycoord in mozzie.loc_history.values() ] #THIS IS CURRENTLY TIME
         y = [float(xycoord[1]) for xycoord in mozzie.loc_history.values() ]
+        y = [ val + BOX_SIZE[1]/2 for val in y] #HACK: shifting up in coords to match the pixels in the videos
         y_velocity_times, y_velocities = mozzie.y_velocities.keys(), mozzie.y_velocities.values()
         x_velocities_times, x_velocities = mozzie.x_velocities.keys(), mozzie.x_velocities.values()
         #print max(voltages)+5    
-        plt.plot(location_times, y, 'k',label= 'agent y_pos over time' )
+        plt.plot(x, y, 'k',label= 'agent y_pos over time' )
 #        plt.plot(y_velocity_times, y_velocities,'b',label= 'y velocity over t')
         plt.plot(x_velocities_times,x_velocities,'r',label= 'x velocity over t')
         plt.plot(x_velocities_times,len(x_velocities_times)*[BOX_SIZE[1]])
         plt.plot(x_velocities_times,len(x_velocities_times)*[-1*BOX_SIZE[1]])
-        for spot in sniffspots:
-            plt.scatter(spot[0], spot[1])
-#        plt.scatter[sniffspots]
+        
+        #Plot sniff spots
+        sniffx, sniffy = zip(*sniffspots)
+        sniffy = [ val + BOX_SIZE[1]/2 for val in sniffy] #Hacking the coords up to natch the curve
+        plt.scatter(sniffx, sniffy)
+        
+
         plt.xlabel('time')
         plt.ylabel('Y position')
         plt.legend()
@@ -186,8 +184,6 @@ class Neuron(object):
         self.spiketime_index = {}
         self.time_prev = 0
         #if spiking, return true
-
-sniffspots = []
 
 class Sensor_neuron(Neuron):
     def spiker(self,time, intensity_now):
@@ -274,12 +270,11 @@ def timestepper():
         plume_curr = plume.current_plume(time[1]) #intensity value of plume at this time
         mozzie.move(time[1])
         loc = mozzie.where(time[1])
-        print loc
-#        intensity_now = plume.intensity_val(plume_curr,loc)
-#        if sensor_neuron.spiker(time[1], intensity_now) == "spike!": #if sensor neuron spikes
-#            amplitude_neuron.y_aimer(time[1])
-#        amplitude_neuron.y_offsetter(time[1])
-#        amplitude_neuron.amplitude_controller()
+        intensity_now = plume.intensity_val(plume_curr,loc)
+        if sensor_neuron.spiker(time[1], intensity_now) == "spike!": #if sensor neuron spikes
+            amplitude_neuron.y_aimer(time[1])
+        amplitude_neuron.y_offsetter(time[1])
+        amplitude_neuron.amplitude_controller()
         
             
 
