@@ -61,9 +61,10 @@ class Plume(object):
         return plume_curr
     def find_nearest_intensity(self,loc):
         """uses kd tree to find closest intensity coord to a given location
+        given a (x,y) location, return index of nearest intensity value
         """
-        mytree = spatial.cKDTree(self.coordinates_list)
-        dist, index = mytree.query(loc)
+        plumetree = spatial.cKDTree(self.coordinates_list)
+        distance, index = plumetree.query(loc)
         return self.coordinates_list[index]
     def intensity_val(self, plume_curr, location):
         """

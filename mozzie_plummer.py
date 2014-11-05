@@ -26,17 +26,14 @@ from scipy import spatial
 #==============================================================================
 # TODAYS GOALS 
 #
-# Make axis hacks for intensity videos
 # Talk to Sharri about mozzie movement
+# note: mozzie will never not move towards fans
 # re-implement kd tree search
 # 
 #==============================================================================
 
 
-
-
-
-flight_dur = 100.0
+flight_dur = 720.0
 timestep = 1.0
 sniffspots = []
 
@@ -49,29 +46,39 @@ class Plume(object):
         """
         self.X = range(0, BOX_SIZE[0]) #X locs of plume
         self.Y = range(0, BOX_SIZE[1]) #Y of odor slices
-#        self.coordinates_list = [(x,y) for x in self.X for y in self.Y]
-        self.xx, self.yy = np.meshgrid(self.X, self.Y, sparse=True)
+        self.coordinates_list = [(x,y) for x in self.X for y in self.Y]
     def current_plume(self, curr_time):
         #TODO: use curr_time
-        imgdir = "./example_vids/fullstim.png"
+#        imgdir = "./example_vids/fullstim.png"
+#        imgdir = "./example_vids/nostim.png"
+        imgdir = "./example_vids/diagplume.png"
+#        imgdir = "./example_vids/topplume.png" #boring
+#        imgdir = "./example_vids/midplume.png" #boring
+#        imgdir = "./example_vids/gaussian.png"
+#        imgdir = "./example_vids/realplume.png"
         img =Image.open(imgdir).convert('L')
         return img
-#    def find_nearest_intensity(self,loc):
-        #TODO: match with coords in picture
-#        """uses kd tree to find closest intensity coord to a given location
-#        """
-#        mytree = spatial.cKDTree(self.coordinates_list)
-#        dist, index = mytree.query(loc)
-#        return self.coordinates_list[index]
+    def find_nearest_intensity(self,loc):
+        """uses kd tree to find closest intensity coord to a given location
+        given a (x,y) location, return index of nearest intensity value
+        """
+        plumetree = spatial.cKDTree(self.coordinates_list)
+        distance, index = plumetree.query(loc)
+        return self.coordinates_list[index]
+    def coord2PILarray(self,xycoords):
+        """takes coords in our standard x,y coord system and returns them
+        in the coordinate system for the PIL package"""
+        x, y = xycoords
+        y = abs(y - BOX_SIZE[1]) #correcting for the coordinate axis of the PIL array
+        return x, y
     def intensity_val(self,plume_curr,coord):
         """given a plume img and a coord, returns the intensity value at that pixel
         converts coordinate axis to the corresponding one on the PIL array first
         """
-        x, y = coord
-        y = abs(y - BOX_SIZE[1]/2) #correcting for the coordinate axis of the PIL array
+        x,y = self.coord2PILarray(coord)
         try: 
              #print plume_curr.getpixel(coord)  
-             return plume_curr.getpixel(coord)  
+             return plume_curr.getpixel((x,y))  
         except IndexError:
              print "mozzie sniffing outside the box"
              return 0.0
@@ -87,12 +94,12 @@ class Mozzie(object):
     TODO: make agent_pos list where each item is an (x,y) coord
     TODO: make sensor_neuron control agent flight
     """
-    def __init__(self,total_velo_max = 6.6, wind_velocity = 0, y_offset_curr = 0, angular_velo = pi / 15):
+    def __init__(self,total_velo_max = 20, wind_velocity = 0, y_offset_curr = 0, angular_velo = pi / 15): #total velo max originally set to 6.6
         self.total_velo_max = total_velo_max
         self.total_velo_min = total_velo_max / 5
         self.angular_velo = angular_velo
         self.wind_velo = wind_velocity
-        self.loc_curr =  0, 0
+        self.loc_curr =  0, BOX_SIZE[1]/2
         self.loc_history = {0 : self.loc_curr}
         self.loc_list = []
         self.y_velocities = {}
@@ -104,8 +111,8 @@ class Mozzie(object):
         output: none (location history updates)
         TODO: put in sin equations
         """
-        y_pos_curr = amplitude_neuron.amplitude_curr * sin (self.angular_velo * time_curr) + amplitude_neuron.y_offset_curr
-        crap, y_pos_prev = self.loc_history[self.time_prev]
+        y_pos_curr = amplitude_neuron.amplitude_curr * sin (self.angular_velo * time_curr) + amplitude_neuron.y_offset_curr + BOX_SIZE[1]/2 #BOXSIZE to convert to the standard coordinate axis
+        garbage, y_pos_prev = self.loc_history[self.time_prev] #we only want the second value
         y_velocity_curr = (y_pos_curr - y_pos_prev) / timestep
         self.y_velocities[time_curr] = y_velocity_curr
 #        ## TODO: make x_velocities as in Sharri's
@@ -123,25 +130,25 @@ class Mozzie(object):
         return where
     # def _xspeedcalc
 
-#==============================================================================
-# #def plume_plotter(plume, plotting = False):
-# #    if plotting == False:
-# #        pass
-# #    else:
-# #        # Set up a figure
-# #        fig = plt.figure(0, figsize=(6,6))
-# #        ax = axes3d.Axes3D(fig)
-# #        x, y, z = plume.xx, plume.yy, plume.zz
-# #        ax.plot_wireframe(x , y , z, rstride=10, cstride=10)
-# #        ax.set_xlim3d([0.0, BOX_SIZE[0]])
-# #        ax.set_ylim3d([-1*BOX_SIZE[1], BOX_SIZE[1]])
-# #        ax.set_zlim3d([0.0, BOX_SIZE[2]])
-# #        ax.set_xlabel('X')
-# #        ax.set_ylabel('Y')
-# #        ax.set_zlabel('intensity')
-# #        ax.set_title("plume intensity in space")
+
+def plume_plotter(plume, plotting = False):
+     if plotting == False:
+         pass
+     else:
+         debugplume.show()
+#         # Set up a figure
+#         fig = plt.figure(0, figsize=(6,6))
+#         ax = axes3d.Axes3D(fig)
+#         x, y, z = plume.xx, plume.yy, plume.zz
+#         ax.plot_wireframe(x , y , z, rstride=10, cstride=10)
+#         ax.set_xlim3d([0.0, BOX_SIZE[0]])
+#         ax.set_ylim3d([-1*BOX_SIZE[1], BOX_SIZE[1]])
+#         ax.set_zlim3d([0.0, BOX_SIZE[2]])
+#         ax.set_xlabel('X')
+#         ax.set_ylabel('Y')
+#         ax.set_zlabel('intensity')
+#         ax.set_title("plume intensity in space")
 #        plt.show()
-#==============================================================================
 
 def mozzie_plotter(plotting = False):
     if plotting == False:
@@ -150,23 +157,24 @@ def mozzie_plotter(plotting = False):
         # Set up a figure
         fig = plt.figure(1, figsize=(6,6))
         location_times, locations = mozzie.loc_history.keys(), mozzie.loc_history.values()
-        x = [float(xycoord[0]) for xycoord in mozzie.loc_history.values() ] #THIS IS CURRENTLY TIME
+        x = [float(xycoord[0]) for xycoord in mozzie.loc_history.values() ] #THIS IS CURRENTLY TIME!!
         y = [float(xycoord[1]) for xycoord in mozzie.loc_history.values() ]
-        y = [ val + BOX_SIZE[1]/2 for val in y] #HACK: shifting up in coords to match the pixels in the videos
         y_velocity_times, y_velocities = mozzie.y_velocities.keys(), mozzie.y_velocities.values()
         x_velocities_times, x_velocities = mozzie.x_velocities.keys(), mozzie.x_velocities.values()
-        #print max(voltages)+5    
         plt.plot(x, y, 'k',label= 'agent y_pos over time' )
 #        plt.plot(y_velocity_times, y_velocities,'b',label= 'y velocity over t')
-        plt.plot(x_velocities_times,x_velocities,'r',label= 'x velocity over t')
+#        plt.plot(x_velocities_times,x_velocities,'r',label= 'x velocity over t')
+        
+        #plot boundaries
         plt.plot(x_velocities_times,len(x_velocities_times)*[BOX_SIZE[1]])
-        plt.plot(x_velocities_times,len(x_velocities_times)*[-1*BOX_SIZE[1]])
+        plt.plot(x_velocities_times,len(x_velocities_times)*[0])
         
         #Plot sniff spots
-        sniffx, sniffy = zip(*sniffspots)
-        sniffy = [ val + BOX_SIZE[1]/2 for val in sniffy] #Hacking the coords up to natch the curve
-        plt.scatter(sniffx, sniffy)
-        
+        try: 
+             sniffx, sniffy = zip(*sniffspots)
+             plt.scatter(sniffx, sniffy,color='orange', marker="^")  
+        except ValueError: #if no sniffs, no sniff scatterplot
+             pass       
 
         plt.xlabel('time')
         plt.ylabel('Y position')
@@ -176,7 +184,7 @@ def mozzie_plotter(plotting = False):
 
 
 class Neuron(object):
-    def __init__(self, tau_e = 1.2, spikethresh = 3.0):
+    def __init__(self, tau_e = 1.2, spikethresh = 100.0):
         self.spikethresh = spikethresh
         self.tau_e = tau_e
         self.voltage_history = {}
@@ -288,6 +296,20 @@ if __name__ == "__main__":
 #    plume_plotter(plume, plotting = True)
     eval_neuron_plotter(plotting = True)
     mozzie_plotter(plotting = True)
+    
+#==============================================================================
+#     FOR DEBUGGING
+    debugplume = plume.current_plume(0) 
+    plume_plotter(debugplume, plotting = True)
+#     
+#     
+# #==============================================================================
+# #     example debug commands
+# #     print plume.intensity_val(debugplume,(0,0))
+# #     
+# #==============================================================================
+#==============================================================================
+    
     
 #==============================================================================
 #     
