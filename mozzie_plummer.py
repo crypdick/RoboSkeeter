@@ -27,11 +27,6 @@ import matplotlib.pyplot as plt
 #==============================================================================
 
 
-flight_dur = 550.0 #make 720
-timestep = 1.0
-sniffspots = [] #this will be used later to scatterplot the locations where the eval neuron spiked
-
-
 class Plume(object):
     def __init__(self,):
         """Our odor plume in x,y, z
@@ -50,22 +45,22 @@ class Plume(object):
 #======= DEBUGGING/STATIC SAMPLE PLUMES ======================================
 #        imgdir = "./example_vids/fullstim.png"
 #        imgdir = "./example_vids/nostim.png"
-#        imgdir = "./example_vids/diagplume.png"
+        imgdir = "./example_vids/diagplume.png"
 #        imgdir = "./example_vids/topplume.png" #boring
 #        imgdir = "./example_vids/midplume.png" #boring
 #        imgdir = "./example_vids/gaussian.png"
 #        imgdir = "./example_vids/realplume.png"
-#        img =Image.open(imgdir).convert('L')
-#        return img
+        img =Image.open(imgdir).convert('L')
+        return img
 #========Moving plume===========================================  
-        try:
-            img = Image.open(self.plumefiles[curr_time_index]).convert('L')
-        except IndexError:
-            print """Flight duration set longer than available plume movie! Stopping
-            loop at timestep %s""" % curr_time_index
-            return None
-        else:
-            return img
+#        try:
+#            img = Image.open(self.plumefiles[curr_time_index]).convert('L')
+#        except IndexError:
+#            print """Flight duration set longer than available plume movie! Stopping
+#            loop at timestep %s""" % curr_time_index
+#            return None
+#        else:
+#            return img
         
 #==============================================================================
 #find nearest intensity. not required for now because getpixel(x,y) already rounds
@@ -104,7 +99,7 @@ class Plume(object):
 
 class Mozzie(object):
     """our brave mosquito, moving in 2D
-    input: total_velo_max, total_velo_min, wind_velo, y_offset_curr, angular_velo, flight_dur, timestep
+    input: total_velo_max, total_velo_min, wind_velo, y_offset_curr, angular_velo, flight_dur, timestep_size
     output: times, agent_y_pos, x_velocities, y_velocities 
     TODO: make sensor_neuron control agent flight
     """
@@ -128,10 +123,10 @@ class Mozzie(object):
         """
         y_pos_curr = amplitude_neuron.amplitude_curr * sin (self.angular_velo * time_curr) + amplitude_neuron.y_offset_curr + BOX_SIZE[1]/2 #BOXSIZE to convert to the standard coordinate axis
         garbage, y_pos_prev = self.loc_history[self.time_prev] #we only want the second value
-        y_velocity_curr = (y_pos_curr - y_pos_prev) / timestep
+        y_velocity_curr = (y_pos_curr - y_pos_prev) / timestep_size
         self.y_velocities[time_curr] = y_velocity_curr
 #        ## TODO: make x_velocities as in Sharri's
-        self.x_velocities[time_curr] = (time_curr - self.time_prev)/ timestep
+        self.x_velocities[time_curr] = (time_curr - self.time_prev)/ timestep_size
         self.loc_curr = time_curr, y_pos_curr #TODO: make x coord not the time!
         self.time_prev = time_curr
         self.loc_history[time_curr] = self.loc_curr
@@ -157,7 +152,6 @@ def mozzie_plotter(plotting = False):
         fig = plt.figure(1, figsize=(6,6))
         plt.xlabel('time')
         plt.ylabel('Y position')
-        plt.legend()
         plt.title("Flying mosquito")  
         
         #plot the mozzie
@@ -173,7 +167,7 @@ def mozzie_plotter(plotting = False):
         #Plot sniff spots
         try: 
              sniffx, sniffy = zip(*sniffspots)
-             plt.scatter(sniffx, sniffy,color='orange', marker="^")  
+             plt.scatter(sniffx, sniffy,color='orange', marker="^", label='spike locations')  
         except ValueError: #if no sniffs, no sniff scatterplot
              pass  
         
@@ -183,6 +177,7 @@ def mozzie_plotter(plotting = False):
 #        plt.plot(y_velocity_times, y_velocities,'b',label= 'y velocity over t')
 #        plt.plot(x_velocities_times,x_velocities,'r',label= 'x velocity over t')
         
+        plt.legend()
         plt.show()
 
 
@@ -233,7 +228,6 @@ def eval_neuron_plotter(plotting = False):
         fig = plt.figure(2)
         plt.xlabel('time')
         plt.ylabel('voltage')
-        plt.legend()
         plt.title("Neuron voltage and spikes")   
         
         voltagetimes, voltages = sensor_neuron.voltage_history.keys(), sensor_neuron.voltage_history.values()
@@ -241,6 +235,8 @@ def eval_neuron_plotter(plotting = False):
         spikes = [spike * 50 for spike in spikes] #make spikes visible
         plt.plot(voltagetimes, voltages, 'r',label='soma voltage')
         plt.plot(spiketimes, spikes, 'b', label= 'spikes', marker=".")
+        
+        plt.legend()
         plt.show()
 
 class Amplitude_neuron(Neuron):
@@ -294,7 +290,7 @@ def timestepper():
     did it fire? if so, recompute y_aim.
     compute for next timestep: how much we will teleport the mozzie and the new amplitude
     """
-    times = np.arange(0, flight_dur, timestep)
+    times = np.arange(0, flight_dur, timestep_size)
     time_indexes = list(enumerate(times))
     for time in time_indexes:
         plume_curr = plume.current_plume(time[0]) #get current plume. feeding [0] to get time index.
@@ -313,6 +309,10 @@ def timestepper():
             
 
 if __name__ == "__main__":
+    flight_dur = 550.0 #make 720
+    timestep_size = 1.0
+    sniffspots = [] #this will be used later to scatterplot the locations where the eval neuron spiked
+
     BOX_SIZE = (720,420,255)
     sensor_neuron = Sensor_neuron()
     mozzie = Mozzie()
