@@ -18,6 +18,7 @@ import numpy as np
 from numpy import pi, sin, cos
 from PIL import Image
 import matplotlib.pyplot as plt
+from glob import glob
 
 #==============================================================================
 # TODAYS GOALS 
