@@ -19,41 +19,54 @@ from numpy import pi, sin, cos
 from PIL import Image
 import matplotlib.pyplot as plt
 
-
-
 #==============================================================================
 # TODAYS GOALS 
 #
-# Talk to Sharri about mozzie movement
+#  mess with parameteres
 # 
 #==============================================================================
 
 
-flight_dur = 720.0
+flight_dur = 550.0 #make 720
 timestep = 1.0
-sniffspots = []
+sniffspots = [] #this will be used later to scatterplot the locations where the eval neuron spiked
 
 
 class Plume(object):
     def __init__(self,):
         """Our odor plume in x,y, z
-        TODO: feed plume a time parameter, which then calcs all the intensities 
+        plumefiles are all under vid1 folder
         """
         self.X = range(0, BOX_SIZE[0]) #X locs of plume
         self.Y = range(0, BOX_SIZE[1]) #Y of odor slices
         self.coordinates_list = [(x,y) for x in self.X for y in self.Y]
-    def current_plume(self, curr_time):
+        self.plumefiles = [filename for filename in glob('./vid1/*')]
+    def current_plume(self, curr_time_index):
+        """given specific time, what is our plume?
+        The first section are static plume images;
+        the second section makes use of the time index to look up the corresponding
+            video frame.
         """
-        """
+#======= DEBUGGING/STATIC SAMPLE PLUMES ======================================
 #        imgdir = "./example_vids/fullstim.png"
 #        imgdir = "./example_vids/nostim.png"
-        imgdir = "./example_vids/diagplume.png"
+#        imgdir = "./example_vids/diagplume.png"
 #        imgdir = "./example_vids/topplume.png" #boring
 #        imgdir = "./example_vids/midplume.png" #boring
 #        imgdir = "./example_vids/gaussian.png"
 #        imgdir = "./example_vids/realplume.png"
-        img =Image.open(imgdir).convert('L')
-        return img
+#        img =Image.open(imgdir).convert('L')
+#        return img
+#========Moving plume===========================================  
+        try:
+            img = Image.open(self.plumefiles[curr_time_index]).convert('L')
+        except IndexError:
+            print """Flight duration set longer than available plume movie! Stopping
+            loop at timestep %s""" % curr_time_index
+            return None
+        else:
+            return img
+        
 #==============================================================================
 #find nearest intensity. not required for now because getpixel(x,y) already rounds
 #     def find_nearest_intensity(self,loc):
@@ -67,20 +80,21 @@ class Plume(object):
 #==============================================================================
     def coord2PILarray(self,xycoords):
         """takes coords in our standard x,y coord system and returns them
-        in the coordinate system for the PIL package"""
+        in the coordinate system for the PIL package, which defines (0,0) as being
+        the top left corner"""
         x, y = xycoords
-        y = abs(y - BOX_SIZE[1]) #correcting for the coordinate axis of the PIL array
+        y = abs(y - BOX_SIZE[1]) #correcting y's for the coordinate axis of the PIL array
 #==============================================================================
-#        ##not needed until we use kd trees
+#        ##not needed unless we use kd tree function
 #         nearest_x, nearest_y = self.find_nearest_intensity((x,y))
 #         return nearest_x, nearest_y
 #==============================================================================
         return x,y
     def intensity_val(self,plume_curr,coord):
-        """given a plume img and a coord, returns the intensity value at that pixel
+        """given a plume img and a coord, returns the intensity value at that pixel.
         converts coordinate axis to the corresponding one on the PIL array first
         """
-        x,y = self.coord2PILarray(coord)
+        x,y = self.coord2PILarray(coord) #convert first
         try: 
              return plume_curr.getpixel((x,y))  
         except IndexError:
@@ -90,12 +104,8 @@ class Plume(object):
 
 class Mozzie(object):
     """our brave mosquito, moving in 2D
-        plots the mosquito's path in space
     input: total_velo_max, total_velo_min, wind_velo, y_offset_curr, angular_velo, flight_dur, timestep
     output: times, agent_y_pos, x_velocities, y_velocities 
-    TODO: impliment agent_x_pos using velocity max and min
-    TODO: implement y offset, and wind velocity
-    TODO: make agent_pos list where each item is an (x,y) coord
     TODO: make sensor_neuron control agent flight
     """
     def __init__(self,total_velo_max = 20, wind_velocity = 0, y_offset_curr = 0, angular_velo = pi / 15): #total velo max originally set to 6.6
@@ -104,7 +114,7 @@ class Mozzie(object):
         self.angular_velo = angular_velo
         self.wind_velo = wind_velocity
         self.loc_curr =  0, BOX_SIZE[1]/2
-        self.loc_history = {0 : self.loc_curr}
+        self.loc_history = {0 : self.loc_curr} #dict of locations
         self.loc_list = []
         self.y_velocities = {}
         self.x_velocities = {}
@@ -113,7 +123,8 @@ class Mozzie(object):
         """move the mosquito in a cast, add to location history
         input: time in secs
         output: none (location history updates)
-        TODO: put in sin equations
+        TODO: impliment agent_x_pos using velocity max and min
+        TODO: wind velocity
         """
         y_pos_curr = amplitude_neuron.amplitude_curr * sin (self.angular_velo * time_curr) + amplitude_neuron.y_offset_curr + BOX_SIZE[1]/2 #BOXSIZE to convert to the standard coordinate axis
         garbage, y_pos_prev = self.loc_history[self.time_prev] #we only want the second value
@@ -124,7 +135,6 @@ class Mozzie(object):
         self.loc_curr = time_curr, y_pos_curr #TODO: make x coord not the time!
         self.time_prev = time_curr
         self.loc_history[time_curr] = self.loc_curr
-        self.loc_list.append(self.loc_curr)
     def where(self, time):
         """ given time, where was the mozzie?
         input: time in seconds
@@ -132,7 +142,6 @@ class Mozzie(object):
         TODO: make real"""
         where = self.loc_history[time]
         return where
-    # def _xspeedcalc
 
 
 def plume_plotter(plume, plotting = False):
@@ -217,74 +226,97 @@ class Sensor_neuron(Neuron):
                 self.time_prev = time        
 
 def eval_neuron_plotter(plotting = False):
+    """plots soma voltage and spike events """
     if plotting == False:
         pass
     else:
-        voltagetimes, voltages = sensor_neuron.voltage_history.keys(), sensor_neuron.voltage_history.values()
-        spiketimes, spikes = sensor_neuron.spike_history.keys(), sensor_neuron.spike_history.values()
-        #print max(voltages)+5    
         fig = plt.figure(2)
-        plt.plot(voltagetimes, voltages, 'r',label='soma voltage')
-        plt.plot(spiketimes, spikes, 'b', label= 'spikes')
         plt.xlabel('time')
         plt.ylabel('voltage')
         plt.legend()
         plt.title("Neuron voltage and spikes")   
+        
+        voltagetimes, voltages = sensor_neuron.voltage_history.keys(), sensor_neuron.voltage_history.values()
+        spiketimes, spikes = sensor_neuron.spike_history.keys(), sensor_neuron.spike_history.values()
+        spikes = [spike * 50 for spike in spikes] #make spikes visible
+        plt.plot(voltagetimes, voltages, 'r',label='soma voltage')
+        plt.plot(spiketimes, spikes, 'b', label= 'spikes', marker=".")
         plt.show()
 
 class Amplitude_neuron(Neuron):
-    """if sensor neuron fires,m amplitude control neuron recompute y_targ and amplitude val.
+    """Our amplitude control neuron
+    if the upstream sensor neuron fires in this timestep, it recomputes y_aim (=y_targ), 
+    and amplitude val.
     else, decay teleporter
     """
     def __init__(self):
         self.time_prev = 0.0
         self.tau_y = 10
-        self.y_aim = 0.0
-        self.y_aim_history = {0.0:self.y_aim}
+        self.y_aim = BOX_SIZE[1]/2 #aim for centerline to start
+        self.y_aim_history = {0.0:self.y_aim} #unncessary?
         self.y_offset_curr = 0.0
         self.y_offset_history = {0.0:self.y_offset_curr}
         self.angular_velo = mozzie.angular_velo
-        self.amplitude_max = (2**0.5 / self.angular_velo) * (((mozzie.total_velo_max + mozzie.wind_velo) **2) - ((mozzie.total_velo_min + mozzie.wind_velo)**2))**0.5 #TODO add vwind
+        #TODO: understand amp max func
+        self.amplitude_max = (2**0.5 / self.angular_velo) * (((mozzie.total_velo_max + mozzie.wind_velo) **2) - ((mozzie.total_velo_min + mozzie.wind_velo)**2))**0.5
         self.amplitude_curr = self.amplitude_max
     def y_aimer(self,time):
-        """if spike, recompute y_aim"""
-#        print "y_aimer time is ", time
+        """recompute y_aim to whichever y the mozzie is currently at.
+        y_aim is where center axis that the mosquito gravitates towards using
+        the y_offsetter fxn.
+        only invoked by timestepper when the sensor neuron is spiking
+        
+        the idea is that the mosquito will stay inside the plume"""
         x_curr, y_curr = mozzie.where(time)
         self.y_aim = y_curr
-        self.y_aim_history[time] = self.y_aim
+        self.y_aim_history[time] = self.y_aim #unncessary?
     def y_offsetter(self,time):
-#        print self.y_offset_history[self.time_prev], "this is the prev offset"
+        """teleports the mosquito towards y_aim
+        """
         self.y_offset_curr = (self.y_aim - self.y_offset_history[self.time_prev]) / self.tau_y
-#        print self.y_offset_curr, "new current y_offset!"
         self.y_offset_history[time] = self.y_offset_curr
         self.time_prev = time
     def amplitude_controller(self):
-        """TODO add vwind
-        constrain mosquito to the box no matter what"""
+        """shrinks amplitude when the mosquito is in the plume, and if there's no
+        spiking in the sensor neuron, enlarges the amp until it's at amplitude_curr = amplitude_max
+        TODO implement!
+        TODO add vwind
+        TODO constrain mosquito to the box no matter what"""
         pass
         
 
 def timestepper():
+    """the main function driving all the code. divides the flight_dur into timesteps,
+    then for each timestep goes through the entire sequence of events.
+    what is the plume at this time?
+    where is the mozzie atm? what's the intensity there?
+    update the sensor neuron based on that intensity.
+    did it fire? if so, recompute y_aim.
+    compute for next timestep: how much we will teleport the mozzie and the new amplitude
+    """
     times = np.arange(0, flight_dur, timestep)
     time_indexes = list(enumerate(times))
     for time in time_indexes:
-#        print time[1], "time in stepper"
-        plume_curr = plume.current_plume(time[1]) #intensity value of plume at this time
-        mozzie.move(time[1])
-        loc = mozzie.where(time[1])
-        intensity_now = plume.intensity_val(plume_curr,loc)
-        if sensor_neuron.spiker(time[1], intensity_now) == "spike!": #if sensor neuron spikes
-            amplitude_neuron.y_aimer(time[1])
-        amplitude_neuron.y_offsetter(time[1])
-        amplitude_neuron.amplitude_controller()
+        plume_curr = plume.current_plume(time[0]) #get current plume. feeding [0] to get time index.
+        if plume_curr is None: 
+            #in case our flighttime > plume animation time
+            break
+        else:
+            mozzie.move(time[1])
+            loc = mozzie.where(time[1])
+            intensity_now = plume.intensity_val(plume_curr,loc)
+            if sensor_neuron.spiker(time[1], intensity_now) == "spike!": #if sensor neuron spikes
+                amplitude_neuron.y_aimer(time[1])
+            amplitude_neuron.y_offsetter(time[1])
+            amplitude_neuron.amplitude_controller()
         
             
 
 if __name__ == "__main__":
+    BOX_SIZE = (720,420,255)
     sensor_neuron = Sensor_neuron()
     mozzie = Mozzie()
     amplitude_neuron = Amplitude_neuron()
-    BOX_SIZE = (720,420,255)
     plume = Plume()
     timestepper()
 #    plume_plotter(plume, plotting = True)
@@ -302,19 +334,4 @@ if __name__ == "__main__":
 # #     print plume.intensity_val(debugplume,(0,0))
 # #     
 # #==============================================================================
-#==============================================================================
-    
-    
-#==============================================================================
-#     
-# functioning nd array lookup
-#     intensity_array = plume.coordinates_list
-#     mozzie_path = mozzie.loc_list
-#     
-#     def do_kdtree(intensity_array, mozzie_path):
-#         mytree = spatial.cKDTree(intensity_array)
-#         dist, indexes = mytree.query(mozzie_path)
-#         return dist, indexes
-#         
-#     distances, results2 = do_kdtree(intensity_array, mozzie_path)
 #==============================================================================
