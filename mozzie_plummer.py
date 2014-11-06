@@ -37,14 +37,14 @@ sniffspots = []
 class Plume(object):
     def __init__(self,):
         """Our odor plume in x,y, z
-        Currenty 0 everywhere at all timesteps
         TODO: feed plume a time parameter, which then calcs all the intensities 
         """
         self.X = range(0, BOX_SIZE[0]) #X locs of plume
         self.Y = range(0, BOX_SIZE[1]) #Y of odor slices
         self.coordinates_list = [(x,y) for x in self.X for y in self.Y]
     def current_plume(self, curr_time):
-        #TODO: use curr_time
+        """
+        """
 #        imgdir = "./example_vids/fullstim.png"
 #        imgdir = "./example_vids/nostim.png"
         imgdir = "./example_vids/diagplume.png"
