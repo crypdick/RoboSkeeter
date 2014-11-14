@@ -111,7 +111,6 @@ class Mozzie(object):
     our brave mosquito, moving in 2D
     input: total_velo_max, total_velo_min, wind_velo, y_offset_curr, angular_velo, FLIGHT_DUR, TIMESTEP_SIZE
     output: times, agent_y_pos, x_velocities, y_velocities 
-    TODO: make sensor_neuron control agent flight
     """
     def __init__(self,total_velo_max = 20, wind_velocity = 0, y_offset_curr = 0, angular_velo = pi / 15): #total velo max originally set to 6.6
         self.total_velo_max = total_velo_max
