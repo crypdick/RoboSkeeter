@@ -50,15 +50,17 @@ class Plume(object):
             video frame.
         """
 #======= DEBUGGING/STATIC SAMPLE PLUMES ======================================
-#        imgdir = "./example_vids/fullstim.png"
+#        imgdir = "./example_vids/fullstim.png" #boring
         imgdir = "./example_vids/nostim.png"
 #        imgdir = "./example_vids/diagplume.png"
 #        imgdir = "./example_vids/topplume.png" #boring
 #        imgdir = "./example_vids/midplume.png" #boring
 #        imgdir = "./example_vids/gaussian.png"
 #        imgdir = "./example_vids/realplume.png"
+        
         img =Image.open(imgdir).convert('L')
         return img
+        
 #========Moving plume===========================================  
 #        try:
 #            img = Image.open(self.plumefiles[curr_time_index]).convert('L')
@@ -205,7 +207,7 @@ class Neuron(object):
         #if spiking, return true
 
 class Sensor_neuron(Neuron):
-    def spiker(self,time, intensity_now):
+    def spiker(self,mozzie, time, intensity_now):
         '''
         evaluator leaky integrate and fire neuron. stimulus intensity -> cellular voltages -> spikes
         input time (sec) and intensity
@@ -273,7 +275,7 @@ class Amplitude_neuron(Neuron):
         #TODO: understand amp max func
         self.amplitude_max = (2**0.5 / self.angular_velo) * (((mozzie.total_velo_max + mozzie.wind_velo) **2) - ((mozzie.total_velo_min + mozzie.wind_velo)**2))**0.5
         self.amplitude_curr = self.amplitude_max
-    def y_aimer(self,time):
+    def y_aimer(self,mozzie, time):
         """
         recompute y_aim to whichever y the mozzie is currently at.
         y_aim is where center axis that the mosquito gravitates towards using
@@ -324,8 +326,8 @@ def timestepper(mozzie,  amplitude_neuron,sensor_neuron, plume):
             mozzie.move(time[1],amplitude_neuron)
             loc = mozzie.where(time[1])
             intensity_now = plume.intensity_val(plume_curr,loc)
-            if sensor_neuron.spiker(time[1], intensity_now) == "spike!": #if sensor neuron spikes
-                amplitude_neuron.y_aimer(time[1])
+            if sensor_neuron.spiker(mozzie, time[1], intensity_now) == "spike!": #if sensor neuron spikes
+                amplitude_neuron.y_aimer(mozzie, time[1])
             amplitude_neuron.y_offsetter(time[1])
             amplitude_neuron.amplitude_controller()
 
