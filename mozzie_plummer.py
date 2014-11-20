@@ -51,8 +51,8 @@ class Plume(object):
         """
 #======= DEBUGGING/STATIC SAMPLE PLUMES ======================================
 #        imgdir = "./example_vids/fullstim.png"
-#        imgdir = "./example_vids/nostim.png"
-        imgdir = "./example_vids/diagplume.png"
+        imgdir = "./example_vids/nostim.png"
+#        imgdir = "./example_vids/diagplume.png"
 #        imgdir = "./example_vids/topplume.png" #boring
 #        imgdir = "./example_vids/midplume.png" #boring
 #        imgdir = "./example_vids/gaussian.png"
@@ -124,7 +124,7 @@ class Mozzie(object):
         self.x_velocities = {}
         self.time_prev = 0
         self.sniffspots = [] #to scatterplot the locations where the eval neuron spiked
-    def move(self,time_curr):
+    def move(self,time_curr, amplitude_neuron):
         """
         move the mosquito in a cast, add to location history
         input: time in secs
@@ -158,7 +158,7 @@ def plume_plotter(plume, plotting = False):
      else:
          debugplume.show()
 
-def mozzie_plotter(plotting = False):
+def mozzie_plotter(mozzie, plotting = False):
     if plotting == False:
         pass
     else:
@@ -234,7 +234,7 @@ class Sensor_neuron(Neuron):
                 self.spike_history[time] = 0
                 self.time_prev = time        
 
-def eval_neuron_plotter(plotting = False):
+def eval_neuron_plotter(sensor_neuron, plotting = False):
     """
     plots soma voltage and spike events
     """
@@ -262,7 +262,7 @@ class Amplitude_neuron(Neuron):
     and amplitude val.
     else, decay teleporter
     """
-    def __init__(self):
+    def __init__(self,mozzie):
         self.time_prev = 0.0
         self.tau_y = 10
         self.y_aim = BOX_SIZE[1]/2 #aim for centerline to start
@@ -303,7 +303,7 @@ class Amplitude_neuron(Neuron):
         pass
         
 
-def timestepper():
+def timestepper(mozzie,  amplitude_neuron,sensor_neuron, plume):
     """
     the main function driving all the code. divides the FLIGHT_DUR into timesteps,
     then for each timestep goes through the entire sequence of events.
@@ -321,7 +321,7 @@ def timestepper():
             #in case our flighttime > plume animation time
             break
         else:
-            mozzie.move(time[1])
+            mozzie.move(time[1],amplitude_neuron)
             loc = mozzie.where(time[1])
             intensity_now = plume.intensity_val(plume_curr,loc)
             if sensor_neuron.spiker(time[1], intensity_now) == "spike!": #if sensor neuron spikes
@@ -332,12 +332,12 @@ def timestepper():
 def main():  
     sensor_neuron = Sensor_neuron()
     mozzie = Mozzie()
-    amplitude_neuron = Amplitude_neuron()
+    amplitude_neuron = Amplitude_neuron(mozzie)
     plume = Plume()
-    timestepper()
+    timestepper(mozzie,  amplitude_neuron,sensor_neuron, plume)
 #    plume_plotter(plume, plotting = True)
-    eval_neuron_plotter(plotting = True)
-    mozzie_plotter(plotting = True) 
+    eval_neuron_plotter(sensor_neuron, plotting = True)
+    mozzie_plotter(mozzie, plotting = True) 
 
 if __name__ == "__main__":
     main()
