@@ -34,6 +34,7 @@ from scipy.integrate import odeint, ode
 from matplotlib import pyplot as plt
 import numpy as np
 
+# TODO: WTF: position stays constant, but acceleration changes? acceleration unbounded?
 
 # CONSTANTS. TODO: make user-input. TODO: all caps for constant naming conventions
 m = 1.0   # mass of agent
@@ -45,12 +46,12 @@ zeta = 0   # maybe rename? I don't like using the same name for the ode input an
 # TODO: make Bias a class? Talk to Rich P about a smart way to make this object oriented.
 
 # Initial state of the spring. 
-x0 = [1.0, 0.0]  #position, velocity
+x0 = [1.0, 0.0]  #position_0, velocity_0
 #y0 = [1.0 0.0]  # TODO: rename y, we will need that when we expand to 2D
 #unclear of how this is determined.
 
 # Time coodinates to solve the ODE for
-dt = 1  # timestep width
+dt = 1  # timebin width
 runtime = 1000
 num_dt = runtime/dt  # number of timebins
 t = np.linspace(0, runtime, num_dt)
@@ -59,6 +60,7 @@ t = np.linspace(0, runtime, num_dt)
 def dy(y, t, zeta, w0):
     """
     The right-hand side of the damped oscillator ODE
+    (d^2x/dt^2) = ( 2*zeta*w0*(dx/dt) + w0^2*x ) / m
     """
     x, dxdt = x0[0], x0[1]
     #y, dydt = y0[0], y0[1] #starting to think about 2D..
@@ -66,10 +68,10 @@ def dy(y, t, zeta, w0):
     #originally p = dx/dt, this was modified to include timesetp values
     #i feel like user-defined dt should be in the equations below...not sure
     
-    dx = dxdt
-    dxdot = (-2 * zeta * w0 * dxdt - w0**2 * x) / m
+    dx = dxdt #TODO wat?
+    dxdot = (-2 * zeta * w0 * dxdt - w0**2 * x) / m  #dxdot -> x double dot?
 
-    return [dx, dxdot]
+    return [dx, dxdot] 
 
 # TODO: change the ode such that if zeta is an n x 1 array, it produces n solution arrays
 
