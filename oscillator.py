@@ -53,7 +53,7 @@ x0 = [1.0, 0.0]  #position, velocity
 dt = 1  # timestep width
 runtime = 1000
 num_dt = runtime/dt  # number of timebins
-t = np.linspace(0, num_dt, runtime)  # TODO: shouldn't this be 0, runtime, num_dt?
+t = np.linspace(0, runtime, num_dt)
 
 
 def dy(y, t, zeta, w0):
