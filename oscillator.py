@@ -35,13 +35,25 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 
-# TODO: make user-input
+# CONSTANTS. TODO: make user-input. TODO: all caps for constant naming conventions
 m = 1.0   # mass of agent
 k = 0.02   # spring constant
+w0 = np.sqrt(k/m)
+zeta = 0   # maybe rename? I don't like using the same name for the ode input and the function
+
 
 # TODO: make Bias a class? Talk to Rich P about a smart way to make this object oriented.
 
-# TODO: rename y, we will need that when we expand to 2D
+# Initial state of the spring. 
+x0 = [1.0, 0.0]  #position, velocity
+#y0 = [1.0 0.0]  # TODO: rename y, we will need that when we expand to 2D
+#unclear of how this is determined.
+
+# Time coodinates to solve the ODE for
+dt = 1  # timestep width
+runtime = 1000
+num_dt = runtime/dt  # number of timebins
+t = np.linspace(0, num_dt, runtime)  # TODO: shouldn't this be 0, runtime, num_dt?
 
 
 def dy(y, t, zeta, w0):
@@ -58,20 +70,6 @@ def dy(y, t, zeta, w0):
     dxdot = (-2 * zeta * w0 * dxdt - w0**2 * x) / m
 
     return [dx, dxdot]
-
-# initial state of the spring
-x0 = [1.0, 0.0]
-#y0 = [1.0 0.0]
-#unclear of how this is determined.
-
-# time coodinate to solve the ODE for
-dt = 1  # timestep width
-runtime = 1000
-num_dt = runtime/dt  # number of timebins
-
-t = np.linspace(0, num_dt, runtime)  # TODO: shouldn't this be 0, runtime, num_dt?
-w0 = np.sqrt(k/m)
-zeta = 0   # maybe rename this? I don't like using the same name for the ode input and the function
 
 # TODO: change the ode such that if zeta is an n x 1 array, it produces n solution arrays
 
