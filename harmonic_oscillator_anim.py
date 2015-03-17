@@ -26,6 +26,8 @@ from matplotlib.patches import Circle
 # to specify ``itertools.count(step=dt)`` as the frames argument.
 # headinglso see ``set_time`` below.
 dt = 0.02
+runtime = 20
+num_dt = np.int(runtime/dt)
 
 
 #m is the mass, y the damping from the dash pot, k the restoring force of the spring, F the driving force and w the frequency.
@@ -44,10 +46,12 @@ class FreeUndamped(object):
 
 class Agent(object):
     N = 100
-    _hist_length = 100
+    _hist_length = num_dt
 
     _agent_coords = np.zeros(N)
     _agent_coords[30:70] = 0.05 * (-1) ** np.arange(40)
+    
+    _position_history = np.zeros(num_dt)    #store positional data 
 
     def __init__(self, axis, axis_history, k, m, gamma, F, x0, x0_prime):
         if gamma == 0 or F == 0: #gamma is damping
@@ -72,17 +76,18 @@ class Agent(object):
         axis.set_aspect('equal')
 
         # start of second plot
-        self._history = [self.x - 1] * self._hist_length
-        self._history_plot, = axis_history.plot(np.arange(self._hist_length) *
-                                                dt, self._history)
+        self._history = [self.x - 1] * self._hist_length #storage vector that contains x over time hist_length
+        self._history_plot, = axis_history.plot(np.arange(0,self._hist_length)*dt)#,
+                                                #self._history)
 #        axis_history.annotate('Now', #arrow schwag
 #        
 ##                              (self._hist_length * dt, 1.5),
 ##                              (self._hist_length * dt, 1.8),
 #                              arrowprops=dict(arrowstyle='->'),
 #                              horizontalalignment='center')
-        axis_history.set_ylim(-2, 1.5)
-        axis_history.set_xticks([])
+#        axis_history.set_ylim(-2, 1.5)
+#        axis_history.set_xlim(0,self._t)
+#        axis_history.set_xticks([])
         axis_history.set_xlabel(r'$\mathrm{Time}$')
         axis_history.set_ylabel(r'$\mathrm{Position,\, x}$')
 
@@ -93,7 +98,10 @@ class Agent(object):
         self._t = t * dt
         self.update()
 
-    @property  #  TODO wtf?
+    #Updates timestep
+    @property  #  A function that returns a special descriptor object (here, it adds _method to x)
+    #def x(self):    
+    #x = property(x)
     def x(self):  #  TODO wtf?
         return 1 + self._method(self._t)
 
@@ -132,8 +140,13 @@ if __name__ == '__main__':
     inst_agent = Agent(axis=ax0, axis_history=ax1,
                k=k, m=m, gamma=gamma, F=F, x0=x0, x0_prime=x0_prime)
 
-    anim = animation.FuncAnimation(fig, inst_agent.set_time, interval=dt * 10, #intervial draws new frame every "interval" ms and redraws image
-                                  )#save_count=400)
+
+    #call inst_agent.set_time outside of the funcanimation
+    for i in np.arange(0,runtime,dt*10):    
+        inst_agent.set_time
+
+#    anim = animation.FuncAnimation(fig, inst_agent.set_time, interval=dt * 10) #intervial draws new frame every "interval" ms and redraws image
+                                  #save_count=400)
 
     if args.output:
         print "Saving video output to %s (this may take a while)." % args.output
