@@ -38,7 +38,7 @@ import numpy as np
 
 # CONSTANTS. TODO: make user-input. TODO: all caps for constant naming conventions
 m = 1.0   # mass of agent
-k = 0.02   # spring constant
+k = 0.001   # spring constant
 w0 = np.sqrt(k/m)
 zeta = 0   # maybe rename? I don't like using the same name for the ode input and the function
 
@@ -57,34 +57,50 @@ num_dt = runtime/dt  # number of timebins
 t = np.linspace(0, runtime, num_dt)
 
 
-def dy(y, t, zeta, w0):
+def MassAgent(init_state, t):
     """
     The right-hand side of the damped oscillator ODE
     (d^2x/dt^2) = ( 2*zeta*w0*(dx/dt) + w0^2*x ) / m
+    
+    TODO: why does this definition need the time vector? it doesn't seem to use it.
+        or is it because we will need it later for the driving forces..?
     """
-    x, dxdt = x0[0], x0[1]
+    x, dxdt = init_state[0], init_state[1]
     #y, dydt = y0[0], y0[1] #starting to think about 2D..
     
     #originally p = dx/dt, this was modified to include timesetp values
     #i feel like user-defined dt should be in the equations below...not sure
-    
-    dx = dxdt #TODO wat?
-    dxdot = (-2 * zeta * w0 * dxdt - w0**2 * x) / m  #dxdot -> x double dot?
+    dxddt = (-2 * zeta * w0 * dxdt - w0**2 * x) / m  #dxdot -> x double dot?
 
-    return [dx, dxdot] 
+    return [dxdt, dxddt]
 
 # TODO: change the ode such that if zeta is an n x 1 array, it produces n solution arrays
 
 # solve the ODE problem for three different values of the damping ratio
-z1 = odeint(dy, x0, t, args=(zeta, w0))  # undamped
+"""
+odeint basically works like this:
+1) calc state derivative xdd and xd at t=0 given initial states (x, xd)
+2) estimate x(t+dt) using x(t=0), xd(t=0), xdd(t=0)
+3) then calc xdd(t+dt) using that x(t = t+dt) and xd(t = t+dt)
+4) repeat steps 2 and 3, each time adding a dt
+...
+
+then, it outputs the system states [x, xd](t)
+"""
+states1 = odeint(MassAgent, x0, t)  # undamped
 
 #let's leave the other variations out of this for now
+#ATTN: These lines are now broken! I changed the fxn to just use the zeta provided
 #y2 = odeint(dy, y0, t, args=(0.2, w0))  # under damped
 #y3 = odeint(dy, y0, t, args=(1.0, w0))  # critial damping
 #y4 = odeint(dy, y0, t, args=(5.0, w0))  # over damped
 
-fig, ax = plt.subplots()
-ax.plot(t, z1[:, 0], 'k', label="undamped", linewidth=0.25)
+fig, ax = plt.plot(t, states1)
+#ax.plot(t, z1, 'k', label="undamped", linewidth=0.25)
+plt.xlabel('time')
+plt.ylabel('states')
+plt.title('mass-agent oscillating system')
+plt.legend(('$x$', '$\dot{x}$'))
 #plt.ylim(-2,2)
 
 #ax.plot(t, y2[:,0], 'r', label="under damped")
