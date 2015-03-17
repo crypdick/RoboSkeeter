@@ -35,13 +35,16 @@ import numpy as np
 m = 1   #mass
 k = .02   #spring constant
 
+#TODO: make Bias a class? Talk to Rich P about a smart way to make this object oriented.
+
 #TODO: change output from y to another name, as we will need y for 2D solutions
 
 def dy(y, t, zeta, w0):
     """
     The right-hand side of the damped oscillator ODE
     """
-    x, dxdt = y[0], y[1]
+    x, dxdt = x0[0], x0[1]
+    #y, dydt = y0[0], y0[1] #starting to think about 2D..
     
     #originally p = dx/dt, this was modified to include timesetp values
     #i feel like user-defined dt should be in the equations below...not sure
@@ -52,8 +55,9 @@ def dy(y, t, zeta, w0):
     return [dx, dxdot]
     
 # initial state: 
-y0 = [1.0, 0.0]
-
+x0 = [1.0, 0.0]
+#y0 = [1.0 0.0]
+#unclear of how this is determined.
 
 # time coodinate to solve the ODE for
 dt = 1 #timestep
@@ -67,7 +71,7 @@ zeta = 0;   #maybe rename this? I don't like using the same name for the ode inp
 #TODO: change the ode such that if zeta is an n x 1 array, it produces n solution arrays
 
 # solve the ODE problem for three different values of the damping ratio
-y1 = odeint(dy, y0, t, args=(zeta, w0)) # undamped
+z1 = odeint(dy, x0, t, args=(zeta, w0)) # undamped
 
 #let's leave the other variations out of this for now
 #y2 = odeint(dy, y0, t, args=(0.2, w0)) # under damped
@@ -77,8 +81,8 @@ y1 = odeint(dy, y0, t, args=(zeta, w0)) # undamped
 
 
 fig, ax = plt.subplots()
-ax.plot(t, y1[:,0], 'k', label="undamped", linewidth=0.25)
-plt.ylim(-2,2)
+ax.plot(t, z1[:,0], 'k', label="undamped", linewidth=0.25)
+#plt.ylim(-2,2)
 
 #ax.plot(t, y2[:,0], 'r', label="under damped")
 #ax.plot(t, y3[:,0], 'b', label=r"critical damping")
