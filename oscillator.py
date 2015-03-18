@@ -12,9 +12,10 @@ zeta is the damping coefficient, and m is mass.
 w0 is the natural frequency of the harmonic oscillator, which is:
 w0 = sqrt(k/m)
 
-Driving forces are to be implemented (TODO). The first will be a uniform force
-in a random direction: F(t). The second will be bias, which will be a function
-of the temperature at the current position at the current time: b(T(x,t)).
+Driving forces are to be implemented. The first will be a force
+in a uniform random direction: F(t). The second will be bias, which will be 
+a functionof the temperature at the current position at the current time: 
+b(T(x,t)).
 
 A second order ODE (odeint) is used to solve for the position of the mass,
 presently in 1D.
@@ -41,10 +42,10 @@ import numpy as np
 
 # CONSTANTS. TODO: make user-input.-sz
 # TODO: all caps for constant naming conventions -rd
-m = 1.0   # mass of agent
+m = 5   # mass of agent
 k = 0.001   # spring constant
 w0 = np.sqrt(k/m)
-zeta = 0   # maybe rename? I don't like using the same name for the ode input and the function -sz
+zeta = 20   # maybe rename? I don't like using the same name for the ode input and the function -sz
 
 
 # TODO: make Bias a class? Talk to Rich P about a smart way to make this object oriented. -sz
@@ -64,7 +65,7 @@ num_dt = runtime/dt  # number of timebins
 t = np.linspace(0, runtime, num_dt)
 
 
-def randomDrivingForce():
+def baselineDrivingForce():
     """Will eventually be a 2D unit-vector. For now, using just the x-component
     since we are only working in 1 dimension.
     """
@@ -83,7 +84,7 @@ def biasedDrivingForce():
     """biased driving force, determined by temperature-stimulus at the current
     current position at the current time: b(T(x,t)).
 
-    TODO: implement
+    TODO: implement, this should output Bias + Force?
     """
     return 0
 
@@ -102,7 +103,7 @@ def MassAgent(init_state, t):
     
     #originally p = dx/dt, this was modified to include timesetp values
     #i feel like user-defined dt should be in the equations below...not sure -sz
-    dxddt = (-2 * zeta * w0 * dxdt - w0**2 * x + randomDrivingForce() + biasedDrivingForce()) / m 
+    dxddt = (-2 * zeta * w0 * dxdt - w0**2 * x + 5*baselineDrivingForce() + biasedDrivingForce()) / m 
 
     return [dxdt, dxddt]
 
@@ -111,7 +112,7 @@ def MassAgent(init_state, t):
 """
 odeint basically works like this:
 1) calc state derivative xdd and xd at t=0 given initial states (x, xd)
-2) estimate x(t+dt) using x(t=0), xd(t=0), xdd(t=0)
+2) estimate x(t) using x(t-dt), xd(t-dt), xdd(t-dt)
 3) then calc xdd(t+dt) using that x(t = t+dt) and xd(t = t+dt)
 4) iterate steps 2 and 3 to calc subsequent timesteps, using the x, xd, xdd
     from the previous dt to calculate the state values for the current dt
@@ -153,4 +154,4 @@ def StateSpaceAnim():
         tt.set_text("State-space trajectory animation - step # %d" % (i))
         plt.draw()
 
-StateSpaceAnim()
+#tateSpaceAnim()
