@@ -13,13 +13,13 @@ w0 is the natural frequency of the harmonic oscillator, which is:
 w0 = sqrt(k/m)
 
 Driving forces are to be implemented (TODO). The first will be a uniform force
-in a random direction: F(t). The second will be bias, which will be a function of
-the temperature at the current position at the current time: b(T(x,t)).
+in a random direction: F(t). The second will be bias, which will be a function
+of the temperature at the current position at the current time: b(T(x,t)).
 
 A second order ODE (odeint) is used to solve for the position of the mass,
 presently in 1D.
 
-End goal: run in 2d, add driving forces (random or otherwise) and add spatial 
+End goal: run in 2d, add driving forces (random or otherwise) and add spatial
 and/or temperature-stimulus Bias.
 
 Created on Mon Mar 16 16:22:47 2015
@@ -50,9 +50,12 @@ zeta = 0   # maybe rename? I don't like using the same name for the ode input an
 # TODO: make Bias a class? Talk to Rich P about a smart way to make this object oriented. -sz
 
 # Initial state of the spring.
+# TODO: should we construct y0 for the 2D? or, should we just put everything
+# the x0 vector, and change x0[0] from a float to a tuple, and x0[1] from a 
+# float to a vector? -rd
 x0 = [1.0, 0.0]  # position_0, velocity_0
-#y0 = [1.0 0.0]  # TODO: rename y, we will need that when we expand to 2D
-# unclear of how this is determined.
+#y0 = [1.0 0.0]  # TODO: rename y, we will need that when we expand to 2D -sz
+# unclear of how this is determined. -sz
 
 # Time coodinates to solve the ODE for
 dt = 1  # timebin width
@@ -60,32 +63,36 @@ runtime = 1000
 num_dt = runtime/dt  # number of timebins
 t = np.linspace(0, runtime, num_dt)
 
+
 def randomDrivingForce():
     """Will eventually be a 2D unit-vector. For now, using just the x-component
-    since we are only working in 1 dimension.    
+    since we are only working in 1 dimension.
     """
-    rand_radians = np.random.uniform(0, 2*np.pi) # high bound is not inclusive
-    rand_x = 0.000001 * np.cos(rand_radians)
-    return rand_x
+    rand_radians = np.random.uniform(0, 2*np.pi)  # high bound is not inclusive
+    x_component = 0.000001 * np.cos(rand_radians)
+    y_component = 0.000001 * np.sin(rand_radians)
+    return x_component
+
 
 def tempNow():
-    """Given position and time, lookup nearest temperature (or interpolate?)
-    """
+    """Given position and time, lookup nearest temperature (or interpolate?)"""
     pass
+
 
 def biasedDrivingForce():
     """biased driving force, determined by temperature-stimulus at the current
     current position at the current time: b(T(x,t)).
-    
+
     TODO: implement
     """
     return 0
+
 
 def MassAgent(init_state, t):
     """
     The right-hand side of the damped oscillator ODE
     (d^2x/dt^2) = ( 2*zeta*w0*(dx/dt) + w0^2*x ) / m
-    
+
     TODO: why does this fxn need the time vector? it doesn't seem to use it.
         or is it because we will need it later for the driving forces..? -rd
     """
@@ -123,7 +130,7 @@ plt.legend(('$x$', '$\dot{x}$'))
 
 def StateSpaceAnim():
     """Animation of changes in state-space over time.
-    
+
     Credit to Paul Gribble (email: paul [at] gribblelab [dot] org), code based
     on a function in his "Computational Modelling in Neuroscience" course:
     http://www.gribblelab.org/compneuro/index.html
