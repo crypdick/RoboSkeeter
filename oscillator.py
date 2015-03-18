@@ -35,9 +35,6 @@ from scipy.integrate import odeint, ode
 from matplotlib import pyplot as plt
 import numpy as np
 
-# TODO: WTF: position stays constant, but acceleration changes? acceleration unbounded?
-#fixed? -sz
-
 # CONSTANTS. TODO: make user-input. TODO: all caps for constant naming conventions
 m = 1.0   # mass of agent
 k = 0.001   # spring constant
@@ -47,10 +44,10 @@ zeta = 0   # maybe rename? I don't like using the same name for the ode input an
 
 # TODO: make Bias a class? Talk to Rich P about a smart way to make this object oriented.
 
-# Initial state of the spring. 
-x0 = [1.0, 0.0]  #position_0, velocity_0
+# Initial state of the spring.
+x0 = [1.0, 0.0]  # position_0, velocity_0
 #y0 = [1.0 0.0]  # TODO: rename y, we will need that when we expand to 2D
-#unclear of how this is determined.
+# unclear of how this is determined.
 
 # Time coodinates to solve the ODE for
 dt = 1  # timebin width
@@ -64,16 +61,16 @@ def MassAgent(init_state, t):
     The right-hand side of the damped oscillator ODE
     (d^2x/dt^2) = ( 2*zeta*w0*(dx/dt) + w0^2*x ) / m
     
-    TODO: why does this definition need the time vector? it doesn't seem to use it.
-        or is it because we will need it later for the driving forces..?
+    TODO: why does this fxn need the time vector? it doesn't seem to use it.
+        or is it because we will need it later for the driving forces..? -rd
     """
     #This function gets entered into the ode, which is time-dependent.
     x, dxdt = init_state[0], init_state[1]
     #y, dydt = y0[0], y0[1] #starting to think about 2D..
     
     #originally p = dx/dt, this was modified to include timesetp values
-    #i feel like user-defined dt should be in the equations below...not sure
-    dxddt = (-2 * zeta * w0 * dxdt - w0**2 * x) / m  #dxdot -> x double dot?
+    #i feel like user-defined dt should be in the equations below...not sure -sz
+    dxddt = (-2 * zeta * w0 * dxdt - w0**2 * x) / m 
 
     return [dxdt, dxddt]
 
@@ -83,20 +80,16 @@ def MassAgent(init_state, t):
 odeint basically works like this:
 1) calc state derivative xdd and xd at t=0 given initial states (x, xd)
 2) estimate x(t+dt) using x(t=0), xd(t=0), xdd(t=0)
-Are you sure about this ^? It uses the intitial state position and derivatives 
-to solve for every timestep or the last time step to solve for the subsequent?-sz
-
 3) then calc xdd(t+dt) using that x(t = t+dt) and xd(t = t+dt)
-4) repeat steps 2 and 3, each time adding a dt
+4) iterate steps 2 and 3 to calc subsequent timesteps, using the x, xd, xdd
+    from the previous dt to calculate the state values for the current dt
 ...
 
 then, it outputs the system states [x, xd](t)
 """
-states1 = odeint(MassAgent, x0, t)  # undamped
-#Why undamped? Why not set the dampening coefficient to zero?-sz
+states1 = odeint(MassAgent, x0, t)  
 
 fig, ax = plt.plot(t, states1)
-#ax.plot(t, z1, 'k', label="undamped", linewidth=0.25)
 plt.xlabel('time')
 plt.ylabel('states')
 plt.title('mass-agent oscillating system')
