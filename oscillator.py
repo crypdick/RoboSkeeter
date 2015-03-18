@@ -110,7 +110,12 @@ plt.legend(('$x$', '$\dot{x}$'))
 
 
 def StateSpaceAnim():
-    # animation in state-space
+    """Animation of changes in state-space over time.
+    
+    Credit to Paul Gribble (email: paul [at] gribblelab [dot] org), code based
+    on a function in his "Computational Modelling in Neuroscience" course:
+    http://www.gribblelab.org/compneuro/index.html
+    """
     plt.figure()
     pb, = plt.plot(states1[:, 0], states1[:, 1], 'b-', alpha=0.2)
     plt.xlabel('$x$')
