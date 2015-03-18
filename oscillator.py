@@ -60,7 +60,7 @@ runtime = 1000
 num_dt = runtime/dt  # number of timebins
 t = np.linspace(0, runtime, num_dt)
 
-def randomForce():
+def randomDrivingForce():
     """Will eventually be a 2D unit-vector. For now, using just the x-component
     since we are only working in 1 dimension.    
     """
@@ -68,6 +68,18 @@ def randomForce():
     rand_x = 0.000001 * np.cos(rand_radians)
     return rand_x
 
+def tempNow():
+    """Given position and time, lookup nearest temperature (or interpolate?)
+    """
+    pass
+
+def biasedDrivingForce():
+    """biased driving force, determined by temperature-stimulus at the current
+    current position at the current time: b(T(x,t)).
+    
+    TODO: implement
+    """
+    return 0
 
 def MassAgent(init_state, t):
     """
@@ -83,7 +95,7 @@ def MassAgent(init_state, t):
     
     #originally p = dx/dt, this was modified to include timesetp values
     #i feel like user-defined dt should be in the equations below...not sure -sz
-    dxddt = (-2 * zeta * w0 * dxdt - w0**2 * x + randomForce()) / m 
+    dxddt = (-2 * zeta * w0 * dxdt - w0**2 * x + randomDrivingForce() + biasedDrivingForce()) / m 
 
     return [dxdt, dxddt]
 
