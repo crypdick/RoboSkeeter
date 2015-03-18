@@ -28,27 +28,27 @@ from scipy.integrate import odeint, ode # TODO: delete ode? unused... -rd
 from matplotlib import pyplot as plt
 import numpy as np
 
+plt.close('all')
+
 # CONSTANTS. TODO: make user-input.-sz
 # TODO: all caps for constant naming conventions -rd
 m = 1.0   # mass of agent
 k = 0.001   # spring constant
 w0 = np.sqrt(k/m)
-beta = .1   # maybe rename? I don't like using the same name for the ode input and the function -sz
+beta = .3   # maybe rename? I don't like using the same name for the ode input and the function -sz
 force_mag = .000001
 
 # TODO: make Bias a class? Talk to Rich P about a smart way to make this object oriented. -sz
 
 # Initial state of the spring.
-# TODO: should we construct y0 for the 2D? or, should we just put everything
-# the x0 vector, and change x0[0] from a float to a tuple, and x0[1] from a 
-# float to a vector? -rd
-x0 = [1.0, 0.0]  # position_0, velocity_0
-#y0 = [1.0 0.0]  # TODO: rename y, we will need that when we expand to 2D -sz
-# unclear of how this is determined. -sz
+
+#r0 = [1.0, 0.0]  # 1D -> position_0, velocity_0
+r0 = [.1, 0.0, .1, 0.02] # 2D -> x0, vx0, y0, vy0
+
 
 # Time coodinates to solve the ODE for
 dt = 1  # timebin width
-runtime = 500
+runtime = 2000
 num_dt = runtime/dt  # number of timebins
 t = np.linspace(0, runtime, num_dt)
 
@@ -91,18 +91,29 @@ def MassAgent(init_state, t):
         which we probably won't have for a while as our driving force will 
         either be random or previously calculated from the temperature - rp
     """
-    #This function gets entered into the ode, which is time-dependent.
-    r, drdt = init_state[0], init_state[1]
-    try:
-        dim = len(r)
-    except:
-        dim = 1
+    dim = len(init_state)/2
     
-    #originally p = dx/dt, this was modified to include timesetp values
-    #i feel like user-defined dt should be in the equations below...not sure -sz
-    drdt2 = (-2 * beta * w0 * drdt - w0**2 * r + randomDrivingForce(dim=dim) + biasedDrivingForce()) / m 
-
-    return [drdt, drdt2]
+    if dim == 1:
+        #This function gets entered into the ode, which is time-dependent.
+        x, vx = init_state
+        
+        # solve for derivatives of all variables
+        dxdt = vx
+        #originally p = dx/dt, this was modified to include timesetp values
+        #i feel like user-defined dt should be in the equations below...not sure -sz
+        dvxdt = (-2 * beta * w0 * vx - w0**2 * x + randomDrivingForce() + biasedDrivingForce()) / m 
+    
+        return [dxdt, dvxdt]
+    elif dim == 2:
+        x, vx, y, vy = init_state
+        
+        # solve for derivatives of all variables
+        dxdt = vx
+        dvxdt = (-2*beta*w0*vx - (w0**2)*x + randomDrivingForce() + biasedDrivingForce()) / m
+        dydt = vy
+        dvydt = (-2*beta*w0*vy - (w0**2)*y + randomDrivingForce() + biasedDrivingForce()) / m
+        
+        return [dxdt, dvxdt, dydt, dvydt]
 
 # TODO: change the ode such that if zeta is an n x 1 array, it produces n solution arrays
 
@@ -117,39 +128,51 @@ odeint basically works like this:
 then, it outputs the system states [x, xd](t)
 """
 try:
-    states1 = odeint(MassAgent, x0, t)
+    states1 = odeint(MassAgent, r0, t)
 except:
     import pdb; pdb.set_trace()
 
-fig, ax = plt.plot(t, states1)
+dim = len(r0)/2
+
+plt.plot(t, states1)
 plt.xlabel('time')
 plt.ylabel('states')
 plt.title('mass-agent oscillating system')
-plt.legend(('$x$', '$\dot{x}$'))
+if dim == 1:
+    plt.legend(('x', 'vx'))
+elif dim == 2:
+    plt.legend(('x', 'vx', 'y', 'vy'))
 
-
-def StateSpaceAnim():
+def StateSpaceAnim(dim=1):
     """Animation of changes in state-space over time.
     Credit to Paul Gribble (email: paul [at] gribblelab [dot] org), code based
     on a function in his "Computational Modelling in Neuroscience" course:
     http://www.gribblelab.org/compneuro/index.html
     """
     plt.figure()
-    pb, = plt.plot(states1[:, 0], states1[:, 1], 'b-', alpha=0.2)
-    plt.xlabel('$x$')
-    plt.ylabel('$\dot{x}$')
-    p, = plt.plot(states1[0:10, 0], states1[0:10, 1], 'b-')
-    pp, = plt.plot(states1[10, 0], states1[10, 1], 'b.', markersize=10)
-    tt = plt.title("%4.2f sec" % 0.00)
+    if dim == 1:
+        pb, = plt.plot(states1[:, 0], states1[:, 1], 'b-', alpha=0.2)
+        plt.xlabel('x')
+        plt.ylabel('vx')
+        p, = plt.plot(states1[0:10, 0], states1[0:10, 1], 'b-')
+        pp, = plt.plot(states1[10, 0], states1[10, 1], 'b.', markersize=10)
+        tt = plt.title("%4.2f sec" % 0.00)
+    elif dim == 2:
+        pb, = plt.plot(states1[:, 0], states1[:, 2], 'b-', alpha=0.2)
+        plt.xlabel('x')
+        plt.ylabel('y')
+#        p, = plt.plot(states1[0:10, 0], states1[0:10, 2], 'b-')
+#        pp, = plt.plot(states1[10, 0], states1[10, 2], 'b.', markersize=10)
+        tt = plt.title("%4.2f sec" % 0.00)
 
-    # animate
-    step = 2
-    for i in xrange(1, np.shape(states1)[0]-10, step):
-        p.set_xdata(states1[10+i:20+i, 0])
-        p.set_ydata(states1[10+i:20+i, 1])
-        pp.set_xdata(states1[10+i, 0])
-        pp.set_ydata(states1[10+i, 1])
-        tt.set_text("State-space trajectory animation - step # %d" % (i))
-        plt.draw()
+#    # animate
+#    step = 2
+#    for i in xrange(1, np.shape(states1)[0]-10, step):
+#        p.set_xdata(states1[10+i:20+i, 0])
+#        p.set_ydata(states1[10+i:20+i, 1])
+#        pp.set_xdata(states1[10+i, 0])
+#        pp.set_ydata(states1[10+i, 1])
+#        tt.set_text("State-space trajectory animation - step # %d" % (i))
+#        plt.draw()
 
-StateSpaceAnim()
+StateSpaceAnim(dim=dim)
