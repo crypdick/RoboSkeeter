@@ -45,7 +45,7 @@ m = 3  # mass of agent in mg
 #Female mosquito mass is empirically found to be 2.88 +- 0.35 mg 
 #(measured from 24 cold-anesthetized females, courtesy of Clement Vinauger, Riffell Lab)
 
-k = 0.0001   # spring constant in TODO units
+k = 1e-15   
 w0 = np.sqrt(k/m)
 beta = .3   
 force_mag = 5e-8
@@ -61,7 +61,7 @@ r0 = [0.1, 0.0, -.05, 0]  # 2D initial state --> x0, vx0, y0, vy0
 # Time coodinates to solve the ODE for
 dt = 10  # timestep length in milliseconds
 #Videography of trajectories held at 100fps, suggested timestep = 10 ms
-runtime = 2000
+runtime = 1e4
 num_dt = runtime/dt  # number of timebins
 t = np.linspace(0, runtime, num_dt)
 
