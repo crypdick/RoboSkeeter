@@ -87,10 +87,33 @@ odeint basically works like this:
 
 then, it outputs the system states [x, xd](t)
 """
-states1 = odeint(MassAgent, x0, t)  
+states1 = odeint(MassAgent, x0, t)
 
 fig, ax = plt.plot(t, states1)
 plt.xlabel('time')
 plt.ylabel('states')
 plt.title('mass-agent oscillating system')
 plt.legend(('$x$', '$\dot{x}$'))
+
+
+def StateSpaceAnim():
+    # animation in state-space
+    plt.figure()
+    pb, = plt.plot(states1[:, 0], states1[:, 1], 'b-', alpha=0.2)
+    plt.xlabel('$x$')
+    plt.ylabel('$\dot{x}$')
+    p, = plt.plot(states1[0:10, 0], states1[0:10, 1], 'b-')
+    pp, = plt.plot(states1[10, 0], states1[10, 1], 'b.', markersize=10)
+    tt = plt.title("%4.2f sec" % 0.00)
+
+    # animate
+    step = 2
+    for i in xrange(1, np.shape(states1)[0]-10, step):
+        p.set_xdata(states1[10+i:20+i, 0])
+        p.set_ydata(states1[10+i:20+i, 1])
+        pp.set_xdata(states1[10+i, 0])
+        pp.set_ydata(states1[10+i, 1])
+        tt.set_text("State-space trajectory animation - step # %d" % (i))
+        plt.draw()
+
+StateSpaceAnim()
