@@ -32,14 +32,14 @@ plt.close('all')
 
 # CONSTANTS. TODO: make user-input.-sz
 # TODO: all caps for constant naming conventions -rd
-m = 1.0   # mass of agent
+m = 3  # mass of agent
 #Female mosquito mass is empirically found to be 2.88 +- 0.35 mg 
 #(measured from 24 cold-anesthetized females, courtesy of Clement Vinauger, Riffell Lab)
 
 k = 0.001   # spring constant
 w0 = np.sqrt(k/m)
-beta = .3   # maybe rename? I don't like using the same name for the ode input and the function -sz
-force_mag = .000001
+beta = .3   
+force_mag = 1e-6
 
 # TODO: make Bias a class? Talk to Rich P about a smart way to make this object oriented. -sz
 
@@ -50,7 +50,7 @@ r0 = [.1, 0.0, .1, 0.02] # 2D -> x0, vx0, y0, vy0
 
 
 # Time coodinates to solve the ODE for
-dt = 1  # timebin width
+dt = 10  # timestep, ms
 #Videography of trajectories held at 100fps, suggested timestep = 10 ms
 
 runtime = 2000
