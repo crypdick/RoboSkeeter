@@ -41,27 +41,28 @@ plt.close('all')
 
 # CONSTANTS. TODO: make user-input.-sz
 # TODO: all caps for constant naming conventions -rd
-m = 3  # mass of agent in mg
+m = 3.  # mass of agent in mg
 #Female mosquito mass is empirically found to be 2.88 +- 0.35 mg 
 #(measured from 24 cold-anesthetized females, courtesy of Clement Vinauger, Riffell Lab)
 
-k = 1e-15   
+k = 1e-3   # spring constant in N/meter units
 w0 = np.sqrt(k/m)
-beta = .3   
-force_mag = 5e-8
+beta = 1  # dampening in N * ms * meter^-1
+force_mag = 1e-6
 
 # TODO: make Bias a class? Talk to Rich P about a smart way to make this object oriented. -sz
 
 # Initial state of the spring.
 #r0 = [1.0, 0.0]  # 1Dinitial state --> position_0, velocity_0
 # TODO: think of realistic units for position, velocity.
-r0 = [0.1, 0.0, -.05, 0]  # 2D initial state --> x0, vx0, y0, vy0
+r0 = [0., 0.01, 0.0, 0.01]  # 2D initial state --> x0, vx0, y0, vy0
 
 
 # Time coodinates to solve the ODE for
-dt = 10  # timestep length in milliseconds
+dt = 1  # timestep length in milliseconds #TODO bring back to 10ms when fix the
+            #numerical solution bugs
 #Videography of trajectories held at 100fps, suggested timestep = 10 ms
-runtime = 1e4
+runtime = 2e3
 num_dt = runtime/dt  # number of timebins
 t = np.linspace(0, runtime, num_dt)
 
@@ -120,7 +121,7 @@ def MassAgent(init_state, t):
         dxdt = vx
         #originally p = dx/dt, this was modified to include timesetp values
         #i feel like user-defined dt should be in the equations below...not sure -sz
-        dvxdt = (-2 * beta * w0 * vx - w0**2 * x + baselineNoiseForce(dim=1) + biasedDrivingForce()) / m 
+        dvxdt = (-2 * beta * w0 * vx - w0**2 * x + baselineNoiseForce() + biasedDrivingForce()) / m 
     
         return [dxdt, dvxdt]
     elif dim == 2:
@@ -151,8 +152,7 @@ then, it outputs the system states [x, xd](t)
 try:
     states1 = odeint(MassAgent, r0, t)
 except:
-    import pdb; pdb.set_trace()  # if odeint crashes, explore the variables if
-        # you want to debug. type "q [enter]" to escape
+    import pdb; pdb.set_trace()  # TODO: wtf? -rd
 
 dim = len(r0)/2
 
