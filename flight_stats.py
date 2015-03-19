@@ -2,6 +2,10 @@
 """
 Flight statistics heatmap.
 
+Positional distributions in each plane (x, y, z)
+Distributions of velocity components and magnitude  (x, y, z, |v|)
+Distributions of acceleration components and magnitude (x,y,z,|a|)
+
 Divide the flight arena into a grid, and see the statistics of P(find) and 
 <time_find> given that the stimulus was placed in a given grid cell. 
 
@@ -23,3 +27,38 @@ https://staff.washington.edu/decal/
 https://github.com/isomerase/
 """
 
+import oscillator
+
+states = oscillator.main(plotting=True)
+
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.ticker import NullFormatter
+
+
+
+
+x_positions = states[:, 0]
+y_positions = states[:, 2]
+
+binwidth = 0.05
+xymax = np.max( [np.max(x_positions), np.max(y_positions)] )
+lim = ( int(xymax/binwidth) + 1) * binwidth
+
+plt.figure(3)
+axScatter.set_xlim( (-lim, lim) )
+axScatter.set_ylim( (-lim, lim) )
+bins = np.arange(-lim, lim + binwidth, binwidth)
+axHistx = plt.axes()
+axHistx.hist(x_positions, bins=bins)
+plt.title("x position distributions")
+
+plt.figure(4)
+axHisty = plt.axes()
+axHisty.hist(y_positions, bins=bins, orientation='horizontal')
+plt.title("y position distributions")
+
+axHistx.set_xlim( axScatter.get_xlim() )
+axHisty.set_ylim( axScatter.get_ylim() )
+
+plt.show()
