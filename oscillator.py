@@ -120,6 +120,8 @@ def MassAgent(init_state, t):
     
     Time vector is currently necessary for the ode to run. Eventually, we will
     use it to vary our time-dep driving force.
+    
+    TODO: expand states to also include acceleration
     """
     dim = len(init_state)/2
     
@@ -167,6 +169,7 @@ def run_ODE():
     
     
 def StatesOverTimeGraph(states):
+    plt.figure(1)
     plt.plot(t, states)
     plt.xlabel('time')
     plt.ylabel('states')
@@ -184,7 +187,7 @@ def StateSpaceDraw(states, dim=1, animate=False, box=False):
     on a function in his "Computational Modelling in Neuroscience" course:
     http://www.gribblelab.org/compneuro/index.html
     """
-    plt.figure()
+    plt.figure(2)
     if dim == 1:
         pb, = plt.plot(states[:, 0], states[:, 1], 'b-')
         plt.xlabel('x')
@@ -193,6 +196,7 @@ def StateSpaceDraw(states, dim=1, animate=False, box=False):
 #        pp, = plt.plot(states1[10, 0], states1[10, 1], 'b.', markersize=10)
         tt = plt.title("State-space graph for 1 dimensions")
     elif dim == 2:
+        
         pb, = plt.plot(states[:, 0], states[:, 2], 'b-')  # select cols 0,2
                                                             # for x,y pos
         plt.xlabel('x position')
