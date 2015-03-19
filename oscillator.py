@@ -21,8 +21,15 @@ time: b(T(x,t)).
 A second order ODE (odeint) is used to solve for the position of the mass,
 presently in 1D.
 
-End goal: run in 2d, add driving forces (random or otherwise) and add spatial
-and/or temperature-stimulus Bias.
+End goal: Add temperature-stimulus-dep bias drivers.Add spatial-context dep.
+bias drivers (so mosquitos don't crash into walls).
+Seek params
+that reproduce velocity/acceleration distributions, mean ground speed, and turn
+frequency of our experimental data.
+
+
+
+
 Created on Mon Mar 16 16:22:47 2015
 
 @authors: Richard Decal, decal@uw.edu
@@ -36,8 +43,7 @@ authored by J.R. Johansson (robert@riken.jp) http://dml.riken.jp/~rob/
 from scipy.integrate import odeint, ode  # TODO: delete ode? unused... -rd
 from matplotlib import pyplot as plt
 import numpy as np
-
-plt.close('all')
+from pylab import gca
 
 # CONSTANTS. TODO: make user-input.-sz
 # TODO: all caps for constant naming conventions -rd
@@ -56,6 +62,7 @@ force_mag = 1e-6
 #r0 = [1.0, 0.0]  # 1Dinitial state --> position_0, velocity_0
 # TODO: think of realistic units for position, velocity.
 r0 = [0., 0.01, 0.0, 0.01]  # 2D initial state --> x0, vx0, y0, vy0
+dim = len(r0)/2
 
 
 # Time coodinates to solve the ODE for
@@ -70,7 +77,9 @@ t = np.linspace(0, runtime, num_dt)
 def baselineNoiseForce(dim=1):
     """Adding random noise to the agent position.
     
-    TODO: make vary depending on spatial context 
+    TODO: make vary depending on spatial context
+    TODO: add flags for wind, no wind to bias random draw based on direction of
+    the breeze.
     """
     if dim == 1:  # pick random direction in 1D
         direction = np.random.choice([-1, 1])
@@ -139,54 +148,63 @@ def MassAgent(init_state, t):
 
 # TODO: change the ode such that if zeta is an n x 1 array, it produces n solution arrays
 
-"""
-odeint basically works like this:
-1) calc state derivative xdd and xd at t=0 given initial states (x, xd)
-2) estimate x(t+dt) using x(t=0), xd(t=0), xdd(t=0)
-3) then calc xdd(t+dt) using that x(t = t+dt) and xd(t = t+dt)
-4) iterate steps 2 and 3 to calc subsequent timesteps, using the x, xd, xdd
-    from the previous dt to calculate the state values for the current dt
-...
-then, it outputs the system states [x, xd](t)
-"""
-try:
-    states1 = odeint(MassAgent, r0, t)
-except:
-    import pdb; pdb.set_trace()  # TODO: wtf? -rd
+def run_ODE():
+    """
+    odeint basically works like this:
+    1) calc state derivative xdd and xd at t=0 given initial states (x, xd)
+    2) estimate x(t+dt) using x(t=0), xd(t=0), xdd(t=0)
+    3) then calc xdd(t+dt) using that x(t = t+dt) and xd(t = t+dt)
+    4) iterate steps 2 and 3 to calc subsequent timesteps, using the x, xd, xdd
+        from the previous dt to calculate the state values for the current dt
+    ...
+    then, it outputs the system states [x, xd](t)
+    """
+    try:
+        states1 = odeint(MassAgent, r0, t)
+        return states1
+    except:
+        import pdb; pdb.set_trace()  # TODO: wtf? -rd
+    
+    
+def StatesOverTimeGraph(states):
+    plt.plot(t, states)
+    plt.xlabel('time')
+    plt.ylabel('states')
+    plt.title('mass-agent oscillating system')
+    if dim == 1:
+        plt.legend(('x', 'vx'))
+    elif dim == 2:
+        plt.legend(('x', 'vx', 'y', 'vy'))
 
-dim = len(r0)/2
 
-plt.plot(t, states1)
-plt.xlabel('time')
-plt.ylabel('states')
-plt.title('mass-agent oscillating system')
-if dim == 1:
-    plt.legend(('x', 'vx'))
-elif dim == 2:
-    plt.legend(('x', 'vx', 'y', 'vy'))
-
-
-def StateSpaceAnim(dim=1, animate=False):
-    """Animation of changes in state-space over time.
+def StateSpaceDraw(states, dim=1, animate=False, box=False):
+    """Plot state-space over course of experiment.
+    
     Credit to Paul Gribble (email: paul [at] gribblelab [dot] org), code based
     on a function in his "Computational Modelling in Neuroscience" course:
     http://www.gribblelab.org/compneuro/index.html
     """
     plt.figure()
     if dim == 1:
-        pb, = plt.plot(states1[:, 0], states1[:, 1], 'b-')
+        pb, = plt.plot(states[:, 0], states[:, 1], 'b-')
         plt.xlabel('x')
         plt.ylabel('vx')
-        p, = plt.plot(states1[0:10, 0], states1[0:10, 1], 'b-')
-        pp, = plt.plot(states1[10, 0], states1[10, 1], 'b.', markersize=10)
+#        p, = plt.plot(states1[0:10, 0], states1[0:10, 1], 'b-')
+#        pp, = plt.plot(states1[10, 0], states1[10, 1], 'b.', markersize=10)
         tt = plt.title("State-space graph for 1 dimensions")
     elif dim == 2:
-        pb, = plt.plot(states1[:, 0], states1[:, 2], 'b-')
+        pb, = plt.plot(states[:, 0], states[:, 2], 'b-')  # select cols 0,2
+                                                            # for x,y pos
         plt.xlabel('x position')
         plt.ylabel('y position')
 #        p, = plt.plot(states1[0:10, 0], states1[0:10, 2], 'b-')
 #        pp, = plt.plot(states1[10, 0], states1[10, 2], 'b.', markersize=10)
         tt = plt.title("State-space graph for 2 dimensions")
+        if box is True:
+#                plt.ylim(-0,5, 0.5)
+#                plt.xlim(-0,5, 0.5)
+                plt.grid()
+#                gca().add_patch(pylab.Rectangle((-0.5, -0.5), 1, 1, linewidth=3, fill=False))
 
     # animate
     if animate is True:
@@ -199,4 +217,14 @@ def StateSpaceAnim(dim=1, animate=False):
             tt.set_text("State-space trajectory animation - step # %d" % (i))
             plt.draw()
 
-StateSpaceAnim(dim=dim, animate=False)
+     
+def main(plotting=False):
+    plt.close('all')
+    states = run_ODE()
+    if plotting is True:
+        StatesOverTimeGraph(states)
+        StateSpaceDraw(states, dim=dim, animate=False, box=True)
+    return states
+
+if __name__ == '__main__':
+    main()
