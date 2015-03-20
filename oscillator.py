@@ -55,13 +55,14 @@ k = 1e-3   # spring constant in N/meter units
 w0 = np.sqrt(k/m)
 beta = 1  # dampening in N * ms * meter^-1
 force_mag = 1e-6
+windstrength = 1e-7
 
 # TODO: make Bias a class? Talk to Rich P about a smart way to make this object oriented. -sz
 
 # Initial state of the spring.
 #r0 = [1.0, 0.0]  # 1Dinitial state --> position_0, velocity_0
 # TODO: think of realistic units for position, velocity.
-r0 = [0., 0.01, 0.0, 0.01]  # 2D initial state --> x0, vx0, y0, vy0
+r0 = [0., 0.1, 0.0, 0.1]  # 2D initial state --> x0, vx0, y0, vy0
 dim = len(r0)/2
 
 
@@ -82,7 +83,7 @@ def def_time_coords(runtime, dt):
     return dt, runtime, t
 
 
-def baselineNoiseForce(dim=1):
+def baselineNoiseForce(dim=2):
     """Adding random noise to the agent position.
     
     TODO: make vary depending on spatial context
@@ -101,6 +102,15 @@ def baselineNoiseForce(dim=1):
     elif dim == 3:
         raise NotImplementedError('Three-dimensional model not implemented yet!')
 
+def windForce(windstrength, upwind_direction = 0):
+    """Biases the agent to fly upwind. Upwind direction is in radians."""
+    if dim == 2:
+        force_direction = np.random.choice([upwind_direction - (np.pi/2), upwind_direction - (np.pi/2)])
+        x_force_component = windstrength * np.cos(force_direction)
+        y_force_component = windstrength * np.sin(force_direction)
+        return x_force_component, y_force_component
+    else:
+        raise NotImplementedError('wind bias only works in 2D right now!') 
 
 def tempNow():
     """Given position and time, lookup nearest temperature (or interpolate?)"""
@@ -131,9 +141,9 @@ def MassAgent(init_state, t):
     
     TODO: expand states to also include acceleration
     """
-    dim = len(init_state)/2
-    
+    wind_x, wind_y = windForce(windstrength, upwind_direction = 0)
     if dim == 1:
+        # TODO: if you need to run in 1D make sure to update all the equations -rd
         x, vx = init_state
         
         # solve for derivatives of all variables
@@ -150,9 +160,9 @@ def MassAgent(init_state, t):
         
         # solve for derivatives of all variables
         dxdt = vx
-        dvxdt = (-2*beta*w0*vx - (w0**2)*x + fx + biasedDrivingForce()) / m
+        dvxdt = (-2*beta*w0*vx - (w0**2)*x + fx + wind_x + biasedDrivingForce()) / m
         dydt = vy
-        dvydt = (-2*beta*w0*vy - (w0**2)*y + fy + biasedDrivingForce()) / m
+        dvydt = (-2*beta*w0*vy - (w0**2)*y + fy + wind_y + biasedDrivingForce()) / m
         
         return [dxdt, dvxdt, dydt, dvydt]
 
