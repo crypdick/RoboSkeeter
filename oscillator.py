@@ -169,8 +169,11 @@ def run_ODE():
     
     
 def StatesOverTimeGraph(states):
-    plt.figure(1)
-    plt.plot(t, states)
+    plt.figure(1) #linewidth=2
+    plt.plot(t, states[:, 0], color = 'b', linewidth=2)
+    plt.plot(t, states[:, 1], color = 'g', linewidth=1, linestyle=':')
+    plt.plot(t, states[:, 2], color = 'r', linewidth=2)
+    plt.plot(t, states[:, 3], color = 'cyan', linewidth=1, linestyle=':')
     plt.xlabel('time')
     plt.ylabel('states')
     plt.title('mass-agent oscillating system')
@@ -197,7 +200,7 @@ def StateSpaceDraw(states, dim=1, animate=False, box=False):
         tt = plt.title("State-space graph for 1 dimensions")
     elif dim == 2:
         
-        pb, = plt.plot(states[:, 0], states[:, 2], 'b-')  # select cols 0,2
+        pb, = plt.plot(states[:, 0], states[:, 2], 'b-', linewidth=2)  # select cols 0,2
                                                             # for x,y pos
         plt.xlabel('x position')
         plt.ylabel('y position')
@@ -222,7 +225,7 @@ def StateSpaceDraw(states, dim=1, animate=False, box=False):
             plt.draw()
 
      
-def main(plotting=False):
+def main(plotting=True):
     plt.close('all')
     states = run_ODE()
     if plotting is True:
