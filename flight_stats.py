@@ -31,15 +31,21 @@ https://github.com/isomerase/
 # then sum up, normalize by total counts
 
 import oscillator
-
-states = oscillator.main(runtime = 1e3, plotting=True) #work towards 2e3 
-
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import NullFormatter
 
 
-#map np.array of dimensions
+flight_runtime = 1e3
+total_trajectories = 2
+#allocate np.array for trajectories
+flight_states = np.zeros((total_trajectories, flight_runtime, 4))
+for i in range(total_trajectories):
+    states = oscillator.main(runtime = 1e3, plotting=True) #work towards 2e3
+    flight_states[i] = states
+    
+
+
 
 x_positions = states[:, 0]
 x_velocities = states[:, 1]
