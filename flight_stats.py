@@ -32,14 +32,14 @@ https://github.com/isomerase/
 
 import oscillator
 
-states = oscillator.main(runtime = 100, plotting=True) #work towards 2e3 
+states = oscillator.main(runtime = 1e3, plotting=True) #work towards 2e3 
 
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import NullFormatter
 
 
-
+#map np.array of dimensions
 
 x_positions = states[:, 0]
 x_velocities = states[:, 1]
@@ -47,47 +47,33 @@ y_positions = states[:, 2]
 y_velocities = states[:, 3]
 
 ## plot position distributions##
-binwidth = 0.05
-xymax = np.max( [np.max(x_positions), np.max(y_positions)] )
-lim = ( int(xymax/binwidth) + 1) * binwidth
+xy_binwidth = 0.5
+position_lim = 5.0
+positional_bins = np.arange(-position_lim, position_lim + xy_binwidth, xy_binwidth) #specify bin locations
 
 #x dimension
 plt.figure(3)
-axScatter = plt.axes()
-axScatter.set_xlim( (-lim, lim) )
-axScatter.set_ylim( (-lim, lim) )
-bins = np.arange(-lim, lim + binwidth, binwidth)
-axHistx = plt.axes()
-axHistx.hist(x_positions, bins=bins, normed=True)
+plt.hist(x_positions, bins=positional_bins)
 plt.title("x position distributions")
 
 #y dimension
 plt.figure(4)
-axHisty = plt.axes()
-axHisty.hist(y_positions, bins=bins, orientation='horizontal', color = 'r')
+plt.hist(y_positions, bins=positional_bins, orientation='horizontal', color = 'r')
 plt.title("y position distributions")
 
-axHistx.set_xlim( axScatter.get_xlim() )
-axHisty.set_ylim( axScatter.get_ylim() )
-
-#plot x velocity distributions
-plt.figure(5)
-velo_binwidth = 0.001
-xy_velo_max = np.max( [np.max(x_velocities), np.max(y_velocities)] )
-velo_lim = ( int(xy_velo_max/velo_binwidth) + 1) * velo_binwidth
+##plot velocity distributions##
+velo_binwidth = 0.01
+velo_lim = 0.12
 velo_bins = np.arange(-velo_lim, velo_lim + velo_binwidth, velo_binwidth)
-axScatter.set_xlim( (-velo_lim, velo_lim) )
-axScatter.set_ylim( (-velo_lim, velo_lim) )
-axHistx = plt.axes()
-axHistx.hist(x_velocities, bins=velo_bins, color='g')
+
+#x velo dimension
+plt.figure(5)
+plt.hist(x_velocities, bins=velo_bins, color='g')
 plt.title("x velocity distributions")
 
-#plot y velocity distributions
+#y velocity dim
 plt.figure(6)
-axScatter.set_xlim( (-velo_lim, velo_lim) )
-axScatter.set_ylim( (-velo_lim, velo_lim) )
-axHistx = plt.axes()
-axHistx.hist(x_velocities, bins=velo_bins, orientation='horizontal', color = 'cyan')
+plt.hist(x_velocities, bins=velo_bins, orientation='horizontal', color = 'cyan')
 plt.title("y velocity distributions")
 
 plt.show()
