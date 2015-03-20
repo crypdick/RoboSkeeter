@@ -65,13 +65,21 @@ r0 = [0., 0.01, 0.0, 0.01]  # 2D initial state --> x0, vx0, y0, vy0
 dim = len(r0)/2
 
 
-# Time coodinates to solve the ODE for
-dt = 1  # timestep length in milliseconds #TODO bring back to 10ms when fix the
-            #numerical solution bugs
-#Videography of trajectories held at 100fps, suggested timestep = 10 ms
-runtime = 2e3
-num_dt = runtime/dt  # number of timebins
-t = np.linspace(0, runtime, num_dt)
+
+
+def def_time_coords(runtime, dt):
+    """Given duration of trajectory and timebin size, create time vector t to
+    solve ODE for
+    
+    Creating time-related objects in its own function so that we can 
+    dynamically change it in the flight_stats module
+    """    
+    dt = dt  # timestep length in milliseconds #TODO bring back to 10ms when fix the
+                #numerical solution bugs
+    #Videography of trajectories held at 100fps, suggested timestep = 10 ms
+    num_dt = runtime/dt  # number of timebins
+    t = np.linspace(0, runtime, num_dt)
+    return dt, runtime, t
 
 
 def baselineNoiseForce(dim=1):
@@ -150,7 +158,7 @@ def MassAgent(init_state, t):
 
 # TODO: change the ode such that if zeta is an n x 1 array, it produces n solution arrays
 
-def run_ODE():
+def run_ODE(t):
     """
     odeint basically works like this:
     1) calc state derivative xdd and xd at t=0 given initial states (x, xd)
@@ -168,7 +176,7 @@ def run_ODE():
         import pdb; pdb.set_trace()  # TODO: wtf? -rd
     
     
-def StatesOverTimeGraph(states):
+def StatesOverTimeGraph(t, states):
     plt.figure(1) #linewidth=2
     plt.plot(t, states[:, 0], color = 'b', linewidth=2)
     plt.plot(t, states[:, 1], color = 'g', linewidth=1, linestyle=':')
@@ -200,7 +208,7 @@ def StateSpaceDraw(states, dim=1, animate=False, box=False):
         tt = plt.title("State-space graph for 1 dimensions")
     elif dim == 2:
         
-        pb, = plt.plot(states[:, 0], states[:, 2], 'b-', linewidth=2)  # select cols 0,2
+        pb, = plt.plot(states[:, 0], states[:, 2], 'black', linewidth=2)  # select cols 0,2
                                                             # for x,y pos
         plt.xlabel('x position')
         plt.ylabel('y position')
@@ -225,11 +233,12 @@ def StateSpaceDraw(states, dim=1, animate=False, box=False):
             plt.draw()
 
      
-def main(plotting=True):
+def main(runtime = 2e3, dt=1, plotting=True):
     plt.close('all')
-    states = run_ODE()
+    dt, runtime, t = def_time_coords(runtime, dt)
+    states = run_ODE(t)
     if plotting is True:
-        StatesOverTimeGraph(states)
+        StatesOverTimeGraph(t, states)
         StateSpaceDraw(states, dim=dim, animate=False, box=True)
     return states
 
