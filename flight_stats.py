@@ -36,21 +36,28 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import NullFormatter
 
 
-flight_runtime = 1e3
-total_trajectories = 2
+#TODO: if trajectory is garbage, discard it -rd
+
+flight_runtime = 2e3  # careful! this is a float! -rd
+total_trajectories = 5
 #allocate np.array for trajectories
 flight_states = np.zeros((total_trajectories, flight_runtime, 4))
 for i in range(total_trajectories):
-    states = oscillator.main(runtime = 1e3, plotting=True) #work towards 2e3
+    states = oscillator.main(runtime = flight_runtime, plotting=False) #work towards 2e3
     flight_states[i] = states
-    
 
+x_positions = []
+x_velocities = []
+y_positions = []
+y_velocities = []
 
-
-x_positions = states[:, 0]
-x_velocities = states[:, 1]
-y_positions = states[:, 2]
-y_velocities = states[:, 3]
+for trajectory in range(total_trajectories):
+    for time in range(int(flight_runtime)):
+        x, xv, y, yv = flight_states[trajectory,:][time]
+        x_positions.append(x)
+        x_velocities.append(xv)
+        y_positions.append(y)
+        y_velocities.append(yv)
 
 ## plot position distributions##
 xy_binwidth = 0.5
