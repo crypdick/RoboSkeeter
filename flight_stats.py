@@ -26,10 +26,13 @@ Created on Thu Mar 19 14:19:37 2015
 https://staff.washington.edu/decal/
 https://github.com/isomerase/
 """
+# set bin limits, bin centers
+# store trajectories separateley
+# then sum up, normalize by total counts
 
 import oscillator
 
-states = oscillator.main(plotting=True)
+states = oscillator.main(runtime = 100, plotting=True) #work towards 2e3 
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -43,13 +46,14 @@ x_velocities = states[:, 1]
 y_positions = states[:, 2]
 y_velocities = states[:, 3]
 
-
+## plot position distributions##
 binwidth = 0.05
 xymax = np.max( [np.max(x_positions), np.max(y_positions)] )
 lim = ( int(xymax/binwidth) + 1) * binwidth
 
-#plot x position distributions
+#x dimension
 plt.figure(3)
+axScatter = plt.axes()
 axScatter.set_xlim( (-lim, lim) )
 axScatter.set_ylim( (-lim, lim) )
 bins = np.arange(-lim, lim + binwidth, binwidth)
@@ -57,7 +61,7 @@ axHistx = plt.axes()
 axHistx.hist(x_positions, bins=bins, normed=True)
 plt.title("x position distributions")
 
-#plot y position distributions
+#y dimension
 plt.figure(4)
 axHisty = plt.axes()
 axHisty.hist(y_positions, bins=bins, orientation='horizontal', color = 'r')
@@ -69,9 +73,9 @@ axHisty.set_ylim( axScatter.get_ylim() )
 #plot x velocity distributions
 plt.figure(5)
 velo_binwidth = 0.001
-velo_bins = np.arange(-velo_lim, velo_lim + velo_binwidth, velo_binwidth)
 xy_velo_max = np.max( [np.max(x_velocities), np.max(y_velocities)] )
 velo_lim = ( int(xy_velo_max/velo_binwidth) + 1) * velo_binwidth
+velo_bins = np.arange(-velo_lim, velo_lim + velo_binwidth, velo_binwidth)
 axScatter.set_xlim( (-velo_lim, velo_lim) )
 axScatter.set_ylim( (-velo_lim, velo_lim) )
 axHistx = plt.axes()
