@@ -33,17 +33,18 @@ https://github.com/isomerase/
 import oscillator
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.ticker import NullFormatter
+#from matplotlib.ticker import NullFormatter #will need for special plots -rd
 
 
-#TODO: if trajectory is garbage, discard it -rd
+#TODO: if trajectory is garbage or ODE solver throws "too much work done"
+#                                       warning, discard that trajectory -rd
 
 flight_runtime = 2e3  # careful! this is a float! -rd
 total_trajectories = 5
-#allocate np.array for trajectories
+
 flight_states = np.zeros((total_trajectories, flight_runtime, 4))
 for i in range(total_trajectories):
-    states = oscillator.main(runtime = flight_runtime, plotting=False) #work towards 2e3
+    states = oscillator.main(runtime=flight_runtime, plotting=False)
     flight_states[i] = states
 
 x_positions = []
@@ -53,7 +54,7 @@ y_velocities = []
 
 for trajectory in range(total_trajectories):
     for time in range(int(flight_runtime)):
-        x, xv, y, yv = flight_states[trajectory,:][time]
+        x, xv, y, yv = flight_states[trajectory, :][time]
         x_positions.append(x)
         x_velocities.append(xv)
         y_positions.append(y)
@@ -65,13 +66,25 @@ position_lim = 5.0
 positional_bins = np.arange(-position_lim, position_lim + xy_binwidth, xy_binwidth) #specify bin locations
 
 #x dimension
-plt.figure(3)
+x_fig = plt.figure(3)
 plt.hist(x_positions, bins=positional_bins)
 plt.title("x position distributions")
 
+#==============================================================================
+# UNDER CONSTRUCTION: normalizing histograms
+# #x dimension
+# plt.figure(3)
+# x_hist, bin_edges = np.histogram(x_positions, density = 1, bins=positional_bins)
+# plt.bar(bin_edges[:-1], x_hist) #, width = 1)
+# #sanity check: make sure sum is 1.0
+# #np.sum(x_hist*np.diff(binedges))
+# plt.title("x position distributions")
+#==============================================================================
+
+
 #y dimension
-plt.figure(4)
-plt.hist(y_positions, bins=positional_bins, orientation='horizontal', color = 'r')
+y_fig = plt.figure(4)
+plt.hist(y_positions, bins=positional_bins, orientation='horizontal', color='r')
 plt.title("y position distributions")
 
 ##plot velocity distributions##
@@ -80,13 +93,13 @@ velo_lim = 0.12
 velo_bins = np.arange(-velo_lim, velo_lim + velo_binwidth, velo_binwidth)
 
 #x velo dimension
-plt.figure(5)
+xv_fig = plt.figure(5)
 plt.hist(x_velocities, bins=velo_bins, color='g')
 plt.title("x velocity distributions")
 
 #y velocity dim
-plt.figure(6)
-plt.hist(x_velocities, bins=velo_bins, orientation='horizontal', color = 'cyan')
+yv_fig = plt.figure(6)
+plt.hist(x_velocities, bins=velo_bins, orientation='horizontal', color='cyan')
 plt.title("y velocity distributions")
 
 plt.show()
