@@ -16,7 +16,7 @@ m = 2.5e-6 # mass (kg)
 k = 1e-6 # spring constant (kg/s^2)
 beta = 1e-6 # damping force (kg/s) NOTE: if beta is too big, things blow up
 f0 = 0. # random driving force magnitude (N)
-Tmax = 50 # maximum flight time
+Tmax = 50 # maximum flight time (s)
 
 rdetect = .02 # distance from which mozzie can detect source (m)
 
