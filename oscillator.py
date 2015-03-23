@@ -69,11 +69,8 @@ dim = len(r0)/2
 
 
 def def_time_coords(runtime, dt):
-    """Given duration of trajectory and timebin size, create time vector t to
-    solve ODE for
-    
-    Creating time-related objects in its own function so that we can 
-    dynamically change it in the flight_stats module
+    """Given duration and timebin size, create time vector "t" to use in ODE
+    solver.
     """    
     dt = dt  # timestep length in milliseconds #TODO bring back to 10ms when fix the
                 #numerical solution bugs
@@ -84,7 +81,8 @@ def def_time_coords(runtime, dt):
 
 
 def baselineNoiseForce(dim=2):
-    """Adding random noise to the agent position.
+    """Adding random noise to the agent position. Uniformly random selected
+    direction, scaled by constant magnitude "force_mag"
     
     TODO: make vary depending on spatial context
     """
@@ -94,24 +92,29 @@ def baselineNoiseForce(dim=2):
         return force
     elif dim == 2:  # pick random direction in 2D
         direction = np.random.uniform(0, 2*np.pi)  # high bound is not inclusive
-        x_force_component = force_mag * np.cos(direction)
-        y_force_component = force_mag * np.sin(direction)
-        return x_force_component, y_force_component
+        force_xcomponent = force_mag * np.cos(direction)
+        force_ycomponent = force_mag * np.sin(direction)
+        return force_xcomponent, force_ycomponent
     elif dim == 3:
         raise NotImplementedError('Three-dimensional model not implemented yet!')
 
-def windForce(windstrength, upwind_direction = 0):
-    """Biases the agent to fly upwind. Upwind direction is in radians.
-    
-        TODO: add flags for wind, no wind to bias random draw based on direction of
-    the breeze."""
-    if dim == 2:
-        force_direction = np.random.uniform(upwind_direction - (np.pi/2), upwind_direction + (np.pi/2))
-        x_force_component = windstrength * np.cos(force_direction)
-        y_force_component = windstrength * np.sin(force_direction)
-        return x_force_component, y_force_component
+def windForce(wind=True, upwind_direction = 0):
+    """Biases the agent to fly upwind. Upwind direction is in radians. Picks
+    the direction +- pi/2 rads from the upwind direction and scales it by
+    a constant magnitude, "windstrength".
+    # TODO: "upwind bias"
+    """
+    if wind is True:    
+        if dim == 2:
+            force_direction = np.random.uniform(upwind_direction - (np.pi/2), upwind_direction + (np.pi/2))
+            force_xcomponent = windstrength * np.cos(force_direction)
+            force_ycomponent = windstrength * np.sin(force_direction)
+            return force_xcomponent, force_ycomponent
+        else:
+            raise NotImplementedError('wind bias only works in 2D right now!') 
     else:
-        raise NotImplementedError('wind bias only works in 2D right now!') 
+        force_xcomponent = force_ycomponent = 0
+        return force_xcomponent, force_ycomponent
 
 def tempNow():
     """Given position and time, lookup nearest temperature (or interpolate?)"""
@@ -128,7 +131,8 @@ def biasedDrivingForce():
     
     TODO: implement
     """
-    return 0
+    biasedForce = 0
+    return biasedForce
 
 
 def MassAgent(init_state, t):
@@ -142,7 +146,7 @@ def MassAgent(init_state, t):
     
     TODO: expand states to also include acceleration
     """
-    wind_x, wind_y = windForce(windstrength, upwind_direction = 0)
+    wind_x, wind_y = windForce(upwind_direction = 0)
     if dim == 1:
         # TODO: if you need to run in 1D make sure to update all the equations -rd
         x, vx = init_state
@@ -192,6 +196,9 @@ def main(runtime = 1e4, dt=1, plotting=True):
     dt, runtime, t = def_time_coords(runtime, dt)
     states = run_ODE(t)
     if plotting is True:
+        # fig, ax = plt.subplots(1,1)
+        #ax.hist = ... 
+        #ax2 = ax.twinx() #second dim on right side
         agent_plotting_funcs.StatesOverTimeGraph(t, states)
         agent_plotting_funcs.StateSpaceDraw(states, dim=dim, animate=False, box=True)
     return states

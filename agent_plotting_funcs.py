@@ -23,6 +23,7 @@ def StatesOverTimeGraph(t, states, dim = 2):
         plt.legend(('x', 'vx'))
     elif dim == 2:
         plt.legend(('x', 'vx', 'y', 'vy'))
+        plt.savefig('statesovertime_log.png')
 
 
 def StateSpaceDraw(states, dim=2, animate=False, box=False):
@@ -58,6 +59,7 @@ def StateSpaceDraw(states, dim=2, animate=False, box=False):
                 plt.grid()
 #                gca().add_patch(pylab.Rectangle((-0.5, -0.5), 1, 1, linewidth=3, fill=False))
         plt.show()
+        plt.savefig('statefig_log.png')
 
     # animate
     if animate is True:

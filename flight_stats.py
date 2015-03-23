@@ -67,7 +67,7 @@ positional_bins = np.arange(-position_lim, position_lim + xy_binwidth, xy_binwid
 
 #x dimension
 x_fig = plt.figure(3)
-plt.hist(x_positions, bins=positional_bins)
+plt.hist(x_positions, bins=positional_bins, normed=True)
 plt.title("x position distributions")
 
 #==============================================================================
@@ -84,7 +84,7 @@ plt.title("x position distributions")
 
 #y dimension
 y_fig = plt.figure(4)
-plt.hist(y_positions, bins=positional_bins, orientation='horizontal', color='r')
+plt.hist(y_positions, bins=positional_bins, orientation='horizontal', color='r', normed=True)
 plt.title("y position distributions")
 
 ##plot velocity distributions##
@@ -94,12 +94,14 @@ velo_bins = np.arange(-velo_lim, velo_lim + velo_binwidth, velo_binwidth)
 
 #x velo dimension
 xv_fig = plt.figure(5)
-plt.hist(x_velocities, bins=velo_bins, color='g')
+plt.hist(x_velocities, bins=velo_bins, color='g', normed=True)
 plt.title("x velocity distributions")
 
 #y velocity dim
 yv_fig = plt.figure(6)
-plt.hist(x_velocities, bins=velo_bins, orientation='horizontal', color='cyan')
+plt.hist(x_velocities, bins=velo_bins, orientation='horizontal', color='cyan', normed=True)
 plt.title("y velocity distributions")
+
+# TODO 
 
 plt.show()
