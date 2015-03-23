@@ -51,18 +51,18 @@ m = 3.  # mass of agent in mg
 #Female mosquito mass is empirically found to be 2.88 +- 0.35 mg 
 #(measured from 24 cold-anesthetized females, courtesy of Clement Vinauger, Riffell Lab)
 
-k = 1e-3   # spring constant in N/meter units
+k = 1e-5   # spring constant in N/meter units
 w0 = np.sqrt(k/m)
-beta = 1  # dampening in N * ms * meter^-1
-force_mag = 1e-6
-windstrength = 1e-7
+beta = 2.  # dampening in N * ms * meter^-1
+force_mag = 6e-7
+windstrength = 5e-6
 
 # TODO: make Bias a class? Talk to Rich P about a smart way to make this object oriented. -sz
 
 # Initial state of the spring.
 #r0 = [1.0, 0.0]  # 1Dinitial state --> position_0, velocity_0
 # TODO: think of realistic units for position, velocity.
-r0 = [0., 0.1, 0.0, 0.1]  # 2D initial state --> x0, vx0, y0, vy0
+r0 = [0., 0.0, 0.0, 0.0]  # 2D initial state --> x0, vx0, y0, vy0
 dim = len(r0)/2
 
 
@@ -87,8 +87,6 @@ def baselineNoiseForce(dim=2):
     """Adding random noise to the agent position.
     
     TODO: make vary depending on spatial context
-    TODO: add flags for wind, no wind to bias random draw based on direction of
-    the breeze.
     """
     if dim == 1:  # pick random direction in 1D
         direction = np.random.choice([-1, 1])
@@ -103,9 +101,12 @@ def baselineNoiseForce(dim=2):
         raise NotImplementedError('Three-dimensional model not implemented yet!')
 
 def windForce(windstrength, upwind_direction = 0):
-    """Biases the agent to fly upwind. Upwind direction is in radians."""
+    """Biases the agent to fly upwind. Upwind direction is in radians.
+    
+        TODO: add flags for wind, no wind to bias random draw based on direction of
+    the breeze."""
     if dim == 2:
-        force_direction = np.random.choice([upwind_direction - (np.pi/2), upwind_direction - (np.pi/2)])
+        force_direction = np.random.uniform(upwind_direction - (np.pi/2), upwind_direction + (np.pi/2))
         x_force_component = windstrength * np.cos(force_direction)
         y_force_component = windstrength * np.sin(force_direction)
         return x_force_component, y_force_component
@@ -183,10 +184,11 @@ def run_ODE(t):
         states1 = odeint(MassAgent, r0, t)
         return states1
     except:
-        import pdb; pdb.set_trace()  # TODO: wtf? -rd
+        import pdb; pdb.set_trace()  # if ODE has a big error, allows you to
+            # investigate. Type "q" [ENTER] in console to escape the prompt
 
      
-def main(runtime = 2e3, dt=1, plotting=True):
+def main(runtime = 1e4, dt=1, plotting=True):
     dt, runtime, t = def_time_coords(runtime, dt)
     states = run_ODE(t)
     if plotting is True:
@@ -195,4 +197,4 @@ def main(runtime = 2e3, dt=1, plotting=True):
     return states
 
 if __name__ == '__main__':
-    main()
+    states = main()

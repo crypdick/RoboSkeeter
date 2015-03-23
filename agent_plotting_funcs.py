@@ -31,6 +31,10 @@ def StateSpaceDraw(states, dim=2, animate=False, box=False):
     Credit to Paul Gribble (email: paul [at] gribblelab [dot] org), code based
     on a function in his "Computational Modelling in Neuroscience" course:
     http://www.gribblelab.org/compneuro/index.html
+    
+    TODO: WISHLIST make flight trajectory heatmap using this guide -rd
+    http://nbviewer.ipython.org/github/dpsanders/matplotlib-examples/blob/master/colorline.ipynb
+    http://matplotlib.org/examples/pylab_examples/multicolored_line.html
     """
     plt.figure(2)
     if dim == 1:
