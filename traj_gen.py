@@ -11,29 +11,57 @@ import matplotlib.pyplot as plt
 from numpy.linalg import norm
 
 ## define params
+Tmax = 50  # maximum flight time (s)
 dt = 0.01  # (s)
 m = 2.5e-6  # mass (kg)
 k = 1e-6  # spring constant (kg/s^2)
 beta = 1e-6  # damping force (kg/s) NOTE: if beta is too big, things blow up
 f0 = 0.  # random driving force magnitude (N)
-Tmax = 50  # maximum flight time (s)
+wf0 = 5e-7  # upwind bias force magnitude (N)
 
 rdetect = 0.02  # distance from which mozzie can detect source (m)
 
 
 def random_force(f0, dim=2):
     """Generate a random-direction force vector at each timestep with
-    uniform magnitude f0."""
+    uniform magnitude f0.
+
+    Args:
+        f0: random force magnitude
+
+    Returns:
+        random force x and y components as an array
+    """
     if dim == 2:
         # choose direction
         theta = np.random.uniform(high=2*np.pi)
-        # return x and y component of force vector
+        # return x and y component of force vector as an array
         return f0*np.array([np.cos(theta), np.sin(theta)])
     else:
         raise NotImplementedError('Too many dimensions!')
 
 
-def traj_gen(r0, v0, rs=None, k=k, beta=beta, f0=f0):
+def upwindBiasForce(wf0, upwind_direction = 0, dim=2):
+    """Biases the agent to fly upwind. Picks the direction +- pi/2 rads from
+    the upwind direction and scales it by a constant magnitude, "wf0".
+    
+    Args:
+        wf0: bias strength
+        upwind_direction: direction of upwind (in radians)
+    
+    Returns:
+        upwind bias force x and y components as an array
+    """
+    if dim == 2:
+        # chose direction
+        force_direction = np.random.uniform(upwind_direction - (np.pi/2), upwind_direction + (np.pi/2))
+        #return x and y components of bias force as an array
+        return wf0 * np.array([np.cos(force_direction), np.sin(force_direction)])
+    else:
+        raise NotImplementedError('wind bias only works in 2D right now!')
+
+
+def traj_gen(r0, v0, rs=None, k=k, beta=beta, f0=f0, wf0=wf0):
     """Generate a single trajectory.
 
     Args:
@@ -68,7 +96,7 @@ def traj_gen(r0, v0, rs=None, k=k, beta=beta, f0=f0):
     for ts in range(ts_max-1):
 
         # calculate current force
-        force = -k*r[ts] - beta*v[ts] + random_force(f0)  #isn't this a new formula? -rd
+        force = -k*r[ts] - beta*v[ts] + random_force(f0) + upwindBiasForce(wf0)  #isn't this a new formula? -rd
         # calculate current acceleration
         a[ts] = force/m
 
@@ -127,7 +155,7 @@ if __name__ == '__main__':
     t, r, v, a, sf, tf = traj_gen([1., 0], [0, 0.4], k=k, beta=0, rs=rs)
     axs[0, 1].plot(r[:, 0], r[:, 1], lw=2)
     axs[0, 1].scatter(rs[0], rs[1], s=25, c='r', lw=0)
-    axs[0, 1].set_ylabel('y')
+#    axs[0, 1].set_ylabel('y')
     title_append = ''
     if sf:
         title_append = ' (found source!)'
@@ -136,7 +164,7 @@ if __name__ == '__main__':
     t, r, v, a, sf, tf = traj_gen([1., 0], [0, 0.4], k=k, beta=2e-7, rs=rs)
     axs[1, 1].plot(r[:, 0], r[:, 1], lw=2)
     axs[1, 1].scatter(rs[0], rs[1], s=25, c='r', lw=0)
-    axs[1, 1].set_ylabel('y')
+#    axs[1, 1].set_ylabel('y')
     title_append = ''
     if sf:
         title_append = ' (found source!)'
@@ -145,7 +173,7 @@ if __name__ == '__main__':
     t, r, v, a, sf, tf = traj_gen([1., 0], [0, 0.4], k=k, beta=0, f0=3e-6, rs=rs)
     axs[2, 1].plot(r[:, 0], r[:, 1], lw=2)
     axs[2, 1].scatter(rs[0], rs[1], s=25, c='r', lw=0)
-    axs[2, 1].set_ylabel('y')
+#    axs[2, 1].set_ylabel('y')
     title_append = ''
     if sf:
         title_append = ' (found source!)'
@@ -154,7 +182,7 @@ if __name__ == '__main__':
     t, r, v, a, sf, tf = traj_gen([1., 0], [0, 0.4], k=k, beta=2e-7, f0=3e-6, rs=rs)
     axs[3, 1].plot(r[:, 0], r[:, 1], lw=2)
     axs[3, 1].scatter(rs[0], rs[1], s=25, c='r', lw=0)
-    axs[3, 1].set_ylabel('y')
+#    axs[3, 1].set_ylabel('y')
     title_append = ''
     if sf:
         title_append = ' (found source!)'
