@@ -7,7 +7,6 @@ Generate "mosquito" trajectories using harmonic oscillator equations.
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
 from numpy.linalg import norm
 
 ## define params
@@ -41,14 +40,14 @@ def random_force(f0, dim=2):
         raise NotImplementedError('Too many dimensions!')
 
 
-def upwindBiasForce(wf0, upwind_direction = 0, dim=2):
+def upwindBiasForce(wf0, upwind_direction=0, dim=2):
     """Biases the agent to fly upwind. Picks the direction +- pi/2 rads from
     the upwind direction and scales it by a constant magnitude, "wf0".
-    
+
     Args:
         wf0: bias strength
         upwind_direction: direction of upwind (in radians)
-    
+
     Returns:
         upwind bias force x and y components as an array
     """
@@ -61,13 +60,27 @@ def upwindBiasForce(wf0, upwind_direction = 0, dim=2):
         raise NotImplementedError('wind bias only works in 2D right now!')
 
 
-def traj_gen(r0, v0, rs=None, k=k, beta=beta, f0=f0, wf0=wf0):
+def stimulusDrivingForce():
+    """[PLACEHOLDER]
+    Force driving agegent towards stimulus source, determined by
+    temperature-stimulus at the current position at the current time: b(T(x,t))
+
+    TODO: Make two biased functions for this: a spatial-context dependent 
+    bias (e.g. to drive mosquitos away from walls), and a temp 
+    stimulus-dependent driving force.
+    """
+    pass
+
+
+def traj_gen(r0, v0, Tmax=Tmax, dt=dt, rs=None, k=k, beta=beta, f0=f0, wf0=wf0):
     """Generate a single trajectory.
 
     Args:
         r0: initial position (list/array)
         v0: initial velocity (list/array)
         rs: source position (list/array) (set to None if no source)
+        Tmax: max length of a trajector (float)
+        dt: length of timebins (float)
 
     Returns:
         t: time vector
@@ -110,14 +123,14 @@ def traj_gen(r0, v0, rs=None, k=k, beta=beta, f0=f0, wf0=wf0):
         if rs is not None:
             if norm(r[ts+1] - rs) < rdetect:
                 source_found = True
-                tfound = t[ts]  #should this be t[ts+1]? -rd
-                # trim excess times in arrays? -rd
+                tfound = t[ts]  # should this be t[ts+1]? -rd
+                # trim excess timebins in arrays
                 t = t[:ts+1]
                 r = r[:ts+1]
                 v = v[:ts+1]
                 a = a[:ts+1]
                 break  # stop flying
-    else:  #why is this else at this indentation? -rd
+    else:  # why is this else at this indentation? -rd
         source_found = False
         tfound = None
 
@@ -125,6 +138,8 @@ def traj_gen(r0, v0, rs=None, k=k, beta=beta, f0=f0, wf0=wf0):
 
 
 if __name__ == '__main__':
+    import matplotlib.pyplot as plt
+
     ## generate eight types of trajectories and plot them
     fig, axs = plt.subplots(4, 2, facecolor='w', figsize=(8, 10), sharex=True,
                             sharey=True, tight_layout=True)
