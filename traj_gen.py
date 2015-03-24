@@ -114,7 +114,7 @@ if __name__ == '__main__':
     t, r, v, a, sf, tf = traj_gen([1.,0], [0,.4], k=k, beta=2e-7, f0=3e-6)
     axs[3,0].plot(r[:,0], r[:,1], lw=2)
     axs[3,0].set_ylabel('y')
-    axs[3,0].set_title('driving/no damping')
+    axs[3,0].set_title('driving/damping')
     
     # with source
     rs = [.13,.01]
@@ -152,7 +152,7 @@ if __name__ == '__main__':
     title_append = ''
     if sf:
         title_append = ' (found source!)'
-    axs[3,1].set_title('driving/no damping' + title_append)
+    axs[3,1].set_title('driving/damping' + title_append)
     
     for ax in axs.flatten():
         ax.set_xlim(-1.5, 1.5)
