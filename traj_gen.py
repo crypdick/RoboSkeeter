@@ -109,7 +109,7 @@ def traj_gen(r0, v0, Tmax=Tmax, dt=dt, rs=None, k=k, beta=beta, f0=f0, wf0=wf0):
     for ts in range(ts_max-1):
 
         # calculate current force
-        force = -k*r[ts] - beta*v[ts] + random_force(f0) + upwindBiasForce(wf0)  #isn't this a new formula? -rd
+        force = -k*r[ts] - beta*v[ts] + random_force(f0) + upwindBiasForce(wf0)  # isn't this a new formula? -rd
         # calculate current acceleration
         a[ts] = force/m
 
@@ -117,7 +117,7 @@ def traj_gen(r0, v0, Tmax=Tmax, dt=dt, rs=None, k=k, beta=beta, f0=f0, wf0=wf0):
         v[ts+1] = v[ts] + a[ts]*dt
 
         # update position in next timestep
-        r[ts+1] = r[ts] + v[ts+1]*dt  #why not use v[ts]? -rd
+        r[ts+1] = r[ts] + v[ts+1]*dt  # why not use v[ts]? -rd
 
         # if source, check if source has been found
         if rs is not None:
