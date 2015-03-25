@@ -34,15 +34,48 @@ def trajGenIter(Tmax, dt, total_trajectories):
     return pos, velos, accels, source_finds, t_finds
 
 
-def stateHistograms():
-    pass    
+def stateHistograms(pos, velos, accels):
+    pos_all = np.concatenate(pos, axis=0)
+    posHistBinWidth = 0.1
+    position_lim = 2.0
+    positional_bins = np.arange(-position_lim-posHistBinWidth, position_lim + posHistBinWidth, posHistBinWidth) 
+    pos_dist_fig = plt.figure(1)
+    plt.hist(pos_all[:,0], bins=positional_bins, alpha=0.5, label='x', normed=True)
+    plt.hist(pos_all[:,1], bins=positional_bins, alpha=0.5, label='y', normed=True)
+    plt.title("x,y position distributions")
+    plt.legend()
+    
+    velo_all = np.concatenate(velos, axis=0)
+    veloHistBinWidth = 0.1
+    velo_lim = 0.5
+    velo_bins = np.arange((-velo_lim - veloHistBinWidth), (velo_lim + veloHistBinWidth), veloHistBinWidth)
+    velo_dist_fig = plt.figure(2)
+    plt.hist(velo_all[:,0], bins=velo_bins, alpha=0.5, label='vx', normed=True)
+    plt.hist(velo_all[:,1], bins=velo_bins, alpha=0.5, label='vy', normed=True)
+    plt.title("x,y velocity distributions")    
+    plt.legend()
+    
+    accel_all = np.concatenate(accels, axis=0)
+    accelHistBinWidth = 0.1
+    accel_lim = 0.5
+    accel_bins = np.arange((-accel_lim - accelHistBinWidth), (accel_lim + accelHistBinWidth), accelHistBinWidth)
+    accel_dist_fig = plt.figure(3)
+    plt.hist(accel_all[:,0], bins=accel_bins, alpha=0.5, label='ax', normed=True)
+    plt.hist(accel_all[:,1], bins=accel_bins, alpha=0.5, label='ay', normed=True)
+    plt.title("x,y acceleration distributions")
+    plt.legend()
+    
+    plt.show()
+    
 
-
-def sourceFindHeatmap():
+def probFindGrid(source_finds):
     pass
 
 
-def main(Tmax=1.0, dt=0.01, total_trajectories=2):
+def T_find_average(t_finds):
+    pass
+
+def main(Tmax, dt, total_trajectories):
     pos, velos, accels, source_finds, t_finds = trajGenIter(Tmax, dt, total_trajectories)
 
     return pos, velos, accels, source_finds, t_finds
@@ -50,41 +83,7 @@ def main(Tmax=1.0, dt=0.01, total_trajectories=2):
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     
-    pos, velos, accels, source_finds, t_finds = main()
-    stateHistograms()
-    sourceFindHeatmap()
+    pos, velos, accels, source_finds, t_finds = main(Tmax=20.0, dt=0.01, total_trajectories=15)
+    stateHistograms(pos, velos, accels)
+    probFindGrid(source_finds)
 
-    
-##############  LEGACY CODE  ##########################################
-    ## plot position distributions##
-#    xy_binwidth = 0.5
-#    position_lim = 5.0
-#    positional_bins = np.arange(-position_lim, position_lim + xy_binwidth, xy_binwidth) #specify bin locations
-#    
-#    #x dimension
-#    x_fig = plt.figure(3)
-#    plt.hist(x_positions, bins=positional_bins, normed=True)
-#    plt.title("x position distributions")
-#    
-#    #y dimension
-#    y_fig = plt.figure(4)
-#    plt.hist(y_positions, bins=positional_bins, orientation='horizontal', color='r', normed=True)
-#    plt.title("y position distributions")
-#    
-#    ##plot velocity distributions##
-#    velo_binwidth = 0.01
-#    velo_lim = 0.12
-#    velo_bins = np.arange(-velo_lim, velo_lim + velo_binwidth, velo_binwidth)
-#    
-#    #x velo dimension
-#    xv_fig = plt.figure(5)
-#    plt.hist(x_velocities, bins=velo_bins, color='g', normed=True)
-#    plt.title("x velocity distributions")
-#    
-#    #y velocity dim
-#    yv_fig = plt.figure(6)
-#    plt.hist(x_velocities, bins=velo_bins, orientation='horizontal', color='cyan', normed=True)
-#    plt.title("y velocity distributions")
-#    
-#    plt.show()
-########################################################
