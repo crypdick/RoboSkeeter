@@ -3,6 +3,7 @@
 Fork of flight_stats code to use the traj_gen script instead
 
 TODO: make r0, v0 vary
+TODO: make sure globals inside traj_gen get overriden (e.g. Tmax)
 
 @author: Richard Decal, decal@uw.edu
 https://staff.washington.edu/decal/
@@ -30,7 +31,7 @@ def trajGenIter(r0, v0, k, beta, f0, wf0, rs, Tmax, dt, total_trajectories):
         source_finds += [source_found]
         t_finds += [tfound]
 
-    return pos, velos, accels, source_finds, t_finds
+    return pos, velos, accels, source_finds, np.array(t_finds)
 
 
 def stateHistograms(pos, velos, accels):
@@ -75,17 +76,21 @@ def probFindGrid(source_finds):
 
 
 def T_find_average(t_finds):
-    pass
+    t_finds_NoNaNs = t_finds[~np.isnan(t_finds)]  # remove NaNs
+    Tfind_avg = sum(t_finds_NoNaNs)/len(t_finds_NoNaNs)
+    print("<Time_find> = ", Tfind_avg)
+    return Tfind_avg
 
 def main(r0, v0, k, beta, f0, rs, Tmax, dt, total_trajectories):
     pos, velos, accels, source_finds, t_finds = trajGenIter(r0, v0, k, beta, f0, wf0, rs, Tmax, dt, total_trajectories)
+    Tfind_avg = T_find_average(t_finds)
 
-    return pos, velos, accels, source_finds, t_finds
+    return pos, velos, accels, source_finds, Tfind_avg
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     
-    pos, velos, accels, source_finds, t_finds = main(r0=[1., 0], v0=[0, 0.4], k=1e-6, beta=2e-7, f0=3e-6, rs = [0.13, 0.01], Tmax=20.0, dt=0.01, total_trajectories=15)
+    pos, velos, accels, source_finds, Tfind_avg = main(r0=[1., 0], v0=[0, 0.4], k=1e-6, beta=2e-7, f0=3e-6, rs = [0.13, 0.01], Tmax=30.0, dt=0.01, total_trajectories=15)
     stateHistograms(pos, velos, accels)
     probFindGrid(source_finds)
 

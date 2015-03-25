@@ -132,7 +132,7 @@ def traj_gen(r0, v0, Tmax=Tmax, dt=dt, rs=None, k=k, beta=beta, f0=f0, wf0=wf0):
                 break  # stop flying
     else:  # why is this else at this indentation? -rd
         source_found = False
-        tfound = None
+        tfound = np.nan
 
     return t, r, v, a, source_found, tfound
 
