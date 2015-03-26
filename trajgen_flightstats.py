@@ -61,7 +61,7 @@ def stateHistograms(pos, velos, accels):
     velo_dist_fig = plt.figure(3)
 #    plt.hist(velo_all)
     plt.hist(velo_all[:,0], bins=velo_bins, alpha=0.5, label='vx', normed=True)
-    plt.hist(velo_all[:,1], bins=velo_bins, alpha=0.5, label='vy', normed=True)
+    plt.hist(velo_all[:,1], bins=20, alpha=0.5, label='vy', normed=True)
     plt.title("x,y velocity distributions")
     plt.legend()
     plt.savefig("velocity distributions histo.png")
@@ -70,7 +70,7 @@ def stateHistograms(pos, velos, accels):
     velo_all_magn = []
     for v in velo_all:
         velo_all_magn.append(np.linalg.norm(v))
-    plt.hist(velo_all_magn, label='v_total', bins=20, normed=True)
+    plt.hist(velo_all_magn, label='v_total', bins=30, normed=True)
     plt.title("absolute velocity distributions")
     plt.legend()
     plt.savefig("absolute velocity distributions histo.png")
@@ -121,13 +121,13 @@ if __name__ == '__main__':
     # set default params to send to main
     r0 = [1., 0]
     v0 = [0, 0.2]  # ignore, these will get drawn from a 2D gaussian above
-    k = 1e-5
+    k = 2e-5
     beta = 2e-5
-    f0 = 5e-6
+    f0 = 7e-6
     wf0 = 1e-6
     rs = [0.2, 0.05]
-    Tmax = 5.0
+    Tmax = 4.0
     dt = 0.01
-    total_trajectories = 2
+    total_trajectories = 30
     pos, velos, accels, source_finds, Tfind_avg = main(r0=r0, v0=v0, k=k, beta=beta, f0=f0, wf0=wf0, rs=rs, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories)
     stateHistograms(pos, velos, accels)

@@ -1,7 +1,7 @@
 """
 Created on Mon Mar 23 15:07:40 2015
 
-@author: rkp
+@author: rkp, rbd
 
 Generate "mosquito" trajectories using harmonic oscillator equations.
 """
@@ -11,19 +11,22 @@ from numpy.linalg import norm
 
 ## define params
 Tmax = 50  # maximum flight time (s)
-dt = 0.01  # (s)
-m = 2.5e-6  # mass (kg)
+# Note: from data, <control flight duration> = 4.4131 +- 4.4096
+dt = 0.01  # (s) =10ms
+m = 2.5e-6  # mass (kg) =2.6 mg
 k = 1e-6  # spring constant (kg/s^2)
 beta = 1e-6  # damping force (kg/s) NOTE: if beta is too big, things blow up
 f0 = 0.  # random driving force magnitude (N)
 wf0 = 5e-7  # upwind bias force magnitude (N)
 
-rdetect = 0.02  # distance from which mozzie can detect source (m)
+rdetect = 0.02  # distance from which mozzie can detect source (m) =2 cm
 
 
 def random_force(f0, dim=2):
     """Generate a random-direction force vector at each timestep with
-    uniform magnitude f0.
+    magnitude f0 (drawn from normal distribution centered at 0).
+    
+    TODO: make f0 be drawn from power distribution rather than normal distrib.
 
     Args:
         f0: random force magnitude
@@ -45,7 +48,7 @@ def random_force(f0, dim=2):
         raise NotImplementedError('Too many dimensions!')
 
 
-def upwindBiasForce(wf0, upwind_direction=-np.pi, dim=2):
+def upwindBiasForce(wf0, upwind_direction=np.pi, dim=2):
     """Biases the agent to fly upwind. Picks the direction +- pi/2 rads from
     the upwind direction and scales it by a constant magnitude, "wf0".
 
@@ -77,7 +80,7 @@ def stimulusDrivingForce():
     pass
 
 
-def traj_gen(r0, v0, Tmax=Tmax, dt=dt, rs=None, k=k, beta=beta, f0=f0, wf0=wf0):
+def traj_gen(r0, v0=[0, 0.4], Tmax=Tmax, dt=dt, rs=None, k=k, beta=beta, f0=f0, wf0=wf0, detect_thresh=rdetect):
     """Generate a single trajectory.
 
     Args:
