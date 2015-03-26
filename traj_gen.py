@@ -32,15 +32,20 @@ def random_force(f0, dim=2):
         random force x and y components as an array
     """
     if dim == 2:
-        # choose direction
-        theta = np.random.uniform(high=2*np.pi)
-        # return x and y component of force vector as an array
-        return f0*np.array([np.cos(theta), np.sin(theta)])
+        if f0 < 2e-10:
+            return [0, 0]
+        else:
+            # choose direction
+            theta = np.random.uniform(high=2*np.pi)
+            # pick force of random.normal magnitude
+            f = np.random.normal(0, f0, 2)
+            # return x and y component of force vector as an array
+            return f*np.array([np.cos(theta), np.sin(theta)])
     else:
         raise NotImplementedError('Too many dimensions!')
 
 
-def upwindBiasForce(wf0, upwind_direction=0, dim=2):
+def upwindBiasForce(wf0, upwind_direction=-np.pi, dim=2):
     """Biases the agent to fly upwind. Picks the direction +- pi/2 rads from
     the upwind direction and scales it by a constant magnitude, "wf0".
 
@@ -96,7 +101,7 @@ def traj_gen(r0, v0, Tmax=Tmax, dt=dt, rs=None, k=k, beta=beta, f0=f0, wf0=wf0):
 
     ## initialize all arrays
     ts_max = int(np.ceil(Tmax / dt))  # maximum time step
-    t = np.arange(0, Tmax, dt)  # why does this use Tmax instead of ts_max? -rd
+    t = np.arange(0, Tmax, dt)
     r = np.zeros((ts_max, dim), dtype=float)
     v = np.zeros((ts_max, dim), dtype=float)
     a = np.zeros((ts_max, dim), dtype=float)
@@ -109,7 +114,7 @@ def traj_gen(r0, v0, Tmax=Tmax, dt=dt, rs=None, k=k, beta=beta, f0=f0, wf0=wf0):
     for ts in range(ts_max-1):
 
         # calculate current force
-        force = -k*r[ts] - beta*v[ts] + random_force(f0) + upwindBiasForce(wf0)  # isn't this a new formula? -rd
+        force = -k*r[ts] - beta*v[ts] + random_force(f0) + upwindBiasForce(wf0)
         # calculate current acceleration
         a[ts] = force/m
 
@@ -129,7 +134,7 @@ def traj_gen(r0, v0, Tmax=Tmax, dt=dt, rs=None, k=k, beta=beta, f0=f0, wf0=wf0):
                 r = r[:ts+1]
                 v = v[:ts+1]
                 a = a[:ts+1]
-                break  # stop flying
+                break  # stop flying at source
     else:  # why is this else at this indentation? -rd
         source_found = False
         tfound = np.nan
