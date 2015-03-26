@@ -33,8 +33,25 @@ for j in range(Ny_bins):
         spotCoordsList.append([xticks[i], yticks[j]])
 spotCoordsGrid = np.reshape(spotCoordsList, (Nx_bins, Ny_bins, 2))
 
-# for grid cell, place rs in grid cell and run 30 times.
-# then switch to next grid cell.
+detect_thresh = (np.linalg.norm((spotCoordsGrid[0, 0] - spotCoordsGrid[1, 1])/2))
+
+gridIter = np.nditer(spotCoordsGrid, flags=['multi_index'])
+while not gridIter.finished:
+    print "%d <%s>" % (gridIter[0], gridIter.multi_index), gridIter.iternext()
+#    
+#    for trial in range(2):
+#        _, _, _, _, source_found, tfound = traj_gen.traj_gen(
+#            [1., 0], #r0
+#            rs = rs,
+#            k = 2e-5,
+#            beta = 2e-5,
+#            f0 = 7e-6,
+#            wf0 = 1e-6,
+#            Tmax = 4.0,
+#            dt = 0.01,
+#            detect_thresh = detect_thresh)
+#        if source_found is True:
+#            pass
 
 # TODO: change detection limit
 #given 
