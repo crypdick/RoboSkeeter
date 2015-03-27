@@ -121,7 +121,7 @@ if __name__ == '__main__':
     # set default params to send to main
     r0 = [1., 0]
     v0 = [0, 0.2]  # ignore, these will get drawn from a 2D gaussian above
-    k = 2e-5
+    k = 0. #2e-5
     beta = 2e-5
     f0 = 7e-6
     wf0 = 1e-6
