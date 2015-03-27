@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 
 # sources from 0 -> 0.5 in x,
 # +- -.25 in y
-Nx_bins = 3
+Nx_bins = 2
 Ny_bins = 4
 xbounds = (0,20)#(0,1)
 ybounds = (20,-20)#(0.08, -0.08)  # reverse sign to go from top left to bottom right
@@ -26,12 +26,22 @@ src_counts = np.zeros((Nx_bins, Ny_bins))
 xticks = np.linspace(*xbounds, num=Nx_bins+2)[1:-1]
 yticks = np.linspace(*ybounds, num=Ny_bins+2)[1:-1]
 
+# example code with with heterogeneous dtype.
+struct_diffdtype = np.array([(1.0, 'string1', 2.0), (3.0, 'string2', 4.1)],
+dtype=[('x', float),('str_var', 'a7'),('y',float)])
+#print('\n structured array with different dtypes')
+#print struct_diffdtype
+struct_diffdtype_nd = struct_diffdtype[['str_var', 'x', 'y']].view(np.ndarray).reshape(len(struct_diffdtype), -1)
+
 # generate spotCoordsList, spotsgrid
 spotCoordsList = []
+dtype = [(('xindex', int), ('yindex', int)), ('x', float), ('y', float)]
 for j in range(Ny_bins):
     for i in range(Nx_bins):
-        spotCoordsList.append([xticks[i], yticks[j]])
-spotCoordsGrid = np.reshape(spotCoordsList, (Nx_bins, Ny_bins, 2))
+        spotCoordsList.append(((i, j), xticks[i], yticks[j]))  # coords as tuple
+spotCoordsList_ndarraydtype = np.array(spotCoordsList, dtype=dtype)
+#spots_struc = struct_diffdtype[['str_var', 'x', 'y']].view(np.ndarray).reshape(len(struct_diffdtype), -1)
+#spotCoordsGrid = np.reshape(spotCoordsList, (Nx_bins, (Ny_bins,0    )))
 
 detect_thresh = (np.linalg.norm((spotCoordsGrid[0, 0] - spotCoordsGrid[1, 1])/2))
 
