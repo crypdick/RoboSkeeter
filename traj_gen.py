@@ -10,6 +10,7 @@ import numpy as np
 from numpy.linalg import norm
 
 ## define params
+# TODO: rename to set apart from actually in-use vars
 Tmax = 50  # maximum flight time (s)
 # Note: from data, <control flight duration> = 4.4131 +- 4.4096
 dt = 0.01  # (s) =10ms
@@ -38,12 +39,12 @@ def random_force(f0, dim=2):
         if f0 < 2e-10:
             return [0, 0]
         else:
-            # choose direction
-            theta = np.random.uniform(high=2*np.pi)
+            # choose direction # TODO: delete these lines after done testing new dists
+            # theta = np.random.uniform(high=2*np.pi)
             # pick force of random.normal magnitude
-            f = np.random.normal(0, f0, 2)
+            f = np.random.exponential(f0)
             # return x and y component of force vector as an array
-            return f*np.array([np.cos(theta), np.sin(theta)])
+            return  f # * np.array([np.cos(theta), np.sin(theta)])  # TODO test how this changes dists
     else:
         raise NotImplementedError('Too many dimensions!')
 
