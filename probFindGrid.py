@@ -8,14 +8,14 @@ Created on Wed Mar 25 09:59:21 2015
 
 @author: richard
 """
-import traj_gen
+import trajgen_flightstats
 import numpy as np
 import matplotlib.pyplot as plt
 
 # sources from 0 -> 0.5 in x,
 # +- -.25 in y
-Nx_bins = 2
-Ny_bins = 4
+Nx_bins = 3
+Ny_bins = 2
 xbounds = (0,20)#(0,1)
 ybounds = (20,-20)#(0.08, -0.08)  # reverse sign to go from top left to bottom right
 
@@ -35,23 +35,23 @@ spotCoordsGrid = np.reshape(spotCoordsList, (Ny_bins, Nx_bins, 4))
 
 detect_thresh = (np.linalg.norm((spotCoordsGrid[0, 0] - spotCoordsGrid[1, 1])/2))
 
-#gridIter = np.nditer(spotCoordsGrid, flags=['multi_index'])
-#while not gridIter.finished:
-#    print "%d <%s>" % (gridIter[0], gridIter.multi_index), gridIter.iternext()
-#    
-#    for trial in range(2):
-#        _, _, _, _, source_found, tfound = traj_gen.traj_gen(
-#            [1., 0], #r0
-#            rs = rs,
-#            k = 2e-5,
-#            beta = 2e-5,
-#            f0 = 7e-6,
-#            wf0 = 1e-6,
-#            Tmax = 4.0,
-#            dt = 0.01,
-#            detect_thresh = detect_thresh)
-#        if source_found is True:
-#            pass
+for row in spotCoordsGrid:
+    for spot in row:
+        x_index, y_index, x_coord, y_coord = spot
+        trajGenIter(r0, v0_stdev, k, beta, f0, wf0, rs, Tmax, dt, total_trajectories)
+        for trial in range(2):
+            _, _, _, _, source_found, tfound = trajgen_flightstats.
+                [1., 0], #r0
+                rs = rs,
+                k = 2e-5,
+                beta = 2e-5,
+                f0 = 7e-6,
+                wf0 = 1e-6,
+                Tmax = 4.0,
+                dt = 0.01,
+                detect_thresh = detect_thresh)
+            if source_found is True:
+                pass
 
 # TODO: change detection limit
 #given 
