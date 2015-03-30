@@ -10,41 +10,32 @@ import numpy as np
 from numpy.linalg import norm
 
 ## define params
-# TODO: rename to set apart from actually in-use vars
-Tmax = 50  # maximum flight time (s)
-# Note: from data, <control flight duration> = 4.4131 +- 4.4096
+# These are the default params. They will get reassigned if this script is
+# instantiated with user input
+Tmax = 3  # maximum flight time (s)
+# Behavioral data: <control flight duration> = 4.4131 +- 4.4096
 dt = 0.01  # (s) =10ms
 m = 2.5e-6  # mass (kg) =2.6 mg
-k = 1e-6  # spring constant (kg/s^2)
+k = 0.  # spring constant (kg/s^2)
 beta = 1e-6  # damping force (kg/s) NOTE: if beta is too big, things blow up
-f0 = 0.  # random driving force magnitude (N)
-wf0 = 5e-7  # upwind bias force magnitude (N)
+f0 = 5e-6  # random driving force exp term for exp distribution (not N)
+wf0 = 5e-6  # upwind bias force magnitude (N)
 
 rdetect = 0.02  # distance from which mozzie can detect source (m) =2 cm
 
 
 def random_force(f0, dim=2):
-    """Generate a random-direction force vector at each timestep with
-    magnitude f0 (drawn from normal distribution centered at 0).
-    
-    TODO: make f0 be drawn from power distribution rather than normal distrib.
+    """Generate a random-direction force vector at each timestep from double-
+    exponential distribution with exponent f0.
 
     Args:
-        f0: random force magnitude
+        f0: random force distribution exponent
 
     Returns:
         random force x and y components as an array
     """
     if dim == 2:
-        if f0 < 2e-10:
-            return [0, 0]
-        else:
-            # choose direction # TODO: delete these lines after done testing new dists
-            # theta = np.random.uniform(high=2*np.pi)
-            # pick force of random.normal magnitude
-            f = np.random.exponential(f0)
-            # return x and y component of force vector as an array
-            return  f # * np.array([np.cos(theta), np.sin(theta)])  # TODO test how this changes dists
+        return  np.random.laplace(0, f0, size=2)
     else:
         raise NotImplementedError('Too many dimensions!')
 
@@ -81,7 +72,7 @@ def stimulusDrivingForce():
     pass
 
 
-def traj_gen(r0, v0=[0, 0.4], Tmax=Tmax, dt=dt, rs=None, k=k, beta=beta, f0=f0, wf0=wf0, detect_thresh=rdetect):
+def traj_gen(r0, v0=[0., 0.], Tmax=Tmax, dt=dt, rs=None, k=k, beta=beta, f0=f0, wf0=wf0, detect_thresh=rdetect):
     """Generate a single trajectory.
 
     Args:
@@ -148,75 +139,5 @@ def traj_gen(r0, v0=[0, 0.4], Tmax=Tmax, dt=dt, rs=None, k=k, beta=beta, f0=f0, 
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-
-    ## generate eight types of trajectories and plot them
-    fig, axs = plt.subplots(4, 2, facecolor='w', figsize=(8, 10), sharex=True,
-                            sharey=True, tight_layout=True)
-
-    # with no source
-    t, r, v, a, sf, tf = traj_gen([1., 0], [0, 0.4], k=k, beta=0)
-    axs[0, 0].plot(r[:, 0], r[:, 1], lw=2)
-    axs[0, 0].set_ylabel('y')
-    axs[0, 0].set_title('no damping/no driving')
-
-    t, r, v, a, sf, tf = traj_gen([1., 0], [0, 0.4], k=k, beta=2e-7)
-    axs[1, 0].plot(r[:, 0], r[:, 1], lw=2)
-    axs[1, 0].set_ylabel('y')
-    axs[1, 0].set_title('damping/no driving')
-
-    t, r, v, a, sf, tf = traj_gen([1., 0], [0, 0.4], k=k, beta=0, f0=3e-6)
-    axs[2, 0].plot(r[:, 0], r[:, 1], lw=2)
-    axs[2, 0].set_ylabel('y')
-    axs[2, 0].set_title('driving/no damping')
-
-    t, r, v, a, sf, tf = traj_gen([1., 0], [0, 0.4], k=k, beta=2e-7, f0=3e-6)
-    axs[3, 0].plot(r[:, 0], r[:, 1], lw=2)
-    axs[3, 0].set_ylabel('y')
-    axs[3, 0].set_title('driving/damping')
-
-    # with source # TODO: add w/o source, w/source labels to top of columns -rd
-    rs = [0.13, 0.01]
-    t, r, v, a, sf, tf = traj_gen([1., 0], [0, 0.4], k=k, beta=0, rs=rs)
-    axs[0, 1].plot(r[:, 0], r[:, 1], lw=2)
-    axs[0, 1].scatter(rs[0], rs[1], s=25, c='r', lw=0)
-#    axs[0, 1].set_ylabel('y')
-    title_append = ''
-    if sf:
-        title_append = ' (found source!)'
-    axs[0, 1].set_title('no damping/no driving' + title_append)
-
-    t, r, v, a, sf, tf = traj_gen([1., 0], [0, 0.4], k=k, beta=2e-7, rs=rs)
-    axs[1, 1].plot(r[:, 0], r[:, 1], lw=2)
-    axs[1, 1].scatter(rs[0], rs[1], s=25, c='r', lw=0)
-#    axs[1, 1].set_ylabel('y')
-    title_append = ''
-    if sf:
-        title_append = ' (found source!)'
-    axs[1, 1].set_title('damping/no driving' + title_append)
-
-    t, r, v, a, sf, tf = traj_gen([1., 0], [0, 0.4], k=k, beta=0, f0=3e-6, rs=rs)
-    axs[2, 1].plot(r[:, 0], r[:, 1], lw=2)
-    axs[2, 1].scatter(rs[0], rs[1], s=25, c='r', lw=0)
-#    axs[2, 1].set_ylabel('y')
-    title_append = ''
-    if sf:
-        title_append = ' (found source!)'
-    axs[2, 1].set_title('driving/no damping' + title_append)
-
-    t, r, v, a, sf, tf = traj_gen([1., 0], [0, 0.4], k=k, beta=2e-7, f0=3e-6, rs=rs)
-    axs[3, 1].plot(r[:, 0], r[:, 1], lw=2)
-    axs[3, 1].scatter(rs[0], rs[1], s=25, c='r', lw=0)
-#    axs[3, 1].set_ylabel('y')
-    title_append = ''
-    if sf:
-        title_append = ' (found source!)'
-    axs[3, 1].set_title('driving/damping' + title_append)
-
-    for ax in axs.flatten():
-        ax.set_xlim(-1.5, 1.5)
-        ax.set_ylim(-1.5, 1.5)
-
-    axs[-1, 0].set_xlabel('x')
-    axs[-1, 1].set_xlabel('x')
-
-    plt.draw()
+    t, r, v, a, source_found, tfound = traj_gen([1, 0])
+    plt.plot(r[:, 0], r[:, 1], lw=2, alpha=0.5)
