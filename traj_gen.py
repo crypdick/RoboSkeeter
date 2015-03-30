@@ -8,20 +8,10 @@ Generate "mosquito" trajectories using harmonic oscillator equations.
 
 import numpy as np
 from numpy.linalg import norm
+import matplotlib.pyplot as plt
 
 ## define params
-# These are the default params. They will get reassigned if this script is
-# instantiated with user input
-#Tmax = 3  # maximum flight time (s)
-## Behavioral data: <control flight duration> = 4.4131 +- 4.4096
-#dt = 0.01  # (s) =10ms
 m = 2.5e-6  # mass (kg) =2.6 mg
-#k = 0.  # spring constant (kg/s^2)
-#beta = 1e-6  # damping force (kg/s) NOTE: if beta is too big, things blow up
-#f0 = 5e-6  # random driving force exp term for exp distribution (not N)
-#wf0 = 5e-6  # upwind bias force magnitude (N)
-#
-#rdetect = 0.02  # distance from which mozzie can detect source (m) =2 cm
 
 
 def random_force(f0, dim=2):
@@ -86,8 +76,8 @@ def stimulusDrivingForce():
     pass
 
 
-
-    """Generate accelList single trajectory.
+class Trajectory:
+    """Generate single trajectory.
 
     Args:
         r0: initial position (list/array)
@@ -95,6 +85,14 @@ def stimulusDrivingForce():
         target_pos: source position (list/array) (set to None if no source)
         Tmax: max length of accelList trajector (float)
         dt: length of timebins (float)
+        
+
+    All args are in SI units and based on behavioral data:
+    Tmax, dt: seconds (data: <control flight duration> = 4.4131 +- 4.4096)
+    beta: damping force (kg/s) NOTE: if beta is too big, things blow up
+    f0: random driving force exp term for exp distribution # TODO unites
+    wf0 = 5e-6  # upwind bias force magnitude # TODO units
+    rdetect: distance from which mozzie can detect source (m) =2 cm
 
     Returns:
         timeList: time vector
@@ -104,9 +102,7 @@ def stimulusDrivingForce():
         target_found: boolean that is True if source is found
         t_targfound: time till source found (None if not found)
     """
-
-class Trajectory:
-    def __init__(self, r0=[1., 0.], v0_stdev=0.01, Tmax=4., dt=0.01, target_pos=None, k=0., beta=2e-5, f0=3e-6, wf0=5e-6, detect_thresh=0.05):
+    def __init__(self, r0=[1., 0.], v0_stdev=0.01, Tmax=4., dt=0.01, target_pos=None, k=0., beta=2e-5, f0=3e-6, wf0=5e-6, detect_thresh=0.02, plotting = False):
         self.Tmax = Tmax
         self.dt = dt
         self.v0_stdev = v0_stdev
@@ -115,8 +111,10 @@ class Trajectory:
         self.f0 = f0
         self.wf0 = wf0
         self.target_pos = target_pos
-        ## get dimension
-        self.dim = len(r0)
+        self.dim = len(r0)  # get dimension
+        
+        self.target_found = False
+        self.t_targfound = np.nan
         
         ## initialize all arrays
         ts_max = int(np.ceil(Tmax / dt))  # maximum time step
@@ -134,6 +132,9 @@ class Trajectory:
         
         self.fly(ts_max, detect_thresh)
         
+        if plotting is True:
+            self.plot()
+        
     def fly(self, ts_max, detect_thresh):
         ## loop through timesteps
         for ts in range(ts_max-1):
@@ -149,12 +150,14 @@ class Trajectory:
             # update position in next timestep
             self.positionList[ts+1] = self.positionList[ts] + self.veloList[ts+1]*self.dt  # why not use veloList[ts]? -rd
     
-            # if source, check if source has been found
+            # if source is present, check if source has been found
             if self.target_pos is None:
                 self.target_found = False
                 self.t_targfound = np.nan
             else:
                 if norm(self.positionList[ts+1] - self.target_pos) < detect_thresh:
+                    # TODO: pretty sure norm is malfunctioning. only credible if
+                #the trajectory is directly under the target -rd
                     self.target_found = True
                     self.t_targfound = self.timeList[ts]  # should this be timeList[ts+1]? -rd
                     
@@ -164,12 +167,13 @@ class Trajectory:
                     self.veloList = self.veloList[:ts+1]
                     self.accelList = self.accelList[:ts+1]
                     break  # stop flying at source
+                    
+                    
+    def plot(self):
+        plt.plot(self.positionList[:, 0], self.positionList[:, 1], lw=2, alpha=0.5)
+        plt.scatter(self.target_pos[0], self.target_pos[1], s=150, c='r', marker="*")
                 
 
-
 if __name__ == '__main__':
-    import matplotlib.pyplot as plt
     target_pos = [0.3, 0.03]
-    mytraj = Trajectory(target_pos=target_pos)
-    plt.plot(mytraj.positionList[:, 0], mytraj.positionList[:, 1], lw=2, alpha=0.5)
-    plt.scatter(mytraj.target_pos[0], mytraj.target_pos[1], s=150, c='r', marker="*")
+    mytraj = Trajectory(target_pos=target_pos, plotting = True)
