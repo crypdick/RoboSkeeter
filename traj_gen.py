@@ -12,16 +12,16 @@ from numpy.linalg import norm
 ## define params
 # These are the default params. They will get reassigned if this script is
 # instantiated with user input
-Tmax = 3  # maximum flight time (s)
-# Behavioral data: <control flight duration> = 4.4131 +- 4.4096
-dt = 0.01  # (s) =10ms
+#Tmax = 3  # maximum flight time (s)
+## Behavioral data: <control flight duration> = 4.4131 +- 4.4096
+#dt = 0.01  # (s) =10ms
 m = 2.5e-6  # mass (kg) =2.6 mg
-k = 0.  # spring constant (kg/s^2)
-beta = 1e-6  # damping force (kg/s) NOTE: if beta is too big, things blow up
-f0 = 5e-6  # random driving force exp term for exp distribution (not N)
-wf0 = 5e-6  # upwind bias force magnitude (N)
-
-rdetect = 0.02  # distance from which mozzie can detect source (m) =2 cm
+#k = 0.  # spring constant (kg/s^2)
+#beta = 1e-6  # damping force (kg/s) NOTE: if beta is too big, things blow up
+#f0 = 5e-6  # random driving force exp term for exp distribution (not N)
+#wf0 = 5e-6  # upwind bias force magnitude (N)
+#
+#rdetect = 0.02  # distance from which mozzie can detect source (m) =2 cm
 
 
 def random_force(f0, dim=2):
@@ -35,7 +35,8 @@ def random_force(f0, dim=2):
         random force x and y components as an array
     """
     if dim == 2:
-        return  np.random.laplace(0, f0, size=2)
+#        return  [0, 0]
+        return np.random.laplace(0, f0, size=2)
     else:
         raise NotImplementedError('Too many dimensions!')
 
@@ -45,7 +46,7 @@ def upwindBiasForce(wf0, upwind_direction=np.pi, dim=2):
     the upwind direction and scales it by a constant magnitude, "wf0".
 
     Args:
-        wf0: bias strength
+        wf0: bias distribution exponent
         upwind_direction: direction of upwind (in radians)
 
     Returns:
@@ -54,8 +55,11 @@ def upwindBiasForce(wf0, upwind_direction=np.pi, dim=2):
     if dim == 2:
         # chose direction
         force_direction = np.random.uniform(upwind_direction - (np.pi/2), upwind_direction + (np.pi/2))
+        w = np.random.normal(wf0, size=2)
         #return x and y components of bias force as an array
-        return wf0 * np.array([np.cos(force_direction), np.sin(force_direction)])
+#        return wf0 * np.array([np.cos(force_direction), np.sin(force_direction)])
+#        return w * force_direction
+        return np.random.laplace(0, wf0, size=2) # TODO: make directional
     else:
         raise NotImplementedError('wind bias only works in 2D right now!')
 
@@ -72,12 +76,12 @@ def stimulusDrivingForce():
     pass
 
 
-def traj_gen(r0, v0=[0., 0.], Tmax=Tmax, dt=dt, rs=None, k=k, beta=beta, f0=f0, wf0=wf0, detect_thresh=rdetect):
+def traj_gen(r0=[1., 0.], v0_stdev=0.01, Tmax=3., dt=0.01, rs=None, k=0., beta=1e-6, f0=5e-6, wf0=5e-6, detect_thresh=0.02):
     """Generate a single trajectory.
 
     Args:
         r0: initial position (list/array)
-        v0: initial velocity (list/array)
+        v0_stdev: stdev of initial velocity distribution (float)
         rs: source position (list/array) (set to None if no source)
         Tmax: max length of a trajector (float)
         dt: length of timebins (float)
@@ -100,6 +104,9 @@ def traj_gen(r0, v0=[0., 0.], Tmax=Tmax, dt=dt, rs=None, k=k, beta=beta, f0=f0, 
     r = np.zeros((ts_max, dim), dtype=float)
     v = np.zeros((ts_max, dim), dtype=float)
     a = np.zeros((ts_max, dim), dtype=float)
+    
+    # generate random intial velocity condition    
+    v0 = np.random.normal(0, v0_stdev, 2)
 
     ## insert initial position and velocity into r,v arrays
     r[0] = r0
@@ -121,7 +128,7 @@ def traj_gen(r0, v0=[0., 0.], Tmax=Tmax, dt=dt, rs=None, k=k, beta=beta, f0=f0, 
 
         # if source, check if source has been found
         if rs is not None:
-            if norm(r[ts+1] - rs) < rdetect:
+            if norm(r[ts+1] - rs) < detect_thresh:
                 source_found = True
                 tfound = t[ts]  # should this be t[ts+1]? -rd
                 # trim excess timebins in arrays
@@ -139,5 +146,5 @@ def traj_gen(r0, v0=[0., 0.], Tmax=Tmax, dt=dt, rs=None, k=k, beta=beta, f0=f0, 
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    t, r, v, a, source_found, tfound = traj_gen([1, 0])
+    t, r, v, a, source_found, tfound = traj_gen()
     plt.plot(r[:, 0], r[:, 1], lw=2, alpha=0.5)
