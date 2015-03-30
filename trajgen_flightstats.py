@@ -117,14 +117,8 @@ def stateHistograms(pos, velos, accels):
     plt.show()
 
 
-def main(r0, v0_stdev, k, beta, f0, wf0, rs, Tmax, dt, total_trajectories):
-    pos, velos, accels, source_finds, t_finds, Tfind_avg = trajGenIter(r0=r0, v0_stdev=v0_stdev, k=k, beta=beta, f0=f0, wf0=wf0, rs=rs, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories)
-
-    return pos, velos, accels, source_finds, t_finds, Tfind_avg
-
-
-if __name__ == '__main__':
-    # set default params to send to main()
+def main():
+    # set default params to send to trajGenIter()
     r0 = [1., 0]
     v0_stdev = 0.01
     k = 0.
@@ -136,6 +130,14 @@ if __name__ == '__main__':
     dt = 0.01
     total_trajectories = 15
     
-    pos, velos, accels, source_finds, t_finds, Tfind_avg = main(r0=r0, v0_stdev=v0_stdev, k=k, beta=beta, f0=f0, wf0=wf0, rs=rs, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories)
+    pos, velos, accels, source_finds, t_finds, Tfind_avg = trajGenIter(r0=r0, v0_stdev=v0_stdev, k=k, beta=beta, f0=f0, wf0=wf0, rs=rs, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories)
+    
     trajectory_plots(pos, rs, source_finds, Tmax, Tfind_avg, total_trajectories, beta, f0, wf0)
     stateHistograms(pos, velos, accels)
+
+    return pos, velos, accels, source_finds, t_finds, Tfind_avg
+
+
+if __name__ == '__main__':
+    main()
+    
