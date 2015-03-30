@@ -53,13 +53,23 @@ def upwindBiasForce(wf0, upwind_direction=np.pi, dim=2):
         upwind bias force x and y components as an array
     """
     if dim == 2:
-        # chose direction
-        force_direction = np.random.uniform(upwind_direction - (np.pi/2), upwind_direction + (np.pi/2))
-        w = np.random.normal(wf0, size=2)
-        #return x and y components of bias force as an array
-#        return wf0 * np.array([np.cos(force_direction), np.sin(force_direction)])
-#        return w * force_direction
-        return np.random.laplace(0, wf0, size=2) # TODO: make directional
+        if wf0 == 0:
+            return [0, 0]
+        else:
+            return [-wf0, 0]
+#==============================================================================
+        # Code for randomized wind force
+#             # chose direction
+#             force_direction = np.random.uniform(upwind_direction - (np.pi/2), upwind_direction + (np.pi/2))
+#             w = np.random.normal(wf0, size=2)
+#             #return x and y components of bias force as an array
+#     #        return wf0 * np.array([np.cos(force_direction), np.sin(force_direction)]) #constant wf0
+#     #        return w * force_direction #force mag drawn from dist
+#             fx = 1
+#             while fx > 0:  # hack to only select negative fx
+#                 fx, fy = np.random.laplace(0, wf0, size=2)    
+#             return [fx, fy]
+#==============================================================================
     else:
         raise NotImplementedError('wind bias only works in 2D right now!')
 
@@ -76,7 +86,7 @@ def stimulusDrivingForce():
     pass
 
 
-def traj_gen(r0=[1., 0.], v0_stdev=0.01, Tmax=3., dt=0.01, rs=None, k=0., beta=1e-6, f0=5e-6, wf0=5e-6, detect_thresh=0.02):
+def traj_gen(r0=[1., 0.], v0_stdev=0.01, Tmax=4., dt=0.01, rs=None, k=0., beta=2e-5, f0=7e-7, wf0=5e-6, detect_thresh=0.02):
     """Generate a single trajectory.
 
     Args:
@@ -146,5 +156,6 @@ def traj_gen(r0=[1., 0.], v0_stdev=0.01, Tmax=3., dt=0.01, rs=None, k=0., beta=1
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    t, r, v, a, source_found, tfound = traj_gen()
+    t, r, v, a, source_found, tfound = traj_gen(rs = [0.2, 0.05])
     plt.plot(r[:, 0], r[:, 1], lw=2, alpha=0.5)
+    plt.scatter(rs[0], rs[1], s=150, c='r', marker="*")

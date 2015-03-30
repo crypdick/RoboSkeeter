@@ -29,7 +29,6 @@ def trajGenIter(r0, v0_stdev, k, beta, f0, wf0, rs, Tmax, dt, total_trajectories
         accels += [a]
         source_finds += [source_found]
         t_finds += [tfound]
-        t_finds = np.array(t_finds)
         
     Tfind_avg = T_find_average(t_finds, total_trajectories)
 
@@ -37,22 +36,23 @@ def trajGenIter(r0, v0_stdev, k, beta, f0, wf0, rs, Tmax, dt, total_trajectories
 
 
 def T_find_average(t_finds, total_trajectories):
-    t_finds_NoNaNs = t_finds[~np.isnan(t_finds)]  # remove NaNs
+    t_finds = np.array(t_finds)
+    t_finds_NoNaNs = t_finds[~np.isnan(t_finds)]  # remove NaNsT
     if len(t_finds_NoNaNs) == 0:
-        print "No successful source finds out of %s trajectories!" % total_trajectories
+        return None
     else:
         Tfind_avg = sum(t_finds_NoNaNs)/len(t_finds_NoNaNs)
-        print "<Time_find> = ", Tfind_avg, "sec. ", len(t_finds_NoNaNs), "finds out of ", total_trajectories, "trajectories"
         return Tfind_avg
 
 
-def trajectory_plots(pos, rs, Tmax, Tfind_avg, total_trajectories, beta, f0, wf0): 
-    plt.plot(r[:, 0], r[:, 1], lw=2, alpha=0.5)
+def trajectory_plots(pos, rs, source_finds, Tmax, Tfind_avg, total_trajectories, beta, f0, wf0):
+    for traj in pos:
+        plt.plot(traj[:, 0], traj[:, 1], lw=2, alpha=0.5)
     plt.scatter(rs[0], rs[1], s=150, c='r', marker="*")
-    title_append = """ for {0} secs (n = {1}). \n
+    title_append = """ for {0} secs. \n
                 beta = {2}, f0 = {3}, wf = {4}. \n
-                <Tfind> = {5}
-                """.format(Tmax, total_trajectories, beta, f0, wf0, Tfind_avg)
+                <Tfind> = {5}, Sourcefinds = {6}/(n = {1})
+                """.format(Tmax, total_trajectories, beta, f0, wf0, Tfind_avg, sum(source_finds))
     plt.title("Agent trajectories" + title_append)  # TODO: list params
     plt.xlabel("x position")
     plt.ylabel("y position")
@@ -120,7 +120,7 @@ def stateHistograms(pos, velos, accels):
 def main(r0, v0_stdev, k, beta, f0, wf0, rs, Tmax, dt, total_trajectories):
     pos, velos, accels, source_finds, t_finds, Tfind_avg = trajGenIter(r0=r0, v0_stdev=v0_stdev, k=k, beta=beta, f0=f0, wf0=wf0, rs=rs, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories)
 
-    return pos, velos, accels, source_finds, Tfind_avg
+    return pos, velos, accels, source_finds, t_finds, Tfind_avg
 
 
 if __name__ == '__main__':
@@ -129,13 +129,13 @@ if __name__ == '__main__':
     v0_stdev = 0.01
     k = 0.
     beta = 2e-5
-    f0 = 7e-7
-    wf0 = 5e-3
+    f0 = 3e-6
+    wf0 = 5e-6
     rs = [0.2, 0.05]
     Tmax = 4.0
     dt = 0.01
     total_trajectories = 15
     
-    pos, velos, accels, source_finds, Tfind_avg = main(r0=r0, v0_stdev=v0_stdev, k=k, beta=beta, f0=f0, wf0=wf0, rs=rs, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories)
-    trajectory_plots(pos, rs, Tmax, Tfind_avg, total_trajectories, beta, f0, wf0)
+    pos, velos, accels, source_finds, t_finds, Tfind_avg = main(r0=r0, v0_stdev=v0_stdev, k=k, beta=beta, f0=f0, wf0=wf0, rs=rs, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories)
+    trajectory_plots(pos, rs, source_finds, Tmax, Tfind_avg, total_trajectories, beta, f0, wf0)
     stateHistograms(pos, velos, accels)
