@@ -11,7 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def trajGenIter(r0, v0, k, beta, f0, wf0, rs, Tmax, dt, total_trajectories):
+def trajGenIter(r0, v0_stdev, k, beta, f0, wf0, rs, Tmax, dt, total_trajectories):
     """
     run traj_gen total_trajectories times and return arrays
     """
@@ -23,23 +23,42 @@ def trajGenIter(r0, v0, k, beta, f0, wf0, rs, Tmax, dt, total_trajectories):
     agent_paths_fig = plt.figure(1)
 
     for i in range(total_trajectories):
-        v0 = np.random.normal(0, 0.2, 2)
-        t, r, v, a, source_found, tfound = traj_gen.traj_gen(r0=r0, v0=v0, k=k, beta=beta, f0=f0, wf0=wf0, rs=rs, Tmax=Tmax, dt=dt)
+        t, r, v, a, source_found, tfound = traj_gen.traj_gen(r0=r0, v0_stdev=v0_stdev, k=k, beta=beta, f0=f0, wf0=wf0, rs=rs, Tmax=Tmax, dt=dt)
         pos += [r]
         velos += [v]
         accels += [a]
         source_finds += [source_found]
         t_finds += [tfound]
-        plt.plot(r[:, 0], r[:, 1], lw=2, alpha=0.5)
-        plt.scatter(rs[0], rs[1], s=150, c='r', marker="*")
-    plt.title("Agent trajectories")  # TODO: list params
+        t_finds = np.array(t_finds)
+        
+    Tfind_avg = T_find_average(t_finds, total_trajectories)
+
+    return pos, velos, accels, source_finds, t_finds, Tfind_avg
+
+
+def T_find_average(t_finds, total_trajectories):
+    t_finds_NoNaNs = t_finds[~np.isnan(t_finds)]  # remove NaNs
+    if len(t_finds_NoNaNs) == 0:
+        print "No successful source finds out of %s trajectories!" % total_trajectories
+    else:
+        Tfind_avg = sum(t_finds_NoNaNs)/len(t_finds_NoNaNs)
+        print "<Time_find> = ", Tfind_avg, "sec. ", len(t_finds_NoNaNs), "finds out of ", total_trajectories, "trajectories"
+        return Tfind_avg
+
+
+def trajectory_plots(pos, rs, Tmax, Tfind_avg, total_trajectories, beta, f0, wf0): 
+    plt.plot(r[:, 0], r[:, 1], lw=2, alpha=0.5)
+    plt.scatter(rs[0], rs[1], s=150, c='r', marker="*")
+    title_append = """ for {0} secs (n = {1}). \n
+                beta = {2}, f0 = {3}, wf = {4}. \n
+                <Tfind> = {5}
+                """.format(Tmax, total_trajectories, beta, f0, wf0, Tfind_avg)
+    plt.title("Agent trajectories" + title_append)  # TODO: list params
     plt.xlabel("x position")
     plt.ylabel("y position")
     plt.savefig("agent trajectories.png")
     plt.show()    
-
-    return pos, velos, accels, source_finds, np.array(t_finds)
-
+    
 
 def stateHistograms(pos, velos, accels):
     pos_all = np.concatenate(pos, axis=0)
@@ -47,7 +66,6 @@ def stateHistograms(pos, velos, accels):
     position_lim = 1.1
     positional_bins = np.arange(-0.2, position_lim + posHistBinWidth, posHistBinWidth) #set left bound just past 0
     pos_dist_fig = plt.figure(2)
-#    plt.hist(pos_all)
     plt.hist(pos_all[:,0], bins=positional_bins, alpha=0.5, label='x', normed=True)
     plt.hist(pos_all[:,1], bins=positional_bins, alpha=0.5, label='y', normed=True)
     plt.title("x,y position distributions")
@@ -55,11 +73,10 @@ def stateHistograms(pos, velos, accels):
     plt.savefig("position distributions histo.png")
 
     velo_all = np.concatenate(velos, axis=0)
-    veloHistBinWidth = 0.05
+    veloHistBinWidth = 0.01
     velo_lim = 0.6
     velo_bins = np.arange((-velo_lim - veloHistBinWidth), (velo_lim + veloHistBinWidth), veloHistBinWidth)
     velo_dist_fig = plt.figure(3)
-#    plt.hist(velo_all)
     plt.hist(velo_all[:,0], bins=velo_bins, alpha=0.5, label='vx', normed=True)
     plt.hist(velo_all[:,1], bins=20, alpha=0.5, label='vy', normed=True)
     plt.title("x,y velocity distributions")
@@ -77,7 +94,7 @@ def stateHistograms(pos, velos, accels):
     
 
     accel_all = np.concatenate(accels, axis=0)
-    accelHistBinWidth = 0.6
+    accelHistBinWidth = 0.3
     accel_lim = 9.
     accel_bins = np.arange((-accel_lim - accelHistBinWidth), (accel_lim + accelHistBinWidth), accelHistBinWidth)
     accel_dist_fig = plt.figure(5)
@@ -92,7 +109,7 @@ def stateHistograms(pos, velos, accels):
     accel_all_magn = []
     for a in accel_all:
         accel_all_magn.append(np.linalg.norm(a))
-    plt.hist(accel_all_magn, label='a_total', bins=20, normed=True)
+    plt.hist(accel_all_magn, label='a_total', bins=30, normed=True)
     plt.title("absolute acceleration distributions")
     plt.legend()
     plt.savefig("absolute acceleration distributions histo.png")
@@ -100,34 +117,25 @@ def stateHistograms(pos, velos, accels):
     plt.show()
 
 
-def T_find_average(t_finds, total_trajectories):
-    t_finds_NoNaNs = t_finds[~np.isnan(t_finds)]  # remove NaNs
-    if len(t_finds_NoNaNs) == 0:
-        print "No successful source finds out of %s trajectories!" % total_trajectories
-    else:
-        Tfind_avg = sum(t_finds_NoNaNs)/len(t_finds_NoNaNs)
-        print "<Time_find> = ", Tfind_avg, "sec. ", len(t_finds_NoNaNs), "finds out of ", total_trajectories, "trajectories"
-        return Tfind_avg  # TODO: append to trajectory title
-
-
-def main(r0, v0, k, beta, f0, wf0, rs, Tmax, dt, total_trajectories):
-    pos, velos, accels, source_finds, t_finds = trajGenIter(r0=r0, v0=v0, k=k, beta=beta, f0=f0, wf0=wf0, rs=rs, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories)
-    Tfind_avg = T_find_average(t_finds, total_trajectories)
+def main(r0, v0_stdev, k, beta, f0, wf0, rs, Tmax, dt, total_trajectories):
+    pos, velos, accels, source_finds, t_finds, Tfind_avg = trajGenIter(r0=r0, v0_stdev=v0_stdev, k=k, beta=beta, f0=f0, wf0=wf0, rs=rs, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories)
 
     return pos, velos, accels, source_finds, Tfind_avg
 
 
 if __name__ == '__main__':
-    # set default params to send to main
+    # set default params to send to main()
     r0 = [1., 0]
-    v0 = [0, 0.2]  # ignore, these will get drawn from a 2D gaussian above
-    k = 0. #2e-5
+    v0_stdev = 0.01
+    k = 0.
     beta = 2e-5
-    f0 = 7e-6
-    wf0 = 1e-6
+    f0 = 7e-7
+    wf0 = 5e-3
     rs = [0.2, 0.05]
     Tmax = 4.0
     dt = 0.01
-    total_trajectories = 30
-    pos, velos, accels, source_finds, Tfind_avg = main(r0=r0, v0=v0, k=k, beta=beta, f0=f0, wf0=wf0, rs=rs, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories)
+    total_trajectories = 15
+    
+    pos, velos, accels, source_finds, Tfind_avg = main(r0=r0, v0_stdev=v0_stdev, k=k, beta=beta, f0=f0, wf0=wf0, rs=rs, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories)
+    trajectory_plots(pos, rs, Tmax, Tfind_avg, total_trajectories, beta, f0, wf0)
     stateHistograms(pos, velos, accels)
