@@ -8,36 +8,49 @@ https://github.com/isomerase/
 """
 import traj_gen
 import numpy as np
-import matplotlib.pyplot as plt
 
 
-def trajGenIter(r0, v0_stdev, k, beta, f0, wf0, rs, Tmax, dt, total_trajectories):
+def trajGenIter(r0=[1., 0.], v0_stdev=0.01, k=0., beta=2e-5, f0=3e-6, wf0=5e-6, target_pos=None, Tmax=4.0, dt=0.01, total_trajectories=5):
     """
     run traj_gen total_trajectories times and return arrays
+    
+    r0 = [1., 0]
+    v0_stdev = 0.01
+    k = 0.
+    beta = 2e-5
+    f0 = 3e-6
+    wf0 = 5e-6
+    target_pos = [0.2, 0.05]
+    Tmax = 4.0
+    dt = 0.01
+    total_trajectories = 15
     """
     pos = []
     velos = []
     accels = []
-    source_finds = []
+    target_finds = []
     t_finds = []
-    agent_paths_fig = plt.figure(1)
+    trajectory_objects_list = []
 
     for i in range(total_trajectories):
-        t, r, v, a, source_found, tfound = traj_gen.traj_gen(r0=r0, v0_stdev=v0_stdev, k=k, beta=beta, f0=f0, wf0=wf0, rs=rs, Tmax=Tmax, dt=dt)
-        pos += [r]
-        velos += [v]
-        accels += [a]
-        source_finds += [source_found]
-        t_finds += [tfound]
+        trajectory = traj_gen.Trajectory(r0=r0, v0_stdev=v0_stdev, k=k, beta=beta, f0=f0, wf0=wf0, target_pos=target_pos, Tmax=Tmax, dt=dt)
+        trajectory_objects_list.append(trajectory)
+        pos += [trajectory.positionList]
+        velos += [trajectory.veloList]
+        accels += [trajectory.accelList]
+        target_finds += [trajectory.target_found]
+        t_finds += [trajectory.t_targfound]
         
     Tfind_avg = T_find_average(t_finds, total_trajectories)
 
-    return pos, velos, accels, source_finds, t_finds, Tfind_avg
+    return pos, velos, accels, target_finds, t_finds, Tfind_avg, trajectory_objects_list
 
 
 def T_find_average(t_finds, total_trajectories):
+    print t_finds
     t_finds = np.array(t_finds)
-    t_finds_NoNaNs = t_finds[~np.isnan(t_finds)]  # remove NaNsT
+    print t_finds
+    t_finds_NoNaNs = t_finds[~np.isnan(t_finds)]  # remove NaNs
     if len(t_finds_NoNaNs) == 0:
         return None
     else:
@@ -45,14 +58,16 @@ def T_find_average(t_finds, total_trajectories):
         return Tfind_avg
 
 
-def trajectory_plots(pos, rs, source_finds, Tmax, Tfind_avg, total_trajectories, beta, f0, wf0):
+def trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list):
+    traj_ex = trajectory_objects_list[0]
+    agent_paths_fig = plt.figure(1)
     for traj in pos:
         plt.plot(traj[:, 0], traj[:, 1], lw=2, alpha=0.5)
-    plt.scatter(rs[0], rs[1], s=150, c='r', marker="*")
+    plt.scatter(traj_ex.target_pos[0], traj_ex.target_pos[1], s=150, c='r', marker="*")
     title_append = """ for {0} secs. \n
                 beta = {2}, f0 = {3}, wf = {4}. \n
                 <Tfind> = {5}, Sourcefinds = {6}/(n = {1})
-                """.format(Tmax, total_trajectories, beta, f0, wf0, Tfind_avg, sum(source_finds))
+                """.format(traj_ex.Tmax, total_trajectories, traj_ex.beta, traj_ex.f0, traj_ex.wf0, Tfind_avg, sum(target_finds))
     plt.title("Agent trajectories" + title_append)  # TODO: list params
     plt.xlabel("x position")
     plt.ylabel("y position")
@@ -77,8 +92,8 @@ def stateHistograms(pos, velos, accels):
     velo_lim = 0.6
     velo_bins = np.arange((-velo_lim - veloHistBinWidth), (velo_lim + veloHistBinWidth), veloHistBinWidth)
     velo_dist_fig = plt.figure(3)
-    plt.hist(velo_all[:,0], bins=velo_bins, alpha=0.5, label='vx', normed=True)
-    plt.hist(velo_all[:,1], bins=20, alpha=0.5, label='vy', normed=True)
+    plt.hist(velo_all[:, 0], bins=velo_bins, alpha=0.5, label='vx', normed=True)
+    plt.hist(velo_all[:, 1], bins=20, alpha=0.5, label='vy', normed=True)
     plt.title("x,y velocity distributions")
     plt.legend()
     plt.savefig("velocity distributions histo.png")
@@ -117,27 +132,17 @@ def stateHistograms(pos, velos, accels):
     plt.show()
 
 
-def main():
-    # set default params to send to trajGenIter()
-    r0 = [1., 0]
-    v0_stdev = 0.01
-    k = 0.
-    beta = 2e-5
-    f0 = 3e-6
-    wf0 = 5e-6
-    rs = [0.2, 0.05]
-    Tmax = 4.0
-    dt = 0.01
-    total_trajectories = 15
-    
-    pos, velos, accels, source_finds, t_finds, Tfind_avg = trajGenIter(r0=r0, v0_stdev=v0_stdev, k=k, beta=beta, f0=f0, wf0=wf0, rs=rs, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories)
-    
-    trajectory_plots(pos, rs, source_finds, Tmax, Tfind_avg, total_trajectories, beta, f0, wf0)
-    stateHistograms(pos, velos, accels)
+def main(r0=[1., 0.], v0_stdev=0.01, k=0., beta=2e-5, f0=3e-6, wf0=5e-6, target_pos=[0.2, 0.05], Tmax=4.0, dt=0.01, total_trajectories=20):
+    pos, velos, accels, target_finds, t_finds, Tfind_avg, trajectory_objects_list = trajGenIter(r0=r0, v0_stdev=v0_stdev, k=k, beta=beta, f0=f0, wf0=wf0, target_pos=target_pos, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories)
 
-    return pos, velos, accels, source_finds, t_finds, Tfind_avg
+    return pos, velos, accels, target_finds, t_finds, Tfind_avg, trajectory_objects_list
 
 
 if __name__ == '__main__':
-    main()
+    import matplotlib.pyplot as plt
+    # following params only used if this function is being run on its own
+    
+    pos, velos, accels, target_finds, t_finds, Tfind_avg, trajectory_objects_list = main()
+    trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list)
+#    stateHistograms(pos, velos, accels)
     
