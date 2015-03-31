@@ -53,6 +53,22 @@ def upwindBiasForce(wf0, upwind_direction=np.pi, dim=2):
         raise NotImplementedError('wind bias only works in 2D right now!')
 
 
+def wall_force_field(current_pos, wallF, wallF_exp, wallX_pos=[0., 1.5], wallY_pos=[-0.5, 0.5]):  # TODO: make these the actual dims of Sharri's wind tunnel -rd
+    """If agent gets too close to wall, inflict it with repulsive forces as a
+    function of how close it is to the wall.
+    
+    Args:
+        current_pos: (x,y) coords of agent right now (array)
+        wallF: how scary the wall is (float)
+        wallF_exp: the exponential term in the wall force field (float)
+        wallX_pos: Wall X coords (array)
+        wallY_pos: Wall Y coords (array)
+    
+    Returns:
+        wall_force: (array)
+    """
+    pass
+
 def stimulusDrivingForce():
     """[PLACEHOLDER]
     Force driving agegent towards stimulus source, determined by
@@ -110,6 +126,7 @@ class Trajectory:
         self.positionList = np.zeros((ts_max, self.dim), dtype=float)
         self.veloList = np.zeros((ts_max, self.dim), dtype=float)
         self.accelList = np.zeros((ts_max, self.dim), dtype=float)
+        self.wallFList = np.zeros((ts_max, self.dim), dtype=float)
         
         # generate random intial velocity condition    
         v0 = np.random.normal(0, self.v0_stdev, self.dim)
@@ -128,7 +145,7 @@ class Trajectory:
         ## loop through timesteps
         for ts in range(ts_max-1):
             # calculate current force
-            force = -self.k*self.positionList[ts] - self.beta*self.veloList[ts] + random_force(self.f0) + upwindBiasForce(self.wf0)
+            force = -self.k*self.positionList[ts] - self.beta*self.veloList[ts] + random_force(self.f0) + upwindBiasForce(self.wf0) + wall_force_field(self.positionList[ts])
             # calculate current acceleration
             self.accelList[ts] = force/m
     
@@ -136,6 +153,7 @@ class Trajectory:
             self.veloList[ts+1] = self.veloList[ts] + self.accelList[ts]*self.dt
             # update position in next timestep
             self.positionList[ts+1] = self.positionList[ts] + self.veloList[ts+1]*self.dt  # why not use veloList[ts]? -rd
+            # check if position is in wind force field 
     
             # if there is a target, check if we are finding it
             if self.target_pos is None:
