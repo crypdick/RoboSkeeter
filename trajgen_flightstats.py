@@ -8,9 +8,10 @@ https://github.com/isomerase/
 """
 import traj_gen
 import numpy as np
+import matplotlib.pyplot as plt
 
 
-def trajGenIter(r0=[1., 0.], v0_stdev=0.01, k=0., beta=2e-5, f0=3e-6, wf0=5e-6, target_pos=None, Tmax=4.0, dt=0.01, total_trajectories=5):
+def trajGenIter(r0, v0_stdev, k, beta, f0, wf0, target_pos, Tmax, dt, total_trajectories, detect_thresh):
     """
     run traj_gen total_trajectories times and return arrays
 
@@ -29,31 +30,33 @@ def trajGenIter(r0=[1., 0.], v0_stdev=0.01, k=0., beta=2e-5, f0=3e-6, wf0=5e-6, 
     velos = []
     accels = []
     target_finds = []
-    t_finds = []
+    t_targfinds = []
     trajectory_objects_list = []
 
     for i in range(total_trajectories):
-        trajectory = traj_gen.Trajectory(r0=r0, v0_stdev=v0_stdev, k=k, beta=beta, f0=f0, wf0=wf0, target_pos=target_pos, Tmax=Tmax, dt=dt)
+        trajectory = traj_gen.Trajectory(r0=r0, v0_stdev=v0_stdev, k=k, beta=beta, f0=f0, wf0=wf0, target_pos=target_pos, Tmax=Tmax, dt=dt, detect_thresh=detect_thresh)
         pos += [trajectory.positionList]
         velos += [trajectory.veloList]
         accels += [trajectory.accelList]
         target_finds += [trajectory.target_found]
-        t_finds += [trajectory.t_targfound]
+        t_targfinds += [trajectory.t_targfound]
         trajectory_objects_list.append(trajectory)
 
-    Tfind_avg = T_find_average(t_finds, total_trajectories)
+    Tfind_avg, num_success = T_find_stats(t_targfinds, total_trajectories)
 
-    return pos, velos, accels, target_finds, t_finds, Tfind_avg, trajectory_objects_list
+    return pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, trajectory_objects_list
 
 
-def T_find_average(t_finds, total_trajectories):
-    t_finds = np.array(t_finds)
-    t_finds_NoNaNs = t_finds[~np.isnan(t_finds)]  # remove NaNs
+def T_find_stats(t_targfinds, total_trajectories):
+    t_targfinds = np.array(t_targfinds)
+    t_finds_NoNaNs = t_targfinds[~np.isnan(t_targfinds)]  # remove NaNs
     if len(t_finds_NoNaNs) == 0:
-        return None
+        return None, 0
     else:
+        num_success = float(len(t_finds_NoNaNs))
+        
         Tfind_avg = sum(t_finds_NoNaNs)/len(t_finds_NoNaNs)
-        return Tfind_avg
+        return Tfind_avg, num_success
 
 
 def trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list):
@@ -129,16 +132,18 @@ def stateHistograms(pos, velos, accels):
     plt.show()
 
 
-def main(r0=[1., 0.], v0_stdev=0.01, k=0., beta=2e-5, f0=3e-6, wf0=5e-6, target_pos=[0.2, 0.05], Tmax=4.0, dt=0.01, total_trajectories=20):
-    pos, velos, accels, target_finds, t_finds, Tfind_avg, trajectory_objects_list = trajGenIter(r0=r0, v0_stdev=v0_stdev, k=k, beta=beta, f0=f0, wf0=wf0, target_pos=target_pos, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories)
+def main(r0=[1., 0.], v0_stdev=0.01, k=0., beta=2e-5, f0=3e-6, wf0=5e-6, target_pos=[0.2, 0.05], Tmax=4.0, dt=0.01, total_trajectories=20, detect_thresh=0.02, plotting = True):
+    pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, trajectory_objects_list = trajGenIter(r0=r0, v0_stdev=v0_stdev, k=k, beta=beta, f0=f0, wf0=wf0, target_pos=target_pos, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories, detect_thresh=detect_thresh)
 
-    return pos, velos, accels, target_finds, t_finds, Tfind_avg, trajectory_objects_list
+    if plotting is True:
+        trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list)
+        stateHistograms(pos, velos, accels)
+
+    return pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, trajectory_objects_list
 
 
 if __name__ == '__main__':
-    import matplotlib.pyplot as plt
+    
     # following params only used if this function is being run on its own
-
-    pos, velos, accels, target_finds, t_finds, Tfind_avg, trajectory_objects_list = main()
-    trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list)
-    stateHistograms(pos, velos, accels)
+    pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, trajectory_objects_list = main()
+    

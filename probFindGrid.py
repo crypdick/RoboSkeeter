@@ -14,13 +14,15 @@ import matplotlib.pyplot as plt
 
 # sources from 0 -> 0.5 in x,
 # +- -.25 in y
-Nx_bins = 3
-Ny_bins = 2
-xbounds = (0,20)#(0,1)
-ybounds = (20,-20)#(0.08, -0.08)  # reverse sign to go from top left to bottom right
+Nx_bins = 10
+Ny_bins = 10
+xbounds = (0, 1)
+ybounds = (0.08, -0.08)  # reverse sign to go from top left to bottom right
+TRAJECTORIES_PER_BIN = 15
 
 # initialize empty counts
 src_counts = np.zeros((Ny_bins, Nx_bins))
+src_probs = np.zeros((Ny_bins, Nx_bins))
 
 # figure out spot locations
 xticks = np.linspace(*xbounds, num=Nx_bins+2)[1:-1]
@@ -33,58 +35,18 @@ for j in range(Ny_bins):
         spotCoordsList.append((i, j, xticks[i], yticks[j]))
 spotCoordsGrid = np.reshape(spotCoordsList, (Ny_bins, Nx_bins, 4))
 
-detect_thresh = (np.linalg.norm((spotCoordsGrid[0, 0] - spotCoordsGrid[1, 1])/2))
+detect_thresh = (np.linalg.norm((spotCoordsGrid[0, 0][2:] - spotCoordsGrid[1, 1][2:])/2))
 
 for row in spotCoordsGrid:
     for spot in row:
         x_index, y_index, x_coord, y_coord = spot
-        trajGenIter(r0, v0_stdev, k, beta, f0, wf0, rs, Tmax, dt, total_trajectories)
-        for trial in range(2):
-            _, _, _, _, source_found, tfound = trajgen_flightstats.
-                [1., 0], #r0
-                rs = rs,
-                k = 2e-5,
-                beta = 2e-5,
-                f0 = 7e-6,
-                wf0 = 1e-6,
-                Tmax = 4.0,
-                dt = 0.01,
-                detect_thresh = detect_thresh)
-            if source_found is True:
-                pass
+        _, _, _, target_finds, t_targfinds, _, num_success, trajectory_objects_list = trajgen_flightstats.main(target_pos=[x_coord, y_coord], total_trajectories=TRAJECTORIES_PER_BIN, detect_thresh=detect_thresh, plotting=False)
+        src_counts[int(y_index), int(x_index)] += num_success
+        src_probs[int(y_index), int(x_index)] += num_success / TRAJECTORIES_PER_BIN
 
-# TODO: change detection limit
-#given 
-
-#def probFindGrid(source_finds):
-#    for i in range(Nx_bins):
-#        for j in range (Ny_bins):
-#            foundCounts = trajGenIter()
-#            src_counts[i,j] += foundCounts
-
-
-#def trajGenIter(r0, v0, k, beta, f0, wf0, rs, Tmax, dt, total_trajectories):
-#    """
-#    run traj_gen total_trajectories times and return arrays
-#    """
-#    pos = []
-#    velos = []
-#    accels = []
-#    source_finds = []
-#    t_finds = []
-#    agent_paths_fig = plt.figure(1)
-#
-#    for i in range(total_trajectories):
-#        t, r, v, a, source_found, tfound = traj_gen.traj_gen(r0=r0, v0=v0, k=k, beta=beta, f0=f0, wf0=wf0, rs=rs, Tmax=Tmax, dt=dt)
-#        pos += [r]
-#        velos += [v]
-#        accels += [a]
-#        source_finds += [source_found]
-#        t_finds += [tfound]
-#        plt.plot(r[:, 0], r[:, 1], lw=2, alpha=0.5)
-#        plt.scatter(rs[0], rs[1], s=150, c='r', marker="*")
-#    plt.title("agent trajectories")  # TODO: list params
-#    plt.savefig("agent trajectories.png")
-#    plt.show()    
-#
-#    return pos, velos, accels, source_finds, np.array(t_finds)
+plt.pcolormesh(src_probs, cmap='RdBu')
+plt.title("Probabilty of flying to target for different target positions")
+plt.xlabel("X bounds = " + str(xbounds))
+plt.ylabel("Y bounds = " + str(ybounds))
+plt.savefig("Pfind_heatmap.png")
+plt.show()
