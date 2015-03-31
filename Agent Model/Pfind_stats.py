@@ -12,10 +12,11 @@ import trajectory_stats
 import numpy as np
 import matplotlib.pyplot as plt
 
-# sources from 0 -> 0.5 in x,
-# +- -.25 in y
+# number of sections to divide flight arena into
 Nx_bins = 10
 Ny_bins = 10
+
+# define boundaries of flight arena for which to make heatmap
 xbounds = (0, 1)
 ybounds = (0.08, -0.08)  # reverse sign to go from top left to bottom right
 TRAJECTORIES_PER_BIN = 15
@@ -24,19 +25,28 @@ TRAJECTORIES_PER_BIN = 15
 src_counts = np.zeros((Ny_bins, Nx_bins))
 src_probs = np.zeros((Ny_bins, Nx_bins))
 
-# figure out spot locations
+# figure out spot locations. [1:-1] throws out the first and last items in the
+# arrays, since we don't want to put the stimulus inside the walls.
 xticks = np.linspace(*xbounds, num=Nx_bins+2)[1:-1]
 yticks = np.linspace(*ybounds, num=Ny_bins+2)[1:-1]
 
-# generate spotCoordsList, spotsgrid
+# generate our list of target coordinates and save them along with their
+# index.
 spotCoordsList = []
 for j in range(Ny_bins):
     for i in range(Nx_bins):
         spotCoordsList.append((i, j, xticks[i], yticks[j]))
+        
+# ...and reshape it.
 spotCoordsGrid = np.reshape(spotCoordsList, (Ny_bins, Nx_bins, 4))
 
-detect_thresh = (np.linalg.norm((spotCoordsGrid[0, 0][2:] - spotCoordsGrid[1, 1][2:])/2))
+# detections are based on a radius around the target. This radius shrinks
+# if we add more x,y bins to reduce overlap.
+# Calculated based on distance between diagonal spots / 2
+detect_thresh = (np.linalg.norm((spotCoordsGrid[0, 0][2:] - spotCoordsGrid[1, 1][2:]) / 2))
 
+# iter through spotCoordsGrid, run trajectory_stats TRAJECTORIES_PER_BIN times
+# for each spot, and fill in resulting stats into the src_counts and _probs grids
 for row in spotCoordsGrid:
     for spot in row:
         x_index, y_index, x_coord, y_coord = spot
@@ -44,8 +54,11 @@ for row in spotCoordsGrid:
         src_counts[int(y_index), int(x_index)] += num_success
         src_probs[int(y_index), int(x_index)] += num_success / TRAJECTORIES_PER_BIN
 
+# plot the heatmap
 plt.pcolormesh(src_probs, cmap='RdBu')
-plt.title("Probabilty of flying to target for different target positions")
+titleappend = str(TRAJECTORIES_PER_BIN)
+plt.title("""Probabilty of flying to target for different target positions \n
+n = """ + titleappend)
 plt.xlabel("X bounds = " + str(xbounds))
 plt.ylabel("Y bounds = " + str(ybounds))
 plt.savefig("./figs/Pfind_heatmap.png")

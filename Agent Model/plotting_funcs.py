@@ -12,6 +12,7 @@ import numpy as np
 
 
 def trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list):
+    """"Plot all the trajectories into a single arena"""
     traj_ex = trajectory_objects_list[0]
     agent_paths_fig = plt.figure(1)
     for traj in pos:
@@ -29,6 +30,7 @@ def trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list):
 
 
 def stateHistograms(pos, velos, accels):
+    """Plot distributions of position, velocity, and acceleration"""
     pos_all = np.concatenate(pos, axis=0)
     posHistBinWidth = 0.05
     position_lim = 1.1
