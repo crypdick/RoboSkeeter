@@ -51,8 +51,8 @@ class Plume(object):
         """
 #======= DEBUGGING/STATIC SAMPLE PLUMES ======================================
 #        imgdir = "./example_vids/fullstim.png" #boring
-        imgdir = "./example_vids/nostim.png"
-#        imgdir = "./example_vids/diagplume.png"
+#        imgdir = "./example_vids/nostim.png"
+        imgdir = "./example_vids/diagplume.png"
 #        imgdir = "./example_vids/topplume.png" #boring
 #        imgdir = "./example_vids/midplume.png" #boring
 #        imgdir = "./example_vids/gaussian.png"
