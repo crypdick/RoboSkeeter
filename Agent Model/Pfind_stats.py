@@ -8,7 +8,7 @@ Created on Wed Mar 25 09:59:21 2015
 
 @author: richard
 """
-import trajgen_flightstats
+import trajectory_stats
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -40,7 +40,7 @@ detect_thresh = (np.linalg.norm((spotCoordsGrid[0, 0][2:] - spotCoordsGrid[1, 1]
 for row in spotCoordsGrid:
     for spot in row:
         x_index, y_index, x_coord, y_coord = spot
-        _, _, _, target_finds, t_targfinds, _, num_success, trajectory_objects_list = trajgen_flightstats.main(target_pos=[x_coord, y_coord], total_trajectories=TRAJECTORIES_PER_BIN, detect_thresh=detect_thresh, plotting=False)
+        _, _, _, target_finds, t_targfinds, _, num_success, trajectory_objects_list = trajectory_stats.main(target_pos=[x_coord, y_coord], total_trajectories=TRAJECTORIES_PER_BIN, detect_thresh=detect_thresh, plotting=False)
         src_counts[int(y_index), int(x_index)] += num_success
         src_probs[int(y_index), int(x_index)] += num_success / TRAJECTORIES_PER_BIN
 
@@ -48,5 +48,5 @@ plt.pcolormesh(src_probs, cmap='RdBu')
 plt.title("Probabilty of flying to target for different target positions")
 plt.xlabel("X bounds = " + str(xbounds))
 plt.ylabel("Y bounds = " + str(ybounds))
-plt.savefig("Pfind_heatmap.png")
+plt.savefig("./figs/Pfind_heatmap.png")
 plt.show()
