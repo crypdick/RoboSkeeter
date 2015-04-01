@@ -55,7 +55,8 @@ def upwindBiasForce(wf0, upwind_direction=np.pi, dim=2):
 
 def wall_force_field(current_pos, wallF, wallF_exp, wallX_pos=[0., 1.5], wallY_pos=[-0.5, 0.5]):  # TODO: make these the actual dims of Sharri's wind tunnel -rd
     """If agent gets too close to wall, inflict it with repulsive forces as a
-    function of how close it is to the wall.
+    function of how close it is to the wall. NOTE: right now, just using simply
+    forbidden zones.
     
     Args:
         current_pos: (x,y) coords of agent right now (array)
