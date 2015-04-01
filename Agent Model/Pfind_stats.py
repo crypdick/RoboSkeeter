@@ -55,7 +55,7 @@ for row in spotCoordsGrid:
         src_probs[int(y_index), int(x_index)] += num_success / TRAJECTORIES_PER_BIN
 
 # plot the heatmap
-plt.pcolormesh(src_probs, cmap='RdBu')
+plt.pcolormesh(src_probs))
 titleappend = str(TRAJECTORIES_PER_BIN)
 plt.title("""Probabilty of flying to target for different target positions \n
 n = """ + titleappend)
@@ -63,3 +63,4 @@ plt.xlabel("X bounds = " + str(xbounds))
 plt.ylabel("Y bounds = " + str(ybounds))
 plt.savefig("./figs/Pfind_heatmap.png")
 plt.show()
+

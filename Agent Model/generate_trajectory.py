@@ -82,7 +82,7 @@ def stimulusDrivingForce():
 
 
 class Trajectory:
-    """Generate single trajectory.
+    """Generate single trajectory, forbidding agent from leaving bounds
 
     Args:
         r0: initial position (list/array)
@@ -94,7 +94,8 @@ class Trajectory:
         beta: damping force (kg/s) (float) NOTE: if beta is too big, things blow up
         f0: random driving force exp term for exp distribution (float)
         wf0: upwind bias force magnitude (float) # TODO units
-        detect_thresh: distance mozzie can detect target (float) (m) =2 cm 
+        detect_thresh: distance mozzie can detect target (float) (m) =2 cm
+        boundary: specify where walls are (float) (leftx, rightx, bottomy, topy)
         
 
     All args are in SI units and based on behavioral data:
@@ -104,7 +105,7 @@ class Trajectory:
     Returns:
         trajectory object
     """
-    def __init__(self, r0=[1., 0.], v0_stdev=0.01, Tmax=4., dt=0.01, target_pos=None, k=0., beta=2e-5, f0=3e-6, wf0=5e-6, detect_thresh=0.02, plotting = False):
+    def __init__(self, r0=[1., 0.], v0_stdev=0.01, Tmax=4., dt=0.01, target_pos=None, k=0., beta=2e-5, f0=3e-6, wf0=5e-6, detect_thresh=0.02, boundary=[0.0, 1.1, -0.05, 0.05], bounded=True, plotting = False):
         """ Initialize object with instant variables, and trigger other funcs. 
         """        
         self.Tmax = Tmax
@@ -135,25 +136,39 @@ class Trajectory:
         self.positionList[0] = r0
         self.veloList[0] = v0
         
-        self.fly(ts_max, detect_thresh)
+        self.fly(ts_max, detect_thresh, boundary, bounded)
         
         if plotting is True:
             self.plot()
         
-    def fly(self, ts_max, detect_thresh):
+    def fly(self, ts_max, detect_thresh, boundary, bounded):
         """Run the simulation using Euler's method"""
         ## loop through timesteps
         for ts in range(ts_max-1):
             # calculate current force
-            force = -self.k*self.positionList[ts] - self.beta*self.veloList[ts] + random_force(self.f0) + upwindBiasForce(self.wf0) + wall_force_field(self.positionList[ts])
+            force = -self.k*self.positionList[ts] - self.beta*self.veloList[ts] + random_force(self.f0) + upwindBiasForce(self.wf0) #+ wall_force_field(self.positionList[ts])
             # calculate current acceleration
             self.accelList[ts] = force/m
     
-            # update velocity in next timestep
+            # update velocity in next timestep  # velo wall component not changed? -rd
             self.veloList[ts+1] = self.veloList[ts] + self.accelList[ts]*self.dt
             # update position in next timestep
-            self.positionList[ts+1] = self.positionList[ts] + self.veloList[ts+1]*self.dt  # why not use veloList[ts]? -rd
-            # check if position is in wind force field 
+            candidate_pos = self.positionList[ts] + self.veloList[ts+1]*self.dt  # why not use veloList[ts]? -rd
+            
+            if bounded is True:  # if walls are enabled
+                ## forbid mosquito from going out of bounds
+                # check x dim
+                if candidate_pos[0] < boundary[0]:  # too far left
+                    candidate_pos[0] = boundary[0] + 1e-3
+                elif candidate_pos[0] > boundary[1]:  # too far right
+                    candidate_pos[0] = boundary[1] - 1e-3
+                # check y dim
+                if candidate_pos[1] < boundary[2]:  # too far down
+                    candidate_pos[1] = boundary[2] + 1e-3
+                elif candidate_pos[1] > boundary[3]:  # too far up
+                    candidate_pos[1] = boundary[3] - 1e-3
+                
+            self.positionList[ts+1] = candidate_pos
     
             # if there is a target, check if we are finding it
             if self.target_pos is None:
