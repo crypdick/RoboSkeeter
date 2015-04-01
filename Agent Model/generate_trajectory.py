@@ -70,6 +70,7 @@ def wall_force_field(current_pos, wallF, wallF_exp, wallX_pos=[0., 1.5], wallY_p
     """
     pass
 
+
 def stimulusDrivingForce():
     """[PLACEHOLDER]
     Force driving agegent towards stimulus source, determined by
@@ -161,6 +162,7 @@ class Trajectory:
                 # check x dim
                 if candidate_pos[0] < boundary[0]:  # too far left
                     candidate_pos[0] = boundary[0] + 1e-3
+#                    self.veloList[ts+1][1] = 0.
                 elif candidate_pos[0] > boundary[1]:  # too far right
                     candidate_pos[0] = boundary[1] - 1e-3
                 # check y dim
