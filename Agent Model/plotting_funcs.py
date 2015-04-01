@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 
-def trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list):
+def trajectory_plots(pos, pos_flat, target_finds, Tfind_avg, trajectory_objects_list):
     """"Plot all the trajectories into a single arena"""
     traj_ex = trajectory_objects_list[0]
     agent_paths_fig = plt.figure(1)
@@ -26,6 +26,16 @@ def trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list):
     plt.xlabel("x position")
     plt.ylabel("y position")
     plt.savefig("./figs/agent trajectories.png")
+    plt.show()
+    
+    # position heatmap
+    heatmap, xedges, yedges = np.histogram2d(pos_flat[:,1], pos_flat[:,0], bins=(10, 10))
+    extent = [yedges[0], yedges[-1], xedges[0], xedges[-1]]
+    plt.imshow(heatmap, extent=extent)
+    plt.title("Agent trajectories heatmap")
+    plt.xlabel("x position")
+    plt.ylabel("y position")
+    plt.savefig("./figs/agent trajectories heatmap.png")
     plt.show()
 
 
