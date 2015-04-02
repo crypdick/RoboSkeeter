@@ -13,32 +13,31 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # number of sections to divide flight arena into
-Nx_bins = 30
-Ny_bins = 10
+Nx, Ny = (40, 12)  # wind tunnel ratio is 1m:0.3m:0.3m
 
-# define boundaries of flight arena for which to make heatmap
+# define boundaries of flight arena to chop up into a grid
 xbounds = (0, 1)
 ybounds = (0.08, -0.08)  # reverse sign to go from top left to bottom right
-TRAJECTORIES_PER_BIN = 15
+TRAJECTORIES_PER_BIN = 20
 
 # initialize empty counts
-src_counts = np.zeros((Ny_bins, Nx_bins))
-src_probs = np.zeros((Ny_bins, Nx_bins))
+src_counts = np.zeros((Ny, Nx))
+src_probs = np.zeros((Ny, Nx))
 
 # figure out spot locations. [1:-1] throws out the first and last items in the
 # arrays, since we don't want to put the stimulus inside the walls.
-xticks = np.linspace(*xbounds, num=Nx_bins+2)[1:-1]
-yticks = np.linspace(*ybounds, num=Ny_bins+2)[1:-1]
+x_ax = np.linspace(*xbounds, num=Nx+2)[1:-1]
+y_ax = np.linspace(*ybounds, num=Ny+2)[1:-1]
 
 # generate our list of target coordinates and save them along with their
 # index.
 spotCoordsList = []
-for j in range(Ny_bins):
-    for i in range(Nx_bins):
-        spotCoordsList.append((i, j, xticks[i], yticks[j]))
+for j in range(Ny):
+    for i in range(Nx):
+        spotCoordsList.append((i, j, x_ax[i], y_ax[j]))
         
 # ...and reshape it.
-spotCoordsGrid = np.reshape(spotCoordsList, (Ny_bins, Nx_bins, 4))
+spotCoordsGrid = np.reshape(spotCoordsList, (Ny, Nx, 4))
 
 # detections are based on a radius around the target. This radius shrinks
 # if we add more x,y bins to reduce overlap.
@@ -55,11 +54,21 @@ for row in spotCoordsGrid:
         src_probs[int(y_index), int(x_index)] += num_success / TRAJECTORIES_PER_BIN
 
 # plot the heatmap
-plt.pcolormesh(src_probs)
+fig = plt.figure()
+ax = fig.add_subplot(111)
+plt.pcolormesh(src_probs, cmap='gray')#'gist_heat')
+plt.colorbar()
 titleappend = str(TRAJECTORIES_PER_BIN)
 plt.title("""Probabilty of flying to target for different target positions \n
 n = """ + titleappend)
 plt.xlabel("X bounds = " + str(xbounds))
 plt.ylabel("Y bounds = " + str(ybounds))
+
+# TODO: get rid of y axis ticks, too! -rd
+for tic in ax.xaxis.get_major_ticks():
+    tic.gridOn = False
+    tic.tick1On = False
+    tic.tick2On = False
+    
 plt.savefig("./figs/Pfind_heatmap.png")
 plt.show()

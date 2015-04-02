@@ -9,19 +9,25 @@ https://github.com/isomerase/
 """
 from matplotlib import pyplot as plt
 import numpy as np
+import itertools
 
 
-def trajectory_plots(pos, pos_flat, target_finds, Tfind_avg, trajectory_objects_list):
+def trajectory_plots(pos, target_pos, target_finds, Tfind_avg, trajectory_objects_list):
     """"Plot all the trajectories into a single arena"""
     traj_ex = trajectory_objects_list[0]
     agent_paths_fig = plt.figure(1)
     for traj in pos:
-        plt.plot(traj[:, 0], traj[:, 1], lw=2, alpha=0.5)
-    plt.scatter(traj_ex.target_pos[0], traj_ex.target_pos[1], s=150, c='r', marker="*")
+        plt.plot(traj[:, 0], traj[:, 1], lw=2, alpha=0.5)#, range=[[-0.08, 0.08],[0, 1.2]])
+        ax = plt.gca()
+        ax.axis([0, 1.1, -0.05, 0.05])
+#        plt.axis()
     title_append = """ for {0} secs. \n
-                beta = {2}, f0 = {3}, wf = {4}. \n
-                <Tfind> = {5}, Sourcefinds = {6}/(n = {1})
-                """.format(traj_ex.Tmax, len(trajectory_objects_list), traj_ex.beta, traj_ex.f0, traj_ex.wf0, Tfind_avg, sum(target_finds))
+                beta = {2}, f0 = {3}, wf = {4}.
+                """.format(traj_ex.Tmax, len(trajectory_objects_list), traj_ex.beta, traj_ex.f0, traj_ex.wf0, )
+    if target_pos is not None:
+        plt.scatter(traj_ex.target_pos[0], traj_ex.target_pos[1], s=150, c='r', marker="*")
+        title_append = title_append + """\n
+                <Tfind> = {0}, Sourcefinds = {1}/(n = {2})""".format(Tfind_avg, sum(target_finds), len(trajectory_objects_list))
     plt.title("Agent trajectories" + title_append)
     plt.xlabel("x position")
     plt.ylabel("y position")
@@ -29,9 +35,10 @@ def trajectory_plots(pos, pos_flat, target_finds, Tfind_avg, trajectory_objects_
     plt.show()
     
     # position heatmap
-    heatmap, xedges, yedges = np.histogram2d(pos_flat[:,1], pos_flat[:,0], bins=(10, 10))
-    extent = [yedges[0], yedges[-1], xedges[0], xedges[-1]]
-    plt.imshow(heatmap, extent=extent)
+    pos_flat = np.array(list(itertools.chain.from_iterable(pos)))
+    plt.hist2d(pos_flat[:,0], pos_flat[:,1], bins=(12, 40), normed=True, cmap='gray', cmax=60)
+    plt.colorbar()
+
     plt.title("Agent trajectories heatmap")
     plt.xlabel("x position")
     plt.ylabel("y position")

@@ -12,7 +12,6 @@ https://github.com/isomerase/
 import generate_trajectory
 import numpy as np
 import plotting_funcs
-import itertools
 
 
 def trajGenIter(r0, v0_stdev, k, beta, f0, wf0, target_pos, Tmax, dt, total_trajectories, bounded, detect_thresh):
@@ -72,15 +71,14 @@ def T_find_stats(t_targfinds, total_trajectories):
         return Tfind_avg, num_success
 
 
-def main(r0=[1., 0.], v0_stdev=0.01, k=0., beta=2e-5, f0=3e-6, wf0=5e-6, target_pos=[0.2, 0.05], Tmax=4.0, dt=0.01, total_trajectories=30, detect_thresh=0.02, bounded=True, plotting = True):
+def main(r0=[1., 0.], v0_stdev=0.01, k=0., beta=2e-5, f0=3e-6, wf0=5e-6, target_pos=None, Tmax=4.0, dt=0.01, total_trajectories=100, detect_thresh=0.02, bounded=True, plotting = True): # target_pos=[0.2, 0.04]
     pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, trajectory_objects_list = trajGenIter(r0=r0, v0_stdev=v0_stdev, k=k, beta=beta, f0=f0, wf0=wf0, target_pos=target_pos, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories, bounded=bounded, detect_thresh=detect_thresh)
 
     if plotting is True:
         # plot all trajectories
-        pos_flat = np.array(list(itertools.chain.from_iterable(pos)))
-        plotting_funcs.trajectory_plots(pos, pos_flat, target_finds, Tfind_avg, trajectory_objects_list)
+        plotting_funcs.trajectory_plots(pos, target_pos, target_finds, Tfind_avg, trajectory_objects_list)
         # plot histogram of pos, velo, accel distributions
-        plotting_funcs.stateHistograms(pos, velos, accels)
+#        plotting_funcs.stateHistograms(pos, velos, accels)
 
     return pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, trajectory_objects_list
 
