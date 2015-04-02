@@ -31,7 +31,7 @@ def random_force(f0, dim=2):
         raise NotImplementedError('Too many dimensions!')
 
 
-def upwindBiasForce(wf0, upwind_direction=np.pi, dim=2):
+def upwindBiasForce(wf0, upwind_direction=0, dim=2):
     """Biases the agent to fly upwind. Constant push with strength wf0
     
     [formerly]: Picks the direction +- pi/2 rads from
@@ -48,7 +48,7 @@ def upwindBiasForce(wf0, upwind_direction=np.pi, dim=2):
         if wf0 == 0:
             return [0, 0]
         else:
-            return [-wf0, 0]  # wf is constant, directly to left
+            return [wf0, 0]  # wf is constant, directly to right
     else:
         raise NotImplementedError('wind bias only works in 2D right now!')
 
@@ -83,21 +83,46 @@ def stimulusDrivingForce():
     pass
 
 
+def place_heater(target_pos):
+    if target_pos is None:
+            return None
+    elif target_pos == "left":
+        return [0.86, 0.0507]
+    elif target_pos == "right":
+        return [0.86, -0.0507]
+    elif type(target_pos) is list:
+        return target_pos
+    else:
+        raise Exception('invalid heater type specified')
+
+
 class Trajectory:
     """Generate single trajectory, forbidding agent from leaving bounds
 
     Args:
-        r0: initial position (list/array)
-        v0_stdev: stdev of initial velocity distribution (float)
-        target_pos: source position (list/array) (set to None if no source)
-        Tmax: max length of accelList trajectory (float)
-        dt: length of timebins to divide Tmax by (float)
-        k: spring constant, disabled (float)
-        beta: damping force (kg/s) (float) NOTE: if beta is too big, things blow up
-        f0: random driving force exp term for exp distribution (float)
-        wf0: upwind bias force magnitude (float) # TODO units
-        detect_thresh: distance mozzie can detect target (float) (m) =2 cm
-        boundary: specify where walls are (float) (leftx, rightx, bottomy, topy)
+        r0: (list/array)
+            initial position (meters)
+        v0_stdev: (float)
+            stdev of initial velocity distribution 
+        target_pos: (list/array, "left", "right", or "None")
+            heater position  (set to None if no source)
+        Tmax: (float)
+            max length of accelList trajectory 
+        dt: (float)
+            length of timebins to divide Tmax by 
+        k: (float)
+            spring constant, disabled 
+        beta: (float)
+            damping force (kg/s)  NOTE: if beta is too big, things blow up
+        f0: (float)
+            random driving force exp term for exp distribution 
+        wf0: (float)
+            upwind bias force magnitude  # TODO units
+        detect_thresh: (float)
+            distance mozzie can detect target in (m), 2 cm + diameter of heaters,
+            (0.00635m)
+        boundary: (array)
+            specify where walls are  (minx, maxx, miny, maxy)
         
 
     All args are in SI units and based on behavioral data:
@@ -107,9 +132,10 @@ class Trajectory:
     Returns:
         trajectory object
     """
-    def __init__(self, r0=[1., 0.], v0_stdev=0.01, Tmax=4., dt=0.01, target_pos=None, k=0., beta=2e-5, f0=3e-6, wf0=5e-6, detect_thresh=0.02, boundary=[0.0, 1.1, -0.05, 0.05], bounded=True, plotting = False):
+    boundary = [0.0, 1.0, -0.15, 0.15]  # these are real dims of our wind tunnel
+    def __init__(self, r0=[0.1524, 0.], v0_stdev=0.01, Tmax=4., dt=0.01, target_pos=None, k=0., beta=2e-5, f0=3e-6, wf0=5e-6, detect_thresh=0.02635, bounded=True, plotting = False):
         """ Initialize object with instant variables, and trigger other funcs. 
-        """        
+        """
         self.Tmax = Tmax
         self.dt = dt
         self.v0_stdev = v0_stdev
@@ -117,8 +143,10 @@ class Trajectory:
         self.beta = beta
         self.f0 = f0
         self.wf0 = wf0
-        self.target_pos = target_pos
         self.dim = len(r0)  # get dimension
+        
+        # place heater
+        self.target_pos = place_heater(target_pos)
         
         self.target_found = False
         self.t_targfound = np.nan
@@ -138,10 +166,10 @@ class Trajectory:
         self.positionList[0] = r0
         self.veloList[0] = v0
         
-        self.fly(ts_max, detect_thresh, boundary, bounded)
+        self.fly(ts_max, detect_thresh, self.boundary, bounded)
         
         if plotting is True:
-            self.plot()
+            self.plot(self.boundary)
         
     def fly(self, ts_max, detect_thresh, boundary, bounded):
         """Run the simulation using Euler's method"""
@@ -161,15 +189,15 @@ class Trajectory:
                 ## forbid mosquito from going out of bounds
                 # check x dim
                 if candidate_pos[0] < boundary[0]:  # too far left
-                    candidate_pos[0] = boundary[0] + 1e-3
+                    candidate_pos[0] = boundary[0] + 1e-4
 #                    self.veloList[ts+1][1] = 0.
                 elif candidate_pos[0] > boundary[1]:  # too far right
-                    candidate_pos[0] = boundary[1] - 1e-3
+                    candidate_pos[0] = boundary[1] - 1e-4
                 # check y dim
                 if candidate_pos[1] < boundary[2]:  # too far down
-                    candidate_pos[1] = boundary[2] + 1e-3
+                    candidate_pos[1] = boundary[2] + 1e-4
                 elif candidate_pos[1] > boundary[3]:  # too far up
-                    candidate_pos[1] = boundary[3] - 1e-3
+                    candidate_pos[1] = boundary[3] - 1e-4
                 
             self.positionList[ts+1] = candidate_pos
     
@@ -190,11 +218,17 @@ class Trajectory:
                     self.accelList = self.accelList[:ts+1]
                     break  # stop flying at source         
          
-    def plot(self):
+    def plot(self, boundary):
+        from matplotlib.patches import Rectangle
         plt.plot(self.positionList[:, 0], self.positionList[:, 1], lw=2, alpha=0.5)
         plt.scatter(self.target_pos[0], self.target_pos[1], s=150, c='r', marker="*")
-
+        plt.axis(boundary)
+        # draw cage
+        cage_midX, cage_midY = 0.1524, 0.
+        currentAxis = plt.gca()
+        currentAxis.add_patch(Rectangle((cage_midX - 0.0381, cage_midY - 0.0381), 0.0762, 0.0762, facecolor='none'))
+        plt.title("Individual trajectory")
 
 if __name__ == '__main__':
-    target_pos = [0.3, 0.03]
+    target_pos = "left"
     mytraj = Trajectory(target_pos=target_pos, plotting = True)
