@@ -119,8 +119,8 @@ class Trajectory:
         wf0: (float)
             upwind bias force magnitude  # TODO units
         detect_thresh: (float)
-            distance mozzie can detect target in (m), 2 cm + diameter of heaters,
-            (0.00635m)
+            distance mozzie can detect target in (m), 2 cm + radius of heaters,
+            (0.00635m/2= 0.003175)
         boundary: (array)
             specify where walls are  (minx, maxx, miny, maxy)
         
@@ -133,7 +133,7 @@ class Trajectory:
         trajectory object
     """
     boundary = [0.0, 1.0, -0.15, 0.15]  # these are real dims of our wind tunnel
-    def __init__(self, r0=[0.1524, 0.], v0_stdev=0.01, Tmax=4., dt=0.01, target_pos=None, k=0., beta=2e-5, f0=3e-6, wf0=5e-6, detect_thresh=0.02635, bounded=True, plotting = False):
+    def __init__(self, r0=[0.1524, 0.], v0_stdev=0.01, Tmax=4., dt=0.01, target_pos=None, k=0., beta=2e-5, f0=3e-6, wf0=5e-6, detect_thresh=0.023175, bounded=True, plotting = False):
         """ Initialize object with instant variables, and trigger other funcs. 
         """
         self.Tmax = Tmax
@@ -193,6 +193,8 @@ class Trajectory:
 #                    self.veloList[ts+1][1] = 0.
                 elif candidate_pos[0] > boundary[1]:  # too far right
                     candidate_pos[0] = boundary[1] - 1e-4
+                    self.land(ts)  # end trajectory when reach end of tunnel
+                    break  # stop flying at end  
                 # check y dim
                 if candidate_pos[1] < boundary[2]:  # too far down
                     candidate_pos[1] = boundary[2] + 1e-4
@@ -210,13 +212,17 @@ class Trajectory:
                 # TODO: pretty sure norm is malfunctioning. only credible if
                 #the trajectory is directly under the target -rd
                     self.target_found = True
-                    self.t_targfound = self.timeList[ts]  # should this be timeList[ts+1]? -rd  
-                    # trim excess timebins in arrays
-                    self.timeList = self.timeList[:ts+1]
-                    self.positionList = self.positionList[:ts+1]
-                    self.veloList = self.veloList[:ts+1]
-                    self.accelList = self.accelList[:ts+1]
-                    break  # stop flying at source         
+                    self.t_targfound = self.timeList[ts]  # should this be timeList[ts+1]? -rd
+                    self.land(ts)
+                    break  # stop flying at source  
+                    
+    def land(self, ts):    
+        # trim excess timebins in arrays
+        self.timeList = self.timeList[:ts+1]
+        self.positionList = self.positionList[:ts+1]
+        self.veloList = self.veloList[:ts+1]
+        self.accelList = self.accelList[:ts+1]
+
          
     def plot(self, boundary):
         from matplotlib.patches import Rectangle
@@ -231,4 +237,4 @@ class Trajectory:
 
 if __name__ == '__main__':
     target_pos = "left"
-    mytraj = Trajectory(target_pos=target_pos, plotting = True)
+    mytraj = Trajectory(target_pos=target_pos, plotting = True, wf0=1e-06, f0=4e-06, beta=1e-5, Tmax=10)
