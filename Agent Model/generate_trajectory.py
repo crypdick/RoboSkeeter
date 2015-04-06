@@ -223,7 +223,6 @@ class Trajectory:
         self.positionList = self.positionList[:ts+1]
         self.veloList = self.veloList[:ts+1]
         self.accelList = self.accelList[:ts+1]
-
          
     def plot(self, boundary):
         from matplotlib.patches import Rectangle
