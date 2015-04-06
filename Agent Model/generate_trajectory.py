@@ -228,7 +228,7 @@ class Trajectory:
         from matplotlib.patches import Rectangle
         plt.plot(self.positionList[:, 0], self.positionList[:, 1], lw=2, alpha=0.5)
         heaterCircle = plt.Circle((self.target_pos[0], self.target_pos[1],), 0.003175, color='r')  # 0.003175 is diam of our heater
-        detectCircle = plt.Circle((self.target_pos[0], self.target_pos[1],), self.detect_thresh, color='gray', fill=False)
+        detectCircle = plt.Circle((self.target_pos[0], self.target_pos[1],), self.detect_thresh, color='gray', fill=False, linestyle='dashed')
         plt.axis(boundary)
         # draw cage
         cage_midX, cage_midY = 0.1524, 0.
