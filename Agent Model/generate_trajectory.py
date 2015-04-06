@@ -96,6 +96,17 @@ def place_heater(target_pos):
         raise Exception('invalid heater type specified')
 
 
+def place_agent(agent_pos):
+    if type(agent_pos) is list:
+        return agent_pos
+    if agent_pos == "center":
+        return [0.1524, 0.]  # center of box
+    if agent_pos == "cage":  # bounds of cage
+        return [np.random.uniform(0.1143, 0.1909), np.random.uniform(-0.0381, 0.0381)]
+    else:
+        raise Exception('invalid agent position specified')
+
+
 class Trajectory:
     """Generate single trajectory, forbidding agent from leaving bounds
 
@@ -133,7 +144,7 @@ class Trajectory:
         trajectory object
     """
     boundary = [0.0, 1.0, 0.15, -0.15]  # these are real dims of our wind tunnel
-    def __init__(self, r0=[0.1524, 0.], v0_stdev=0.01, Tmax=4., dt=0.01, target_pos=None, k=0., beta=2e-5, f0=3e-6, wf0=5e-6, detect_thresh=0.023175, bounded=True, plotting = False):
+    def __init__(self, agent_pos="cage", v0_stdev=0.01, Tmax=4., dt=0.01, target_pos=None, k=0., beta=2e-5, f0=3e-6, wf0=5e-6, detect_thresh=0.023175, bounded=True, plotting = False):
         """ Initialize object with instant variables, and trigger other funcs. 
         """
         self.Tmax = Tmax
@@ -143,11 +154,14 @@ class Trajectory:
         self.beta = beta
         self.f0 = f0
         self.wf0 = wf0
-        self.dim = len(r0)  # get dimension
         self.detect_thresh = detect_thresh        
         
         # place heater
         self.target_pos = place_heater(target_pos)
+        
+        # place agent
+        r0 = place_agent(agent_pos)
+        self.dim = len(r0)  # get dimension
         
         self.target_found = False
         self.t_targfound = np.nan

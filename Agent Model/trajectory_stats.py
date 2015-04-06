@@ -14,7 +14,7 @@ import numpy as np
 import plotting_funcs
 
 
-def trajGenIter(r0, target_pos, v0_stdev, k, beta, f0, wf0, Tmax, dt, total_trajectories, bounded, detect_thresh):
+def trajGenIter(agent_pos, target_pos, v0_stdev, k, beta, f0, wf0, Tmax, dt, total_trajectories, bounded, detect_thresh):
     """
     Run generate_trajectory total_trajectories times and return the results
     as arrays.
@@ -42,7 +42,7 @@ def trajGenIter(r0, target_pos, v0_stdev, k, beta, f0, wf0, Tmax, dt, total_traj
     trajectory_objects_list = []
 
     for traj in range(total_trajectories):
-        trajectory = generate_trajectory.Trajectory(r0=r0, target_pos=target_pos, v0_stdev=v0_stdev, k=k, beta=beta, f0=f0, wf0=wf0, Tmax=Tmax, dt=dt, detect_thresh=detect_thresh, bounded=bounded)
+        trajectory = generate_trajectory.Trajectory(agent_pos=agent_pos, target_pos=target_pos, v0_stdev=v0_stdev, k=k, beta=beta, f0=f0, wf0=wf0, Tmax=Tmax, dt=dt, detect_thresh=detect_thresh, bounded=bounded)
         # extract trajectory object attribs, append to our lists.
         pos += [trajectory.positionList]
         velos += [trajectory.veloList]
@@ -71,9 +71,9 @@ def T_find_stats(t_targfinds, total_trajectories):
         return Tfind_avg, num_success
 
 
-def main(r0=[0.1524, 0.], v0_stdev=0.01, k=0., beta=2e-5, f0=3e-6, wf0=5e-6, target_pos=None, Tmax=10.0, dt=0.01, total_trajectories=100, detect_thresh=0.023175, bounded=True, plotting = True):
+def main(agent_pos="center", v0_stdev=0.01, k=0., beta=2e-5, f0=3e-6, wf0=5e-6, target_pos=None, Tmax=10.0, dt=0.01, total_trajectories=100, detect_thresh=0.023175, bounded=True, plotting = True):
 #    pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, trajectory_objects_list = trajGenIter(r0=r0, target_pos="left", v0_stdev=v0_stdev, k=k, beta=beta, f0=f0, wf0=wf0, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories, bounded=bounded, detect_thresh=detect_thresh)   # defaults
-    pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, trajectory_objects_list = trajGenIter(r0=r0, target_pos="left", v0_stdev=v0_stdev, k=k, beta=1e-5, f0=4e-06, wf0=1e-06, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories, bounded=bounded, detect_thresh=detect_thresh)   # new params
+    pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, trajectory_objects_list = trajGenIter(agent_pos=agent_pos, target_pos="left", v0_stdev=v0_stdev, k=k, beta=1e-5, f0=4e-06, wf0=1e-06, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories, bounded=bounded, detect_thresh=detect_thresh)   # new params
 
     if plotting is True:
         # plot all trajectories
