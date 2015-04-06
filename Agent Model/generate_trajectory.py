@@ -144,6 +144,7 @@ class Trajectory:
         self.f0 = f0
         self.wf0 = wf0
         self.dim = len(r0)  # get dimension
+        self.detect_thresh = detect_thresh        
         
         # place heater
         self.target_pos = place_heater(target_pos)
@@ -208,7 +209,7 @@ class Trajectory:
                 self.target_found = False
                 self.t_targfound = np.nan
             else:
-                if norm(self.positionList[ts+1] - self.target_pos) < detect_thresh:
+                if norm(self.positionList[ts+1] - self.target_pos) < self.detect_thresh:
                 # TODO: pretty sure norm is malfunctioning. only credible if
                 #the trajectory is directly under the target -rd
                     self.target_found = True
@@ -227,12 +228,15 @@ class Trajectory:
     def plot(self, boundary):
         from matplotlib.patches import Rectangle
         plt.plot(self.positionList[:, 0], self.positionList[:, 1], lw=2, alpha=0.5)
-        plt.scatter(self.target_pos[0], self.target_pos[1], s=150, c='r', marker="*")
+        heaterCircle = plt.Circle((self.target_pos[0], self.target_pos[1],), 0.003175, color='r')  # 0.003175 is diam of our heater
+        detectCircle = plt.Circle((self.target_pos[0], self.target_pos[1],), self.detect_thresh, color='gray', fill=False)
         plt.axis(boundary)
         # draw cage
         cage_midX, cage_midY = 0.1524, 0.
         currentAxis = plt.gca()
         currentAxis.add_patch(Rectangle((cage_midX - 0.0381, cage_midY - 0.0381), 0.0762, 0.0762, facecolor='none'))
+        currentAxis.add_artist(heaterCircle)
+        currentAxis.add_artist(detectCircle)
         plt.title("Individual trajectory")
 
 if __name__ == '__main__':
