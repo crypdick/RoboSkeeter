@@ -53,7 +53,7 @@ def upwindBiasForce(wf0, upwind_direction=0, dim=2):
         raise NotImplementedError('wind bias only works in 2D right now!')
 
 
-def wall_force_field(current_pos, wallF, wallF_exp, wallX_pos=[0., 1.5], wallY_pos=[-0.5, 0.5]):  # TODO: make these the actual dims of Sharri's wind tunnel -rd
+def wall_force_field(current_pos, wallF, wallF_exp, wallX_pos=[0., 1.], wallY_pos=[-0.15, 0.15]):
     """If agent gets too close to wall, inflict it with repulsive forces as a
     function of how close it is to the wall. NOTE: right now, just using simply
     forbidden zones.
@@ -87,9 +87,9 @@ def place_heater(target_pos):
     if target_pos is None:
             return None
     elif target_pos == "left":
-        return [0.86, 0.0507]
-    elif target_pos == "right":
         return [0.86, -0.0507]
+    elif target_pos == "right":
+        return [0.86, 0.0507]
     elif type(target_pos) is list:
         return target_pos
     else:
@@ -132,7 +132,7 @@ class Trajectory:
     Returns:
         trajectory object
     """
-    boundary = [0.0, 1.0, -0.15, 0.15]  # these are real dims of our wind tunnel
+    boundary = [0.0, 1.0, 0.15, -0.15]  # these are real dims of our wind tunnel
     def __init__(self, r0=[0.1524, 0.], v0_stdev=0.01, Tmax=4., dt=0.01, target_pos=None, k=0., beta=2e-5, f0=3e-6, wf0=5e-6, detect_thresh=0.023175, bounded=True, plotting = False):
         """ Initialize object with instant variables, and trigger other funcs. 
         """
@@ -196,9 +196,9 @@ class Trajectory:
                     self.land(ts)  # end trajectory when reach end of tunnel
                     break  # stop flying at end  
                 # check y dim
-                if candidate_pos[1] < boundary[2]:  # too far down
+                if candidate_pos[1] > boundary[2]:  # too far up
                     candidate_pos[1] = boundary[2] + 1e-4
-                elif candidate_pos[1] > boundary[3]:  # too far up
+                elif candidate_pos[1] < boundary[3]:  # too far down
                     candidate_pos[1] = boundary[3] - 1e-4
                 
             self.positionList[ts+1] = candidate_pos
