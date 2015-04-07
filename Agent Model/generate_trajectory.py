@@ -198,7 +198,7 @@ class Trajectory:
             # calculate current acceleration
             self.accelList[ts] = force/m
     
-            # update velocity in next timestep  # velo wall component not changed? -rd
+            # update velocity in next timestep
             self.veloList[ts+1] = self.veloList[ts] + self.accelList[ts]*self.dt
             # update position in next timestep
             candidate_pos = self.positionList[ts] + self.veloList[ts+1]*self.dt  # why not use veloList[ts]? -rd
@@ -232,8 +232,6 @@ class Trajectory:
                 self.t_targfound = np.nan
             else:
                 if norm(self.positionList[ts+1] - self.target_pos) < self.detect_thresh:
-                # TODO: pretty sure norm is malfunctioning. only credible if
-                #the trajectory is directly under the target -rd
                     self.target_found = True
                     self.t_targfound = self.timeList[ts]  # should this be timeList[ts+1]? -rd
                     self.land(ts)

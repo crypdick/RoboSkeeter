@@ -71,13 +71,13 @@ def T_find_stats(t_targfinds, total_trajectories):
         return Tfind_avg, num_success
 
 
-def main(agent_pos="cage", v0_stdev=0.01, k=0., beta=2e-5, f0=3e-6, wf0=5e-6, target_pos=None, Tmax=10.0, dt=0.01, total_trajectories=100, detect_thresh=0.023175, bounded=True, bounce="crash", plotting = True):
+def main(agent_pos="cage", v0_stdev=0.01, k=0., beta=1e-5, f0=4e-6, wf0=1e-6, target_pos="left", Tmax=10.0, dt=0.01, total_trajectories=50, detect_thresh=0.023175, bounded=True, bounce="crash", plotting = True):
 #    pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, trajectory_objects_list = trajGenIter(r0=r0, target_pos="left", v0_stdev=v0_stdev, k=k, beta=beta, f0=f0, wf0=wf0, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories, bounded=bounded, detect_thresh=detect_thresh)   # defaults
-    pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, trajectory_objects_list = trajGenIter(agent_pos=agent_pos, target_pos="left", v0_stdev=v0_stdev, k=k, beta=1e-5, f0=4e-06, wf0=1e-06, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories, bounded=bounded,  bounce="crash", detect_thresh=detect_thresh)
+    pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, trajectory_objects_list = trajGenIter(agent_pos=agent_pos, target_pos=target_pos, v0_stdev=v0_stdev, k=k, beta=beta, f0=f0, wf0=wf0, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories, bounded=bounded,  bounce=bounce, detect_thresh=detect_thresh)
 
     if plotting is True:
 #         plot all trajectories
-        plotting_funcs.trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list)
+        plotting_funcs.trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heatmap=True)
 #         plot histogram of pos, velo, accel distributions
         plotting_funcs.stateHistograms(pos, velos, accels)
 
