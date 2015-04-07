@@ -17,7 +17,7 @@ Nx, Ny = (40, 12)  # wind tunnel ratio is 1m:0.3m:0.3m
 
 # define boundaries of flight arena to chop up into a grid
 xbounds = (0, 1)
-ybounds = (0.08, -0.08)  # reverse sign to go from top left to bottom right
+ybounds = (0.15, -0.15)  # reverse sign to go from top left to bottom right
 TRAJECTORIES_PER_BIN = 20
 
 # initialize empty counts
@@ -42,14 +42,14 @@ spotCoordsGrid = np.reshape(spotCoordsList, (Ny, Nx, 4))
 # detections are based on a radius around the target. This radius shrinks
 # if we add more x,y bins to reduce overlap.
 # Calculated based on distance between diagonal spots / 2
-detect_thresh = (np.linalg.norm((spotCoordsGrid[0, 0][2:] - spotCoordsGrid[1, 1][2:]) / 2))
+#detect_thresh = (np.linalg.norm((spotCoordsGrid[0, 0][2:] - spotCoordsGrid[1, 1][2:]) / 2))
 
 # iter through spotCoordsGrid, run trajectory_stats TRAJECTORIES_PER_BIN times
 # for each spot, and fill in resulting stats into the src_counts and _probs grids
 for row in spotCoordsGrid:
     for spot in row:
         x_index, y_index, x_coord, y_coord = spot
-        _, _, _, target_finds, t_targfinds, _, num_success, trajectory_objects_list = trajectory_stats.main(target_pos=[x_coord, y_coord], total_trajectories=TRAJECTORIES_PER_BIN, detect_thresh=detect_thresh, plotting=False)
+        _, _, _, target_finds, t_targfinds, _, num_success, trajectory_objects_list = trajectory_stats.main(target_pos=[x_coord, y_coord], total_trajectories=TRAJECTORIES_PER_BIN, plotting=False, bounce=False)
         src_counts[int(y_index), int(x_index)] += num_success
         src_probs[int(y_index), int(x_index)] += num_success / TRAJECTORIES_PER_BIN
 
@@ -58,7 +58,7 @@ fig = plt.figure()
 ax = fig.add_subplot(111)
 plt.pcolormesh(src_probs, cmap='gray')#'gist_heat')
 plt.colorbar()
-titleappend = str(TRAJECTORIES_PER_BIN)
+titleappend = str(TRAJECTORIES_PER_BIN) + " per cell"
 plt.title("""Probabilty of flying to target for different target positions \n
 n = """ + titleappend)
 plt.xlabel("X bounds = " + str(xbounds))

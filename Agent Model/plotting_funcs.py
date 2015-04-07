@@ -30,7 +30,7 @@ def trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list):
     $T_max$ = {0} secs, $\beta = {2}$, $f = {3}$, $wtf = {4}$.
                 """.format(traj_ex.Tmax, len(trajectory_objects_list), traj_ex.beta, traj_ex.f0, traj_ex.wf0)
     # draw heater
-    if target_pos is not None:
+    if traj_ex.target_pos is not None:
         heaterCircle = plt.Circle((traj_ex.target_pos[0], traj_ex.target_pos[1],), 0.003175, color='r')  # 0.003175 is diam of our heater
         detectCircle = plt.Circle((traj_ex.target_pos[0], traj_ex.target_pos[1],), traj_ex.detect_thresh, color='gray', linestyle='dashed', fill=False)
         ax.add_artist(heaterCircle)
@@ -55,10 +55,14 @@ def trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list):
     plt.show()
     
     ## Position heatmap
+    fig, ax = plt.subplots(1)
     pos_flat = np.array(list(itertools.chain.from_iterable(pos)))
-    plt.hist2d(pos_flat[:,0], pos_flat[:,1], bins=(100, 30), normed=True, cmap='gray', cmax=30, range=[traj_ex.boundary[:2], [traj_ex.boundary[3], traj_ex.boundary[2]]])
+    heatmap = ax.hist2d(pos_flat[:,0], pos_flat[:,1], bins=(50, 15), normed=True, cmap='gray', cmax=8, range=[traj_ex.boundary[:2], [traj_ex.boundary[3], traj_ex.boundary[2]]])
     plt.gca().invert_yaxis()  # fix for y axis convention
-    plt.colorbar()
+    plt.colorbar(heatmap[3])
+#    plt.colorbar(heatmapfig, ax=heatax[0])
+#    cbar = plt.colorbar(heatmap[3], ticks=[0, 5, 10])
+#    cbar.ax.set_yticklabels(['0', '5', '> 10'])# vertically oriented colorbar
 
     plt.title("Agent Trajectories Heatmap")
     plt.xlabel("$x$")
@@ -68,7 +72,7 @@ def trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list):
     
 
 def stateHistograms(pos, velos, accels):
-    fig = plt.figure(2, figsize=(8, 15))
+    fig = plt.figure(4, figsize=(8, 15))
     gs1 = gridspec.GridSpec(4, 1)
     axs = [fig.add_subplot(ss) for ss in gs1]
     fig.suptitle("Agent Model Flight Distributions", fontsize=14)

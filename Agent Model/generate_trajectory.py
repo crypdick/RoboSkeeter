@@ -111,8 +111,8 @@ class Trajectory:
     """Generate single trajectory, forbidding agent from leaving bounds
 
     Args:
-        r0: (list/array)
-            initial position (meters)
+        agent_position: (list/array, "cage", "center")
+            sets initial position r0 (meters)
         v0_stdev: (float)
             stdev of initial velocity distribution 
         target_pos: (list/array, "left", "right", or "None")
@@ -132,6 +132,8 @@ class Trajectory:
         detect_thresh: (float)
             distance mozzie can detect target in (m), 2 cm + radius of heaters,
             (0.00635m/2= 0.003175)
+        bounce: (None, "crash")
+            "crash" sets whether agent velocity gets set to zero in the corresponding component if it crashes into a wall
         boundary: (array)
             specify where walls are  (minx, maxx, miny, maxy)
         
@@ -144,7 +146,7 @@ class Trajectory:
         trajectory object
     """
     boundary = [0.0, 1.0, 0.15, -0.15]  # these are real dims of our wind tunnel
-    def __init__(self, agent_pos="cage", v0_stdev=0.01, Tmax=4., dt=0.01, target_pos=None, k=0., beta=2e-5, f0=3e-6, wf0=5e-6, detect_thresh=0.023175, bounded=True, plotting = False):
+    def __init__(self, agent_pos="cage", v0_stdev=0.01, Tmax=4., dt=0.01, target_pos=None, k=0., beta=2e-5, f0=3e-6, wf0=5e-6, detect_thresh=0.023175, bounded=True, bounce="crash", plotting = False):
         """ Initialize object with instant variables, and trigger other funcs. 
         """
         self.Tmax = Tmax
@@ -154,7 +156,8 @@ class Trajectory:
         self.beta = beta
         self.f0 = f0
         self.wf0 = wf0
-        self.detect_thresh = detect_thresh        
+        self.detect_thresh = detect_thresh     
+        self.bounce = bounce
         
         # place heater
         self.target_pos = place_heater(target_pos)
@@ -205,7 +208,8 @@ class Trajectory:
                 # check x dim
                 if candidate_pos[0] < boundary[0]:  # too far left
                     candidate_pos[0] = boundary[0] + 1e-4
-#                    self.veloList[ts+1][1] = 0.
+                    if self.bounce is "crash":
+                        self.veloList[ts+1][0] = 0.
                 elif candidate_pos[0] > boundary[1]:  # too far right
                     candidate_pos[0] = boundary[1] - 1e-4
                     self.land(ts)  # end trajectory when reach end of tunnel
@@ -213,8 +217,12 @@ class Trajectory:
                 # check y dim
                 if candidate_pos[1] > boundary[2]:  # too far up
                     candidate_pos[1] = boundary[2] + 1e-4
+                    if self.bounce is "crash":
+                        self.veloList[ts+1][1] = 0.
                 elif candidate_pos[1] < boundary[3]:  # too far down
                     candidate_pos[1] = boundary[3] - 1e-4
+                    if self.bounce is "crash":
+                        self.veloList[ts+1][1] = 0.
                 
             self.positionList[ts+1] = candidate_pos
     
