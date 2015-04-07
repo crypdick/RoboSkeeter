@@ -17,7 +17,7 @@ import seaborn as sns
 sns.set_palette("muted", 8)
 
 
-def trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list):
+def trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heatmap):
     """"Plot all the trajectories into a single arena"""
     traj_ex = trajectory_objects_list[0]
     target_pos = traj_ex.target_pos
@@ -55,20 +55,21 @@ def trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list):
     plt.show()
     
     ## Position heatmap
-    fig, ax = plt.subplots(1)
-    pos_flat = np.array(list(itertools.chain.from_iterable(pos)))
-    heatmap = ax.hist2d(pos_flat[:,0], pos_flat[:,1], bins=(50, 15), normed=True, cmap='gray', cmax=8, range=[traj_ex.boundary[:2], [traj_ex.boundary[3], traj_ex.boundary[2]]])
-    plt.gca().invert_yaxis()  # fix for y axis convention
-    plt.colorbar(heatmap[3])
-#    plt.colorbar(heatmapfig, ax=heatax[0])
-#    cbar = plt.colorbar(heatmap[3], ticks=[0, 5, 10])
-#    cbar.ax.set_yticklabels(['0', '5', '> 10'])# vertically oriented colorbar
-
-    plt.title("Agent Trajectories Heatmap")
-    plt.xlabel("$x$")
-    plt.ylabel("$y$")
-    plt.savefig("./figs/agent trajectories heatmap.png")
-    plt.show()
+    if heatmap is True:
+        fig, ax = plt.subplots(1)
+        pos_flat = np.array(list(itertools.chain.from_iterable(pos)))
+        heatmap = ax.hist2d(pos_flat[:,0], pos_flat[:,1], bins=(50, 15), normed=True, cmap='gray', cmax=8, range=[traj_ex.boundary[:2], [traj_ex.boundary[3], traj_ex.boundary[2]]])
+        plt.gca().invert_yaxis()  # fix for y axis convention
+        plt.colorbar(heatmap[3])
+    #    plt.colorbar(heatmapfig, ax=heatax[0])
+    #    cbar = plt.colorbar(heatmap[3], ticks=[0, 5, 10])
+    #    cbar.ax.set_yticklabels(['0', '5', '> 10'])# vertically oriented colorbar
+    
+        plt.title("Agent Trajectories Heatmap")
+        plt.xlabel("$x$")
+        plt.ylabel("$y$")
+        plt.savefig("./figs/agent trajectories heatmap.png")
+        plt.show()
     
 
 def stateHistograms(pos, velos, accels):
@@ -84,7 +85,7 @@ def stateHistograms(pos, velos, accels):
     # X pos
     xpos_min, xpos_max = 0., 1.
     xpos_counts, xpos_bins = np.histogram(pos_all[:, 0], bins=np.linspace(xpos_min, xpos_max, (xpos_max-xpos_min) / pos_binwidth))
-    xpos_counts_n= xpos_counts / float(len(xpos_counts))
+    xpos_counts_n = xpos_counts.astype(int) / float(xpos_counts.size)
     axs[0].plot(xpos_bins[:-1], xpos_counts_n, lw=2)
     axs[0].fill_between(xpos_bins[:-1], 0, xpos_counts_n, facecolor='blue', alpha=0.2)
     axs[0].set_title("Upwind ($x$) Position Distributions")
@@ -95,7 +96,8 @@ def stateHistograms(pos, velos, accels):
     # Y pos
     ypos_min, ypos_max = -0.15, 0.15
     ypos_counts, ypos_bins = np.histogram(pos_all[:, 1], bins=np.linspace(ypos_min, ypos_max, (ypos_max-ypos_min)/pos_binwidth))
-    ypos_counts_n= ypos_counts / float(len(ypos_counts))
+    ypos_counts_n = ypos_counts/ ypos_counts.astype(float).sum()
+#    axs[1].bar(ypos_bins[:-1], ypos_counts_n, ypos_bins[1]-ypos_bins[0])
     axs[1].plot(ypos_bins[:-1], ypos_counts_n, lw=2)
     axs[1].fill_between(ypos_bins[:-1], 0, ypos_counts_n, facecolor='blue', alpha=0.2)
     axs[1].set_title("Cross-wind ($y$) Position Distributions")
@@ -106,17 +108,17 @@ def stateHistograms(pos, velos, accels):
 
     ## Velo distributions
     velo_all = np.concatenate(velos, axis=0)
-    vmin, vmax = -0.4, 0.4
+    vmin, vmax = -1.0, 1.
     velo_bindwidth = 0.01
     
     # vx component
     vx_counts, vx_bins = np.histogram(velo_all[:, 0], bins=np.linspace(vmin, vmax, (vmax-vmin)/velo_bindwidth))
-    vx_counts_n= vx_counts/float(len(vx_counts))
+    vx_counts_n = vx_counts / vx_counts.astype(float).sum()
     axs[2].plot(vx_bins[:-1], vx_counts_n, label="$\dot{x}$")
     axs[2].fill_between(vx_bins[:-1], 0, vx_counts_n, facecolor='blue', alpha=0.2)
     # vy component
     vy_counts, vy_bins = np.histogram(velo_all[:, 1], bins=np.linspace(vmin, vmax, (vmax-vmin)/velo_bindwidth))
-    vy_counts_n= vy_counts/float(len(vy_counts))
+    vy_counts_n= vy_counts / vy_counts.astype(float).sum()
     axs[2].plot(vy_bins[:-1], vy_counts_n, label="$\dot{y}$")
     axs[2].fill_between(vy_bins[:-1], 0, vy_counts_n, facecolor='green', alpha=0.2)
     # |v|
@@ -124,7 +126,7 @@ def stateHistograms(pos, velos, accels):
     for v in velo_all:
         velo_all_magn.append(np.linalg.norm(v))
     vabs_counts, vabs_bins = np.histogram(velo_all_magn, bins=np.linspace(vmin, vmax, (vmax-vmin)/velo_bindwidth))
-    vabs_counts_n= vabs_counts/float(len(vabs_counts))
+    vabs_counts_n = vabs_counts / vabs_counts.astype(float).sum()
     axs[2].plot(vabs_bins[:-1], vabs_counts_n, label='$|\mathbf{v}|$', color=sns.desaturate("black", .4), lw=2)
     axs[2].fill_between(vabs_bins[:-1], 0, vabs_counts_n, facecolor='yellow', alpha=0.2)
     
@@ -141,12 +143,12 @@ def stateHistograms(pos, velos, accels):
     
     # ax component
     ax_counts, ax_bins = np.histogram(accel_all[:, 0], bins=np.linspace(amin, amax, (amax-amin)/accel_binwidth))
-    ax_counts_n= ax_counts/float(len(ax_counts))
+    ax_counts_n = ax_counts / ax_counts.astype(float).sum()
     axs[3].plot(ax_bins[:-1], ax_counts_n, label="$\ddot{x}$", lw=2)
     axs[3].fill_between(ax_bins[:-1], 0, ax_counts_n, facecolor='blue', alpha=0.2)
     # ay component
     ay_counts, ay_bins = np.histogram(accel_all[:, 1], bins=np.linspace(amin, amax, (amax-amin)/accel_binwidth))
-    ay_counts_n= ay_counts/float(len(ay_counts))
+    ay_counts_n = ay_counts / ay_counts.astype(float).sum()
     axs[3].plot(ay_bins[:-1], ay_counts_n, label="$\ddot{y}$", lw=2)
     axs[3].fill_between(ay_bins[:-1], 0, ay_counts_n, facecolor='green', alpha=0.2)
     # |a|
@@ -154,7 +156,7 @@ def stateHistograms(pos, velos, accels):
     for a in accel_all:
         accel_all_magn.append(np.linalg.norm(a))
     aabs_counts, aabs_bins = np.histogram(accel_all_magn, bins=np.linspace(amin, amax, (amax-amin)/accel_binwidth))
-    aabs_counts_n= aabs_counts/float(len(aabs_counts))
+    aabs_counts_n = aabs_counts/ aabs_counts.astype(float).sum()
     axs[3].plot(aabs_bins[:-1], aabs_counts_n, label='$|\mathbf{a}|$', color=sns.desaturate("black", .4), lw=2)
     axs[3].fill_between(aabs_bins[:-1], 0, aabs_counts_n, facecolor='yellow', alpha=0.2)
     axs[3].set_title("Acceleration Distribution")
@@ -164,10 +166,13 @@ def stateHistograms(pos, velos, accels):
 
 
     gs1.tight_layout(fig, rect=[0, 0.03, 1, 0.95])  # overlapping text hack
-    plt.savefig("./figs/Agent Distributions.png")
+    plt.savefig("./figs/Agent Distributions_beta{beta}_f{f0}_wf{wf0}_bounce {bounce}.png".format(beta=trajectory_objects_list[0].beta, f0=trajectory_objects_list[0].f0, wf0=trajectory_objects_list[0].wf0, bounce=trajectory_objects_list[0].bounce))
+    
+    return xpos_counts_n, ypos_bins, ypos_counts, ypos_counts_n, vx_counts_n
 
 
 if __name__ == '__main__':
     import trajectory_stats
-    pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, trajectory_objects_list = trajectory_stats.main(total_trajectories=100, target_pos="left")
-    
+    pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, trajectory_objects_list = trajectory_stats.main(total_trajectories=100, beta=2e-6, plotting = False)
+    trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heatmap=False)
+    xpos_counts_n, ypos_bins, ypos_counts, ypos_counts_n, vx_counts_n = stateHistograms(pos, velos, accels)
