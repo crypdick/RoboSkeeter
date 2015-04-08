@@ -15,40 +15,40 @@ import matplotlib.pyplot as plt
 m = 2.5e-6  # mass (kg) =2.6 mg
 
 
-def random_force(f0, dim=2):
+def random_force(rf, dim=2):
     """Generate random-direction force vector at each timestep from double-
-    exponential distribution given exponent term f0.
+    exponential distribution given exponent term rf.
 
     Args:
-        f0: random force distribution exponent (float)
+        rf: random force distribution exponent (float)
 
     Returns:
         random force x and y components (array)
     """
     if dim == 2:
-        return np.random.laplace(0, f0, size=dim)
+        return np.random.laplace(0, rf, size=dim)
     else:
         raise NotImplementedError('Too many dimensions!')
 
 
-def upwindBiasForce(wf0, upwind_direction=0, dim=2):
-    """Biases the agent to fly upwind. Constant push with strength wf0
+def upwindBiasForce(wtf, upwind_direction=0, dim=2):
+    """Biases the agent to fly upwind. Constant push with strength wtf
     
     [formerly]: Picks the direction +- pi/2 rads from
-    the upwind direction and scales it by accelList constant magnitude, "wf0".
+    the upwind direction and scales it by accelList constant magnitude, "wtf".
 
     Args:
-        wf0: bias distribution exponent
+        wtf: bias distribution exponent
         upwind_direction: direction of upwind (in radians)
 
     Returns:
         upwind bias force x and y components as an array
     """
     if dim == 2:
-        if wf0 == 0:
+        if wtf == 0:
             return [0, 0]
         else:
-            return [wf0, 0]  # wf is constant, directly to right
+            return [wtf, 0]  # wf is constant, directly to right
     else:
         raise NotImplementedError('wind bias only works in 2D right now!')
 
@@ -125,9 +125,9 @@ class Trajectory:
             spring constant, disabled 
         beta: (float)
             damping force (kg/s)  NOTE: if beta is too big, things blow up
-        f0: (float)
+        rf: (float)
             random driving force exp term for exp distribution 
-        wf0: (float)
+        wtf: (float)
             upwind bias force magnitude  # TODO units
         detect_thresh: (float)
             distance mozzie can detect target in (m), 2 cm + radius of heaters,
@@ -146,7 +146,7 @@ class Trajectory:
         trajectory object
     """
     boundary = [0.0, 1.0, 0.15, -0.15]  # these are real dims of our wind tunnel
-    def __init__(self, agent_pos, v0_stdev, Tmax, dt, target_pos, beta, f0, wf0, detect_thresh, bounded, bounce, plotting=False, k=0.):
+    def __init__(self, agent_pos, v0_stdev, Tmax, dt, target_pos, beta, rf, wtf, detect_thresh, bounded, bounce, plotting=False, k=0.):
         """ Initialize object with instant variables, and trigger other funcs. 
         """
         self.Tmax = Tmax
@@ -154,8 +154,8 @@ class Trajectory:
         self.v0_stdev = v0_stdev
         self.k = k
         self.beta = beta
-        self.f0 = f0
-        self.wf0 = wf0
+        self.rf = rf
+        self.wtf = wtf
         self.detect_thresh = detect_thresh     
         self.bounce = bounce
         
@@ -194,7 +194,7 @@ class Trajectory:
         ## loop through timesteps
         for ts in range(ts_max-1):
             # calculate current force
-            force = -self.k*self.positionList[ts] - self.beta*self.veloList[ts] + random_force(self.f0) + upwindBiasForce(self.wf0) #+ wall_force_field(self.positionList[ts])
+            force = -self.k*self.positionList[ts] - self.beta*self.veloList[ts] + random_force(self.rf) + upwindBiasForce(self.wtf) #+ wall_force_field(self.positionList[ts])
             # calculate current acceleration
             self.accelList[ts] = force/m
     
@@ -261,4 +261,4 @@ class Trajectory:
 if __name__ == '__main__':
     target_pos = "left"
     
-    mytraj = Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.01, wf0=7e-07, f0=4e-06, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash")
+    mytraj = Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=4e-06, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash")
