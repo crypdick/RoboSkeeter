@@ -43,7 +43,7 @@ fig, axs = sns.plt.subplots(2, 2)#, tight_layout=True)
 #### Velocity
 ### v Odor off
 #x
-axs[0,0].plot(odor_off["velocity"]['x']['bin_centers'], odor_off["velocity"]['x']['normed_cts'], color=sns.desaturate("blue", .4), lw=2, label='$\mathbf{\dot{x}}$')
+axs[0,0].plot(odor_off["velocity"]['x']['bin_centers'][::-1], odor_off["velocity"]['x']['normed_cts'], color=sns.desaturate("blue", .4), lw=2, label='$\mathbf{\dot{x}}$')
 #y
 axs[0,0].plot(odor_off["velocity"]['y']['bin_centers'], odor_off["velocity"]['y']['normed_cts'], color=sns.desaturate("green", .4), lw=2, label='$\mathbf{\dot{y}}$')
 #z
@@ -58,7 +58,7 @@ axs[0,0].legend()
 
 ###v Odor on
 #x
-axs[1,0].plot(odor_on["velocity"]['x']['bin_centers'], odor_on["velocity"]['x']['normed_cts'], color=sns.desaturate("blue", .4), lw=2, label='$\mathbf{\dot{x}}$')
+axs[1,0].plot(odor_on["velocity"]['x']['bin_centers'][::-1], odor_on["velocity"]['x']['normed_cts'], color=sns.desaturate("blue", .4), lw=2, label='$\mathbf{\dot{x}}$')
 #y
 axs[1,0].plot(odor_on["velocity"]['y']['bin_centers'], odor_on["velocity"]['y']['normed_cts'], color=sns.desaturate("green", .4), lw=2, label='$\mathbf{\dot{y}}$')
 #z
