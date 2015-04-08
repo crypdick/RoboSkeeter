@@ -146,7 +146,7 @@ class Trajectory:
         trajectory object
     """
     boundary = [0.0, 1.0, 0.15, -0.15]  # these are real dims of our wind tunnel
-    def __init__(self, agent_pos="cage", v0_stdev=0.01, Tmax=4., dt=0.01, target_pos=None, k=0., beta=2e-5, f0=3e-6, wf0=5e-6, detect_thresh=0.023175, bounded=True, bounce="crash", plotting = False):
+    def __init__(self, agent_pos, v0_stdev, Tmax, dt, target_pos, beta, f0, wf0, detect_thresh, bounded, bounce, plotting=False, k=0.):
         """ Initialize object with instant variables, and trigger other funcs. 
         """
         self.Tmax = Tmax
@@ -260,4 +260,5 @@ class Trajectory:
 
 if __name__ == '__main__':
     target_pos = "left"
-    mytraj = Trajectory(target_pos=target_pos, plotting = True, wf0=1e-06, f0=4e-06, beta=1e-5, Tmax=10)
+    
+    mytraj = Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.01, wf0=7e-07, f0=4e-06, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash")
