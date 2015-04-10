@@ -12,7 +12,8 @@ from numpy.linalg import norm
 import matplotlib.pyplot as plt
 
 ## define params
-m = 2.5e-6  # mass (kg) =2.6 mg
+# population weight data: 2.88 +- 0.35mg
+m = 3.0e-6#2.88e-6  # mass (kg) =2.88 mg
 
 
 def random_force(rf, dim=2):
@@ -26,7 +27,9 @@ def random_force(rf, dim=2):
         random force x and y components (array)
     """
     if dim == 2:
-        return np.random.laplace(0, rf, size=dim)
+        mag = np.random.exponential(rf)
+        theta = np.random.uniform(high=2*np.pi)
+        return mag * np.array([np.cos(theta), np.sin(theta)])
     else:
         raise NotImplementedError('Too many dimensions!')
 
@@ -256,7 +259,9 @@ class Trajectory:
         currentAxis.add_patch(Rectangle((cage_midX - 0.0381, cage_midY - 0.0381), 0.0762, 0.0762, facecolor='none'))
         currentAxis.add_artist(heaterCircle)
         currentAxis.add_artist(detectCircle)
-        plt.title("Individual trajectory")
+        plt.title("Individual trajectory", fontsize=20)
+        plt.xlabel("$x$", fontsize=14)
+        plt.ylabel("$y$", fontsize=14)
 
 if __name__ == '__main__':
     target_pos = "left"

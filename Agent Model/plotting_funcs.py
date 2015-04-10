@@ -23,7 +23,11 @@ def trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heat
     fig, ax = plt.subplots(1)
     sns.set_style("white")
     for traj in pos:
-        ax.plot(traj[:, 0], traj[:, 1], lw=2, alpha=0.1)
+        if len(trajectory_objects_list) < 60:
+            alpha=0.4
+        else:
+            alpha=0.02
+        ax.plot(traj[:, 0], traj[:, 1], lw=2, alpha=1)
         ax.axis([0,1,0.151,-0.151])  # slight y padding for graphs
     title_append = r""" $T_max$ = {0} secs, $\beta = {2}$, $f = {3}$, $wtf = {4}$.
                 """.format(traj_ex.Tmax, len(trajectory_objects_list), traj_ex.beta, traj_ex.rf, traj_ex.wtf)
@@ -47,15 +51,21 @@ def trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heat
     sns.set_style("white")
     
     # save before overlaying heatmap
-    plt.savefig("./figs/Trajectories beta{beta}_f{rf}_wf{wtf}_bounce {bounce} N{total_trajectories}.png".format(beta=traj_ex.beta, rf=traj_ex.rf, wtf=traj_ex.wtf, bounce=traj_ex.bounce, total_trajectories=len(trajectory_objects_list)))
+    plt.savefig("./figs/Trajectories b{beta} f{rf} wf{wtf} bounce {bounce} N{total_trajectories}.png".format(beta=traj_ex.beta, rf=traj_ex.rf, wtf=traj_ex.wtf, bounce=traj_ex.bounce, total_trajectories=len(trajectory_objects_list)))
     
     ## Position heatmap
     if heatmap is True:
         pos_flat = np.array(list(itertools.chain.from_iterable(pos)))
         counts, xedges, yedges = np.histogram2d(pos_flat[:,0], pos_flat[:,1], bins=(100,30), range=[[0, 1], [-0.15, .15]])
+        
+        # counts needs to be transposed to use pcolormesh     
+        counts = counts.T
+        
         MaxVal = len(trajectory_objects_list)/2
-        heatmap = ax.pcolormesh(xedges, yedges, counts.T, cmap=plt.cm.Oranges, vmin=0, vmax=MaxVal)
-        plt.gca().invert_yaxis()  # hack to match y axis convention
+        if len(trajectory_objects_list) > 100:
+            plt.cla()
+        heatmap = ax.pcolormesh(xedges, yedges, counts, cmap=plt.cm.Oranges, vmin=0, vmax=MaxVal)
+#        plt.gca().invert_yaxis()  # hack to match y axis convention --- now unneeded?
         ax.set_ylim(traj_ex.boundary[2:])
         
         # overwrite previous plot schwag
@@ -167,7 +177,7 @@ def stateHistograms(pos, velos, accels, trajectory_objects_list):
 
 if __name__ == '__main__':
     import trajectory_stats
-    pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, trajectory_objects_list = trajectory_stats.main(total_trajectories=1, beta=4e-6, plotting = False, wtf=7e-7, rf=4e-6, Tmax=15, bounce="crash")
+    pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, trajectory_objects_list = trajectory_stats.main(total_trajectories=30, beta=4e-6, plotting = False, wtf=7e-7, rf=4e-6, Tmax=10, bounce=None)
         
-    trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heatmap=True)
+    trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heatmap=False)
     xpos_counts_n, ypos_bins, ypos_counts, ypos_counts_n, vx_counts_n = stateHistograms(pos, velos, accels, trajectory_objects_list)
