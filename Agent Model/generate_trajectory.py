@@ -168,7 +168,7 @@ class Trajectory:
         trajectory object
     """
     boundary = [0.0, 1.0, 0.15, -0.15]  # these are real dims of our wind tunnel
-    def __init__(self, agent_pos, v0_stdev, Tmax, dt, target_pos, beta, rf, wtf, detect_thresh, bounded, bounce, wallF, plotting=False, titleappend = '', k=0.):
+    def __init__(self, agent_pos, v0_stdev, Tmax, dt, target_pos, beta, rf, wtf, detect_thresh, bounded, bounce, wallF, plotting=False, title="Individual trajectory", titleappend = '', k=0.):
         """ Initialize object with instant variables, and trigger other funcs. 
         """
         self.Tmax = Tmax
@@ -198,7 +198,7 @@ class Trajectory:
         self.positionList = np.zeros((ts_max, self.dim), dtype=float)
         self.veloList = np.zeros((ts_max, self.dim), dtype=float)
         self.accelList = np.zeros((ts_max, self.dim), dtype=float)
-        self.wallFList = np.zeros((ts_max, self.dim), dtype=float)
+        self.ForcesList = np.zeros((ts_max, 3, self.dim), dtype=float)  # we have 3 drivers
         
         # generate random intial velocity condition    
         v0 = np.random.normal(0, self.v0_stdev, self.dim)
@@ -210,15 +210,23 @@ class Trajectory:
         self.fly(ts_max, detect_thresh, self.boundary, bounded)
         
         if plotting is True:
+            self.title = title
             self.titleappend = titleappend
-            plotting_funcs.plot_single_trajectory(self.positionList, self.target_pos, self.detect_thresh, self.boundary, self.titleappend)
+            plotting_funcs.plot_single_trajectory(self.positionList, self.target_pos, self.detect_thresh, self.boundary, self.title, self.titleappend)
         
     def fly(self, ts_max, detect_thresh, boundary, bounded):
         """Run the simulation using Euler's method"""
         ## loop through timesteps
         for ts in range(ts_max-1):
+            # calculate drivers
+            randF = random_force(self.rf)
+            self.ForcesList[ts][0] = randF
+            upwindF = upwindBiasForce(self.wtf)
+            self.ForcesList[ts][1] = upwindF
+            wallRepulsiveF = wall_force_field(self.positionList[ts], self.veloList[ts], self.wallF)
+            self.ForcesList[ts][2] = wallRepulsiveF
             # calculate current force
-            force = -self.k*self.positionList[ts] - self.beta*self.veloList[ts] + random_force(self.rf) + upwindBiasForce(self.wtf) + wall_force_field(self.positionList[ts], self.veloList[ts], self.wallF)
+            force = -self.k*self.positionList[ts] - self.beta*self.veloList[ts] + randF + upwindBiasForce(self.wtf) + wallRepulsiveF
             # calculate current acceleration
             self.accelList[ts] = force/m
     

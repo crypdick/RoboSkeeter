@@ -16,19 +16,19 @@ import seaborn as sns
 
 sns.set_palette("muted", 8)
 
-def plot_single_trajectory(positionList, target_pos, detect_thresh, boundary, titleappend):
+def plot_single_trajectory(positionList, target_pos, detect_thresh, boundary, title="Individual trajectory", titleappend=""):
     # plot an individual trajectory
     plt.plot(positionList[:, 0], positionList[:, 1], lw=2, alpha=0.5)
     plt.axis(boundary)
     currentAxis = plt.gca()
     cage = draw_cage()
     currentAxis.add_patch(cage)
-    if traj_ex.target_pos is not None:
+    if target_pos is not None:
         heaterCircle, detectCircle = draw_heaters(target_pos, detect_thresh)
         currentAxis.add_artist(heaterCircle)
         currentAxis.add_artist(detectCircle)
     
-    plt.title("Individual trajectory"+titleappend, fontsize=20)
+    plt.title(title + titleappend, fontsize=20)
     plt.xlabel("$x$", fontsize=14)
     plt.ylabel("$y$", fontsize=14)
 
