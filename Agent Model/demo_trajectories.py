@@ -44,9 +44,26 @@ def demo_damping():
         generate_trajectory.Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=4e-06, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=(80, 1e-4), titleappend = ", normal")
     plt.show()
     
+    # normal damping, no driving, high initial velo
+    for i in range(10):
+        generate_trajectory.Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.4, wtf=0., rf=0., beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=None, titleappend = ", normal damp, no driving, high v0")
+    plt.show()
+    print "Shows that, absent of driver, velocity decays (therefore damping is working)"
+    
+    
     # undamped
     for i in range(10):
         generate_trajectory.Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=4e-06, beta=0., Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=(80, 1e-4), titleappend = ", undamped")
+    plt.show()
+    
+    # undamped, high rf
+    for i in range(2):
+        generate_trajectory.Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=0., rf=4e-05, beta=0., Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=None, titleappend = ", undamped, high rf, wallF & wtf off")
+    plt.show()
+    
+    # normal damp, high rf
+    for i in range(2):
+        generate_trajectory.Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=0., rf=4e-05, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=None, titleappend = ", damped, high rf, wallF & wtf off")
     plt.show()
     
     # critical damping
