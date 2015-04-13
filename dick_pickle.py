@@ -2,7 +2,7 @@
 """
 Created on Thu Apr  2 22:17:13 2015
 
-@author: richard
+@author: Richard Decal
 """
 
 from matplotlib import pyplot as plt
