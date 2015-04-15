@@ -6,24 +6,61 @@ Created on Tue Apr  7 23:07:31 2015
 """
 
 from scipy import stats
+import numpy as np
+from matplotlib import pyplot as plt
 
-plt.plot(odor_off["acceleration"]['abs']['bin_centers'], odor_off["acceleration"]['abs']['normed_cts'], color=sns.desaturate("black", .4), lw=2, label='$\| \mathbf{a} \|$')
+binspots = odor_off["acceleration"]['abs']['bin_centers']
+normed_counts = odor_off["acceleration"]['abs']['normed_cts']
+
+# plot Dickinson acceleration magnitudes
+plt.plot(binspots, normed_counts, lw=2, label='Dickinson data')
+plt.legend()
 plt.show()
 
-#rvs = stats.lognorm.rvs(np.log(2), loc=0, scale=4, size=250) # Generate some random variates as data
-#n, bins, patches = plt.hist(rvs, bins=25, normed=True)
-#plt.show()
+# normed_counts is set of probabilities, each one corresponding to a certain acceleration bin
+# so, we must draw a bunch of random samples from the probability distribution
+rand_samples = np.random.choice(binspots, 100000, p=normed_counts/normed_counts.sum())
 
-#odor_off["acceleration"]['abs']['bin_centers']
-# odor_off["acceleration"]['abs']['normed_cts']
-rvs = odor_off["acceleration"]['abs']['normed_cts']
-shape, loc, scale = stats.lognorm.fit(rvs, floc=0)
+# fit to lognormal
+shape, loc, scale = stats.lognorm.fit(rand_samples, floc=0)
 mu = np.log(scale) # Mean of log(X)
 sigma = shape # Standard deviation of log(X)
-M = np.exp(mu) # Geometric mean == median
-s = np.exp(sigma) # Geometric standard deviation
+geom_mean = np.exp(mu) # Geometric mean == median
+geom_stdev = np.exp(sigma) # Geometric standard deviation
 
-# Plot figure of results
-x = np.linspace(rvs.min(), rvs.max(), num=400)
-plt.plot(x, stats.lognorm.pdf(x, shape, loc=0, scale=scale), 'r', linewidth=3)
-#plt.plot()
+# Plot fit
+plt.plot(binspots, stats.lognorm.pdf(binspots, shape, loc=0, scale=scale), 'r', linewidth=3, label='fit')
+plt.legend()
+plt.show()
+
+# plot together
+plt.plot(binspots, normed_counts, lw=2, label='Dickinson data')
+plt.plot(binspots, stats.lognorm.pdf(binspots, shape, loc=0, scale=scale), 'r', linewidth=3, label='fit')
+plt.legend()
+plt.show()
+
+# print results
+print "shape/sigma, standard dev of log(X) = ", sigma
+print "Geometric std dev = ", geom_stdev
+print "loc = ", loc
+print "scale = ", scale
+print "mu / Mean of log(X) = ", mu
+print "Geometric mean / median = ", geom_mean
+
+#==============================================================================
+# results:
+# shape = 0.719736466122
+# loc = 0
+# scale = 1.82216219069
+# mu = 0.600023812816
+# sigma = 0.719736466122
+# geom_mean = 1.82216219069
+# geom_stdev = 2.05389186923
+#==============================================================================
+
+# test
+x = np.linspace(0,10,200)
+pdf = (np.exp(-(np.log(x) - mu)**2 / (2 * sigma**2))
+        / (x * sigma * np.sqrt(2 * np.pi)))
+#y = np.random.lognormal(mean=mu, sigma=sigma, size=scale)
+plt.plot(x, pdf)
