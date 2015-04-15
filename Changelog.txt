@@ -6,3 +6,29 @@ added demo funcs which demonstrate various scenarios
 	TODO: ask Rich about why my lognormal fit is off.
 added wall force fields based on position and velocity. In particular, repulsive forces as a function of how close it is to the wall and it's speed towards the wall. So, if the agent is flying near the wall but not towards it, it won't be repulsed.
 consolidating, modularizing plotting funcs
+
+4/6/15
+position heat maps are working!
+	made monochromatic
+	hot cells are drowning out
+	velocity isn’t actually cancelled
+	mosquitos getting stuck on walls
+assumption: all mosquitos weigh the same
+new coordinates convention adopted, made new cartoons
+new pretty plotting package
+removed damping to reach walls.
+fixed hists
+plotting Dickinson data for comparison
+flipped y axis
+made r0 randomized
+implemented bouncing
+	less wall following.
+	velo dist is pointy. accel is not recalculated
+
+4/1/15
+major overhauls to the code mechanics. trajectories are now class objects.
+set k=0. now that spring is gone, driving forces are stronger.
+changed f0 into 2D double-exponential/Laplace distribution
+changed wf0 into constant upstream push as per Rich	
+implemented heatmaps!
+made simple wall forcefield
