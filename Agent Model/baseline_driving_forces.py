@@ -9,6 +9,7 @@ Our driving forces.
 import numpy as np
 from numpy import linalg, newaxis, random
 from matplotlib import collections
+import repulsion_landscape
 
 
 def random_force(rf, dim=2):
@@ -36,7 +37,11 @@ def random_force(rf, dim=2):
 
 
 def gen_symm_vecs(dims):
-    """generate radially-symmetric vectors"""
+    """generate radially-symmetric vectors sampled from the unit circle.  These
+    can then be scaled by a force to make radially symmetric distributions.
+    
+    making a scatter plot of many draws from this function makes a unit circle.
+    """
     vecs = np.random.normal(size=dims)
     mags = linalg.norm(vecs, axis=-1)
 
@@ -66,40 +71,48 @@ def upwindBiasForce(wtf, upwind_direction=0, dim=2):
         raise NotImplementedError('wind bias only works in 2D right now!')
 
 
-def wall_force_field(current_pos, current_velo, wallF, wallX_pos=[0., 1.], wallY_pos=[-0.15, 0.15]):
-    """If agent gets too close to wall, inflict it with repulsive forces as a function of how close it is to the wall and it's speed towards the wall.
-    
-    Args:
-        current_pos: (x,y) coords of agent right now (array)
-        wallF: (None | tuple)
-            None- disabled
-            tuple- (lambda (float), y0 (float). Lambda is the decay constant in the exponentially decaying wall repulsive force, y0 is where the decaying starts.
-        wallX_pos: Wall X coords (array)
-        wallY_pos: Wall Y coords (array)
-    
-    Returns:
-        wall_force: (array)
-    """
-    if wallF is None:
-        return [0., 0.]
-#    elif type(wallF) == "tuple":
-    else:
-        wallF_lambda, wallF_y0 = wallF
-        wallF_x = 0.
-        wallF_y = 0.
-        posx, posy = current_pos
-        velox, veloy = current_velo
-        y_dist = 0.15 - abs(posy) # distance of agent from wall
-        force_mag_y = wallF_magnitude(y_dist, wallF_lambda, wallF_y0)
-        if (posy < 0 and veloy < 0) or (posy > 0 and veloy > 0): # heading towards top OR bottom
-            wallF_y = -1. * veloy * force_mag_y  # equal an opposite force, scaled by force mag
-        return np.array([wallF_x, wallF_y])
+#def wall_force_field(current_pos, current_velo, wallF, wallX_pos=[0., 1.], wallY_pos=[-0.15, 0.15]):
+#    """If agent gets too close to wall, inflict it with repulsive forces as a function of how close it is to the wall and it's speed towards the wall.
+#    
+#    Args:
+#        current_pos: (x,y) coords of agent right now (array)
+#        wallF: (None | tuple)
+#            None- disabled
+#            tuple- (lambda (float), y0 (float). Lambda is the decay constant in the exponentially decaying wall repulsive force, y0 is where the decaying starts.
+#        wallX_pos: Wall X coords (array)
+#        wallY_pos: Wall Y coords (array)
+#    
+#    Returns:
+#        wall_force: (array)
+#    """
+#    if wallF is None:
+#        return [0., 0.]
+##    elif type(wallF) == "tuple":
+#    else:
+#        wallF_lambda, wallF_y0 = wallF
+#        wallF_x = 0.
+#        wallF_y = 0.
+#        posx, posy = current_pos
+#        velox, veloy = current_velo
+#        y_dist = 0.15 - abs(posy) # distance of agent from wall
+#        force_mag_y = wallF_magnitude(y_dist, wallF_lambda, wallF_y0)
+#        if (posy < 0 and veloy < 0) or (posy > 0 and veloy > 0): # heading towards top OR bottom
+#            wallF_y = -1. * veloy * force_mag_y  # equal an opposite force, scaled by force mag
+#        return np.array([wallF_x, wallF_y])
+#
+#def wallF_magnitude(distance, wallF, y0):
+#    """magnitude of wall repulsion, a function of position
+#    
+#    """
+#    return y0 * np.exp(-1 * wallF * distance)
 
-def wallF_magnitude(distance, wallF, y0):
-    """magnitude of wall repulsion, a function of position
-    
+
+def repulsionF(position):
+    """repulsion as a function of position.
     """
-    return y0 * np.exp(-1 * wallF * distance)
+    posx, posy = position
+    force_y = repulsion_landscape.main(posy)
+    return np.array([0., force_y])
 
 
 def stimulusDrivingForce():
