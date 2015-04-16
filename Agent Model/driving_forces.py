@@ -7,6 +7,8 @@ Our driving forces.
 @author: Richard Decal
 """
 import numpy as np
+from numpy import linalg, newaxis, random
+from matplotlib import collections
 
 
 def random_force(rf, dim=2):
@@ -22,11 +24,24 @@ def random_force(rf, dim=2):
     if rf == 0.:
         return np.array([0., 0.])
     if dim == 2:
-        mag = np.random.exponential(rf)
-        theta = np.random.uniform(high=2*np.pi)
-        return mag * np.array([np.cos(theta), np.sin(theta)])
+        ends = gen_symm_vecs(2)
+        # following params were fitted from the Dickinson fligt data
+        mu = 0.600023812816
+        sigma = 0.719736466122
+        scale = 1.82216219069
+        mag = np.random.lognormal(mean=mu, sigma=sigma, size=1)
+        return mag * ends * rf
     else:
         raise NotImplementedError('Too many dimensions!')
+
+
+def gen_symm_vecs(dims):
+    """generate radially-symmetric vectors"""
+    vecs = np.random.normal(size=dims)
+    mags = linalg.norm(vecs, axis=-1)
+
+    ends = vecs / mags[..., newaxis]
+    return ends  # vector
 
 
 def upwindBiasForce(wtf, upwind_direction=0, dim=2):
