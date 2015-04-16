@@ -1,9 +1,12 @@
+4/15/15
+fitted lognormal to Dickinson accelerations. Switched random driving force from 2D radially symmetric exponentially decay distribution to 2D radially symmetric lognormal distribution (see 2D histogram). refit the parameters so that acceleration distributions match Dickinson accelerations.
+started porting wall repulsion forces into a repulsion landscape
+
 4/13/15
 
 added demo funcs which demonstrate various scenarios
 	TODO: not sure why agent explodes with critical damping.
 	TODO: why are trajectories smoother when undamped?
-	TODO: ask Rich about why my lognormal fit is off.
 added wall force fields based on position and velocity. In particular, repulsive forces as a function of how close it is to the wall and it's speed towards the wall. So, if the agent is flying near the wall but not towards it, it won't be repulsed.
 consolidating, modularizing plotting funcs
 
