@@ -1,3 +1,7 @@
+4/16/15
+finished repulsion landscape. want to make the slopes reasonable.
+TODO: switch to repulsion landscape F which is only a function of position
+
 4/15/15
 fitted lognormal to Dickinson accelerations. Switched random driving force from 2D radially symmetric exponentially decay distribution to 2D radially symmetric lognormal distribution (see 2D histogram). refit the parameters so that acceleration distributions match Dickinson accelerations.
 started porting wall repulsion forces into a repulsion landscape

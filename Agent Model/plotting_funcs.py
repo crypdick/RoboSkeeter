@@ -208,7 +208,7 @@ def stateHistograms(pos, velos, accels, trajectory_objects_list):
 
 if __name__ == '__main__':
     import trajectory_stats
-    pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, trajectory_objects_list = trajectory_stats.main(total_trajectories=4, plotting = False)
+    pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, trajectory_objects_list = trajectory_stats.main(total_trajectories=400, plotting = False)
         
-    trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heatmap=False, trajectoryPlot = True)
-#    xpos_counts_n, ypos_bins, ypos_counts, ypos_counts_n, vx_counts_n = stateHistograms(pos, velos, accels, trajectory_objects_list)
+    trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heatmap=True, trajectoryPlot = True)
+    xpos_counts_n, ypos_bins, ypos_counts, ypos_counts_n, vx_counts_n = stateHistograms(pos, velos, accels, trajectory_objects_list)

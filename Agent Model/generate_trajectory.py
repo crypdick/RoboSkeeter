@@ -9,11 +9,11 @@ Generate "mosquito" trajectories (class object) using harmonic oscillator equati
 import numpy as np
 from numpy.linalg import norm
 import plotting_funcs
-import driving_forces
+import baseline_driving_forces
 
 ## define params
 # population weight data: 2.88 +- 0.35mg
-m = 3.0e-6#2.88e-6  # mass (kg) =2.88 mg
+m = 3.0e-6 #2.88e-6  # mass (kg) =2.88 mg
 
 
 def place_heater(target_pos):
@@ -130,11 +130,11 @@ class Trajectory:
         ## loop through timesteps
         for ts in range(ts_max-1):
             # calculate drivers
-            randF = driving_forces.random_force(self.rf)
+            randF = baseline_driving_forces.random_force(self.rf)
             self.ForcesList[ts][0] = randF
-            upwindF = driving_forces.upwindBiasForce(self.wtf)
+            upwindF = baseline_driving_forces.upwindBiasForce(self.wtf)
             self.ForcesList[ts][1] = upwindF
-            wallRepulsiveF = driving_forces.wall_force_field(self.positionList[ts], self.veloList[ts], self.wallF)
+            wallRepulsiveF = baseline_driving_forces.repulsionF(self.positionList[ts])
             self.ForcesList[ts][2] = wallRepulsiveF
             # calculate current force
             force = -self.k*self.positionList[ts] - self.beta*self.veloList[ts] + randF + upwindF + wallRepulsiveF
