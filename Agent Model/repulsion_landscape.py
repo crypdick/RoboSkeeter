@@ -9,12 +9,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.misc import derivative as deriv
 
-def landscape(x):
+def landscape(x, y0=1e-1, decay_const = 90, mu=0., stdev=0.04, a=0.04):
     # exp params
-    y0 = 1e-1
-    decay_const = 90
+    y0 = y0
+    decay_const = decay_const
     # gaussian params
-    mu, stdev, a = 0, 0.04, 0.04
+    mu, stdev, a = mu, stdev, a
     
     fx = lambda x : (y0 * np.exp(-1 * decay_const * (x+0.15))) + ( a * np.exp(-1*(x-mu)**2 / (2*stdev**2)) )  + (y0 * np.exp(1 * decay_const * (x-0.15)))
     
@@ -36,7 +36,8 @@ def plot_landscape():
 #    axarr[0].savefig("repulsion_landscape.png")
     
     # plot derivative
-    axarr[1].plot(xcoords, slope_at_x)
+    axarr[1].plot(xcoords, slope_at_x, label="derivative")
+    axarr[1].plot(xcoords, -1* slope_at_x, label="-derivative")
     axarr[1].set_title("Slope of crosswind repulsion landscape", fontsize = 14)
     axarr[1].set_xlim(-.15,0.15)
     axarr[1].set_xlabel("crosswind position")
