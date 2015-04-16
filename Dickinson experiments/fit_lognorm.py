@@ -71,8 +71,8 @@ print "Geometric mean / median = ", geom_mean
 x = np.linspace(0,10,200)
 pdf = (np.exp(-(np.log(x) - mu)**2 / (2 * sigma**2))
         / (x * sigma * np.sqrt(2 * np.pi)))
-y = np.random.lognormal(mean=mu, sigma=sigma, size=scale)
+#y = np.random.lognormal(mean=mu, sigma=sigma, size=scale)
 plt.plot(x, pdf)
-plt.plot(x, y)
+#plt.plot(x, y)
 
-y = np.random.lognormal(mean=mu, sigma=sigma, size=scale)
+#y = np.random.lognormal(mean=mu, sigma=sigma, size=scale)
