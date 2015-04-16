@@ -44,7 +44,7 @@ def draw_heaters(target_pos, detect_thresh):
     return heaterCircle, detectCircle
 
 
-def trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heatmap):
+def trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heatmap, trajectoryPlot=False):
     """"Plot all the trajectories into a single arena"""
     traj_ex = trajectory_objects_list[0]
     target_pos = traj_ex.target_pos
@@ -55,7 +55,8 @@ def trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heat
             alpha=0.4
         else:
             alpha=0.02
-#        ax.plot(traj[:, 0], traj[:, 1], lw=2, alpha=1)
+        if trajectoryPlot is True:
+            ax.plot(traj[:, 0], traj[:, 1], lw=2, alpha=1)
         ax.axis([0,1,0.151,-0.151])  # slight y padding for graphs
     title_append = r""" $T_max$ = {0} secs, $\beta = {2}$, $f = {3}$, $wtf = {4}$.
                 """.format(traj_ex.Tmax, len(trajectory_objects_list), traj_ex.beta, traj_ex.rf, traj_ex.wtf)
@@ -207,7 +208,7 @@ def stateHistograms(pos, velos, accels, trajectory_objects_list):
 
 if __name__ == '__main__':
     import trajectory_stats
-    pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, trajectory_objects_list = trajectory_stats.main(total_trajectories=100, beta=4e-6, wallF=(80, 1e-4), plotting = False, wtf=7e-7, rf=4e-6, Tmax=10, bounce=None)
+    pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, trajectory_objects_list = trajectory_stats.main(total_trajectories=4, plotting = False)
         
-    trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heatmap=True)
-    xpos_counts_n, ypos_bins, ypos_counts, ypos_counts_n, vx_counts_n = stateHistograms(pos, velos, accels, trajectory_objects_list)
+    trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heatmap=False, trajectoryPlot = True)
+#    xpos_counts_n, ypos_bins, ypos_counts, ypos_counts_n, vx_counts_n = stateHistograms(pos, velos, accels, trajectory_objects_list)
