@@ -3,87 +3,17 @@ Created on Mon Mar 23 15:07:40 2015
 
 @author: rkp, rbd
 
-Generate "mosquito" trajectories (class object) using harmonic oscillator 
-equations.
+Generate "mosquito" trajectories (class object) using harmonic oscillator equations.
 """
 
 import numpy as np
 from numpy.linalg import norm
-import matplotlib.pyplot as plt
+import plotting_funcs
+import driving_forces
 
 ## define params
 # population weight data: 2.88 +- 0.35mg
 m = 3.0e-6#2.88e-6  # mass (kg) =2.88 mg
-
-
-def random_force(rf, dim=2):
-    """Generate random-direction force vector at each timestep from double-
-    exponential distribution given exponent term rf.
-
-    Args:
-        rf: random force distribution exponent (float)
-
-    Returns:
-        random force x and y components (array)
-    """
-    if dim == 2:
-        mag = np.random.exponential(rf)
-        theta = np.random.uniform(high=2*np.pi)
-        return mag * np.array([np.cos(theta), np.sin(theta)])
-    else:
-        raise NotImplementedError('Too many dimensions!')
-
-
-def upwindBiasForce(wtf, upwind_direction=0, dim=2):
-    """Biases the agent to fly upwind. Constant push with strength wtf
-    
-    [formerly]: Picks the direction +- pi/2 rads from
-    the upwind direction and scales it by accelList constant magnitude, "wtf".
-
-    Args:
-        wtf: bias distribution exponent
-        upwind_direction: direction of upwind (in radians)
-
-    Returns:
-        upwind bias force x and y components as an array
-    """
-    if dim == 2:
-        if wtf == 0:
-            return [0, 0]
-        else:
-            return [wtf, 0]  # wf is constant, directly to right
-    else:
-        raise NotImplementedError('wind bias only works in 2D right now!')
-
-
-def wall_force_field(current_pos, wallF, wallF_exp, wallX_pos=[0., 1.], wallY_pos=[-0.15, 0.15]):
-    """If agent gets too close to wall, inflict it with repulsive forces as a
-    function of how close it is to the wall. NOTE: right now, just using simply
-    forbidden zones.
-    
-    Args:
-        current_pos: (x,y) coords of agent right now (array)
-        wallF: how scary the wall is (float)
-        wallF_exp: the exponential term in the wall force field (float)
-        wallX_pos: Wall X coords (array)
-        wallY_pos: Wall Y coords (array)
-    
-    Returns:
-        wall_force: (array)
-    """
-    pass
-
-
-def stimulusDrivingForce():
-    """[PLACEHOLDER]
-    Force driving agegent towards stimulus source, determined by
-    temperature-stimulus at the current position at the current time: b(timeList(x,timeList))
-
-    TODO: Make two biased functions for this: accelList spatial-context dependent 
-    bias (e.g. to drive mosquitos away from walls), and accelList temp 
-    stimulus-dependent driving force.
-    """
-    pass
 
 
 def place_heater(target_pos):
@@ -149,7 +79,7 @@ class Trajectory:
         trajectory object
     """
     boundary = [0.0, 1.0, 0.15, -0.15]  # these are real dims of our wind tunnel
-    def __init__(self, agent_pos, v0_stdev, Tmax, dt, target_pos, beta, rf, wtf, detect_thresh, bounded, bounce, plotting=False, k=0.):
+    def __init__(self, agent_pos, v0_stdev, Tmax, dt, target_pos, beta, rf, wtf, detect_thresh, bounded, bounce, wallF, plotting=False, title="Individual trajectory", titleappend = '', k=0.):
         """ Initialize object with instant variables, and trigger other funcs. 
         """
         self.Tmax = Tmax
@@ -161,6 +91,7 @@ class Trajectory:
         self.wtf = wtf
         self.detect_thresh = detect_thresh     
         self.bounce = bounce
+        self.wallF = wallF
         
         # place heater
         self.target_pos = place_heater(target_pos)
@@ -178,7 +109,7 @@ class Trajectory:
         self.positionList = np.zeros((ts_max, self.dim), dtype=float)
         self.veloList = np.zeros((ts_max, self.dim), dtype=float)
         self.accelList = np.zeros((ts_max, self.dim), dtype=float)
-        self.wallFList = np.zeros((ts_max, self.dim), dtype=float)
+        self.ForcesList = np.zeros((ts_max, 3, self.dim), dtype=float)  # we have 3 drivers
         
         # generate random intial velocity condition    
         v0 = np.random.normal(0, self.v0_stdev, self.dim)
@@ -190,14 +121,23 @@ class Trajectory:
         self.fly(ts_max, detect_thresh, self.boundary, bounded)
         
         if plotting is True:
-            self.plot(self.boundary)
+            self.title = title
+            self.titleappend = titleappend
+            plotting_funcs.plot_single_trajectory(self.positionList, self.target_pos, self.detect_thresh, self.boundary, self.title, self.titleappend)
         
     def fly(self, ts_max, detect_thresh, boundary, bounded):
         """Run the simulation using Euler's method"""
         ## loop through timesteps
         for ts in range(ts_max-1):
+            # calculate drivers
+            randF = driving_forces.random_force(self.rf)
+            self.ForcesList[ts][0] = randF
+            upwindF = driving_forces.upwindBiasForce(self.wtf)
+            self.ForcesList[ts][1] = upwindF
+            wallRepulsiveF = driving_forces.wall_force_field(self.positionList[ts], self.veloList[ts], self.wallF)
+            self.ForcesList[ts][2] = wallRepulsiveF
             # calculate current force
-            force = -self.k*self.positionList[ts] - self.beta*self.veloList[ts] + random_force(self.rf) + upwindBiasForce(self.wtf) #+ wall_force_field(self.positionList[ts])
+            force = -self.k*self.positionList[ts] - self.beta*self.veloList[ts] + randF + upwindF + wallRepulsiveF
             # calculate current acceleration
             self.accelList[ts] = force/m
     
@@ -221,10 +161,12 @@ class Trajectory:
                 if candidate_pos[1] > boundary[2]:  # too far up
                     candidate_pos[1] = boundary[2] + 1e-4
                     if self.bounce is "crash":
+#                        print "teleport!"
                         self.veloList[ts+1][1] = 0.
                 elif candidate_pos[1] < boundary[3]:  # too far down
                     candidate_pos[1] = boundary[3] - 1e-4
                     if self.bounce is "crash":
+#                        print "teleport!"
                         self.veloList[ts+1][1] = 0.
                 
             self.positionList[ts+1] = candidate_pos
@@ -246,24 +188,9 @@ class Trajectory:
         self.positionList = self.positionList[:ts+1]
         self.veloList = self.veloList[:ts+1]
         self.accelList = self.accelList[:ts+1]
-         
-    def plot(self, boundary):
-        from matplotlib.patches import Rectangle
-        plt.plot(self.positionList[:, 0], self.positionList[:, 1], lw=2, alpha=0.5)
-        heaterCircle = plt.Circle((self.target_pos[0], self.target_pos[1],), 0.003175, color='r')  # 0.003175 is diam of our heater
-        detectCircle = plt.Circle((self.target_pos[0], self.target_pos[1],), self.detect_thresh, color='gray', fill=False, linestyle='dashed')
-        plt.axis(boundary)
-        # draw cage
-        cage_midX, cage_midY = 0.1524, 0.
-        currentAxis = plt.gca()
-        currentAxis.add_patch(Rectangle((cage_midX - 0.0381, cage_midY - 0.0381), 0.0762, 0.0762, facecolor='none'))
-        currentAxis.add_artist(heaterCircle)
-        currentAxis.add_artist(detectCircle)
-        plt.title("Individual trajectory", fontsize=20)
-        plt.xlabel("$x$", fontsize=14)
-        plt.ylabel("$y$", fontsize=14)
+
 
 if __name__ == '__main__':
     target_pos = "left"
     
-    mytraj = Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=4e-06, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash")
+    mytraj = Trajectory(agent_pos="cage", target_pos="left", plotting = True, v0_stdev=0.01, wtf=7e-07, rf=4e-06, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=(80, 1e-4))

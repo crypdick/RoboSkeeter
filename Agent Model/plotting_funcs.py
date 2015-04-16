@@ -16,7 +16,35 @@ import seaborn as sns
 
 sns.set_palette("muted", 8)
 
-def trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heatmap):
+def plot_single_trajectory(positionList, target_pos, detect_thresh, boundary, title="Individual trajectory", titleappend=""):
+    # plot an individual trajectory
+    plt.plot(positionList[:, 0], positionList[:, 1], lw=2, alpha=0.5)
+    plt.axis(boundary)
+    currentAxis = plt.gca()
+    cage = draw_cage()
+    currentAxis.add_patch(cage)
+    if target_pos is not None:
+        heaterCircle, detectCircle = draw_heaters(target_pos, detect_thresh)
+        currentAxis.add_artist(heaterCircle)
+        currentAxis.add_artist(detectCircle)
+    
+    plt.title(title + titleappend, fontsize=20)
+    plt.xlabel("$x$", fontsize=14)
+    plt.ylabel("$y$", fontsize=14)
+
+
+def draw_cage():
+    cage_midX, cage_midY = 0.1524, 0.
+    return plt.Rectangle((cage_midX - 0.0381, cage_midY - 0.0381), 0.0762, 0.0762, facecolor='none')
+    
+
+def draw_heaters(target_pos, detect_thresh):
+    heaterCircle = plt.Circle((target_pos[0], target_pos[1],), 0.003175, color='r')  # 0.003175 is diam of our heater
+    detectCircle = plt.Circle((target_pos[0], target_pos[1],), detect_thresh, color='gray', fill=False, linestyle='dashed')
+    return heaterCircle, detectCircle
+
+
+def trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heatmap, trajectoryPlot=False):
     """"Plot all the trajectories into a single arena"""
     traj_ex = trajectory_objects_list[0]
     target_pos = traj_ex.target_pos
@@ -27,20 +55,22 @@ def trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heat
             alpha=0.4
         else:
             alpha=0.02
-        ax.plot(traj[:, 0], traj[:, 1], lw=2, alpha=1)
+        if trajectoryPlot is True:
+            ax.plot(traj[:, 0], traj[:, 1], lw=2, alpha=1)
         ax.axis([0,1,0.151,-0.151])  # slight y padding for graphs
     title_append = r""" $T_max$ = {0} secs, $\beta = {2}$, $f = {3}$, $wtf = {4}$.
                 """.format(traj_ex.Tmax, len(trajectory_objects_list), traj_ex.beta, traj_ex.rf, traj_ex.wtf)
+                
     # draw heater
     if traj_ex.target_pos is not None:
-        heaterCircle = plt.Circle((traj_ex.target_pos[0], traj_ex.target_pos[1],), 0.003175, color='r')  # 0.003175 is diam of our heater
-        detectCircle = plt.Circle((traj_ex.target_pos[0], traj_ex.target_pos[1],), traj_ex.detect_thresh, color='gray', linestyle='dashed', fill=False)
+        heaterCircle, detectCircle = draw_heaters(traj_ex.target_pos, traj_ex.detect_thresh)
         ax.add_artist(heaterCircle)
         ax.add_artist(detectCircle)
+    
     # draw cage
-    cage_midX, cage_midY = 0.1524, 0.
-    ax.add_patch(Rectangle((cage_midX - 0.0381, cage_midY - 0.0381), 0.0762, 0.0762, facecolor='none'))
-    ax.add_patch(Rectangle((0, -0.15), 1., 0.3, facecolor='none', edgecolor="w", lw=1))
+    cage = draw_cage()
+    ax.add_patch(cage)
+
     
     # plot shwag
     title_append = title_append + """<Tfind> = {0:}, Sourcefinds = {1}/(n = {2})""".format(Tfind_avg, sum(target_finds), len(trajectory_objects_list))
@@ -56,6 +86,7 @@ def trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heat
     ## Position heatmap
     if heatmap is True:
         pos_flat = np.array(list(itertools.chain.from_iterable(pos)))
+        # crunch the data
         counts, xedges, yedges = np.histogram2d(pos_flat[:,0], pos_flat[:,1], bins=(100,30), range=[[0, 1], [-0.15, .15]])
         
         # counts needs to be transposed to use pcolormesh     
@@ -177,7 +208,7 @@ def stateHistograms(pos, velos, accels, trajectory_objects_list):
 
 if __name__ == '__main__':
     import trajectory_stats
-    pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, trajectory_objects_list = trajectory_stats.main(total_trajectories=30, beta=4e-6, plotting = False, wtf=7e-7, rf=4e-6, Tmax=10, bounce=None)
+    pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, trajectory_objects_list = trajectory_stats.main(total_trajectories=4, plotting = False)
         
-    trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heatmap=False)
-    xpos_counts_n, ypos_bins, ypos_counts, ypos_counts_n, vx_counts_n = stateHistograms(pos, velos, accels, trajectory_objects_list)
+    trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heatmap=False, trajectoryPlot = True)
+#    xpos_counts_n, ypos_bins, ypos_counts, ypos_counts_n, vx_counts_n = stateHistograms(pos, velos, accels, trajectory_objects_list)
