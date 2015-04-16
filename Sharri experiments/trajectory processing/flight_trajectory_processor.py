@@ -38,6 +38,9 @@ vid_data_path = "v192836.mat"
 
 vid_data = io.loadmat(vid_data_path)  # load mat-file
 
+# sanity checks: test if the mat file has camxy, date, video, raw
+
+
 #The trajectory as an Nx4 matrix. Each columns represent TODO
 trajectory_data = vid_data['store'][0][0][0]
 
