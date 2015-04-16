@@ -4,7 +4,7 @@ Created on Thu Apr 16 07:59:47 2015
 
 @author: Richard Decal
 
-bootstrapping
+bootstrapping on upwind-left vs -right quadrants.
 
 To compare upwind positional distributions, we examined the percentage of trajectory positions found in the left half of the wind tunnel. For each experimental condition, we can calculate this left side bias exactly once. We use this bias to determine if the experimental upwind distributions of position are likely to be drawn from the upwind control distribution of position. We used bootstrapping methods to collect samples from the control distribution of position, and these samples are repeatedly drawn in order to find the probability distribution of the left side bias values.
 
