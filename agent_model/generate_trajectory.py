@@ -134,7 +134,7 @@ class Trajectory:
             self.ForcesList[ts][0] = randF
             upwindF = baseline_driving_forces.upwindBiasForce(self.wtf)
             self.ForcesList[ts][1] = upwindF
-            wallRepulsiveF = baseline_driving_forces.repulsionF(self.positionList[ts])
+            wallRepulsiveF = baseline_driving_forces.repulsionF(self.positionList[ts], self.wallF)
             self.ForcesList[ts][2] = wallRepulsiveF
             # calculate current force
             force = -self.k*self.positionList[ts] - self.beta*self.veloList[ts] + randF + upwindF + wallRepulsiveF
@@ -191,6 +191,13 @@ class Trajectory:
 
 
 if __name__ == '__main__':
-    target_pos = "left"
+    # wallF params
+    wallF_max=8e-8
+    decay_const = 90
+    mu=0.
+    stdev=0.04
+    centerF_max=5e-8
     
-    mytraj = Trajectory(agent_pos="cage", target_pos="left", plotting = True, v0_stdev=0.01, wtf=7e-07, rf=4e-06, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=(80, 1e-4))
+    wallF = (wallF_max, decay_const, mu, stdev, centerF_max)
+    
+    mytraj = Trajectory(agent_pos="cage", target_pos="left", plotting = True, v0_stdev=0.01, wtf=7e-07, rf=4e-06, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=wallF)  #, wallF=(80, 1e-4)

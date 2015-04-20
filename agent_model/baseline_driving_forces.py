@@ -107,12 +107,15 @@ def upwindBiasForce(wtf, upwind_direction=0, dim=2):
 #    return y0 * np.exp(-1 * wallF * distance)
 
 
-def repulsionF(position):
+def repulsionF(position, wallF):
     """repulsion as a function of position.
     """
-    posx, posy = position
-    force_y = repulsion_landscape.main(posy)
-    return np.array([0., force_y])
+    if wallF is None:
+        return np.array([0., 0.])
+    else:
+        posx, posy = position
+        force_y = repulsion_landscape.main(posy, wallF)
+        return np.array([0., force_y])
 
 
 def stimulusDrivingForce():

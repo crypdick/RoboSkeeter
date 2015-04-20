@@ -103,10 +103,11 @@ def main(plotting = True):
         axs[1,1].legend()
         
         fig.suptitle("Dickinson Distributions", fontsize=14)
-        plt.savefig("./Agent Model/figs/Dicks distributions.png")
+        plt.savefig("Dicks distributions.png")
     
     return odor_off
 
 
 if '__name__' is '__main__':
-    main()
+    print "hi"
+    odor_off =  main(plotting=True)

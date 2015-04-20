@@ -41,7 +41,7 @@ def plot_landscape(f_at_x, wallF_max, decay_const, stdev, centerF_max):
     
     # plot derivative
     axarr[1].axhline(y=0, color="grey", lw=1, alpha=0.4)
-#    axarr[1].plot(xcoords, slope_at_x, label="derivative")
+    axarr[1].plot(xcoords, slope_at_x, label="derivative")
     axarr[1].plot(xcoords, -1* slope_at_x, label="-derivative")
     axarr[1].set_title("Slope of crosswind repulsion landscape", fontsize = 14)
     axarr[1].set_xlim(-.15,0.15)
@@ -56,8 +56,8 @@ def plot_landscape(f_at_x, wallF_max, decay_const, stdev, centerF_max):
     plt.show()
 
 
-def main(pos, plotting=False):
-    slope_at_x, f_at_x, plot_title_args = landscape(pos)
+def main(pos, wallF, plotting=False):
+    slope_at_x, f_at_x, plot_title_args = landscape(pos, *wallF)
     
     if plotting is True:
         plot_landscape(f_at_x, *plot_title_args)
