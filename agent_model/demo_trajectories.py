@@ -10,6 +10,8 @@ Demo trajectories
 import generate_trajectory
 from matplotlib import pyplot as plt
 
+
+
 def demo_single_trajectories():
     print "demo_single_trajectories"
     # normal
@@ -116,8 +118,40 @@ def demo_wall_repulsion():
     
     return strongTraj
     
+def demo_repulsion_landscape():
+    """wallF: 
+    wallF_max=8e-8
+    decay_const = 90
+    mu=0.
+    stdev=0.04
+    centerF_max=5e-8
+    """
+    print "demo_repulsion_landscape"
+
+    
+    
+    # normal
+    for i in range(10):
+        generate_trajectory.Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=4e-06, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF = (8e-08, 90, 0.0, 0.04, 5e-08), title = "wall repulsion demo", titleappend = ", normal")
+    plt.show()
+    
+    # off
+    for i in range(10):
+        generate_trajectory.Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=4e-06, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=None, title = "wall repulsion demo", titleappend = ", wall repulsion off")
+    plt.show()
+    
+    # weak
+    for i in range(10):
+        generate_trajectory.Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=4e-06, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF = (2e-08, 90, 0.0, 0.04, 1e-8), title = "wall repulsion demo", titleappend = ", wall repulsion weak")
+    plt.show()
+    
+    # strong
+    for i in range(10):
+        strongTraj = generate_trajectory.Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=4e-06, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=(8e-07, 90, 0.0, 0.04, 5e-07), title = "wall repulsion demo", titleappend = ", wall repulsion strong")
+    plt.show()
     
 #demo_single_trajectories()
 #demo_damping()
 #demo_randomF_strength()
-strongTraj = demo_wall_repulsion()
+#strongTraj = demo_wall_repulsion()
+demo_repulsion_landscape()
