@@ -31,6 +31,8 @@ raw - 3D position of the trajectory. (n x 3, where n is the number of timesteps)
 """
 
 import os
+import pandas as pd
+import numpy as np
 
 
 #def sanitychecks(full_trajectory):
@@ -39,6 +41,95 @@ import os
 #    TODO:Implement
 #    """
 #    return full_trajectory
+
+
+#def trim_NaNs(filt, trim='fb'):
+#    """
+#    Trim the leading and/or trailing NaNs from a 1-D array or sequence.
+#    Parameters
+#    ----------
+#    filt : 1-D array or sequence
+#        Input array.
+#    trim : str, optional
+#        A string with 'f' representing trim from front and 'b' to trim from
+#        back. Default is 'fb', trim NaNs from both front and back of the
+#        array.
+#    Returns
+#    -------
+#    trimmed : 1-D array or sequence
+#        The result of trimming the input. The input data type is preserved.
+#    Examples
+#    --------
+#    >>> a = np.array((0, 0, 0, 1, 2, 3, 0, 2, 1, 0))
+#    >>> np.trim_nans(a)
+#    array([1, 2, 3, 0, 2, 1])
+#    >>> np.trim_nans(a, 'b')
+#    array([0, 0, 0, 1, 2, 3, 0, 2, 1])
+#    The input data type is preserved, list/tuple in means list/tuple out.
+#    >>> np.trim_nans([0, 1, 2, 0])
+#    [1, 2]
+#    """
+#    first = 0
+#    trim = trim.upper()
+#    if 'F' in trim:
+#        for i in filt:
+#            if i != np.nan:
+#                break
+#            else:
+#                first = first + 1
+#    last = len(filt)
+#    if 'B' in trim:
+#        for i in filt[::-1]:
+#            if i != np.nan:
+#                break
+#            else:
+#                last = last - 1
+#    return filt[first:last]
+    
+    
+def trim_NaNs(filt, trim='fb'):
+    """
+    Trim the leading and/or trailing NaNs from a 1-D array or sequence.
+    Parameters
+    ----------
+    filt : 1-D array or sequence
+        Input array.
+    trim : str, optional
+        A string with 'f' representing trim from front and 'b' to trim from
+        back. Default is 'fb', trim NaNs from both front and back of the
+        array.
+    Returns
+    -------
+    trimmed : 1-D array or sequence
+        The result of trimming the input. The input data type is preserved.
+    Examples
+    --------
+    >>> a = np.array((0, 0, 0, 1, 2, 3, 0, 2, 1, 0))
+    >>> np.trim_nans(a)
+    array([1, 2, 3, 0, 2, 1])
+    >>> np.trim_nans(a, 'b')
+    array([0, 0, 0, 1, 2, 3, 0, 2, 1])
+    The input data type is preserved, list/tuple in means list/tuple out.
+    >>> np.trim_nans([0, 1, 2, 0])
+    [1, 2]
+    """
+    first = 0
+    trim = trim.upper()
+    if 'F' in trim:
+        for i in filt:
+            if np.isnan(i) == False:
+                break
+            else:
+                first = first + 1
+    last = len(filt)
+    if 'B' in trim:
+        for i in filt[::-1]:
+            if np.isnan(i) == False:
+                break
+            else:
+                last = last - 1
+    return first, last
+#    return filt[first:last]
 
 
 def trim_ends(full_trajectory):
@@ -72,12 +163,17 @@ def main(filename):
     script_dir = os.path.dirname(__file__) #<-- absolute dir the script is in
     rel_data_path = "trajectory_data/"
     file_path = os.path.join(script_dir, rel_data_path, filename)
-    with open(file_path) as full_trajectory:
-#        full_trajectory = sanitychecks(full_trajectory)
-        trimmed_trajectory = trim_ends(full_trajectory)
-        trajectory_list = split_trajectories(trimmed_trajectory)
-    write_csv(trajectory_list)
+    Data = pd.read_csv(file_path, header=None, na_values="nan")
+    Data.columns = ['x','y','z']
+    first, last = trim_NaNs(Data['x'])
+    trimmed_Data = Data[first : last]
+##        full_trajectory = sanitychecks(full_trajectory)
+##        
+#        
+    return trimmed_Data
+#        trajectory_list = split_trajectories(trimmed_trajectory)
+#    write_csv(trajectory_list)
 
 
 if __name__ == "__main__":
-    main("195511-1.csv")
+    thing = main("195511-1.csv")
