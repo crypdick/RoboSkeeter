@@ -54,28 +54,34 @@ def check_df_equal(df1, df2):
 class TestStringMethods(unittest.TestCase):
     from pandas.util.testing import assert_frame_equal
 
-    def test_trimNaN_nums(self): # only numbers
-        df = num_run(100)
-        df2 = flight_trajectory_processor.trim_NaNs(df)
-        self.assertTrue(check_df_equal(df, df2))
+    ## TEST TRIMMER
+#    def test_trimNaN_nums(self): # only numbers
+#        df1 = num_run(100)
+#        df2 = flight_trajectory_processor.trim_NaNs(df1)
+#        self.assertTrue(check_df_equal(df1, df2))
         
-        def test_trimNaN_nums(self): # only numbers
-        df = num_run(100)
-        df2 = flight_trajectory_processor.trim_NaNs(df)
-        self.assertTrue(check_df_equal(df, df2))
-        
+#    def test_trimNaN_nums(self): # only NaNs
+#        df = NaN_run(100)
+#        df2 = flight_trajectory_processor.trim_NaNs(df)
+#        self.assertTrue(check_df_equal(df([]), df2)) # todo: figure out how to make empty dataframe
+    
+    ## TEST SPLITTER
     def test_allNums(self): # only numbers
-
-    def test_isupper(self):
-        self.assertTrue('FOO'.isupper())
-        self.assertFalse('Foo'.isupper())
-
-    def test_split(self):
-        s = 'hello world'
-        self.assertEqual(s.split(), ['hello', 'world'])
-        # check that s.split fails when the separator is not a string
-        with self.assertRaises(TypeError):
-            s.split(2)
+        df1 = num_run(40)
+        df2 = flight_trajectory_processor.main(df1)
+        self.assertTrue(check_df_equal(df1, df2[0]))
+        
+#    def test_isupper(self): # Nan20 sandwich
+#        df = cat([num50, NaN20, num50])
+#        self.assertTrue('FOO'.isupper())
+#        self.assertFalse('Foo'.isupper())
+#
+#    def test_split(self):
+#        s = 'hello world'
+#        self.assertEqual(s.split(), ['hello', 'world'])
+#        # check that s.split fails when the separator is not a string
+#        with self.assertRaises(TypeError):
+#            s.split(2)
 
 if __name__ == '__main__':
     unittest.main()

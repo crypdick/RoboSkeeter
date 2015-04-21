@@ -169,20 +169,27 @@ def split_trajectories(full_trajectory, NaN_split_thresh=50, min_trajectory_len=
     NaNcount = 0
     split_trajectory_list = []
     for i, x in enumerate(xs):
+        print "last N ", lastN
         # if x is a number
         if np.isnan(xs[i]) == False:
             # if starting a new trajectory
             if firstN is None:  # found our first number
                 firstN = i
+                print "firstN ",firstN
             # if continuing a number run
             if in_NaN_run is False:
-                pass
+                if i == len(xs)-1:  # loop reached end; grab last trajectory
+                    if lastN is None:
+                        lastN = i
+                    print "the end!"
+                    print full_trajectory[firstN:lastN+1]
+                    split_trajectory_list.append(full_trajectory[firstN:lastN+1])
             # ending a NaN run, starting number run
             if in_NaN_run is True:
                 lastNaN = i - 1
                 # if splitting trajectory
                 if NaNcount > NaN_split_thresh:
-                    split_trajectory_list.append(full_trajectory[firstN:lastN])                  
+                    split_trajectory_list.append(full_trajectory[firstN:lastN+1])                 
                     print "new trajectory!"
                     in_NaN_run = False
                     firstN = i
@@ -200,18 +207,19 @@ def split_trajectories(full_trajectory, NaN_split_thresh=50, min_trajectory_len=
         # if x is a NaN
         else:
             # ending number run, starting NaN run
-            if in_NaN_run is False: 
+            if in_NaN_run is False:
                 firstNaN = i
-                NaNcount += 1
-                lastN = firstNaN - 1
+                NaNcount = 1
+                lastN = firstNaN - 1  # exiting number run; storing lastN
                 in_NaN_run = True
             # if continuing a NaN run
             if in_NaN_run is True:
                 NaNcount += 1
+        # for debugging
+#        print "NaN_run {} firstN {} lastN {} firstNaN {} lastNaN {} Nancount {}".format(in_NaN_run, firstN, lastN, firstNaN, lastNaN, NaNcount)
 
     # toss short trajectories
     split_trajectory_list = [ trajectory for trajectory in split_trajectory_list if len(trajectory) > min_trajectory_len ]
-    print split_trajectory_list
     return split_trajectory_list
 
 
@@ -248,4 +256,5 @@ def main(filename):
 
 
 if __name__ == "__main__":
-    thing = main("195511-1.csv")
+#    thing = main("195511-1.csv")
+    thing = main(df(np.random.randn(40, 3), columns = ['x','y','z']))  # dummy data
