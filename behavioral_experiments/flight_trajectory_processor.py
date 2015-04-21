@@ -42,7 +42,7 @@ import numpy as np
 #    """
 #    return full_trajectory
 
-
+    
 #def trim_NaNs(filt, trim='fb'):
 #    """
 #    Trim the leading and/or trailing NaNs from a 1-D array or sequence.
@@ -73,20 +73,21 @@ import numpy as np
 #    trim = trim.upper()
 #    if 'F' in trim:
 #        for i in filt:
-#            if i != np.nan:
+#            if np.isnan(i) == False:
 #                break
 #            else:
 #                first = first + 1
 #    last = len(filt)
 #    if 'B' in trim:
 #        for i in filt[::-1]:
-#            if i != np.nan:
+#            if np.isnan(i) == False:
 #                break
 #            else:
 #                last = last - 1
-#    return filt[first:last]
+#    return first, last
+##    return filt[first:last]
     
-    
+
 def trim_NaNs(filt, trim='fb'):
     """
     Trim the leading and/or trailing NaNs from a 1-D array or sequence.
@@ -113,37 +114,80 @@ def trim_NaNs(filt, trim='fb'):
     >>> np.trim_nans([0, 1, 2, 0])
     [1, 2]
     """
+    filtx = filt['x']  # we assume that if there's a NaN  in the x col the 
+                    # rest of that row will also be NaNs
     first = 0
     trim = trim.upper()
     if 'F' in trim:
-        for i in filt:
+        for i in filtx:
             if np.isnan(i) == False:
                 break
             else:
-                first = first + 1
+                first += 1
     last = len(filt)
     if 'B' in trim:
-        for i in filt[::-1]:
+        for i in filtx[::-1]:
             if np.isnan(i) == False:
                 break
             else:
-                last = last - 1
-    return first, last
-#    return filt[first:last]
+                last -= 1
+    return filt[first:last].reset_index()
 
 
-def trim_ends(full_trajectory):
-    trimmed_trajectory = full_trajectory
-    return trimmed_trajectory    
-    
-
-def split_trajectories(full_trajectory):
+def split_trajectories(full_trajectory, split_thresh=50, min_trajectory_len=20):
     """split if we have too many NaNs or if the mosquito is stuck
     If len(NaN segment) >= threshold, split trajectory
     else, use cubic interpolator to estimate values and replace NaNs
+    
+    use pandas.DataFrame.duplicated for stuck bug
+    
+    firstN = 0
+    NaNcount=0
+    inNaNs = False
+    for i, x in enumerate(thing['x']):
+        isNaN[i] == True:
+            
+            if 
+            check if last position isNan was True. if so, record last NaN.
+        loop through x until isNaN = true. set inNan=true
+        if inNan[t-1]=False
+            record where we encounter the first nan.
+            start NaNcount=1
+        
+        while Nans, increment NaNcount, inNan=true
+        if numer:
+            record where we find the lastNaN, end NaNcount, inNan false
+        if the first counter when we find our first nan.
     """
-    split_thresh = 50
-    min_trajectory_len = 20
+    xs = full_trajectory['x']  # we assume that if there's a NaN  in the x col the 
+                    # rest of that row will also be NaNs
+        # .reset_index() gets the index back at 0
+    inNan = False
+    firstN = None
+    lastN = None
+    firstNaN = None
+    lastNaN = None
+    Nancount = 0
+    for i, x in enumerate(xs):
+        if np.isnan(xs[i]) == False: # number
+            if firstN = None:  # found our first number
+                firstN = i+1  # +1 for python indexing
+            if inNan is False: #
+                pass
+            if inNan is True:
+                pass
+        else: # found a NaN
+            if inNan is False: # we discovered our first Nan, enter NaNs
+                firstNaN = i + 1
+                NaNcount += 1
+                lastN = firstNaN - 1
+                inNan = True
+            if inNan is True: # we're in a Nansequence
+                pass # TODO
+            
+    
+    
+    
     trajectory_list = [full_trajectory]  # TODO: fix
     # toss short trajectories
     trajectory_list = [ trajectory for trajectory in trajectory_list if len(trajectory) > min_trajectory_len ]
@@ -165,13 +209,16 @@ def main(filename):
     file_path = os.path.join(script_dir, rel_data_path, filename)
     Data = pd.read_csv(file_path, header=None, na_values="nan")
     Data.columns = ['x','y','z']
-    first, last = trim_NaNs(Data['x'])
-    trimmed_Data = Data[first : last]
-##        full_trajectory = sanitychecks(full_trajectory)
-##        
+    trimmed_Data = trim_NaNs(Data)
+##    sanitychecks(trimmed_Data)
+#    trajectory_list = split_trajectories(trimmed_Data)
+#    for trajectory in trajectory_list:
+#        # save a separate csv for each
+#        pass
+##
+    thing = trimmed_Data['x']
+    return thing
 #        
-    return trimmed_Data
-#        trajectory_list = split_trajectories(trimmed_trajectory)
 #    write_csv(trajectory_list)
 
 
