@@ -131,7 +131,7 @@ def trim_NaNs(filt, trim='fb'):
                 break
             else:
                 last -= 1
-    return filt[first:last].reset_index()
+    return filt[first:last].reset_index()[['x', 'y', 'z']]
 
 
 def split_trajectories(full_trajectory, NaN_split_thresh=50, min_trajectory_len=20):
