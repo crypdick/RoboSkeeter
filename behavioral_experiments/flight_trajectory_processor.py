@@ -61,12 +61,12 @@ import numpy as np
 #    Examples
 #    --------
 #    >>> a = np.array((0, 0, 0, 1, 2, 3, 0, 2, 1, 0))
-#    >>> np.trim_nans(a)
+#    >>> np.trim_NaNs(a)
 #    array([1, 2, 3, 0, 2, 1])
-#    >>> np.trim_nans(a, 'b')
+#    >>> np.trim_NaNs(a, 'b')
 #    array([0, 0, 0, 1, 2, 3, 0, 2, 1])
 #    The input data type is preserved, list/tuple in means list/tuple out.
-#    >>> np.trim_nans([0, 1, 2, 0])
+#    >>> np.trim_NaNs([0, 1, 2, 0])
 #    [1, 2]
 #    """
 #    first = 0
@@ -106,12 +106,12 @@ def trim_NaNs(filt, trim='fb'):
     Examples
     --------
     >>> a = np.array((0, 0, 0, 1, 2, 3, 0, 2, 1, 0))
-    >>> np.trim_nans(a)
+    >>> np.trim_NaNs(a)
     array([1, 2, 3, 0, 2, 1])
-    >>> np.trim_nans(a, 'b')
+    >>> np.trim_NaNs(a, 'b')
     array([0, 0, 0, 1, 2, 3, 0, 2, 1])
     The input data type is preserved, list/tuple in means list/tuple out.
-    >>> np.trim_nans([0, 1, 2, 0])
+    >>> np.trim_NaNs([0, 1, 2, 0])
     [1, 2]
     """
     filtx = filt['x']  # we assume that if there's a NaN  in the x col the 
@@ -134,7 +134,7 @@ def trim_NaNs(filt, trim='fb'):
     return filt[first:last].reset_index()
 
 
-def split_trajectories(full_trajectory, split_thresh=50, min_trajectory_len=20):
+def split_trajectories(full_trajectory, NaN_split_thresh=50, min_trajectory_len=20):
     """split if we have too many NaNs or if the mosquito is stuck
     If len(NaN segment) >= threshold, split trajectory
     else, use cubic interpolator to estimate values and replace NaNs
@@ -143,55 +143,76 @@ def split_trajectories(full_trajectory, split_thresh=50, min_trajectory_len=20):
     
     firstN = 0
     NaNcount=0
-    inNaNs = False
+    in_NaN_runs = False
     for i, x in enumerate(thing['x']):
-        isNaN[i] == True:
+        isnan[i] == True:
             
             if 
-            check if last position isNan was True. if so, record last NaN.
-        loop through x until isNaN = true. set inNan=true
-        if inNan[t-1]=False
-            record where we encounter the first nan.
+            check if last position isnan was True. if so, record last NaN.
+        loop through x until isnan = true. set in_NaN_run=true
+        if in_NaN_run[t-1]=False
+            record where we encounter the first NaN.
             start NaNcount=1
         
-        while Nans, increment NaNcount, inNan=true
+        while NaNs, increment NaNcount, in_NaN_run=true
         if numer:
-            record where we find the lastNaN, end NaNcount, inNan false
-        if the first counter when we find our first nan.
+            record where we find the lastNaN, end NaNcount, in_NaN_run false
+        if the first counter when we find our first NaN.
     """
-    xs = full_trajectory['x']  # we assume that if there's a NaN  in the x col the 
-                    # rest of that row will also be NaNs
-        # .reset_index() gets the index back at 0
-    inNan = False
+    xs = full_trajectory['x']  # we assume that if there's a NaN  in the x col 
+                    # the rest of that row will also be NaNs
+    in_NaN_run = False
     firstN = None
     lastN = None
     firstNaN = None
     lastNaN = None
-    Nancount = 0
+    NaNcount = 0
+    split_trajectory_list = []
     for i, x in enumerate(xs):
-        if np.isnan(xs[i]) == False: # number
-            if firstN = None:  # found our first number
-                firstN = i+1  # +1 for python indexing
-            if inNan is False: #
+        # if x is a number
+        if np.isnan(xs[i]) == False:
+            # if starting a new trajectory
+            if firstN is None:  # found our first number
+                firstN = i
+            # if continuing a number run
+            if in_NaN_run is False:
                 pass
-            if inNan is True:
-                pass
-        else: # found a NaN
-            if inNan is False: # we discovered our first Nan, enter NaNs
-                firstNaN = i + 1
+            # ending a NaN run, starting number run
+            if in_NaN_run is True:
+                lastNaN = i - 1
+                # if splitting trajectory
+                if NaNcount > NaN_split_thresh:
+                    split_trajectory_list.append(full_trajectory[firstN:lastN])                  
+                    print "new trajectory!"
+                    in_NaN_run = False
+                    firstN = i
+                    lastN = None
+                    firstNaN = None
+                    lastNaN = None
+                    NaNcount = 0
+                else:
+                    # not splitting; resume
+                    lastN = None
+                    firstNaN = None
+                    lastNaN = None
+                    NaNcount = 0
+                    in_NaN_run = False
+        # if x is a NaN
+        else:
+            # ending number run, starting NaN run
+            if in_NaN_run is False: 
+                firstNaN = i
                 NaNcount += 1
                 lastN = firstNaN - 1
-                inNan = True
-            if inNan is True: # we're in a Nansequence
-                pass # TODO
-            
-    
-    
-    
-    trajectory_list = [full_trajectory]  # TODO: fix
+                in_NaN_run = True
+            # if continuing a NaN run
+            if in_NaN_run is True:
+                NaNcount += 1
+
     # toss short trajectories
-    trajectory_list = [ trajectory for trajectory in trajectory_list if len(trajectory) > min_trajectory_len ]
-    return trajectory_list
+    split_trajectory_list = [ trajectory for trajectory in split_trajectory_list if len(trajectory) > min_trajectory_len ]
+    print split_trajectory_list
+    return split_trajectory_list
 
 
 def write_csv(trajectory_list):
@@ -203,20 +224,24 @@ def write_csv(trajectory_list):
 
 
 def main(filename):
-    # load the csv
-    script_dir = os.path.dirname(__file__) #<-- absolute dir the script is in
-    rel_data_path = "trajectory_data/"
-    file_path = os.path.join(script_dir, rel_data_path, filename)
-    Data = pd.read_csv(file_path, header=None, na_values="nan")
+    if type(filename) == str:
+        # load the csv
+        script_dir = os.path.dirname(__file__) #<-- absolute dir the script is in
+        rel_data_path = "trajectory_data/"
+        file_path = os.path.join(script_dir, rel_data_path, filename)
+        Data = pd.read_csv(file_path, header=None, na_values="NaN")
+    else:
+        # feed test Data into the module
+        Data = filename
     Data.columns = ['x','y','z']
     trimmed_Data = trim_NaNs(Data)
 ##    sanitychecks(trimmed_Data)
-#    trajectory_list = split_trajectories(trimmed_Data)
+    trajectory_list = split_trajectories(trimmed_Data)
 #    for trajectory in trajectory_list:
 #        # save a separate csv for each
 #        pass
 ##
-    thing = trimmed_Data['x']
+    thing = trajectory_list
     return thing
 #        
 #    write_csv(trajectory_list)
