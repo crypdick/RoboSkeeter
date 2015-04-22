@@ -21,6 +21,7 @@ def write_csv(trajectory_list, filename_prefix):
     will still contain short NaN repeats, but Sharri will fix that downstream
     using her interpolating code. She will also Kalman filter.
     """
+    processed = "Processed/"
     for i, trajectory in enumerate(trajectory_list):
-        file_path = os.path.join(script_dir, rel_data_path, filename_prefix + "_" + "SPLIT" + str(i))
+        file_path = os.path.join(script_dir, rel_data_path, processed, filename_prefix + "_" + "SPLIT" + str(i))
         trajectory.to_csv(file_path)
