@@ -169,28 +169,28 @@ def split_trajectories(full_trajectory, NaN_split_thresh=50, min_trajectory_len=
     NaNcount = 0
     split_trajectory_list = []
     for i, x in enumerate(xs):
-        print "last N ", lastN
+#        print "last N ", lastN
         # if x is a number
         if np.isnan(xs[i]) == False:
             # if starting a new trajectory
             if firstN is None:  # found our first number
                 firstN = i
-                print "firstN ",firstN
+#                print "firstN ",firstN
             # if continuing a number run
             if in_NaN_run is False:
                 if i == len(xs)-1:  # loop reached end; grab last trajectory
                     if lastN is None:
                         lastN = i
-                    print "the end!"
-                    print full_trajectory[firstN:lastN+1]
-                    split_trajectory_list.append(full_trajectory[firstN:lastN+1])
+#                    print "the end!"
+#                    print full_trajectory[firstN:lastN+1]
+                    split_trajectory_list.append(full_trajectory[firstN:lastN+1].reset_index()[['x', 'y', 'z']])
             # ending a NaN run, starting number run
             if in_NaN_run is True:
                 lastNaN = i - 1
                 # if splitting trajectory
                 if NaNcount > NaN_split_thresh:
-                    split_trajectory_list.append(full_trajectory[firstN:lastN+1])                 
-                    print "new trajectory!"
+                    split_trajectory_list.append(full_trajectory[firstN:lastN+1].reset_index()[['x', 'y', 'z']])                 
+#                    print "new trajectory!"
                     in_NaN_run = False
                     firstN = i
                     lastN = None
@@ -257,4 +257,5 @@ def main(filename):
 
 if __name__ == "__main__":
 #    thing = main("195511-1.csv")
-    thing = main(df(np.random.randn(40, 3), columns = ['x','y','z']))  # dummy data
+#    thing = main(df(np.random.randn(40, 3), columns = ['x','y','z']))  # dummy data, no nans
+    thing = main(df(concat([num50, NaN100, num20]).reset_index()[['x', 'y', 'z']]))  # dummy data, nans

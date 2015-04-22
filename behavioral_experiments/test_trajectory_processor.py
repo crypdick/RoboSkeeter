@@ -7,7 +7,7 @@ Created on Tue Apr 21 14:43:17 2015
 @author: richard
 """
 import pandas as pd
-from pandas import concat as cat
+from pandas import concat
 from pandas import DataFrame as df
 import numpy as np
 import flight_trajectory_processor
@@ -25,11 +25,11 @@ def num_run(len):
 
 
 ## Building blocks
-NaN20 = NaN_run(20)
+NaN20 = NaN_run(30)
 NaN50 = NaN_run(50)
 NaN100 = NaN_run(100)
 
-num20 = num_run(20)
+num20 = num_run(30)
 num50 = num_run(50)
 num100 = num_run(100)
 
@@ -67,14 +67,21 @@ class TestStringMethods(unittest.TestCase):
     
     ## TEST SPLITTER
     def test_allNums(self): # only numbers
-        df1 = num_run(40)
+        df1 = num100
         df2 = flight_trajectory_processor.main(df1)
         self.assertTrue(check_df_equal(df1, df2[0]))
         
-#    def test_isupper(self): # Nan20 sandwich
-#        df = cat([num50, NaN20, num50])
-#        self.assertTrue('FOO'.isupper())
-#        self.assertFalse('Foo'.isupper())
+    def test_someNaNs(self):
+        df1 = concat([num50, NaN20, num20]).reset_index()[['x', 'y', 'z']]
+        df2 = flight_trajectory_processor.main(df1)
+        self.assertTrue(check_df_equal(df1, df2[0]))
+    
+    def test_manyNaNs(self):
+        df1 = concat([num50, NaN100, num20]).reset_index()[['x', 'y', 'z']]
+        df2 = flight_trajectory_processor.main(df1)
+        self.assertTrue(check_df_equal( num50.reset_index()[['x', 'y', 'z']],  df2[0]))
+        self.assertTrue(check_df_equal( num20.reset_index()[['x', 'y', 'z']],  df2[1]))
+        
 #
 #    def test_split(self):
 #        s = 'hello world'
@@ -91,10 +98,8 @@ if __name__ == '__main__':
 
 
 # trajectory, all NaNs
-# trajectory, some NaNs
 # trajectory, some NaN stretches, len < 50
 # trajectory, exactly 50 NaNs
-# trajectory, some NaN stretches, len > 50
 # trajectory, leading NaNs
 # trajectory, trailing NaNs
 # trajectory, 
