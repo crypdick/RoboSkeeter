@@ -188,7 +188,7 @@ def split_trajectories(full_trajectory, NaN_split_thresh=50, min_trajectory_len=
             if in_NaN_run is True:
                 lastNaN = i - 1
                 # if splitting trajectory
-                if NaNcount > NaN_split_thresh:
+                if NaNcount >= NaN_split_thresh:
                     split_trajectory_list.append(full_trajectory[firstN:lastN+1].reset_index()[['x', 'y', 'z']])                 
 #                    print "new trajectory!"
                     in_NaN_run = False
@@ -228,7 +228,8 @@ def write_csv(trajectory_list):
     will still contain short NaN repeats, but Sharri will fix that downstream
     using her interpolating code. She will also Kalman filter.
     """
-    pass
+    for trajectory in trajectory_list:
+        pass
 
 
 def main(filename):
@@ -249,13 +250,11 @@ def main(filename):
 #        # save a separate csv for each
 #        pass
 ##
-    thing = trajectory_list
-    return thing
+    
 #        
-#    write_csv(trajectory_list)
+    write_csv(trajectory_list)
+    return trajectory_list
 
 
 if __name__ == "__main__":
-#    thing = main("195511-1.csv")
-#    thing = main(df(np.random.randn(40, 3), columns = ['x','y','z']))  # dummy data, no nans
-    thing = main(df(concat([num50, NaN100, num20]).reset_index()[['x', 'y', 'z']]))  # dummy data, nans
+    trajectory_list = main("195511-1.csv")
