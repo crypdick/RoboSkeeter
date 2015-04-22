@@ -33,6 +33,7 @@ raw - 3D position of the trajectory. (n x 3, where n is the number of timesteps)
 import os
 import pandas as pd
 import numpy as np
+import trajectory_data_io
 
 
 #def sanitychecks(full_trajectory):
@@ -223,22 +224,10 @@ def split_trajectories(full_trajectory, NaN_split_thresh=50, min_trajectory_len=
     return split_trajectory_list
 
 
-def write_csv(trajectory_list):
-    """Outputs x,y,z coords at each timestep to a csv file. These trajectories
-    will still contain short NaN repeats, but Sharri will fix that downstream
-    using her interpolating code. She will also Kalman filter.
-    """
-    for trajectory in trajectory_list:
-        pass
-
-
-def main(filename):
-    if type(filename) == str:
+def main(data):
+    if type(data) == str:
         # load the csv
-        script_dir = os.path.dirname(__file__) #<-- absolute dir the script is in
-        rel_data_path = "trajectory_data/"
-        file_path = os.path.join(script_dir, rel_data_path, filename)
-        Data = pd.read_csv(file_path, header=None, na_values="NaN")
+        Data = trajectory_data_io.load_csv(data)
     else:
         # feed test Data into the module
         Data = filename
@@ -252,9 +241,9 @@ def main(filename):
 ##
     
 #        
-    write_csv(trajectory_list)
+    trajectory_data_io.write_csv(trajectory_list, data)
     return trajectory_list
 
 
 if __name__ == "__main__":
-    trajectory_list = main("195511-1.csv")
+    trajectory_list = main("195511-1")
