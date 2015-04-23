@@ -224,26 +224,30 @@ def split_trajectories(full_trajectory, NaN_split_thresh=50, min_trajectory_len=
     return split_trajectory_list
 
 
-def main(data):
-    if type(data) == str:
+def main(filepath):
+    if type(filepath) == unicode or type(filepath) == str:
         # load the csv
-        Data = trajectory_data_io.load_csv(data)
-    else:
-        # feed test Data into the module
-        Data = filename
+        debug = False
+        Data = trajectory_data_io.load_csv(filepath)
+    else: # if script is fed a dataframe instead of a path, for debugging
+        debug = True        
+        Data = filepath
     Data.columns = ['x','y','z']
     trimmed_Data = trim_NaNs(Data)
-##    sanitychecks(trimmed_Data)
-    trajectory_list = split_trajectories(trimmed_Data)
-#    for trajectory in trajectory_list:
-#        # save a separate csv for each
-#        pass
-##
+###    sanitychecks(trimmed_Data)
+    trajectory_list = split_trajectories(trimmed_Data)   
+
     
-#        
-    trajectory_data_io.write_csv(trajectory_list, data)
+    # save
+    if debug is False:    
+        trajectory_data_io.write_csv(trajectory_list, filepath)
+
+
     return trajectory_list
 
 
 if __name__ == "__main__":
-    trajectory_list = main("195511-1")
+    script_dir = os.path.dirname(__file__) #<-- absolute dir the script is in
+    rel_data_path = "trajectory_data/"
+    file_path = os.path.join(script_dir, rel_data_path, "195511-1.csv")
+    trajectory_list = main(file_path)
