@@ -11,40 +11,39 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.misc import derivative as deriv
 
-def landscape(pos, wallF_max=8e-8, decay_const = 90, mu=0., stdev=0.04, centerF_max=5e-8):
-    # exp params
-    wallF_max = wallF_max
-    decay_const = decay_const
-    # gaussian params
-    mu, stdev, centerF_max = mu, stdev, centerF_max
+
+def landscape(wallF_max=8e-8, decay_const = 90, mu=0., stdev=0.04, centerF_max=5e-8):
+    """exponential decay params: wallF_max, decay_const
+    gaussian params: mu, stdev, centerF_max
+    """
+    stdev2, centerF_max2 = 0.004, 3e-8
+    fx = lambda pos : (wallF_max * np.exp(-1 * decay_const * (pos+0.127))) + ( centerF_max * np.exp(-1*(pos-mu)**2 / (2*stdev**2)) ) + ( (centerF_max2) * np.exp(-1*(pos-mu)**2 / (2*(stdev2)**2)) ) + (wallF_max * np.exp(1 * decay_const * (pos-0.127)))
     
-    fx = lambda pos : (wallF_max * np.exp(-1 * decay_const * (pos+0.15))) + ( centerF_max * np.exp(-1*(pos-mu)**2 / (2*stdev**2)) )  + (wallF_max * np.exp(1 * decay_const * (pos-0.15)))
-    
-    f_at_x = fx(pos)
-    slope = deriv(fx, pos, dx=0.00001)
-    
-    return slope, f_at_x, (wallF_max, decay_const, stdev, centerF_max)
+    return fx
 
 
-def plot_landscape(f_at_x, wallF_max, decay_const, stdev, centerF_max):
+def plot_landscape(repulsion_fxn, wallF_max, decay_const, _, stdev, centerF_max):
     fig, axarr = plt.subplots(2, sharex=True)
     
-    xcoords = np.linspace(-.15,0.15,200)
-    slope_at_x, f_at_x,  _ = landscape(xcoords)
-    axarr[0].plot(xcoords, f_at_x)
+    ycoords = np.linspace(-0.127, 0.127, 200)
+    scariness = repulsion_fxn(ycoords)
+    
+    axarr[0].plot(ycoords, scariness)
     axarr[0].set_title("Crosswind repulsion landscape", fontsize = 14)
-    axarr[0].set_xlim(-.15,0.15)
+    axarr[0].set_xlim(-0.127, 0.127)
     axarr[0].set_xlabel("crosswind position")
     axarr[0].set_ylabel("scariness")
     axarr[0].xaxis.grid(True)
 #    axarr[0].savefig("repulsion_landscape.png")
     
     # plot derivative
+    slopes = deriv(repulsion_fxn, ycoords, dx=0.00001)
+    
     axarr[1].axhline(y=0, color="grey", lw=1, alpha=0.4)
-    axarr[1].plot(xcoords, slope_at_x, label="derivative")
-    axarr[1].plot(xcoords, -1* slope_at_x, label="-derivative")
-    axarr[1].set_title("Slope of crosswind repulsion landscape", fontsize = 14)
-    axarr[1].set_xlim(-.15,0.15)
+#    axarr[1].plot(ycoords, slopes, label="derivative")
+    axarr[1].plot(ycoords, -1* slopes, label="-derivative")
+    axarr[1].set_title("Strength of Repulsive Force (-slope of scariness)", fontsize = 14)
+    axarr[1].set_xlim(-0.127, 0.127)
     axarr[1].set_xlabel("crosswind position")
     axarr[1].set_ylabel("slope")
     axarr[1].xaxis.grid(True)
@@ -56,14 +55,25 @@ def plot_landscape(f_at_x, wallF_max, decay_const, stdev, centerF_max):
     plt.show()
 
 
-def main(pos, wallF, plotting=False):
-    slope_at_x, f_at_x, plot_title_args = landscape(pos, *wallF)
+def main(wallF, pos_y=None, plotting=False):
+    repulsion_fxn = landscape(*wallF)
+    
+    if pos_y != None:
+        repF = deriv(repulsion_fxn, pos_y, dx=0.00001)
     
     if plotting is True:
-        plot_landscape(f_at_x, *plot_title_args)
+        plot_landscape(repulsion_fxn, *wallF)
         
-    return -1*slope_at_x  # this is the force on the agent in the y component
+    return -1*repF  # this is the force on the agent in the y component
 
 
 if __name__ == '__main__':
-    force_y = main(0.149, plotting=True)
+    # wallF params
+    wallF_max=8e-8
+    decay_const = 120
+    mu=0.
+    stdev=0.01
+    centerF_max=8e-8
+    
+    wallF = (wallF_max, decay_const, mu, stdev, centerF_max)
+    force_y = main(wallF, 0, plotting=True)
