@@ -12,9 +12,11 @@ import matplotlib.gridspec as gridspec
 import numpy as np
 import itertools
 from matplotlib.patches import Rectangle
+import matplotlib.ticker as mtick
 import seaborn as sns
 
 sns.set_palette("muted", 8)
+
 
 def plot_single_trajectory(positionList, target_pos, detect_thresh, boundary, title="Individual trajectory", titleappend=""):
     # plot an individual trajectory
@@ -48,7 +50,7 @@ def trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heat
     """"Plot all the trajectories into a single arena"""
     traj_ex = trajectory_objects_list[0]
     target_pos = traj_ex.target_pos
-    fig, ax = plt.subplots(1, fig_kw = {'aspect':'equal'})
+    fig, ax = plt.subplots(1)
     sns.set_style("white")
     for traj in pos:
         if len(trajectory_objects_list) < 60:
@@ -109,7 +111,7 @@ def trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heat
         plt.show()
 
 
-def stateHistograms(pos, velos, accels, trajectory_objects_list, forces):
+def stateHistograms(pos, velos, accels, trajectory_objects_list, kinetics):
     fig = plt.figure(4, figsize=(9, 8))
     gs1 = gridspec.GridSpec(2, 2)
     axs = [fig.add_subplot(ss) for ss in gs1]
@@ -204,12 +206,46 @@ def stateHistograms(pos, velos, accels, trajectory_objects_list, forces):
     plt.savefig("./figs/Agent Distributions b {beta},f {rf},wf {wtf},bounce {bounce},N {total_trajectories}.png".format(beta=trajectory_objects_list[0].beta, rf=trajectory_objects_list[0].rf, wtf=trajectory_objects_list[0].wtf, bounce=trajectory_objects_list[0].bounce, total_trajectories=len(trajectory_objects_list)))
     
     
-    # plot total Forces
-    fig3 = sns.plt.figure()
-    sns.plt.scatter(forces[6], forces[7])
-    sns.plt.xlim(min(forces[6]), max(forces[6]))
-    sns.plt.ylim(min(forces[7]), max(forces[7]))
-    sns.plt.show()
+    # plot Forces
+#    forcefig = plt.figure(5, figsize=(9, 8))
+#    gs2 = gridspec.GridSpec(2, 2)
+#    Faxs = [fig.add_subplot(ss) for ss in gs2]
+    forcefig = plt.figure(5)
+    Faxs1 = forcefig.add_subplot(211)
+    Faxs2 = forcefig.add_subplot(212)
+    
+    Faxs1.scatter(kinetics['totalF x'], kinetics['totalF y'])  
+    Faxs1.set_xlim(min(kinetics['totalF x']), max(kinetics['totalF x']))
+    Faxs1.set_ylim(min(kinetics['totalF y']), max(kinetics['totalF y']))
+    Faxs1.set_title("Total Forces")
+    Faxs1.set_aspect('equal')
+    Faxs1.set_xlabel("upwind")
+    Faxs1.set_ylabel("crosswind")
+    Faxs1.xaxis.set_major_formatter(mtick.FormatStrFormatter('%.1e'))
+    Faxs1.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.1e'))
+    
+    Faxs2.scatter(kinetics['wallRepulsiveF x'], kinetics['wallRepulsiveF y'])  
+    Faxs2.set_xlim(min(kinetics['wallRepulsiveF x']), max(kinetics['wallRepulsiveF x']))
+    Faxs2.set_ylim(min(kinetics['wallRepulsiveF y']), max(kinetics['wallRepulsiveF y']))
+    Faxs2.set_title("Wall Repulsion Forces")
+    Faxs2.set_xlabel("upwind")
+    Faxs2.set_ylabel("crosswind")
+    Faxs1.xaxis.set_major_formatter(mtick.FormatStrFormatter('%.1e'))
+    Faxs2.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.1e'))
+    
+    plt.suptitle("Forces scatterplots")
+
+    
+#    
+#        kinetics['randF x'] = []
+#    kinetics['randF y'] = []
+#    kinetics['upwindF x'] = []
+#    kinetics['upwindF y'] = []
+    
+    plt.tight_layout(pad=1.3)
+    plt.draw()
+    
+    
     
     return xpos_counts_n, ypos_bins, ypos_counts, ypos_counts_n, vx_counts_n
 
