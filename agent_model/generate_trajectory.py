@@ -79,10 +79,10 @@ class Trajectory:
     Returns:
         trajectory object
     """
-    boundary = [0.0, 1.0, 0.127, -0.127]  # these are real dims of our wind tunnel
     def __init__(self, agent_pos, v0_stdev, Tmax, dt, target_pos, beta, rf, wtf, detect_thresh, bounded, bounce, wallF, plotting=False, title="Individual trajectory", titleappend = '', k=0.):
         """ Initialize object with instant variables, and trigger other funcs. 
         """
+        self.boundary = [0.0, 1.0, 0.127, -0.127]  # these are real dims of our wind tunnel
         self.Tmax = Tmax
         self.dt = dt
         self.v0_stdev = v0_stdev
@@ -106,7 +106,9 @@ class Trajectory:
         
         self.metadata = dict()
         self.metadata['time max'] = Tmax
+        self.metadata['boundary'] = self.boundary
         self.metadata['target position'] = target_pos
+        self.metadata['detection threshold'] = detect_thresh
         self.metadata['initial position'] = agent_pos
         self.metadata['initial velo stdev'] = v0_stdev
         self.metadata['k'] = k

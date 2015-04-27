@@ -45,6 +45,7 @@ def trajGenIter(agent_pos, target_pos, v0_stdev, k, beta, rf, wtf, Tmax, dt, tot
         trajectory.dynamics.set_index('trajectory', append=True, inplace=True)
         ensemble = ensemble.append(trajectory.dynamics)
         trajectory.metadata['trajectory number'].append(traj)
+        # TODO: fix the trajectory numbers not appending
 
 
 
@@ -73,9 +74,9 @@ def main(agent_pos="cage", v0_stdev=0.01, k=0., beta=4e-6, rf=3e-6, wtf=7e-7, ta
     ensemble, metadata = trajGenIter(agent_pos=agent_pos, target_pos=target_pos, v0_stdev=v0_stdev, k=k, beta=beta, rf=rf, wtf=wtf, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories, wallF=wallF, bounded=bounded,  bounce=bounce, detect_thresh=detect_thresh)
 
 
-#    if plotting is True:
+    if plotting is True:
 #         plot all trajectories
-#        plotting_funcs.trajectory_plots(ensemble, metadata, heatmap=True)
+        plotting_funcs.trajectory_plots(ensemble, metadata, heatmap=True)
 #         plot histogram of pos, velo, accel distributions
 #        plotting_funcs.stateHistograms(ensemble, metadata)
 

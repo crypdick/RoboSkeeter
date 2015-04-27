@@ -53,64 +53,67 @@ def trajectory_plots(ensemble, metadata, heatmap, trajectoryPlot=False):
     ensemble_len = max(metadata['trajectory number'])
     fig, ax = plt.subplots(1)
     sns.set_style("white")
-    for traj in pos:
+    for trajectory_i in metadata['trajectory number']:
+        posx = ensemble.xs(trajectory_i, level='trajectory')['position x']
         if ensemble_len < 60:
             alpha=0.4
         else:
             alpha=0.02
         if trajectoryPlot is True:
-            ax.plot(traj[:, 0], traj[:, 1], lw=2, alpha=1)
-        ax.axis([0,1,0.127, -0.127])  # slight y padding for graphs
-    title_append = r""" $T_max$ = {0} secs, $\beta = {2}$, $f = {3}$, $wtf = {4}$.
-                """.format(traj_ex.Tmax, ensemble_len, traj_ex.beta, traj_ex.rf, traj_ex.wtf)
-                
-    # draw heater
-    if traj_ex.target_pos is not None:
-        heaterCircle, detectCircle = draw_heaters(traj_ex.target_pos, traj_ex.detect_thresh)
-        ax.add_artist(heaterCircle)
-        ax.add_artist(detectCircle)
-    
-    # draw cage
-    cage = draw_cage()
-    ax.add_patch(cage)
-
-    
-    # plot shwag
-    title_append = title_append + """<Tfind> = {0:}, Sourcefinds = {1}/(n = {2})""".format(Tfind_avg, sum(target_finds), ensemble_len)
-    plt.title("Agent trajectories" + title_append, fontsize=14)
-    plt.xlabel("$x$", fontsize=14)
-    plt.ylabel("$y$", fontsize=14)
-    plt.axis(traj_ex.boundary)
-    sns.set_style("white")
-    
-    # save before overlaying heatmap
-    plt.savefig("./figs/Trajectories b{beta} f{rf} wf{wtf} bounce {bounce} N{total_trajectories}.png"\
-        .format(beta=traj_ex.beta, rf=traj_ex.rf, wtf=traj_ex.wtf, bounce=traj_ex.bounce, total_trajectories=ensemble_len))
-    
-    ## Position heatmap
-    if heatmap is True:
-        pos_flat = np.array(list(itertools.chain.from_iterable(pos)))
-        # crunch the data
-        counts, xedges, yedges = np.histogram2d(pos_flat[:,0], pos_flat[:,1], bins=(100,30), range=[[0, 1], [-0.15, .15]])
-        
-        # counts needs to be transposed to use pcolormesh     
-        counts = counts.T
-        
-        MaxVal = ensemble_len/2
-        if ensemble_len > 100:
-            plt.cla()
-        heatmap = ax.pcolormesh(xedges, yedges, counts, cmap=plt.cm.Oranges, vmin=0, vmax=MaxVal)
-#        plt.gca().invert_yaxis()  # hack to match y axis convention --- now unneeded?
-        ax.set_ylim(traj_ex.boundary[2:])
-        
-        # overwrite previous plot schwag
-        cbar = plt.colorbar(heatmap)
-        cbar.ax.set_ylabel('Counts')
-        plt.title("Agent Trajectories Heatmap (n = {})".format(ensemble_len))
-        plt.xlabel("$x$")
-        plt.ylabel("$y$")
-        plt.savefig("./figs/Trajectories heatmap beta{beta}_f{rf}_wf{wtf}_bounce {bounce} N{total_trajectories}.png".format(beta=traj_ex.beta, rf=traj_ex.rf, wtf=traj_ex.wtf, bounce=traj_ex.bounce, total_trajectories=ensemble_len))
-        plt.show()
+            print posx
+            posy = ensemble.xs(trajectory_i, level='trajectory')['position y']
+#            ax.plot(posx, posy, lw=2, alpha=1)
+#        ax.axis([0,1,0.127, -0.127])  # slight y padding for graphs
+#    title_append = r""" $T_max$ = {0} secs, $\beta = {2}$, $f = {3}$, $wtf = {4}$.
+#                """.format(metadata['time max'], ensemble_len, metadata['beta'], metadata['rf'], metadata['wtf'])
+#                
+#    # draw heater
+#    if metadata['target position'] is not None:
+#        heaterCircle, detectCircle = draw_heaters(metadata['target position'], metadata['detection threshold'])
+#        ax.add_artist(heaterCircle)
+#        ax.add_artist(detectCircle)
+#    
+#    # draw cage
+#    cage = draw_cage()
+#    ax.add_patch(cage)
+#
+#    
+#    # plot shwag
+#    title_append = title_append + """<Tfind> = {0:}, Sourcefinds = {1}/(n = {2})""".format(Tfind_avg, sum(target_finds), ensemble_len)
+#    plt.title("Agent trajectories" + title_append, fontsize=14)
+#    plt.xlabel("$x$", fontsize=14)
+#    plt.ylabel("$y$", fontsize=14)
+#    plt.axis(metadata['boundary'])
+#    sns.set_style("white")
+#    
+#    # save before overlaying heatmap
+#    plt.savefig("./figs/Trajectories b{beta} f{rf} wf{wtf} bounce {bounce} N{total_trajectories}.png"\
+#        .format(beta=metadata['beta'], rf=metadata['rf'], wtf=metadata['wtf'], bounce=metadata['bounce'], total_trajectories=ensemble_len))
+#    
+#    ## Position heatmap
+#    if heatmap is True:
+#        pos_flat = np.array(list(itertools.chain.from_iterable(pos)))
+#        # crunch the data
+#        counts, xedges, yedges = np.histogram2d(pos_flat[:,0], pos_flat[:,1], bins=(100,30), range=[[0, 1], [-0.15, .15]])
+#        
+#        # counts needs to be transposed to use pcolormesh     
+#        counts = counts.T
+#        
+#        MaxVal = ensemble_len/2
+#        if ensemble_len > 100:
+#            plt.cla()
+#        heatmap = ax.pcolormesh(xedges, yedges, counts, cmap=plt.cm.Oranges, vmin=0, vmax=MaxVal)
+##        plt.gca().invert_yaxis()  # hack to match y axis convention --- now unneeded?
+#        ax.set_ylim(metadata['boundary'][2:])
+#        
+#        # overwrite previous plot schwag
+#        cbar = plt.colorbar(heatmap)
+#        cbar.ax.set_ylabel('Counts')
+#        plt.title("Agent Trajectories Heatmap (n = {})".format(ensemble_len))
+#        plt.xlabel("$x$")
+#        plt.ylabel("$y$")
+#        plt.savefig("./figs/Trajectories heatmap beta{beta}_f{rf}_wf{wtf}_bounce {bounce} N{total_trajectories}.png".format(beta=metadata['beta'], rf=metadata['rf'], wtf=metadata['wtf'], bounce=metadata['bounce'], total_trajectories=ensemble_len))
+#        plt.show()
 
 
 def stateHistograms(pos, velos, accels, trajectory_objects_list, kinetics):
