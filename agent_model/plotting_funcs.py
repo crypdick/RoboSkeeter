@@ -18,12 +18,13 @@ import seaborn as sns
 sns.set_palette("muted", 8)
 
 
-def plot_single_trajectory(positionList, target_pos, detect_thresh, boundary, title="Individual trajectory", titleappend=""):
+def plot_single_trajectory(kinetics, target_pos, detect_thresh, boundary, title="Individual trajectory", titleappend=""):
     # plot an individual trajectory
-    plt.plot(positionList[:, 0], positionList[:, 1], lw=2, alpha=0.5)
+    plt.plot(kinetics['position x'], kinetics['position y'], lw=2, alpha=0.5)
     currentAxis = plt.gca()
     cage = draw_cage()
     currentAxis.add_patch(cage)
+    currentAxis.axis([0,1,0.127, -0.127])
     if target_pos is not None:
         heaterCircle, detectCircle = draw_heaters(target_pos, detect_thresh)
         currentAxis.add_artist(heaterCircle)
@@ -207,31 +208,35 @@ def stateHistograms(pos, velos, accels, trajectory_objects_list, kinetics):
     
     
     # plot Forces
-#    forcefig = plt.figure(5, figsize=(9, 8))
-#    gs2 = gridspec.GridSpec(2, 2)
-#    Faxs = [fig.add_subplot(ss) for ss in gs2]
-    forcefig = plt.figure(5)
-    Faxs1 = forcefig.add_subplot(211)
-    Faxs2 = forcefig.add_subplot(212)
+#    f, axes = plt.subplots(2, 2, figsize=(9, 9), sharex=True, sharey=True)
+##    forcefig = plt.figure(5, figsize=(9, 8))
+##    gs2 = gridspec.GridSpec(2, 2)
+##    Faxs = [fig.add_subplot(ss) for ss in gs2]
+#    forcefig = plt.figure(5)
+#    Faxs1 = forcefig.add_subplot(211)
+#    Faxs2 = forcefig.add_subplot(212)
+    g = sns.JointGrid("x", "y", (kinetics['totalF x'], kinetics['totalF y']), space=0)
+    g.plot_marginals(sns.kdeplot, shade=True)
+    g.plot_joint(sns.kdeplot, shade=True, cmap="PuBu", n_levels=40)
+#    cmap = sns.cubehelix_palette(start=0, light=1, as_cmap=True)
+#    sns.jointplot(np.array(kinetics['totalF x']), np.array(kinetics['totalF y']), ax=axes.flat[0], kind='kde', cmap=cmap, shade=True, cut = 5)
+#    Faxs1.set_xlim(min(kinetics['totalF x']), max(kinetics['totalF x']))
+#    Faxs1.set_ylim(min(kinetics['totalF y']), max(kinetics['totalF y']))
+#    Faxs1.set_title("Total Forces")
+#    Faxs1.set_aspect('equal')
+#    Faxs1.set_xlabel("upwind")
+#    Faxs1.set_ylabel("crosswind")
+#    Faxs1.xaxis.set_major_formatter(mtick.FormatStrFormatter('%.1e'))
+#    Faxs1.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.1e'))
     
-    Faxs1.scatter(kinetics['totalF x'], kinetics['totalF y'])  
-    Faxs1.set_xlim(min(kinetics['totalF x']), max(kinetics['totalF x']))
-    Faxs1.set_ylim(min(kinetics['totalF y']), max(kinetics['totalF y']))
-    Faxs1.set_title("Total Forces")
-    Faxs1.set_aspect('equal')
-    Faxs1.set_xlabel("upwind")
-    Faxs1.set_ylabel("crosswind")
-    Faxs1.xaxis.set_major_formatter(mtick.FormatStrFormatter('%.1e'))
-    Faxs1.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.1e'))
-    
-    Faxs2.scatter(kinetics['wallRepulsiveF x'], kinetics['wallRepulsiveF y'])  
-    Faxs2.set_xlim(min(kinetics['wallRepulsiveF x']), max(kinetics['wallRepulsiveF x']))
-    Faxs2.set_ylim(min(kinetics['wallRepulsiveF y']), max(kinetics['wallRepulsiveF y']))
-    Faxs2.set_title("Wall Repulsion Forces")
-    Faxs2.set_xlabel("upwind")
-    Faxs2.set_ylabel("crosswind")
-    Faxs1.xaxis.set_major_formatter(mtick.FormatStrFormatter('%.1e'))
-    Faxs2.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.1e'))
+#    Faxs2.scatter(kinetics['wallRepulsiveF x'], kinetics['wallRepulsiveF y'])  
+#    Faxs2.set_xlim(min(kinetics['wallRepulsiveF x']), max(kinetics['wallRepulsiveF x']))
+#    Faxs2.set_ylim(min(kinetics['wallRepulsiveF y']), max(kinetics['wallRepulsiveF y']))
+#    Faxs2.set_title("Wall Repulsion Forces")
+#    Faxs2.set_xlabel("upwind")
+#    Faxs2.set_ylabel("crosswind")
+#    Faxs1.xaxis.set_major_formatter(mtick.FormatStrFormatter('%.1e'))
+#    Faxs2.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.1e'))
     
     plt.suptitle("Forces scatterplots")
 

@@ -8,6 +8,7 @@ Generate "mosquito" trajectories (class object) using harmonic oscillator equati
 
 import numpy as np
 from numpy.linalg import norm
+import pandas as pd
 import plotting_funcs
 import baseline_driving_forces
 
@@ -104,11 +105,11 @@ class Trajectory:
         self.t_targfound = np.nan
         
         ## initialize all arrays
+        self.dynamics = pd.DataFrame()
+        
         ts_max = int(np.ceil(Tmax / dt))  # maximum time step
+        
         self.timeList = np.arange(0, Tmax, dt)
-        self.positionList = np.zeros((ts_max, self.dim), dtype=float)
-        self.veloList = np.zeros((ts_max, self.dim), dtype=float)
-        self.accelList = np.zeros((ts_max, self.dim), dtype=float)
         self.kinetics = dict()
         self.kinetics['randF x'] = []
         self.kinetics['randF y'] = []
@@ -118,20 +119,31 @@ class Trajectory:
         self.kinetics['upwindF y'] = []
         self.kinetics['totalF x'] = []
         self.kinetics['totalF y'] = []
+        self.kinetics['velocity x'] = []
+        self.kinetics['velocity y'] = []
+        self.kinetics['acceleration x'] = []
+        self.kinetics['acceleration y'] = []
+        self.kinetics['totalF x'] = []
+        self.kinetics['totalF y'] = []
+        self.kinetics['position x'] = []
+        self.kinetics['position y'] = []
+        self.kinetics['times'] = []
         
         # generate random intial velocity condition    
         v0 = np.random.normal(0, self.v0_stdev, self.dim)
     
         ## insert initial position and velocity into positionList,veloList arrays
-        self.positionList[0] = r0
-        self.veloList[0] = v0
+        self.kinetics['position x'].append(r0[0])
+        self.kinetics['position y'].append(r0[1])
+        self.kinetics['velocity x'].append(v0[0])
+        self.kinetics['velocity y'].append(v0[1])
         
         self.fly(ts_max, detect_thresh, self.boundary, bounded)
         
         if plotting is True:
             self.title = title
             self.titleappend = titleappend
-            plotting_funcs.plot_single_trajectory(self.positionList, self.target_pos, self.detect_thresh, self.boundary, self.title, self.titleappend)
+            plotting_funcs.plot_single_trajectory(self.dynamics, self.target_pos, self.detect_thresh, self.boundary, self.title, self.titleappend)
         
     def fly(self, ts_max, detect_thresh, boundary, bounded):
         """Run the simulation using Euler's method"""
@@ -146,31 +158,40 @@ class Trajectory:
             self.kinetics['upwindF x'].append(upwindF[0])
             self.kinetics['upwindF y'].append(upwindF[1])
             
-            wallRepulsiveF = baseline_driving_forces.repulsionF(self.positionList[ts], self.wallF)
+            wallRepulsiveF = baseline_driving_forces.repulsionF([self.kinetics['position x'][ts], self.kinetics['position y'][ts]], self.wallF)
             self.kinetics['wallRepulsiveF x'].append(wallRepulsiveF[0])
             self.kinetics['wallRepulsiveF y'].append(wallRepulsiveF[1])
             
             # calculate current force
-            totalF = -self.k*self.positionList[ts] - self.beta*self.veloList[ts] + randF + upwindF + wallRepulsiveF
+            totalF = -self.k*np.array([self.kinetics['position x'][ts], self.kinetics['position y'][ts]]) \
+                      -self.beta*np.array([self.kinetics['velocity x'][ts], self.kinetics['velocity y'][ts]]) \
+                      + randF + upwindF + wallRepulsiveF
             self.kinetics['totalF x'].append(totalF[0])
             self.kinetics['totalF y'].append(totalF[1])
             
             # calculate current acceleration
-            self.accelList[ts] = totalF/m
+            accel = totalF/m
+            self.kinetics['acceleration x'].append(accel[0])
+            self.kinetics['acceleration y'].append(accel[1])
     
             # update velocity in next timestep
-            self.veloList[ts+1] = self.veloList[ts] + self.accelList[ts]*self.dt
+            velo_future = np.array([self.kinetics['velocity x'][ts], self.kinetics['velocity y'][ts]]) + accel*self.dt
+            self.kinetics['velocity x'].append(velo_future[0])
+            self.kinetics['velocity y'].append(velo_future[1])
+            
             # update position in next timestep
-            candidate_pos = self.positionList[ts] + self.veloList[ts+1]*self.dt  # why not use veloList[ts]? -rd
+            candidate_pos = np.array([self.kinetics['position x'][ts], self.kinetics['position y'][ts]]) + np.array(velo_future)*self.dt  # why not use veloList[ts]? -rd
+#            print candidate_pos
             
             if bounded is True:  # if walls are enabled
                 ## forbid mosquito from going out of bounds
                 # check x dim
+#                print candidate_pos[0]
                 if candidate_pos[0] < boundary[0]:  # too far left
                     candidate_pos[0] = boundary[0] + 1e-4
                     if self.bounce is "crash":
-                        self.veloList[ts+1][0] = 0.
-                        print "teleport!"
+                        self.kinetics['velocity x'][ts+1] = 0.
+                        print "teleport! left wall"
                 elif candidate_pos[0] > boundary[1]:  # too far right
                     candidate_pos[0] = boundary[1] - 1e-4
                     self.land(ts)  # end trajectory when reach end of tunnel
@@ -180,23 +201,23 @@ class Trajectory:
                     candidate_pos[1] = boundary[2] + 1e-4
                     if self.bounce is "crash":
 #                        print "teleport!"
-                        self.veloList[ts+1][1] = 0.
-                        print "teleport!"
+                        self.kinetics['velocity y'][ts+1] = 0.
+                        print "crash! top wall"
                 elif candidate_pos[1] < boundary[3]:  # too far down
                     candidate_pos[1] = boundary[3] - 1e-4
                     if self.bounce is "crash":
-#                        print "teleport!"
-                        self.veloList[ts+1][1] = 0.
-                        print "teleport!"
+                        self.kinetics['velocity y'][ts+1] = 0.
+                        print "crash! bottom wall"
                 
-            self.positionList[ts+1] = candidate_pos
+            self.kinetics['position x'].append(candidate_pos[0])
+            self.kinetics['position y'].append(candidate_pos[1])
     
             # if there is a target, check if we are finding it
             if self.target_pos is None:
                 self.target_found = False
                 self.t_targfound = np.nan
             else:
-                if norm(self.positionList[ts+1] - self.target_pos) < self.detect_thresh:
+                if norm(candidate_pos - self.target_pos) < self.detect_thresh:
                     self.target_found = True
                     self.t_targfound = self.timeList[ts]  # should this be timeList[ts+1]? -rd
                     self.land(ts)
@@ -204,12 +225,9 @@ class Trajectory:
                     
     def land(self, ts):    
         # trim excess timebins in arrays
-        self.timeList = self.timeList[:ts+1]
-        self.positionList = self.positionList[:ts+1]
-        self.veloList = self.veloList[:ts+1]
-        self.accelList = self.accelList[:ts+1]
         for key, value in self.kinetics.iteritems():
-            self.kinetics[key] = value[:ts+1]
+            self.dynamics[key] = pd.Series(value[:ts+1])
+            
 
 
 if __name__ == '__main__':
