@@ -32,15 +32,23 @@ def trajGenIter(agent_pos, target_pos, v0_stdev, k, beta, rf, wtf, Tmax, dt, tot
         t_targfinds: list of all time to the target (array) (sometimes NaN)
         Tfind_avg: list of all times the target was found (array) (some NaNs)
         num_success: fraction of total_trajectories that made it (int)
-        trajectory_objects_list: list of all trajectory objects (array)
+        ensemble: list of all trajectory objects (array)
     """
     pos = []
     velos = []
     accels = []
     target_finds = []
     t_targfinds = []
-    trajectory_objects_list = []
-    forces = [[0],[0],[0],[0],[0],[0],[0],[0]]
+    ensemble = []
+    kinetics = dict()
+    kinetics['randF x'] = []
+    kinetics['randF y'] = []
+    kinetics['wallRepulsiveF x'] = []
+    kinetics['wallRepulsiveF y'] = []
+    kinetics['upwindF x'] = []
+    kinetics['upwindF y'] = []
+    kinetics['totalF x'] = []
+    kinetics['totalF y'] = []
 
     for traj in range(total_trajectories):
         trajectory = generate_trajectory.Trajectory(agent_pos=agent_pos, target_pos=target_pos, v0_stdev=v0_stdev, k=k, beta=beta, rf=rf, wtf=wtf, Tmax=Tmax, dt=dt, detect_thresh=detect_thresh, wallF=wallF, bounded=bounded, bounce=bounce)
@@ -50,12 +58,13 @@ def trajGenIter(agent_pos, target_pos, v0_stdev, k, beta, rf, wtf, Tmax, dt, tot
         accels += [trajectory.accelList]
         target_finds += [trajectory.target_found]
         t_targfinds += [trajectory.t_targfound]
-        forces = [np.hstack((a,b)) for a, b in zip(forces, trajectory.ForcesList)]
-        trajectory_objects_list.append(trajectory)
+        for key, value in trajectory.kinetics.iteritems():
+            kinetics[key] = kinetics[key] + value
+        ensemble.append(trajectory)
 
     Tfind_avg, num_success = T_find_stats(t_targfinds, total_trajectories)
 
-    return pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, trajectory_objects_list, forces
+    return pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, ensemble, kinetics
 
 
 def T_find_stats(t_targfinds, total_trajectories):
@@ -75,18 +84,18 @@ def T_find_stats(t_targfinds, total_trajectories):
 
     mytraj = Trajectory(agent_pos="cage", target_pos="left", plotting = True, v0_stdev=0.01, wtf=7e-07, rf=4e-06, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", )
     
-def main(agent_pos="cage", v0_stdev=0.01, k=0., beta=4e-6, rf=3e-6, wtf=7e-7, target_pos="left", Tmax=15.0, dt=0.01, total_trajectories=100, detect_thresh=0.023175, wallF=None, bounded=True, bounce="crash", plotting = True):
-#    pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, trajectory_objects_list = trajGenIter(r0=r0, target_pos="left", v0_stdev=v0_stdev, k=k, beta=beta, rf=rf, wtf=wtf, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories, bounded=bounded, detect_thresh=detect_thresh)   # defaults
-    pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, trajectory_objects_list, forces = trajGenIter(agent_pos=agent_pos, target_pos=target_pos, v0_stdev=v0_stdev, k=k, beta=beta, rf=rf, wtf=wtf, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories, wallF=wallF, bounded=bounded,  bounce=bounce, detect_thresh=detect_thresh)
+def main(agent_pos="cage", v0_stdev=0.01, k=0., beta=4e-6, rf=3e-6, wtf=7e-7, target_pos="left", Tmax=15.0, dt=0.01, total_trajectories=2, detect_thresh=0.023175, wallF=None, bounded=True, bounce="crash", plotting = True):
+#    pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, ensemble = trajGenIter(r0=r0, target_pos="left", v0_stdev=v0_stdev, k=k, beta=beta, rf=rf, wtf=wtf, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories, bounded=bounded, detect_thresh=detect_thresh)   # defaults
+    pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, ensemble, kinetics = trajGenIter(agent_pos=agent_pos, target_pos=target_pos, v0_stdev=v0_stdev, k=k, beta=beta, rf=rf, wtf=wtf, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories, wallF=wallF, bounded=bounded,  bounce=bounce, detect_thresh=detect_thresh)
 
 
     if plotting is True:
 #         plot all trajectories
-        plotting_funcs.trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heatmap=True)
+        plotting_funcs.trajectory_plots(pos, target_finds, Tfind_avg, ensemble, heatmap=True)
 #         plot histogram of pos, velo, accel distributions
-        plotting_funcs.stateHistograms(pos, velos, accels, trajectory_objects_list, forces)
+        plotting_funcs.stateHistograms(pos, velos, accels, ensemble, kinetics)
 
-    return pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, trajectory_objects_list
+    return pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, ensemble, kinetics
 
 
 if __name__ == '__main__':
@@ -100,5 +109,5 @@ if __name__ == '__main__':
     
     wallF = (b, shrink, wallF_max, decay_const)
     
-    pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, trajectory_objects_list = main(wallF=wallF)
+    pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, ensemble, kinetics = main(wallF=wallF)
     
