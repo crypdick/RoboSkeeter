@@ -18,20 +18,24 @@ import seaborn as sns
 sns.set_palette("muted", 8)
 
 
-def plot_single_trajectory(dynamics, target_pos, detect_thresh, boundary, title="Individual trajectory", titleappend=""):
+def plot_single_trajectory(dynamics, metadata, plot_kwargs=None):
     # plot an individual trajectory
-    plt.plot(dynamics['position x'], dynamics['position y'], lw=2, alpha=0.5)
+    try:
+        plt.plot(dynamics['position_x'], dynamics['position_y'], lw=2, alpha=0.5)
+    except KeyError:
+        print dynamics.keys()
+        pass
     currentAxis = plt.gca()
     cage = draw_cage()
     currentAxis.add_patch(cage)
     currentAxis.axis([0,1,0.127, -0.127])
-    if target_pos is not None:
-        heaterCircle, detectCircle = draw_heaters(target_pos, detect_thresh)
+    if metadata['target_position'] is not None:
+        heaterCircle, detectCircle = draw_heaters(metadata['target_position'], metadata['detection_threshold'])
         currentAxis.add_artist(heaterCircle)
         currentAxis.add_artist(detectCircle)
     plt.gca().set_aspect('equal')
     
-    plt.title(title + titleappend, fontsize=20)
+    plt.title(plot_kwargs['title'] + plot_kwargs['titleappend'], fontsize=20)
     plt.xlabel("$x$", fontsize=14)
     plt.ylabel("$y$", fontsize=14)
 
@@ -47,80 +51,86 @@ def draw_heaters(target_pos, detect_thresh):
     return heaterCircle, detectCircle
 
 
-def trajectory_plots(ensemble, metadata, heatmap, trajectoryPlot=False):
+def trajectory_plots(ensemble, metadata, plot_kwargs=None):
     """"Plot all the trajectories into a single arena"""
-    target_pos = metadata['target position']
-    ensemble_len = max(metadata['trajectory number'])
-    fig, ax = plt.subplots(1)
-    sns.set_style("white")
-#    for trajectory_i in metadata['trajectory number']:
-#        posx = ensemble.xs(trajectory_i, level='trajectory')['position x']
-#        if ensemble_len < 60:
-#            alpha=0.4
-#        else:
-#            alpha=0.02
+#    metadata['target_position'] = metadata['target_position']
+#    ensemble_len = metadata['total_trajectories']
+#    fig, ax = plt.subplots(1)
+#    sns.set_style("white")
+#    for trajectory_i in range(metadata['total_trajectories']):
+#        posx = ensemble.xs(trajectory_i, level='trajectory')['position_x']
+##        if ensemble_len < 60:
+##            alpha=0.4
+##        else:
+##            alpha=0.02
 #        if trajectoryPlot is True:
-#            print posx
-#            posy = ensemble.xs(trajectory_i, level='trajectory')['position y']
+#            posy = ensemble.xs(trajectory_i, level='trajectory')['position_y']
 #            ax.plot(posx, posy, lw=2, alpha=1)
 #        ax.axis([0,1,0.127, -0.127])  # slight y padding for graphs
-    title_append = r""" $T_max$ = {0} secs, $\beta = {2}$, $f = {3}$, $wtf = {4}$.
-#                """.format(metadata['time max'], ensemble_len, metadata['beta'], metadata['rf'], metadata['wtf'])
+#    title_append = r""" $T_max$ = {0} secs, $\beta = {2}$, $f = {3}$, $wtf = {4}$.
+##                """.format(metadata['time_max'], ensemble_len, metadata['beta'], metadata['rf'], metadata['wtf'])
 #                
-    # draw heater
-    if metadata['target position'] is not None:
-        heaterCircle, detectCircle = draw_heaters(metadata['target position'], metadata['detection threshold'])
-        ax.add_artist(heaterCircle)
-        ax.add_artist(detectCircle)
-#    
-    # draw cage
-    cage = draw_cage()
-    ax.add_patch(cage)
+
 #
-#    
-    # plot shwag
-    title_append = title_append + """<Tfind> = {0:}, Sourcefinds = {1}/(n = {2})""".format( metadata['time to target find average'], metadata['N targets found'], ensemble_len)
-    plt.title("Agent trajectories" + title_append, fontsize=14)
-    plt.xlabel("$x$", fontsize=14)
-    plt.ylabel("$y$", fontsize=14)
-    plt.axis(metadata['boundary'])
-    sns.set_style("white")
-#    
-    # save before overlaying heatmap
-    plt.savefig("./figs/Trajectories b{beta} f{rf} wf{wtf} bounce {bounce} N{total_trajectories}.png"\
-        .format(beta=metadata['beta'], rf=metadata['rf'], wtf=metadata['wtf'], bounce=metadata['bounce'], total_trajectories=ensemble_len))
+##    
+#    # plot shwag
+#    title_append = title_append + """<Tfind> = {0:}, Sourcefinds = {1}/(n = {2})""".format( metadata['time_target_find_avg'],metadata['total_finds'], ensemble_len)
+#    plt.title("Agent trajectories" + title_append, fontsize=14)
+#    plt.xlabel("$x$", fontsize=14)
+#    plt.ylabel("$y$", fontsize=14)
+#    plt.axis(metadata['boundary'])
+#    sns.set_style("white")
+##    
+#    # save before overlaying heatmap
+#    plt.savefig("./figs/Trajectories b{beta} f{rf} wf{wtf} bounce {bounce} N{total_trajectories}.png"\
+#        .format(beta=metadata['beta'], rf=metadata['rf'], wtf=metadata['wtf'], bounce=metadata['bounce'], total_trajectories=ensemble_len))
 #    
     ## Position heatmap
-    if heatmap is True:
+    if plot_kwargs['heatmap']:
+        with sns.axes_style("white"):
+            hextraj = sns.jointplot('position_x', 'position_y', ensemble, kind="hex", size=10, joint_kws={'gridsize':(100,30), "extent": [metadata['boundary'][0], metadata['boundary'][1], metadata['boundary'][3], metadata['boundary'][2]]})
+            hextraj.ax_joint.set_aspect('equal')
+            hextraj.ax_joint.invert_yaxis()  # hack to match y axis convention 
+            
+            if metadata['target_position'] is not None:
+                heaterCircle, detectCircle = draw_heaters(metadata['target_position'], metadata['detection_threshold'])
+                hextraj.ax_joint.add_artist(heaterCircle)
+                hextraj.ax_joint.add_artist(detectCircle)
+        #    
+            # draw cage
+            cage = draw_cage()
+            hextraj.ax_joint.add_patch(cage)
+            
+
         # crunch the data
-        counts, xedges, yedges = np.histogram2d(ensemble['position x'], ensemble['position y'], bins=(100,30), range=[[0, 1], [-0.15, .15]])
-        
-        # counts needs to be transposed to use pcolormesh     
-        counts = counts.T
-        
-        MaxVal = ensemble_len/2
-        if ensemble_len > 100:
-            plt.cla()
-        heatmap = ax.pcolormesh(xedges, yedges, counts, cmap=plt.cm.Oranges, vmin=0, vmax=MaxVal)
-#        plt.gca().invert_yaxis()  # hack to match y axis convention --- now unneeded?
-        ax.set_ylim(metadata['boundary'][2:])
-        
-        # overwrite previous plot schwag
-        cbar = plt.colorbar(heatmap)
-        cbar.ax.set_ylabel('Counts')
-        plt.title("Agent Trajectories Heatmap (n = {})".format(ensemble_len))
-        plt.xlabel("$x$")
-        plt.ylabel("$y$")
-        plt.savefig("./figs/Trajectories heatmap beta{beta}_f{rf}_wf{wtf}_bounce {bounce} N{total_trajectories}.png".format(beta=metadata['beta'], rf=metadata['rf'], wtf=metadata['wtf'], bounce=metadata['bounce'], total_trajectories=ensemble_len))
-        plt.show()
+#        counts, xedges, yedges = np.histogram2d(ensemble['position_x'], ensemble['position_y'], bins=(100,30), range=[[0, 1], [-0.15, .15]])
+#        
+#        # counts needs to be transposed to use pcolormesh     
+#        counts = counts.T
+#        
+#        MaxVal = ensemble_len/2
+#        if ensemble_len > 100:
+#            plt.cla()
+#        heatmap = ax.pcolormesh(xedges, yedges, counts, cmap=plt.cm.Oranges, vmin=0., vmax=MaxVal)
+##        plt.gca().invert_yaxis()  # hack to match y axis convention --- now unneeded?
+#        ax.set_ylim(metadata['boundary'][2:])
+#        
+#        # overwrite previous plot schwag
+#        cbar = plt.colorbar(heatmap)
+#        cbar.ax.set_ylabel('Counts')
+#        plt.title("Agent Trajectories Heatmap (n = {})".format(ensemble_len))
+#        plt.xlabel("$x$")
+#        plt.ylabel("$y$")
+#        plt.savefig("./figs/Trajectories heatmap beta{beta}_f{rf}_wf{wtf}_bounce {bounce} N{total_trajectories}.png".format(beta=metadata['beta'], rf=metadata['rf'], wtf=metadata['wtf'], bounce=metadata['bounce'], total_trajectories=ensemble_len))
+#        plt.show()
 
 
-def stateHistograms(ensemble, metadata):
+def stateHistograms(ensemble, metadata, plot_kwargs=None):
     fig = plt.figure(4, figsize=(9, 8))
     gs1 = gridspec.GridSpec(2, 2)
     axs = [fig.add_subplot(ss) for ss in gs1]
     fig.suptitle("Agent Model Flight Distributions", fontsize=14)
-    ensemble_len = max(metadata['trajectory number'])
+    ensemble_len = metadata['total_trajectories']
     
     # position distributions
 #    pos_all = np.concatenate(pos, axis=0)
@@ -128,7 +138,7 @@ def stateHistograms(ensemble, metadata):
     
     # X pos
     xpos_min, xpos_max = 0., 1.
-    xpos_counts, xpos_bins = np.histogram(ensemble['position x'], bins=np.linspace(xpos_min, xpos_max, (xpos_max-xpos_min) / pos_binwidth))
+    xpos_counts, xpos_bins = np.histogram(ensemble['position_x'], bins=np.linspace(xpos_min, xpos_max, (xpos_max-xpos_min) / pos_binwidth))
     xpos_counts_n = xpos_counts.astype(int) / float(xpos_counts.size)
     axs[0].plot(xpos_bins[:-1]+pos_binwidth/2, xpos_counts_n, lw=2)
     axs[0].bar(xpos_bins[:-1], xpos_counts_n, xpos_bins[1]-xpos_bins[0], facecolor='blue', linewidth=0, alpha=0.1)
@@ -138,7 +148,7 @@ def stateHistograms(ensemble, metadata):
     
     # Y pos
     ypos_min, ypos_max = -0.15, 0.15
-    ypos_counts, ypos_bins = np.histogram(ensemble['position y'], bins=np.linspace(ypos_min, ypos_max, (ypos_max-ypos_min)/pos_binwidth))
+    ypos_counts, ypos_bins = np.histogram(ensemble['position_y'], bins=np.linspace(ypos_min, ypos_max, (ypos_max-ypos_min)/pos_binwidth))
     ypos_counts_n = ypos_counts/ ypos_counts.astype(float).sum()
     axs[1].plot(ypos_bins[:-1]+pos_binwidth/2, ypos_counts_n, lw=2)
     axs[1].set_xlim(ypos_min+pos_binwidth/2, ypos_max-pos_binwidth/2)  # hack to hide gaps
@@ -153,12 +163,12 @@ def stateHistograms(ensemble, metadata):
     velo_bindwidth = 0.02
     
     # vx component
-    vx_counts, vx_bins = np.histogram(ensemble['velocity x'], bins=np.linspace(vmin, vmax, (vmax-vmin)/velo_bindwidth))
+    vx_counts, vx_bins = np.histogram(ensemble['velocity_x'], bins=np.linspace(vmin, vmax, (vmax-vmin)/velo_bindwidth))
     vx_counts_n = vx_counts / vx_counts.astype(float).sum()
     axs[2].plot(vx_bins[:-1], vx_counts_n, label="$\dot{x}$")
     axs[2].fill_between(vx_bins[:-1], 0, vx_counts_n, facecolor='blue', alpha=0.1)
     # vy component
-    vy_counts, vy_bins = np.histogram(ensemble['velocity y'], bins=np.linspace(vmin, vmax, (vmax-vmin)/velo_bindwidth))
+    vy_counts, vy_bins = np.histogram(ensemble['velocity_y'], bins=np.linspace(vmin, vmax, (vmax-vmin)/velo_bindwidth))
     vy_counts_n= vy_counts / vy_counts.astype(float).sum()
     axs[2].plot(vy_bins[:-1], vy_counts_n, label="$\dot{y}$")
     axs[2].fill_between(vy_bins[:-1], 0, vy_counts_n, facecolor='green', alpha=0.1)
@@ -183,12 +193,12 @@ def stateHistograms(ensemble, metadata):
     accel_binwidth = 0.2
     
     # ax component
-    ax_counts, ax_bins = np.histogram(ensemble['acceleration x'], bins=np.linspace(amin, amax, (amax-amin)/accel_binwidth))
+    ax_counts, ax_bins = np.histogram(ensemble['acceleration_x'], bins=np.linspace(amin, amax, (amax-amin)/accel_binwidth))
     ax_counts_n = ax_counts / ax_counts.astype(float).sum()
     axs[3].plot(ax_bins[:-1], ax_counts_n, label="$\ddot{x}$", lw=2)
     axs[3].fill_between(ax_bins[:-1], 0, ax_counts_n, facecolor='blue', alpha=0.1)
     # ay component
-    ay_counts, ay_bins = np.histogram(ensemble['acceleration y'], bins=np.linspace(amin, amax, (amax-amin)/accel_binwidth))
+    ay_counts, ay_bins = np.histogram(ensemble['acceleration_y'], bins=np.linspace(amin, amax, (amax-amin)/accel_binwidth))
     ay_counts_n = ay_counts / ay_counts.astype(float).sum()
     axs[3].plot(ay_bins[:-1], ay_counts_n, label="$\ddot{y}$", lw=2)
     axs[3].fill_between(ay_bins[:-1], 0, ay_counts_n, facecolor='green', alpha=0.1)
@@ -218,13 +228,13 @@ def stateHistograms(ensemble, metadata):
 ##    forcefig = plt.figure(5)
 ##    Faxs1 = forcefig.add_subplot(211)
 ##    Faxs2 = forcefig.add_subplot(212)
-#    g = sns.JointGrid("x", "y", (ensemble['totalF x'], ensemble['totalF y']), space=0)
+#    g = sns.JointGrid("x", "y", (ensemble['totalF_x'], ensemble['totalF_y']), space=0)
 #    g.plot_marginals(sns.kdeplot, shade=True)
 #    g.plot_joint(sns.kdeplot, shade=True, cmap="PuBu", n_levels=40)
 ##    cmap = sns.cubehelix_palette(start=0, light=1, as_cmap=True)
-##    sns.jointplot(np.array(ensemble['totalF x']), np.array(ensemble['totalF y']), ax=axes.flat[0], kind='kde', cmap=cmap, shade=True, cut = 5)
-##    Faxs1.set_xlim(min(ensemble['totalF x']), max(ensemble['totalF x']))
-##    Faxs1.set_ylim(min(ensemble['totalF y']), max(ensemble['totalF y']))
+##    sns.jointplot(np.array(ensemble['totalF_x']), np.array(ensemble['totalF_y']), ax=axes.flat[0], kind='kde', cmap=cmap, shade=True, cut = 5)
+##    Faxs1.set_xlim(min(ensemble['totalF_x']), max(ensemble['totalF_x']))
+##    Faxs1.set_ylim(min(ensemble['totalF_y']), max(ensemble['totalF_y']))
 ##    Faxs1.set_title("Total Forces")
 ##    Faxs1.set_aspect('equal')
 ##    Faxs1.set_xlabel("upwind")
@@ -232,9 +242,9 @@ def stateHistograms(ensemble, metadata):
 ##    Faxs1.xaxis.set_major_formatter(mtick.FormatStrFormatter('%.1e'))
 ##    Faxs1.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.1e'))
 #    
-##    Faxs2.scatter(ensemble['wallRepulsiveF x'], ensemble['wallRepulsiveF y'])  
-##    Faxs2.set_xlim(min(ensemble['wallRepulsiveF x']), max(ensemble['wallRepulsiveF x']))
-##    Faxs2.set_ylim(min(ensemble['wallRepulsiveF y']), max(ensemble['wallRepulsiveF y']))
+##    Faxs2.scatter(ensemble['wallRepulsiveF_x'], ensemble['wallRepulsiveF_y'])  
+##    Faxs2.set_xlim(min(ensemble['wallRepulsiveF_x']), max(ensemble['wallRepulsiveF_x']))
+##    Faxs2.set_ylim(min(ensemble['wallRepulsiveF_y']), max(ensemble['wallRepulsiveF_y']))
 ##    Faxs2.set_title("Wall Repulsion Forces")
 ##    Faxs2.set_xlabel("upwind")
 ##    Faxs2.set_ylabel("crosswind")
@@ -245,10 +255,10 @@ def stateHistograms(ensemble, metadata):
 #
 #    
 ##    
-##        ensemble['randF x'] = []
-##    ensemble['randF y'] = []
-##    ensemble['upwindF x'] = []
-##    ensemble['upwindF y'] = []
+##        ensemble['randF_x'] = []
+##    ensemble['randF_y'] = []
+##    ensemble['upwindF_x'] = []
+##    ensemble['upwindF_y'] = []
 #    
 #    plt.tight_layout(pad=1.3)
 #    plt.draw()
@@ -271,7 +281,7 @@ if __name__ == '__main__':
     
     wallF = (b, shrink, wallF_max, decay_const)
     
-    ensemmble, metadata = trajectory_stats.main(total_trajectories=400, plotting = False, wallF=wallF)
+    ensemble, metadata = trajectory_stats.main(total_trajectories=400, plotting = False, wallF=wallF)
         
     trajectory_plots(ensemble, metadata, heatmap=True, trajectoryPlot = True)
     xpos_counts_n, ypos_bins, ypos_counts, ypos_counts_n, vx_counts_n = stateHistograms(ensemble, metadata)
