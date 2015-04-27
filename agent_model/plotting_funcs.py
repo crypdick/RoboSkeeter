@@ -18,9 +18,9 @@ import seaborn as sns
 sns.set_palette("muted", 8)
 
 
-def plot_single_trajectory(kinetics, target_pos, detect_thresh, boundary, title="Individual trajectory", titleappend=""):
+def plot_single_trajectory(dynamics, target_pos, detect_thresh, boundary, title="Individual trajectory", titleappend=""):
     # plot an individual trajectory
-    plt.plot(kinetics['position x'], kinetics['position y'], lw=2, alpha=0.5)
+    plt.plot(dynamics['position x'], dynamics['position y'], lw=2, alpha=0.5)
     currentAxis = plt.gca()
     cage = draw_cage()
     currentAxis.add_patch(cage)
@@ -47,14 +47,14 @@ def draw_heaters(target_pos, detect_thresh):
     return heaterCircle, detectCircle
 
 
-def trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heatmap, trajectoryPlot=False):
+def trajectory_plots(ensemble, metadata, heatmap, trajectoryPlot=False):
     """"Plot all the trajectories into a single arena"""
-    traj_ex = trajectory_objects_list[0]
-    target_pos = traj_ex.target_pos
+    target_pos = metadata['target position']
+    ensemble_len = max(metadata['trajectory number'])
     fig, ax = plt.subplots(1)
     sns.set_style("white")
     for traj in pos:
-        if len(trajectory_objects_list) < 60:
+        if ensemble_len < 60:
             alpha=0.4
         else:
             alpha=0.02
@@ -62,7 +62,7 @@ def trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heat
             ax.plot(traj[:, 0], traj[:, 1], lw=2, alpha=1)
         ax.axis([0,1,0.127, -0.127])  # slight y padding for graphs
     title_append = r""" $T_max$ = {0} secs, $\beta = {2}$, $f = {3}$, $wtf = {4}$.
-                """.format(traj_ex.Tmax, len(trajectory_objects_list), traj_ex.beta, traj_ex.rf, traj_ex.wtf)
+                """.format(traj_ex.Tmax, ensemble_len, traj_ex.beta, traj_ex.rf, traj_ex.wtf)
                 
     # draw heater
     if traj_ex.target_pos is not None:
@@ -76,7 +76,7 @@ def trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heat
 
     
     # plot shwag
-    title_append = title_append + """<Tfind> = {0:}, Sourcefinds = {1}/(n = {2})""".format(Tfind_avg, sum(target_finds), len(trajectory_objects_list))
+    title_append = title_append + """<Tfind> = {0:}, Sourcefinds = {1}/(n = {2})""".format(Tfind_avg, sum(target_finds), ensemble_len)
     plt.title("Agent trajectories" + title_append, fontsize=14)
     plt.xlabel("$x$", fontsize=14)
     plt.ylabel("$y$", fontsize=14)
@@ -84,7 +84,8 @@ def trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heat
     sns.set_style("white")
     
     # save before overlaying heatmap
-    plt.savefig("./figs/Trajectories b{beta} f{rf} wf{wtf} bounce {bounce} N{total_trajectories}.png".format(beta=traj_ex.beta, rf=traj_ex.rf, wtf=traj_ex.wtf, bounce=traj_ex.bounce, total_trajectories=len(trajectory_objects_list)))
+    plt.savefig("./figs/Trajectories b{beta} f{rf} wf{wtf} bounce {bounce} N{total_trajectories}.png"\
+        .format(beta=traj_ex.beta, rf=traj_ex.rf, wtf=traj_ex.wtf, bounce=traj_ex.bounce, total_trajectories=ensemble_len))
     
     ## Position heatmap
     if heatmap is True:
@@ -95,8 +96,8 @@ def trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heat
         # counts needs to be transposed to use pcolormesh     
         counts = counts.T
         
-        MaxVal = len(trajectory_objects_list)/2
-        if len(trajectory_objects_list) > 100:
+        MaxVal = ensemble_len/2
+        if ensemble_len > 100:
             plt.cla()
         heatmap = ax.pcolormesh(xedges, yedges, counts, cmap=plt.cm.Oranges, vmin=0, vmax=MaxVal)
 #        plt.gca().invert_yaxis()  # hack to match y axis convention --- now unneeded?
@@ -105,10 +106,10 @@ def trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heat
         # overwrite previous plot schwag
         cbar = plt.colorbar(heatmap)
         cbar.ax.set_ylabel('Counts')
-        plt.title("Agent Trajectories Heatmap (n = {})".format(len(trajectory_objects_list)))
+        plt.title("Agent Trajectories Heatmap (n = {})".format(ensemble_len))
         plt.xlabel("$x$")
         plt.ylabel("$y$")
-        plt.savefig("./figs/Trajectories heatmap beta{beta}_f{rf}_wf{wtf}_bounce {bounce} N{total_trajectories}.png".format(beta=traj_ex.beta, rf=traj_ex.rf, wtf=traj_ex.wtf, bounce=traj_ex.bounce, total_trajectories=len(trajectory_objects_list)))
+        plt.savefig("./figs/Trajectories heatmap beta{beta}_f{rf}_wf{wtf}_bounce {bounce} N{total_trajectories}.png".format(beta=traj_ex.beta, rf=traj_ex.rf, wtf=traj_ex.wtf, bounce=traj_ex.bounce, total_trajectories=ensemble_len))
         plt.show()
 
 
@@ -204,7 +205,7 @@ def stateHistograms(pos, velos, accels, trajectory_objects_list, kinetics):
 
 
     gs1.tight_layout(fig, rect=[0, 0.03, 1, 0.95])  # overlapping text hack
-    plt.savefig("./figs/Agent Distributions b {beta},f {rf},wf {wtf},bounce {bounce},N {total_trajectories}.png".format(beta=trajectory_objects_list[0].beta, rf=trajectory_objects_list[0].rf, wtf=trajectory_objects_list[0].wtf, bounce=trajectory_objects_list[0].bounce, total_trajectories=len(trajectory_objects_list)))
+    plt.savefig("./figs/Agent Distributions b {beta},f {rf},wf {wtf},bounce {bounce},N {total_trajectories}.png".format(beta=trajectory_objects_list[0].beta, rf=trajectory_objects_list[0].rf, wtf=trajectory_objects_list[0].wtf, bounce=trajectory_objects_list[0].bounce, total_trajectories=ensemble_len))
     
     
     # plot Forces

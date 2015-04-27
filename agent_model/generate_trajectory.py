@@ -104,6 +104,24 @@ class Trajectory:
         self.target_found = False
         self.t_targfound = np.nan
         
+        self.metadata = dict()
+        self.metadata['time max'] = Tmax
+        self.metadata['target position'] = target_pos
+        self.metadata['initial position'] = agent_pos
+        self.metadata['initial velo stdev'] = v0_stdev
+        self.metadata['k'] = k
+        self.metadata['beta'] = beta
+        self.metadata['rf'] = rf
+        self.metadata['wtf'] = wtf
+        self.metadata['bounce'] = bounce
+        self.metadata['wallF'] = wallF
+        # for stats, later
+        self.metadata['trajectory number'] = []
+        self.metadata['time to target find average'] = []
+        self.metadata['number of successes'] = []
+        self.metadata['target found'] = [False]
+        self.metadata['time to target find'] = [np.nan]
+        
         ## initialize all arrays
         self.dynamics = pd.DataFrame()
         
@@ -214,12 +232,12 @@ class Trajectory:
     
             # if there is a target, check if we are finding it
             if self.target_pos is None:
-                self.target_found = False
-                self.t_targfound = np.nan
+                self.metadata['target found'][0]  = False
+                sself.metadata['time to target find'][0] = np.nan
             else:
                 if norm(candidate_pos - self.target_pos) < self.detect_thresh:
-                    self.target_found = True
-                    self.t_targfound = self.timeList[ts]  # should this be timeList[ts+1]? -rd
+                    self.metadata['target found'][0]  = True
+                    self.metadata['time to target find'][0] = self.timeList[ts]  # should this be timeList[ts+1]? -rd
                     self.land(ts)
                     break  # stop flying at source  
                     

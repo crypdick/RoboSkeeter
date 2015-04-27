@@ -12,6 +12,7 @@ https://github.com/isomerase/
 import generate_trajectory
 import numpy as np
 import plotting_funcs
+import pandas as pd
 
 
 def trajGenIter(agent_pos, target_pos, v0_stdev, k, beta, rf, wtf, Tmax, dt, total_trajectories, wallF, bounded, bounce, detect_thresh):
@@ -34,40 +35,25 @@ def trajGenIter(agent_pos, target_pos, v0_stdev, k, beta, rf, wtf, Tmax, dt, tot
         num_success: fraction of total_trajectories that made it (int)
         ensemble: list of all trajectory objects (array)
     """
-    pos = []
-    velos = []
-    accels = []
-    target_finds = []
-    t_targfinds = []
-    ensemble = []
-    kinetics = dict()
-    kinetics['randF x'] = []
-    kinetics['randF y'] = []
-    kinetics['wallRepulsiveF x'] = []
-    kinetics['wallRepulsiveF y'] = []
-    kinetics['upwindF x'] = []
-    kinetics['upwindF y'] = []
-    kinetics['totalF x'] = []
-    kinetics['totalF y'] = []
+    
+    ensemble = pd.DataFrame()
 
     for traj in range(total_trajectories):
         trajectory = generate_trajectory.Trajectory(agent_pos=agent_pos, target_pos=target_pos, v0_stdev=v0_stdev, k=k, beta=beta, rf=rf, wtf=wtf, Tmax=Tmax, dt=dt, detect_thresh=detect_thresh, wallF=wallF, bounded=bounded, bounce=bounce)
         # extract trajectory object attribs, append to our lists.
-        pos += [trajectory.positionList]
-        velos += [trajectory.veloList]
-        accels += [trajectory.accelList]
-        target_finds += [trajectory.target_found]
-        t_targfinds += [trajectory.t_targfound]
-        for key, value in trajectory.kinetics.iteritems():
-            kinetics[key] = kinetics[key] + value
-        ensemble.append(trajectory)
-
-    Tfind_avg, num_success = T_find_stats(t_targfinds, total_trajectories)
-
-    return pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, ensemble, kinetics
+        trajectory.dynamics['trajectory'] = traj
+        trajectory.dynamics.set_index('trajectory', append=True, inplace=True)
+        ensemble = ensemble.append(trajectory.dynamics)
+        trajectory.metadata['trajectory number'].append(traj)
 
 
-def T_find_stats(t_targfinds, total_trajectories):
+
+    trajectory.metadata['time to target find average'], trajectory.metadata['number of successes'] = T_find_stats(trajectory.metadata['time to target find'])
+    
+    return ensemble, trajectory.metadata
+
+
+def T_find_stats(t_targfinds):
     """Target finding stats. Returns average time to find the target, and the
     number of successes"""
     t_targfinds = np.array(t_targfinds)
@@ -81,21 +67,19 @@ def T_find_stats(t_targfinds, total_trajectories):
 
         return Tfind_avg, num_success
 
-
-    mytraj = Trajectory(agent_pos="cage", target_pos="left", plotting = True, v0_stdev=0.01, wtf=7e-07, rf=4e-06, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", )
     
 def main(agent_pos="cage", v0_stdev=0.01, k=0., beta=4e-6, rf=3e-6, wtf=7e-7, target_pos="left", Tmax=15.0, dt=0.01, total_trajectories=2, detect_thresh=0.023175, wallF=None, bounded=True, bounce="crash", plotting = True):
 #    pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, ensemble = trajGenIter(r0=r0, target_pos="left", v0_stdev=v0_stdev, k=k, beta=beta, rf=rf, wtf=wtf, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories, bounded=bounded, detect_thresh=detect_thresh)   # defaults
-    pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, ensemble, kinetics = trajGenIter(agent_pos=agent_pos, target_pos=target_pos, v0_stdev=v0_stdev, k=k, beta=beta, rf=rf, wtf=wtf, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories, wallF=wallF, bounded=bounded,  bounce=bounce, detect_thresh=detect_thresh)
+    ensemble, metadata = trajGenIter(agent_pos=agent_pos, target_pos=target_pos, v0_stdev=v0_stdev, k=k, beta=beta, rf=rf, wtf=wtf, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories, wallF=wallF, bounded=bounded,  bounce=bounce, detect_thresh=detect_thresh)
 
 
-    if plotting is True:
+#    if plotting is True:
 #         plot all trajectories
-        plotting_funcs.trajectory_plots(pos, target_finds, Tfind_avg, ensemble, heatmap=True)
+#        plotting_funcs.trajectory_plots(ensemble, metadata, heatmap=True)
 #         plot histogram of pos, velo, accel distributions
-        plotting_funcs.stateHistograms(pos, velos, accels, ensemble, kinetics)
+#        plotting_funcs.stateHistograms(ensemble, metadata)
 
-    return pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, ensemble, kinetics
+    return ensemble, metadata
 
 
 if __name__ == '__main__':
@@ -109,5 +93,5 @@ if __name__ == '__main__':
     
     wallF = (b, shrink, wallF_max, decay_const)
     
-    pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, ensemble, kinetics = main(wallF=wallF)
+    ensemble, metadata = main(wallF=wallF)
     
