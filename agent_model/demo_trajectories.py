@@ -8,15 +8,16 @@ Demo trajectories
 """
 
 import generate_trajectory
+from trajectory_stats import main as ts
 from matplotlib import pyplot as plt
 
-
+default_wallF = (4e-1, 1e-6, 1e-7, 250)
 
 def demo_single_trajectories():
     print "demo_single_trajectories"
     # normal
     for i in range(10):
-        generate_trajectory.Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=4e-06, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=(80, 1e-4), title = "wall repulsion demo", titleappend = ", normal")
+        generate_trajectory.Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=4e-06, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=default_wallF, title = "wall repulsion demo", titleappend = ", normal")
         
     # no forces
     for i in range(10):
@@ -30,47 +31,57 @@ def demo_single_trajectories():
     
     # no wind, randomF only
     for i in range(10):
-        generate_trajectory.Trajectory(agent_pos="cage", target_pos="left", plotting = True, v0_stdev=0.01, wtf=0., rf=4e-06, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=(80, 1e-4), title = "wall repulsion demo", titleappend = ", no wind, randomF only")
+        generate_trajectory.Trajectory(agent_pos="cage", target_pos="left", plotting = True, v0_stdev=0.01, wtf=0., rf=4e-06, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=default_wallF, title = "wall repulsion demo", titleappend = ", no wind, randomF only")
     plt.show()
     
     # no randomF, wtf only
     for i in range(10):
-        generate_trajectory.Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=0., beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=(80, 1e-4), title = "wall repulsion demo", titleappend = ", no randomF, wtf only")
+        generate_trajectory.Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=0., beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=default_wallF, title = "wall repulsion demo", titleappend = ", no randomF, wtf only")
     plt.show()
 
 
 def demo_damping():
     print "demo_damping"
+    title= "Damping demo"
     # normal
-    for i in range(10):
-        generate_trajectory.Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=4e-06, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=(80, 1e-4), title = "Damping demo", titleappend = ", normal")
+    ts(total_trajectories=10, beta=1e-5, plot_kwargs=\
+    {'title':title, 'titleappend':', normal', 'singletrajectories':True, 'heatmap':None, 'states':None})
     plt.show()
     
     # normal damping, no driving, high initial velo
-    for i in range(10):
-        generate_trajectory.Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.4, wtf=0., rf=0., beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=None, title = "Damping demo", titleappend = ", normal damp, no driving, high v0")
+    ts(total_trajectories=10, agent_pos="cage", target_pos="left", \
+        v0_stdev=.04, wtf=0., rf=0., beta=1e-5, Tmax=15, \
+        dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=None,\
+        plot_kwargs={'title':'title', 'titleappend':', normal damp, no driving, high v0', 'singletrajectories':True, 'heatmap':None, 'states':None})
     plt.show()
     print "Shows that, absent of driver, velocity decays (therefore damping is working)"
     
     
     # undamped
-    for i in range(10):
-        generate_trajectory.Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=4e-06, beta=0., Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=(80, 1e-4), title = "Damping demo", titleappend = ", undamped")
+    ts(total_trajectories=10, agent_pos="cage", target_pos="left", \
+        v0_stdev=0.01, wtf=7e-07, rf=4e-06, beta=0., \
+        Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash",\
+        wallF=default_wallF, plot_kwargs={'title':'title', 'titleappend':', undamped', 'singletrajectories':True, 'heatmap':None, 'states':None})
     plt.show()
     
     # undamped, high rf
-    for i in range(2):
-        generate_trajectory.Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=0., rf=4e-05, beta=0., Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=None, title = "Damping demo", titleappend = ", undamped, high rf, wallF & wtf off")
+    ts(total_trajectories=10, agent_pos="cage", target_pos="left",\
+        v0_stdev=0.01, wtf=0., rf=4e-05, beta=0., Tmax=15, \
+        dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=default_wallF,\
+        plot_kwargs={'title':'title', 'titleappend':', undamped, high rf, wallF normal; wtf off', 'singletrajectories':True, 'heatmap':None, 'states':None})
     plt.show()
     
     # normal damp, high rf
-    for i in range(2):
-        generate_trajectory.Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=0., rf=4e-05, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=None, title = "Damping demo", titleappend = ", damped, high rf, wallF & wtf off")
+    ts(total_trajectories=10, agent_pos="cage", target_pos="left", \
+        v0_stdev=0.01, wtf=0., rf=4e-05, beta=1e-5, Tmax=15, \
+        dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=default_wallF,\
+        plot_kwargs={'title':'title', 'titleappend':', damped, high rf; wallF normal; wtf off', 'singletrajectories':True, 'heatmap':None, 'states':None})
     plt.show()
     
     # critical damping
-    for i in range(10):
-        generate_trajectory.Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=4e-06, beta=1, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=(80, 1e-4), title = "Damping demo", titleappend = ", critical damping ")
+    ts(total_trajectories=10, agent_pos="cage", target_pos="left", \
+        v0_stdev=0.01, wtf=7e-07, rf=4e-06, beta=1, Tmax=15, dt=0.01, detect_thresh=0.023175,\
+        bounded=True, bounce="crash", wallF=default_wallF, plot_kwargs={'title':'title', 'titleappend':', critical damping', 'singletrajectories':True, 'heatmap':None, 'states':None})
     plt.show()
 
 
@@ -78,22 +89,22 @@ def demo_randomF_strength():
     print "demo_randomF_strength"
     # normal
     for i in range(10):
-        generate_trajectory.Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=4e-06, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=(80, 1e-4), title = "randomF_strength demo", titleappend = ", normal")
+        generate_trajectory.Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=4e-06, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=default_wallF, title = "randomF_strength demo", titleappend = ", normal")
     plt.show()
     
     # off
     for i in range(10):
-        generate_trajectory.Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=0, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=(80, 1e-4), title = "randomF_strength demo", titleappend = ", rF off")
+        generate_trajectory.Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=0, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=default_wallF, title = "randomF_strength demo", titleappend = ", rF off")
     plt.show()
     
     # weak
     for i in range(10):
-        generate_trajectory.Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=1e-06, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=(80, 1e-4), title = "randomF_strength demo", titleappend = ", rF weak")
+        generate_trajectory.Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=1e-06, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=default_wallF, title = "randomF_strength demo", titleappend = ", rF weak")
     plt.show()
     
     # strong
     for i in range(10):
-        generate_trajectory.Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=1e-05, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=(80, 1e-4), title = "randomF_strength demo", titleappend = ", rF strong")
+        generate_trajectory.Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=1e-05, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=default_wallF, title = "randomF_strength demo", titleappend = ", rF strong")
     plt.show()
 
 
@@ -101,7 +112,7 @@ def demo_wall_repulsion():
     print "demo_wall_repulsion"
     # normal
     for i in range(10):
-        generate_trajectory.Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=4e-06, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=(80, 1e-4), title = "wall repulsion demo", titleappend = ", normal")
+        generate_trajectory.Trajectory(agent_pos="cage", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=4e-06, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=default_wallF, title = "wall repulsion demo", titleappend = ", normal")
     plt.show()
     
     for i in range(10):
@@ -151,7 +162,7 @@ def demo_repulsion_landscape():
     plt.show()
     
 #demo_single_trajectories()
-#demo_damping()
+demo_damping()
 #demo_randomF_strength()
 #strongTraj = demo_wall_repulsion()
-demo_repulsion_landscape()
+#demo_repulsion_landscape()
