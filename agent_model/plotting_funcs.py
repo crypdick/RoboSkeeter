@@ -19,7 +19,6 @@ sns.set_palette("muted", 8)
 def plot_single_trajectory(positionList, target_pos, detect_thresh, boundary, title="Individual trajectory", titleappend=""):
     # plot an individual trajectory
     plt.plot(positionList[:, 0], positionList[:, 1], lw=2, alpha=0.5)
-    plt.axis(boundary)
     currentAxis = plt.gca()
     cage = draw_cage()
     currentAxis.add_patch(cage)
@@ -27,6 +26,7 @@ def plot_single_trajectory(positionList, target_pos, detect_thresh, boundary, ti
         heaterCircle, detectCircle = draw_heaters(target_pos, detect_thresh)
         currentAxis.add_artist(heaterCircle)
         currentAxis.add_artist(detectCircle)
+    plt.gca().set_aspect('equal')
     
     plt.title(title + titleappend, fontsize=20)
     plt.xlabel("$x$", fontsize=14)
@@ -48,7 +48,7 @@ def trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heat
     """"Plot all the trajectories into a single arena"""
     traj_ex = trajectory_objects_list[0]
     target_pos = traj_ex.target_pos
-    fig, ax = plt.subplots(1)
+    fig, ax = plt.subplots(1, fig_kw = {'aspect':'equal'})
     sns.set_style("white")
     for traj in pos:
         if len(trajectory_objects_list) < 60:
@@ -57,7 +57,7 @@ def trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heat
             alpha=0.02
         if trajectoryPlot is True:
             ax.plot(traj[:, 0], traj[:, 1], lw=2, alpha=1)
-        ax.axis([0,1,0.151,-0.151])  # slight y padding for graphs
+        ax.axis([0,1,0.127, -0.127])  # slight y padding for graphs
     title_append = r""" $T_max$ = {0} secs, $\beta = {2}$, $f = {3}$, $wtf = {4}$.
                 """.format(traj_ex.Tmax, len(trajectory_objects_list), traj_ex.beta, traj_ex.rf, traj_ex.wtf)
                 
@@ -109,7 +109,7 @@ def trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heat
         plt.show()
 
 
-def stateHistograms(pos, velos, accels, trajectory_objects_list):
+def stateHistograms(pos, velos, accels, trajectory_objects_list, forces):
     fig = plt.figure(4, figsize=(9, 8))
     gs1 = gridspec.GridSpec(2, 2)
     axs = [fig.add_subplot(ss) for ss in gs1]
@@ -203,13 +203,31 @@ def stateHistograms(pos, velos, accels, trajectory_objects_list):
     gs1.tight_layout(fig, rect=[0, 0.03, 1, 0.95])  # overlapping text hack
     plt.savefig("./figs/Agent Distributions b {beta},f {rf},wf {wtf},bounce {bounce},N {total_trajectories}.png".format(beta=trajectory_objects_list[0].beta, rf=trajectory_objects_list[0].rf, wtf=trajectory_objects_list[0].wtf, bounce=trajectory_objects_list[0].bounce, total_trajectories=len(trajectory_objects_list)))
     
+    
+    # plot total Forces
+    fig3 = sns.plt.figure()
+    sns.plt.scatter(forces[6], forces[7])
+    sns.plt.xlim(min(forces[6]), max(forces[6]))
+    sns.plt.ylim(min(forces[7]), max(forces[7]))
+    sns.plt.show()
+    
     return xpos_counts_n, ypos_bins, ypos_counts, ypos_counts_n, vx_counts_n
 
 
 if __name__ == '__main__':
     import trajectory_stats
     
-    pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, trajectory_objects_list = trajectory_stats.main(total_trajectories=1000, plotting = False)
+        # wallF params
+    wallF_max=5e-7
+    decay_const = 250
+    
+    # center repulsion params
+    b = 4e-1  # determines shape
+    shrink = 5e-7  # determines size/magnitude
+    
+    wallF = (b, shrink, wallF_max, decay_const)
+    
+    pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, trajectory_objects_list = trajectory_stats.main(total_trajectories=400, plotting = False, wallF=wallF)
         
     trajectory_plots(pos, target_finds, Tfind_avg, trajectory_objects_list, heatmap=True, trajectoryPlot = True)
     xpos_counts_n, ypos_bins, ypos_counts, ypos_counts_n, vx_counts_n = stateHistograms(pos, velos, accels, trajectory_objects_list)

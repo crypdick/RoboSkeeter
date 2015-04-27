@@ -114,7 +114,7 @@ def repulsionF(position, wallF):
         return np.array([0., 0.])
     else:
         posx, posy = position
-        force_y = repulsion_landscape.main(posy, wallF)
+        force_y = repulsion_landscape.main(wallF, posy)
         return np.array([0., force_y])
 
 
