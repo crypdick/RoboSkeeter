@@ -107,7 +107,7 @@ class Trajectory:
         self.metadata = dict()
         self.metadata['time max'] = Tmax
         self.metadata['boundary'] = self.boundary
-        self.metadata['target position'] = target_pos
+        self.metadata['target position'] = self.target_pos
         self.metadata['detection threshold'] = detect_thresh
         self.metadata['initial position'] = agent_pos
         self.metadata['initial velo stdev'] = v0_stdev

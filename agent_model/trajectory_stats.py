@@ -49,7 +49,7 @@ def trajGenIter(agent_pos, target_pos, v0_stdev, k, beta, rf, wtf, Tmax, dt, tot
 
 
 
-    trajectory.metadata['time to target find average'], trajectory.metadata['number of successes'] = T_find_stats(trajectory.metadata['time to target find'])
+    trajectory.metadata['time to target find average'], trajectory.metadata['N targets found'] = T_find_stats(trajectory.metadata['time to target find'])
     
     return ensemble, trajectory.metadata
 
@@ -78,7 +78,7 @@ def main(agent_pos="cage", v0_stdev=0.01, k=0., beta=4e-6, rf=3e-6, wtf=7e-7, ta
 #         plot all trajectories
         plotting_funcs.trajectory_plots(ensemble, metadata, heatmap=True)
 #         plot histogram of pos, velo, accel distributions
-#        plotting_funcs.stateHistograms(ensemble, metadata)
+        plotting_funcs.stateHistograms(ensemble, metadata)
 
     return ensemble, metadata
 
