@@ -109,8 +109,15 @@ class Trajectory:
         self.positionList = np.zeros((ts_max, self.dim), dtype=float)
         self.veloList = np.zeros((ts_max, self.dim), dtype=float)
         self.accelList = np.zeros((ts_max, self.dim), dtype=float)
-        empty_list = np.zeros((ts_max), dtype=float)
-        self.ForcesList = [empty_list, empty_list, empty_list, empty_list, empty_list, empty_list, empty_list, empty_list]
+        self.kinetics = dict()
+        self.kinetics['randF x'] = []
+        self.kinetics['randF y'] = []
+        self.kinetics['wallRepulsiveF x'] = []
+        self.kinetics['wallRepulsiveF y'] = []
+        self.kinetics['upwindF x'] = []
+        self.kinetics['upwindF y'] = []
+        self.kinetics['totalF x'] = []
+        self.kinetics['totalF y'] = []
         
         # generate random intial velocity condition    
         v0 = np.random.normal(0, self.v0_stdev, self.dim)
@@ -132,17 +139,24 @@ class Trajectory:
         for ts in range(ts_max-1):
             # calculate drivers
             randF = baseline_driving_forces.random_force(self.rf)
-            self.ForcesList[0][ts],  self.ForcesList[1][ts]= randF[0], randF[1]
+            self.kinetics['randF x'].append(randF[0])
+            self.kinetics['randF y'].append(randF[1])
+            
             upwindF = baseline_driving_forces.upwindBiasForce(self.wtf)
-            self.ForcesList[2][ts], self.ForcesList[3][ts] = upwindF[0], upwindF[1]
+            self.kinetics['upwindF x'].append(upwindF[0])
+            self.kinetics['upwindF y'].append(upwindF[1])
+            
             wallRepulsiveF = baseline_driving_forces.repulsionF(self.positionList[ts], self.wallF)
-            self.ForcesList[4][ts], self.ForcesList[5][ts] = wallRepulsiveF[0], wallRepulsiveF[1]
+            self.kinetics['wallRepulsiveF x'].append(wallRepulsiveF[0])
+            self.kinetics['wallRepulsiveF y'].append(wallRepulsiveF[1])
             
             # calculate current force
-            force = -self.k*self.positionList[ts] - self.beta*self.veloList[ts] + randF + upwindF + wallRepulsiveF
-            self.ForcesList[6][ts], self.ForcesList[7][ts] = force[0], force[1]
+            totalF = -self.k*self.positionList[ts] - self.beta*self.veloList[ts] + randF + upwindF + wallRepulsiveF
+            self.kinetics['totalF x'].append(totalF[0])
+            self.kinetics['totalF y'].append(totalF[1])
+            
             # calculate current acceleration
-            self.accelList[ts] = force/m
+            self.accelList[ts] = totalF/m
     
             # update velocity in next timestep
             self.veloList[ts+1] = self.veloList[ts] + self.accelList[ts]*self.dt
@@ -194,8 +208,8 @@ class Trajectory:
         self.positionList = self.positionList[:ts+1]
         self.veloList = self.veloList[:ts+1]
         self.accelList = self.accelList[:ts+1]
-        for i in range(8):
-            self.ForcesList[i] = self.ForcesList[i][:ts+1]
+        for key, value in self.kinetics.iteritems():
+            self.kinetics[key] = value[:ts+1]
 
 
 if __name__ == '__main__':
