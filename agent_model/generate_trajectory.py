@@ -78,7 +78,7 @@ class Trajectory:
     Returns:
         trajectory object
     """
-    boundary = [0.0, 1.0, 0.15, -0.15]  # these are real dims of our wind tunnel
+    boundary = [0.0, 1.0, 0.127, -0.127]  # these are real dims of our wind tunnel
     def __init__(self, agent_pos, v0_stdev, Tmax, dt, target_pos, beta, rf, wtf, detect_thresh, bounded, bounce, wallF, plotting=False, title="Individual trajectory", titleappend = '', k=0.):
         """ Initialize object with instant variables, and trigger other funcs. 
         """
@@ -109,7 +109,8 @@ class Trajectory:
         self.positionList = np.zeros((ts_max, self.dim), dtype=float)
         self.veloList = np.zeros((ts_max, self.dim), dtype=float)
         self.accelList = np.zeros((ts_max, self.dim), dtype=float)
-        self.ForcesList = np.zeros((ts_max, 3, self.dim), dtype=float)  # we have 3 drivers
+        empty_list = np.zeros((ts_max), dtype=float)
+        self.ForcesList = [empty_list, empty_list, empty_list, empty_list, empty_list, empty_list, empty_list, empty_list]
         
         # generate random intial velocity condition    
         v0 = np.random.normal(0, self.v0_stdev, self.dim)
@@ -131,13 +132,15 @@ class Trajectory:
         for ts in range(ts_max-1):
             # calculate drivers
             randF = baseline_driving_forces.random_force(self.rf)
-            self.ForcesList[ts][0] = randF
+            self.ForcesList[0][ts],  self.ForcesList[1][ts]= randF[0], randF[1]
             upwindF = baseline_driving_forces.upwindBiasForce(self.wtf)
-            self.ForcesList[ts][1] = upwindF
+            self.ForcesList[2][ts], self.ForcesList[3][ts] = upwindF[0], upwindF[1]
             wallRepulsiveF = baseline_driving_forces.repulsionF(self.positionList[ts], self.wallF)
-            self.ForcesList[ts][2] = wallRepulsiveF
+            self.ForcesList[4][ts], self.ForcesList[5][ts] = wallRepulsiveF[0], wallRepulsiveF[1]
+            
             # calculate current force
             force = -self.k*self.positionList[ts] - self.beta*self.veloList[ts] + randF + upwindF + wallRepulsiveF
+            self.ForcesList[6][ts], self.ForcesList[7][ts] = force[0], force[1]
             # calculate current acceleration
             self.accelList[ts] = force/m
     
@@ -153,6 +156,7 @@ class Trajectory:
                     candidate_pos[0] = boundary[0] + 1e-4
                     if self.bounce is "crash":
                         self.veloList[ts+1][0] = 0.
+                        print "teleport!"
                 elif candidate_pos[0] > boundary[1]:  # too far right
                     candidate_pos[0] = boundary[1] - 1e-4
                     self.land(ts)  # end trajectory when reach end of tunnel
@@ -163,11 +167,13 @@ class Trajectory:
                     if self.bounce is "crash":
 #                        print "teleport!"
                         self.veloList[ts+1][1] = 0.
+                        print "teleport!"
                 elif candidate_pos[1] < boundary[3]:  # too far down
                     candidate_pos[1] = boundary[3] - 1e-4
                     if self.bounce is "crash":
 #                        print "teleport!"
                         self.veloList[ts+1][1] = 0.
+                        print "teleport!"
                 
             self.positionList[ts+1] = candidate_pos
     
@@ -188,16 +194,19 @@ class Trajectory:
         self.positionList = self.positionList[:ts+1]
         self.veloList = self.veloList[:ts+1]
         self.accelList = self.accelList[:ts+1]
+        for i in range(8):
+            self.ForcesList[i] = self.ForcesList[i][:ts+1]
 
 
 if __name__ == '__main__':
     # wallF params
-    wallF_max=8e-8
-    decay_const = 90
-    mu=0.
-    stdev=0.04
-    centerF_max=5e-8
+    wallF_max=1e-7
+    decay_const = 250
     
-    wallF = (wallF_max, decay_const, mu, stdev, centerF_max)
+    # center repulsion params
+    b = 4e-1  # determines shape
+    shrink = 1e-6  # determines size/magnitude
+    
+    wallF = (b, shrink, wallF_max, decay_const)
     
     mytraj = Trajectory(agent_pos="cage", target_pos="left", plotting = True, v0_stdev=0.01, wtf=7e-07, rf=4e-06, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=wallF)  #, wallF=(80, 1e-4)
