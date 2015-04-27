@@ -8,40 +8,47 @@ Created on Thu Apr 23 10:53:11 2015
 """
 import numpy as np
 from numpy import pi, sin, cos
-import matplotlib.pyplot as plt
-from matplotlib import cm
-import mpl_toolkits.mplot3d.axes3d as axes3d
-from scipy import spatial
+#import matplotlib.pyplot as plt
+#from matplotlib import cm
+#import mpl_toolkits.mplot3d.axes3d as axes3d
+#from scipy import spatial
+import pandas as pd
 
 
-boundary = [2.0, 2.3, 0.15, -0.15, 1]  # these are real dims of our wind tunnel
+#boundary = [2.0, 2.3, 0.15, -0.15, 1]  # these are real dims of our wind tunnel
 
+def main():
+    plume = pd.read_csv('temperature_data/COMSOL2D_temp.csv')
+    return plume
 
-class Plume():
-    def __init__(self):
-        self.res = 0.08      # plumeresolution
-        x_ = np.arange(boundary[0]+self.res, boundary[1], self.res)
-        y_ = np.arange(boundary[2]-self.res, boundary[3]+self.res, -self.res)
-        z_ = [1.0]
-        
-        self.x, self.y, self.z = np.meshgrid(x_, y_, z_, indexing='ij')
-#        # coords list for kdTree
-#        self.coordinates_list = [(x,y) for x in self.X for y in self.Y]
-#        self.xx, self.yy = np.meshgrid(self.X, self.Y, sparse=False)
+if __name__ == '__main__':
+    plume = main()
+
+#class Plume():
+#    def __init__(self):
+#        self.res = 0.08      # plumeresolution
+#        x_ = np.arange(boundary[0]+self.res, boundary[1], self.res)
+#        y_ = np.arange(boundary[2]-self.res, boundary[3]+self.res, -self.res)
+#        z_ = [1.0]
 #        
-#        self.ind = np.dstack((self.xx, self.yy))
-#        self.Z = np.zeros_like(self.ind) + 1.0
+#        self.x, self.y, self.z = np.meshgrid(x_, y_, z_, indexing='ij')
+##        # coords list for kdTree
+##        self.coordinates_list = [(x,y) for x in self.X for y in self.Y]
+##        self.xx, self.yy = np.meshgrid(self.X, self.Y, sparse=False)
+##        
+##        self.ind = np.dstack((self.xx, self.yy))
+##        self.Z = np.zeros_like(self.ind) + 1.0
+##        
+#        self.plume = np.dstack((self.x, self.y, self.z))
+#        print self.plume
 #        
-        self.plume = np.dstack((self.x, self.y, self.z))
-        print self.plume
-        
-    def intensity(self, type="flat"):
-#        self.Z = 0 * (self.xx + self.yy) + 0.1
-        if type == "flat":
-            self.Z = 0.0
-        
-    def show(self):
-        pass
+#    def intensity(self, type="flat"):
+##        self.Z = 0 * (self.xx + self.yy) + 0.1
+#        if type == "flat":
+#            self.Z = 0.0
+#        
+#    def show(self):
+#        pass
 #        fig, ax = plt.subplots(1)        
         
 #        heatmap = ax.pcolormesh(self.x, self.y, self.z, cmap=cm.Oranges)
@@ -139,6 +146,6 @@ class Plume():
 #        
 #        plt.show()
         
-            
-myplume = Plume()
-myplume.show()
+#            
+#myplume = Plume()
+#myplume.show()
