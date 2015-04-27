@@ -12,17 +12,17 @@ import matplotlib.pyplot as plt
 from scipy.misc import derivative as deriv
 
 
-def landscape(wallF_max=8e-8, decay_const = 90, mu=0., stdev=0.04, centerF_max=5e-8):
+def landscape(b, shrink, wallF_max=8e-8, decay_const = 90, mu=0.):
     """exponential decay params: wallF_max, decay_const
     gaussian params: mu, stdev, centerF_max
     """
-    stdev2, centerF_max2 = 0.004, 3e-8
-    fx = lambda pos : (wallF_max * np.exp(-1 * decay_const * (pos+0.127))) + ( centerF_max * np.exp(-1*(pos-mu)**2 / (2*stdev**2)) ) + ( (centerF_max2) * np.exp(-1*(pos-mu)**2 / (2*(stdev2)**2)) ) + (wallF_max * np.exp(1 * decay_const * (pos-0.127)))
-    
+
+    fx = lambda pos : (wallF_max * np.exp(-1 * decay_const * (pos+0.127))) +  shrink * ( 1/(2*b) * np.exp(-1 * abs(pos-mu)/b) ) + (wallF_max * np.exp(1 * decay_const * (pos-0.127)))
+#    fx = lambda pos : ( 1/(2*b) * np.exp(-1 * abs(pos-mu)/b) ) * .01
     return fx
 
 
-def plot_landscape(repulsion_fxn, wallF_max, decay_const, _, stdev, centerF_max):
+def plot_landscape(repulsion_fxn, wallF):
     fig, axarr = plt.subplots(2, sharex=True)
     
     ycoords = np.linspace(-0.127, 0.127, 200)
@@ -51,7 +51,8 @@ def plot_landscape(repulsion_fxn, wallF_max, decay_const, _, stdev, centerF_max)
     
     plt.tight_layout()
     
-    plt.savefig("./figs/repulsion_landscape wallF_max{wallF_max} decay_const{decay_const} stdev{stdev} centerF_max{centerF_max}.png".format(wallF_max=wallF_max, decay_const=decay_const, stdev= stdev, centerF_max=centerF_max))
+    b, shrink, wallF_max, decay_const = wallF
+    plt.savefig("./figs/repulsion_landscape wallF_max{wallF_max} decay_const{decay_const} b{b} shrink{shrink}.png".format(wallF_max=wallF_max, decay_const=decay_const, b=b, shrink=shrink))
     plt.show()
 
 
@@ -62,18 +63,19 @@ def main(wallF, pos_y=None, plotting=False):
         repF = deriv(repulsion_fxn, pos_y, dx=0.00001)
     
     if plotting is True:
-        plot_landscape(repulsion_fxn, *wallF)
+        plot_landscape(repulsion_fxn, wallF)
         
     return -1*repF  # this is the force on the agent in the y component
 
 
 if __name__ == '__main__':
     # wallF params
-    wallF_max=8e-8
-    decay_const = 120
-    mu=0.
-    stdev=0.01
-    centerF_max=8e-8
+    wallF_max=5e-7
+    decay_const = 250
     
-    wallF = (wallF_max, decay_const, mu, stdev, centerF_max)
+    # center repulsion params
+    b = 4e-1  # determines shape
+    shrink = 1e-6  # determines size/magnitude
+    
+    wallF = (b, shrink, wallF_max, decay_const)
     force_y = main(wallF, 0, plotting=True)

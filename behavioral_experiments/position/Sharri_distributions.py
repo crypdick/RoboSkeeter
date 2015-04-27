@@ -38,4 +38,4 @@ axs.set_ylabel("Probabilities")
 axs.set_xlabel("Croosswind Distributions")
 axs.legend()
 
-plt.savefig("Dicks distributions.png")
+plt.savefig("Sharri's position distributions.png")
