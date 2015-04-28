@@ -34,6 +34,8 @@ def plot_single_trajectory(dynamics, metadata, plot_kwargs=None):
         currentAxis.add_artist(heaterCircle)
         currentAxis.add_artist(detectCircle)
     plt.gca().set_aspect('equal')
+    fig = plt.gcf()
+    fig.set_size_inches(15, 4.5)
     
     plt.title(plot_kwargs['title'] + plot_kwargs['titleappend'], fontsize=20)
     plt.xlabel("$x$", fontsize=14)
@@ -88,9 +90,15 @@ def trajectory_plots(ensemble, metadata, plot_kwargs=None):
     ## Position heatmap
     if plot_kwargs['heatmap']:
         with sns.axes_style("white"):
-            hextraj = sns.jointplot('position_x', 'position_y', ensemble, kind="hex", size=10, joint_kws={'gridsize':(100,30), "extent": [metadata['boundary'][0], metadata['boundary'][1], metadata['boundary'][3], metadata['boundary'][2]]})
+            hextraj = sns.jointplot('position_x', 'position_y', ensemble, size=10)#, ylim=(-.15, .15))
+            hextraj.plot_marginals(sns.distplot, kde=False)
+            hextraj.plot_joint(plt.hexbin, vmax=30, extent = [metadata['boundary'][0], metadata['boundary'][1], metadata['boundary'][3], metadata['boundary'][2]])#joint_kws={'gridsize':(100,30), })
             hextraj.ax_joint.set_aspect('equal')
             hextraj.ax_joint.invert_yaxis()  # hack to match y axis convention 
+            cax = hextraj.fig.add_axes([1, .25, .04, .5])
+            plt.colorbar(cax=cax)
+#    cb = plt.colorbar()
+#    cb.set_label('counts')
             
             if metadata['target_position'] is not None:
                 heaterCircle, detectCircle = draw_heaters(metadata['target_position'], metadata['detection_threshold'])
@@ -214,58 +222,66 @@ def stateHistograms(ensemble, metadata, plot_kwargs=None):
     axs[3].set_xlabel("Acceleration ($m^s/s$)")
     axs[3].set_ylabel("Probability")
     axs[3].legend(fontsize=14)
-
-
+    
     gs1.tight_layout(fig, rect=[0, 0.03, 1, 0.95])  # overlapping text hack
     plt.savefig("./figs/Agent Distributions b {beta},f {rf},wf {wtf},bounce {bounce},N {total_trajectories}.png".format(beta=metadata['beta'], rf=metadata['rf'], wtf=metadata['wtf'], bounce=metadata['bounce'], total_trajectories=ensemble_len))
     
     
-#    # plot Forces
-##    f, axes = plt.subplots(2, 2, figsize=(9, 9), sharex=True, sharey=True)
-###    forcefig = plt.figure(5, figsize=(9, 8))
-###    gs2 = gridspec.GridSpec(2, 2)
-###    Faxs = [fig.add_subplot(ss) for ss in gs2]
-##    forcefig = plt.figure(5)
-##    Faxs1 = forcefig.add_subplot(211)
-##    Faxs2 = forcefig.add_subplot(212)
-#    g = sns.JointGrid("x", "y", (ensemble['totalF_x'], ensemble['totalF_y']), space=0)
+    return xpos_counts_n, ypos_bins, ypos_counts, ypos_counts_n, vx_counts_n
+
+
+def force_scatter(ensemble):
+    
+    
+    # plot Forces
+#    f, axes = plt.subplots(2, 2, figsize=(9, 9), sharex=True, sharey=True)
+##    forcefig = plt.figure(5, figsize=(9, 8))
+##    gs2 = gridspec.GridSpec(2, 2)
+##    Faxs = [fig.add_subplot(ss) for ss in gs2]
+#    forcefig = plt.figure(5)
+#    Faxs1 = forcefig.add_subplot(211)
+#    Faxs2 = forcefig.add_subplot(212)
+    g = sns.jointplot('totalF_x', 'totalF_y', ensemble, kind="hex", size=10)
+    
+#    plt.show()
+#            
+#    g = sns.JointGrid("x", "y", ensemble, space=0)
 #    g.plot_marginals(sns.kdeplot, shade=True)
 #    g.plot_joint(sns.kdeplot, shade=True, cmap="PuBu", n_levels=40)
-##    cmap = sns.cubehelix_palette(start=0, light=1, as_cmap=True)
-##    sns.jointplot(np.array(ensemble['totalF_x']), np.array(ensemble['totalF_y']), ax=axes.flat[0], kind='kde', cmap=cmap, shade=True, cut = 5)
-##    Faxs1.set_xlim(min(ensemble['totalF_x']), max(ensemble['totalF_x']))
-##    Faxs1.set_ylim(min(ensemble['totalF_y']), max(ensemble['totalF_y']))
-##    Faxs1.set_title("Total Forces")
-##    Faxs1.set_aspect('equal')
-##    Faxs1.set_xlabel("upwind")
-##    Faxs1.set_ylabel("crosswind")
-##    Faxs1.xaxis.set_major_formatter(mtick.FormatStrFormatter('%.1e'))
-##    Faxs1.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.1e'))
-#    
-##    Faxs2.scatter(ensemble['wallRepulsiveF_x'], ensemble['wallRepulsiveF_y'])  
-##    Faxs2.set_xlim(min(ensemble['wallRepulsiveF_x']), max(ensemble['wallRepulsiveF_x']))
-##    Faxs2.set_ylim(min(ensemble['wallRepulsiveF_y']), max(ensemble['wallRepulsiveF_y']))
-##    Faxs2.set_title("Wall Repulsion Forces")
-##    Faxs2.set_xlabel("upwind")
-##    Faxs2.set_ylabel("crosswind")
-##    Faxs1.xaxis.set_major_formatter(mtick.FormatStrFormatter('%.1e'))
-##    Faxs2.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.1e'))
-#    
-#    plt.suptitle("Forces scatterplots")
-#
-#    
-##    
-##        ensemble['randF_x'] = []
-##    ensemble['randF_y'] = []
-##    ensemble['upwindF_x'] = []
-##    ensemble['upwindF_y'] = []
-#    
-#    plt.tight_layout(pad=1.3)
-#    plt.draw()
+#    cmap = sns.cubehelix_palette(start=0, light=1, as_cmap=True)
+#    sns.jointplot(np.array(ensemble['totalF_x']), np.array(ensemble['totalF_y']), ax=axes.flat[0], kind='kde', cmap=cmap, shade=True, cut = 5)
+#    Faxs1.set_xlim(min(ensemble['totalF_x']), max(ensemble['totalF_x']))
+#    Faxs1.set_ylim(min(ensemble['totalF_y']), max(ensemble['totalF_y']))
+#    Faxs1.set_title("Total Forces")
+#    Faxs1.set_aspect('equal')
+#    Faxs1.set_xlabel("upwind")
+#    Faxs1.set_ylabel("crosswind")
+#    Faxs1.xaxis.set_major_formatter(mtick.FormatStrFormatter('%.1e'))
+#    Faxs1.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.1e'))
     
+#    Faxs2.scatter(ensemble['wallRepulsiveF_x'], ensemble['wallRepulsiveF_y'])  
+#    Faxs2.set_xlim(min(ensemble['wallRepulsiveF_x']), max(ensemble['wallRepulsiveF_x']))
+#    Faxs2.set_ylim(min(ensemble['wallRepulsiveF_y']), max(ensemble['wallRepulsiveF_y']))
+#    Faxs2.set_title("Wall Repulsion Forces")
+#    Faxs2.set_xlabel("upwind")
+#    Faxs2.set_ylabel("crosswind")
+#    Faxs1.xaxis.set_major_formatter(mtick.FormatStrFormatter('%.1e'))
+#    Faxs2.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.1e'))
     
+    plt.suptitle("Forces scatterplots")
+
     
-    return xpos_counts_n, ypos_bins, ypos_counts, ypos_counts_n, vx_counts_n
+#    
+#        ensemble['randF_x'] = []
+#    ensemble['randF_y'] = []
+#    ensemble['upwindF_x'] = []
+#    ensemble['upwindF_y'] = []
+    
+    plt.tight_layout(pad=1.3)
+    plt.draw()
+    return g
+    
+
 
 
 if __name__ == '__main__':
