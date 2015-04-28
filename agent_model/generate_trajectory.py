@@ -130,33 +130,32 @@ class Trajectory:
         ts_max = int(np.ceil(Tmax / dt))  # maximum time step
         
         self.timeList = np.arange(0, Tmax, dt)
-        self.kinetics = dict()
-        self.kinetics['randF_x'] = []
-        self.kinetics['randF_y'] = []
-        self.kinetics['wallRepulsiveF_x'] = []
-        self.kinetics['wallRepulsiveF_y'] = []
-        self.kinetics['upwindF_x'] = []
-        self.kinetics['upwindF_y'] = []
-        self.kinetics['totalF_x'] = []
-        self.kinetics['totalF_y'] = []
-        self.kinetics['velocity_x'] = []
-        self.kinetics['velocity_y'] = []
-        self.kinetics['acceleration_x'] = []
-        self.kinetics['acceleration_y'] = []
-        self.kinetics['totalF_x'] = []
-        self.kinetics['totalF_y'] = []
-        self.kinetics['position_x'] = []
-        self.kinetics['position_y'] = []
-        self.kinetics['times'] = []
+        self.dynamics['randF_x'] = [np.nan]
+        self.dynamics['randF_y'] = [np.nan]
+        self.dynamics['wallRepulsiveF_x'] = [np.nan]
+        self.dynamics['wallRepulsiveF_y'] = [np.nan]
+        self.dynamics['upwindF_x'] = [np.nan]
+        self.dynamics['upwindF_y'] = [np.nan]
+        self.dynamics['totalF_x'] = [np.nan]
+        self.dynamics['totalF_y'] = [np.nan]
+        self.dynamics['velocity_x'] = [np.nan]
+        self.dynamics['velocity_y'] = [np.nan]
+        self.dynamics['acceleration_x'] = [np.nan]
+        self.dynamics['acceleration_y'] = [np.nan]
+        self.dynamics['totalF_x'] = [np.nan]
+        self.dynamics['totalF_y'] = [np.nan]
+        self.dynamics['position_x'] = [np.nan]
+        self.dynamics['position_y'] = [np.nan]
+        self.dynamics['times'] = [np.nan]
         
-        # generate random intial velocity condition    
+        # generate random intial velocity condition
         v0 = np.random.normal(0, self.v0_stdev, self.dim)
     
         ## insert initial position and velocity into positionList,veloList arrays
-        self.kinetics['position_x'].append(r0[0])
-        self.kinetics['position_y'].append(r0[1])
-        self.kinetics['velocity_x'].append(v0[0])
-        self.kinetics['velocity_y'].append(v0[1])
+        self.dynamics['position_x'].iloc[0] = r0[0]
+        self.dynamics['position_y'].iloc[0] = r0[1]
+        self.dynamics['velocity_x'].iloc[0] = v0[0]
+        self.dynamics['velocity_y'].iloc[0] = v0[1]
         
         self.fly(ts_max, detect_thresh, self.boundary, bounded)
         
@@ -170,39 +169,39 @@ class Trajectory:
         """Run the simulation using Euler's method"""
         ## loop through timesteps
         for ts in range(ts_max-1):
-            
+
             # calculate drivers
             randF = baseline_driving_forces.random_force(self.rf)
-            self.kinetics['randF_x'].append(randF[0])
-            self.kinetics['randF_y'].append(randF[1])
+            self.dynamics['randF_x'].loc[ts] = randF[0]
+            self.dynamics['randF_y'].loc[ts] = randF[1]
             
             upwindF = baseline_driving_forces.upwindBiasForce(self.wtf)
-            self.kinetics['upwindF_x'].append(upwindF[0])
-            self.kinetics['upwindF_y'].append(upwindF[1])
+            self.dynamics['upwindF_x'].loc[ts] = upwindF[0]
+            self.dynamics['upwindF_y'].loc[ts] = upwindF[1]
             
-            wallRepulsiveF = baseline_driving_forces.repulsionF([self.kinetics['position_x'][ts], self.kinetics['position_y'][ts]], self.wallF)
-            self.kinetics['wallRepulsiveF_x'].append(wallRepulsiveF[0])
-            self.kinetics['wallRepulsiveF_y'].append(wallRepulsiveF[1])
+            wallRepulsiveF = baseline_driving_forces.repulsionF([self.dynamics['position_x'][ts], self.dynamics['position_y'][ts]], self.wallF)
+            self.dynamics['wallRepulsiveF_x'].loc[ts] = wallRepulsiveF[0]
+            self.dynamics['wallRepulsiveF_y'].loc[ts] = wallRepulsiveF[1]
             
             # calculate current force
-            totalF = -self.k*np.array([self.kinetics['position_x'][ts], self.kinetics['position_y'][ts]]) \
-                      -self.beta*np.array([self.kinetics['velocity_x'][ts], self.kinetics['velocity_y'][ts]]) \
+            totalF = -self.k*np.array([self.dynamics['position_x'][ts], self.dynamics['position_y'][ts]]) \
+                      -self.beta*np.array([self.dynamics['velocity_x'][ts], self.dynamics['velocity_y'][ts]]) \
                       + randF + upwindF + wallRepulsiveF
-            self.kinetics['totalF_x'].append(totalF[0])
-            self.kinetics['totalF_y'].append(totalF[1])
+            self.dynamics['totalF_x'].loc[ts] = totalF[0]
+            self.dynamics['totalF_y'].loc[ts] = totalF[1]
             
             # calculate current acceleration
             accel = totalF/m
-            self.kinetics['acceleration_x'].append(accel[0])
-            self.kinetics['acceleration_y'].append(accel[1])
+            self.dynamics['acceleration_x'].loc[ts] = accel[0]
+            self.dynamics['acceleration_y'].loc[ts] = accel[1]
     
             # update velocity in next timestep
-            velo_future = np.array([self.kinetics['velocity_x'][ts], self.kinetics['velocity_y'][ts]]) + accel*self.dt
-            self.kinetics['velocity_x'].append(velo_future[0])
-            self.kinetics['velocity_y'].append(velo_future[1])
+            velo_future = np.array([self.dynamics['velocity_x'][ts], self.dynamics['velocity_y'][ts]]) + accel*self.dt
+            self.dynamics['velocity_x'][ts+1] = velo_future[0]
+            self.dynamics['velocity_y'][ts+1] = velo_future[1]
             
-            # update position in next timestep
-            candidate_pos = np.array([self.kinetics['position_x'][ts], self.kinetics['position_y'][ts]]) + np.array(velo_future)*self.dt  # why not use veloList[ts]? -rd
+            # create candidate position for next timestep
+            candidate_pos = np.array([self.dynamics['position_x'][ts], self.dynamics['position_y'][ts]]) + np.array(velo_future)*self.dt  # why not use veloList[ts]? -rd
 #            print candidate_pos
             
             if bounded is True:  # if walls are enabled
@@ -212,27 +211,27 @@ class Trajectory:
                 if candidate_pos[0] < boundary[0]:  # too far left
                     candidate_pos[0] = boundary[0] + 1e-4
                     if self.bounce is "crash":
-                        self.kinetics['velocity_x'][ts+1] = 0.
+                        self.dynamics['velocity_x'][ts+1] = 0.
 #                        print "teleport! left wall"
                 elif candidate_pos[0] > boundary[1]:  # reached upwind wall
                     candidate_pos[0] = boundary[1] - 1e-4
-                    self.land(ts)  # end trajectory when reach end of tunnel
                     break  # stop flying at end  
                 # check y dim
                 if candidate_pos[1] > boundary[2]:  # too far up
                     candidate_pos[1] = boundary[2] + 1e-4
                     if self.bounce is "crash":
 #                        print "teleport!"
-                        self.kinetics['velocity_y'][ts+1] = 0.
+                        self.dynamics['velocity_y'][ts+1] = 0.
 #                        print "crash! top wall"
                 elif candidate_pos[1] < boundary[3]:  # too far down
                     candidate_pos[1] = boundary[3] - 1e-4
                     if self.bounce is "crash":
-                        self.kinetics['velocity_y'][ts+1] = 0.
+                        self.dynamics['velocity_y'][ts+1] = 0.
 #                        print "crash! bottom wall"
-                
-            self.kinetics['position_x'].append(candidate_pos[0])
-            self.kinetics['position_y'].append(candidate_pos[1])
+            
+            # update position in next timestep
+            self.dynamics['position_x'][ts+1] = candidate_pos[0]
+            self.dynamics['position_y'][ts+1] = candidate_pos[1]
     
             # if there is a target, check if we are finding it
             if self.target_pos is None:
@@ -242,20 +241,11 @@ class Trajectory:
                     self.metadata['target_found'][0]  = True
                     self.metadata['total_finds'] += 1
                     self.metadata['time_to_target_find'][0] = self.timeList[ts]  # should this be timeList[ts+1]? -rd
-                    self.land(ts)
                     break  # stop flying at source
             elif ts == ts_max-1:  # ran out of time
                 self.metadata['target_found'][0]  = False
                 self.metadata['time_to_target_find'][0] = np.nan
-                self.land(ts)
                 break  # stop flying at source
-                
-                
-                    
-    def land(self, ts):    
-        # trim excess timebins in arrays
-        for key, value in self.kinetics.iteritems():
-            self.dynamics[key] = pd.Series(value[:ts+1])
             
 
 
@@ -269,5 +259,6 @@ if __name__ == '__main__':
     shrink = 1e-6  # determines size/magnitude
     
     wallF = (b, shrink, wallF_max, decay_const)  #(4e-1, 1e-6, 1e-7, 250)
+    
     
     mytraj = Trajectory(agent_pos="cage", target_pos="left", plotting = True, v0_stdev=0.01, wtf=7e-07, rf=4e-06, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=wallF)  #, wallF=(80, 1e-4)
