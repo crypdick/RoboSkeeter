@@ -55,9 +55,8 @@ def draw_heaters(target_pos, detect_thresh):
 
 def trajectory_plots(ensemble, metadata, plot_kwargs=None):
     """"Plot all the trajectories into a single arena"""
-#    metadata['target_position'] = metadata['target_position']
-#    ensemble_len = metadata['total_trajectories']
-#    fig, ax = plt.subplots(1)
+    ensemble_len = metadata['total_trajectories']
+    fig, ax = plt.subplots(1)
 #    sns.set_style("white")
 #    for trajectory_i in range(metadata['total_trajectories']):
 #        posx = ensemble.xs(trajectory_i, level='trajectory')['position_x']
@@ -87,6 +86,7 @@ def trajectory_plots(ensemble, metadata, plot_kwargs=None):
 #    plt.savefig("./figs/Trajectories b{beta} f{rf} wf{wtf} bounce {bounce} N{total_trajectories}.png"\
 #        .format(beta=metadata['beta'], rf=metadata['rf'], wtf=metadata['wtf'], bounce=metadata['bounce'], total_trajectories=ensemble_len))
 #    
+############################################## NEW HEATMAP #######################
     ## Position heatmap
     if plot_kwargs['heatmap']:
         with sns.axes_style("white"):
@@ -97,8 +97,6 @@ def trajectory_plots(ensemble, metadata, plot_kwargs=None):
             hextraj.ax_joint.invert_yaxis()  # hack to match y axis convention 
             cax = hextraj.fig.add_axes([1, .25, .04, .5])
             plt.colorbar(cax=cax)
-#    cb = plt.colorbar()
-#    cb.set_label('counts')
             
             if metadata['target_position'] is not None:
                 heaterCircle, detectCircle = draw_heaters(metadata['target_position'], metadata['detection_threshold'])
@@ -109,8 +107,8 @@ def trajectory_plots(ensemble, metadata, plot_kwargs=None):
             cage = draw_cage()
             hextraj.ax_joint.add_patch(cage)
             
-
-        # crunch the data
+        ########## OLD HEATMAP ##############################################
+#        # crunch the data
 #        counts, xedges, yedges = np.histogram2d(ensemble['position_x'], ensemble['position_y'], bins=(100,30), range=[[0, 1], [-0.15, .15]])
 #        
 #        # counts needs to be transposed to use pcolormesh     
@@ -131,6 +129,7 @@ def trajectory_plots(ensemble, metadata, plot_kwargs=None):
 #        plt.ylabel("$y$")
 #        plt.savefig("./figs/Trajectories heatmap beta{beta}_f{rf}_wf{wtf}_bounce {bounce} N{total_trajectories}.png".format(beta=metadata['beta'], rf=metadata['rf'], wtf=metadata['wtf'], bounce=metadata['bounce'], total_trajectories=ensemble_len))
 #        plt.show()
+        #####################################################################
 
 
 def stateHistograms(ensemble, metadata, plot_kwargs=None):
@@ -278,8 +277,7 @@ def force_scatter(ensemble):
 #    ensemble['upwindF_y'] = []
     
     plt.tight_layout(pad=1.3)
-    plt.draw()
-    return g
+#    plt.draw()
     
 
 
@@ -297,7 +295,7 @@ if __name__ == '__main__':
     
     wallF = (b, shrink, wallF_max, decay_const)
     
-    ensemble, metadata = trajectory_stats.main(total_trajectories=400, plotting = False, wallF=wallF)
+    ensemble, metadata = trajectory_stats.main()
         
     trajectory_plots(ensemble, metadata, heatmap=True, trajectoryPlot = True)
     xpos_counts_n, ypos_bins, ypos_counts, ypos_counts_n, vx_counts_n = stateHistograms(ensemble, metadata)

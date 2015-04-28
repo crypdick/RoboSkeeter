@@ -68,7 +68,7 @@ def T_find_stats(t_targfinds):
         return Tfind_avg
 
     
-def main(agent_pos="cage", v0_stdev=0.01, k=0., beta=4e-6, rf=3e-6, wtf=7e-7, target_pos="left", Tmax=15.0, dt=0.01, total_trajectories=100, detect_thresh=0.023175, wallF=(4e-1, 1e-6, 1e-7, 250), bounded=True, bounce="crash", plot_kwargs={'trajectories':True, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_scatter':True}):
+def main(agent_pos="cage", v0_stdev=0.01, k=0., beta=4e-6, rf=3e-6, wtf=7e-7, target_pos="left", Tmax=15.0, dt=0.01, total_trajectories=10, detect_thresh=0.023175, wallF=(4e-1, 1e-6, 1e-7, 250), bounded=True, bounce="crash", plot_kwargs={'trajectories':True, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_scatter':True}):
 #    pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, ensemble = trajGenIter(r0=r0, target_pos="left", v0_stdev=v0_stdev, k=k, beta=beta, rf=rf, wtf=wtf, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories, bounded=bounded, detect_thresh=detect_thresh)   # defaults
     ensemble, metadata = trajGenIter(agent_pos=agent_pos, target_pos=target_pos, v0_stdev=v0_stdev, k=k, beta=beta, rf=rf, wtf=wtf, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories, wallF=wallF, bounded=bounded,  bounce=bounce, detect_thresh=detect_thresh)
 
@@ -107,7 +107,7 @@ if __name__ == '__main__':
     # don't let it go below aerodynamic damping? make it lower bound
     
     plot_kwargs={'trajectories':False, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_scatter':False}
-    ensemble, metadata = main(wallF=wallF, plot_kwargs=plot_kwargs, beta = .4e-6, total_trajectories=400)
+    ensemble, metadata = main(wallF=wallF, plot_kwargs=plot_kwargs, beta = .4e-6, total_trajectories=2)
     
 #    
 #    
