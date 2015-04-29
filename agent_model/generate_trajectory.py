@@ -11,6 +11,8 @@ from numpy.linalg import norm
 import pandas as pd
 import plotting_funcs
 import baseline_driving_forces
+import stim_biasF
+
 
 ## define params
 # population weight data: 2.88 +- 0.35mg
@@ -79,7 +81,7 @@ class Trajectory:
     Returns:
         trajectory object
     """
-    def __init__(self, agent_pos, v0_stdev, Tmax, dt, target_pos, beta, rf, wtf, detect_thresh, bounded, bounce, wallF, plotting=False, title="Individual trajectory", titleappend = '', k=0.):
+    def __init__(self, agent_pos, v0_stdev, Tmax, dt, target_pos, beta, rf, wtf, stimF_str, detect_thresh, bounded, bounce, wallF, plotting=False, title="Individual trajectory", titleappend = '', k=0.):
         """ Initialize object with instant variables, and trigger other funcs. 
         """
         self.boundary = [0.0, 1.0, 0.127, -0.127]  # these are real dims of our wind tunnel
@@ -93,6 +95,7 @@ class Trajectory:
         self.detect_thresh = detect_thresh     
         self.bounce = bounce
         self.wallF = wallF
+        self.stimF_str = stimF_str
         
         # place heater
         self.target_pos = place_heater(target_pos)
@@ -125,12 +128,13 @@ class Trajectory:
         
 #        ts_max = int(np.ceil(Tmax / dt))  # maximum time step
         
-        self.dynamics = pd.DataFrame(columns=['randF_x', 'randF_y', 'wallRepulsiveF_x',\
-        'wallRepulsiveF_y', 'upwindF_x', 'upwindF_y', 'totalF_x', 'totalF_y', 'velocity_x', 'velocity_y', \
-        'acceleration_x', 'acceleration_y','totalF_x', 'totalF_y', 'position_x', 'position_y', 'times'])
+        self.dynamics = pd.DataFrame(columns=['times', 'position_x', 'position_y',\
+        'velocity_x', 'velocity_y', 'acceleration_x', 'acceleration_y',\
+        'totalF_x', 'totalF_y', 'randF_x', 'randF_y', 'wallRepulsiveF_x',
+        'wallRepulsiveF_y', 'upwindF_x', 'upwindF_y', 'stimF_x', 'stimF_y', 'inPlume'])
         # insert time
         self.dynamics['times'] = np.arange(0, Tmax+dt, dt)
-
+        self.times = np.arange(0,Tmax+dt,dt) 
         ########  Run simulation ##########
         # place agent
         r0 = place_agent(agent_pos)
@@ -139,76 +143,87 @@ class Trajectory:
         # generate random intial velocity condition
         v0 = np.random.normal(0, self.v0_stdev, self.dim)
         
-        ## insert initial position and velocity into positionList,veloList arrays
+        ## insert initial position and velocity into positionList,veloList arrays # TODO fix loc
         self.dynamics.loc[0, 'position_x'] = r0[0]
         self.dynamics.loc[0, 'position_y'] = r0[1]
         self.dynamics.loc[0, 'velocity_x'] = v0[0]
         self.dynamics.loc[0, 'velocity_y'] = v0[1]
         
-        self.fly(self.dt, detect_thresh, self.boundary, bounded)
+        self.fly(self.dt, self.dynamics, detect_thresh, self.boundary, bounded)
         
         if plotting is True:
             plot_kwargs = {'title':"Individual trajectory", 'titleappend':''}
-#            print self.dynamics.keys()
             plotting_funcs.plot_single_trajectory(self.dynamics, self.metadata, plot_kwargs)
+#    def fly2(self):
+#        dt = 0.01
+#        for tsi,ts in enumerate(self.times[:10]):
+#            #self.dynamics.loc[self.dynamics['times'] == ts+dt, 'position_y'] = candidate_pos[1]
+#            tot = ts + dt
+#            print self.dynamics['times'].iloc[tsi], (self.times.astype(float)==float(ts+0.01)).sum()
         
-        
-    def fly(self, dt, detect_thresh, boundary, bounded):
+    def fly(self, dt, dataframe, detect_thresh, boundary, bounded):
         """Run the simulation using Euler's method
         """
-
-        for ts in np.arange(0, .07, dt):
-#        for ts in self.dynamics['times']:
+        
+                
+        
+        for tsi, row in self.dynamics.iterrows():
+            ts = row['times']
+            print ts
+            
             # calculate drivers
-            print "===================================="
             randF = baseline_driving_forces.random_force(self.rf)
-            self.dynamics.loc[self.dynamics.times == ts, 'randF_x'] = randF[0]
-            self.dynamics.loc[self.dynamics.times == ts, 'randF_y'] = randF[1]
+            self.dynamics['randF_x'].iloc[tsi] = randF[0]
+            self.dynamics['randF_y'].iloc[tsi] = randF[1]
             
             upwindF = baseline_driving_forces.upwindBiasForce(self.wtf)
-            self.dynamics.loc[self.dynamics.times == ts, 'upwindF_x'] = upwindF[0]
-            self.dynamics.loc[self.dynamics.times == ts, 'upwindF_y'] = upwindF[1]
+            self.dynamics['upwindF_x'].iloc[tsi] = upwindF[0]
+            self.dynamics['upwindF_y'].iloc[tsi] = upwindF[1]
             
-            wallRepulsiveF = baseline_driving_forces.repulsionF(self.dynamics.loc[self.dynamics.times == ts, ['position_x', 'position_y']].values[0], self.wallF)
-            self.dynamics.loc[self.dynamics.times == ts, 'wallRepulsiveF_x'] = wallRepulsiveF[0]
-            self.dynamics.loc[self.dynamics.times == ts, 'wallRepulsiveF_y'] = wallRepulsiveF[1]
+            wallRepulsiveF = baseline_driving_forces.repulsionF(self.dynamics[['position_x', 'position_y']].iloc[tsi].values, self.wallF)
+            self.dynamics['wallRepulsiveF_x'].iloc[tsi] = wallRepulsiveF[0]
+            self.dynamics['wallRepulsiveF_y'].iloc[tsi] = wallRepulsiveF[1]
 #            print "velo", self.dynamics.loc[self.dynamics.times == ts, ['velocity_x', 'velocity_y']].values
+            
+            if ts == 0.0:
+                stimF, inPlume = stim_biasF.abs_plume(self.dynamics[['position_x', 'position_y']].iloc[tsi].values[0],\
+                    self.stimF_str, False)
+            else:
+                stimF, inPlume = stim_biasF.abs_plume(self.dynamics[['position_x', 'position_y']].iloc[tsi].values[0],\
+                    self.stimF_str, self.dynamics['inPlume'].iloc[tsi-1])
+            self.dynamics['inPlume'].iloc[tsi] = inPlume
+            self.dynamics['stimF_x'].iloc[tsi] = stimF[0]
+            self.dynamics['stimF_y'].iloc[tsi] = stimF[1]
+            
             
             # calculate current force
             #spring graveyard ==> # -self.k*np.array([self.dynamics.loc[self.dynamics.times == ts, 'position_x'],
-            totalF = -self.beta*self.dynamics.loc[self.dynamics.times == ts, ['velocity_x', 'velocity_y']].values[0]\
-                      + randF + upwindF + wallRepulsiveF
-            print totalF
-            self.dynamics.loc[self.dynamics.times == ts, 'totalF_x'] = totalF[0]
-            self.dynamics.loc[self.dynamics.times == ts, 'totalF_y'] = totalF[1]
-#            print "total", totalF
+            totalF = -self.beta*self.dynamics[['velocity_x','velocity_y']].iloc[tsi].values[0]\
+                      + randF + upwindF + wallRepulsiveF + stimF
+            self.dynamics['totalF_x'].iloc[tsi] = totalF[0]
+            self.dynamics['totalF_y'].iloc[tsi] = totalF[1]
             
             # calculate current acceleration
             accel = totalF/m
-#            print "totalF", totalF
-##            print "t/m", totalF/m
-##            print accel
-            self.dynamics.loc[self.dynamics.times == ts, 'acceleration_x'] = accel[0]
-            self.dynamics.loc[self.dynamics.times == ts, 'acceleration_y'] = accel[1]
+            self.dynamics['acceleration_x'].iloc[tsi] = accel[0]
+            self.dynamics['acceleration_y'].iloc[tsi] = accel[1]
     
             # update velocity in next timestep
-            velo_future = self.dynamics.loc[self.dynamics.times == ts, ['velocity_x','velocity_y']].values[0] + accel*dt
-            self.dynamics.loc[self.dynamics.times == ts+dt, 'velocity_x'] = velo_future[0]
-            self.dynamics.loc[self.dynamics.times == ts+dt, 'velocity_y'] = velo_future[1]
+            velo_future = self.dynamics[['velocity_x','velocity_y']].iloc[tsi].values[0] + accel*dt
+            self.dynamics['velocity_x'].iloc[tsi+1] = velo_future[0]
+            self.dynamics['velocity_y'].iloc[tsi+1] = velo_future[1]
             
-            # create candidate position for next timestep
-            candidate_pos = self.dynamics.loc[self.dynamics.times == ts, ['position_x', 'position_y']].values[0]\
-                + self.dynamics.loc[self.dynamics.times == ts, ['velocity_x','velocity_y']].values[0]*dt  # why not use veloList.loc[ts]? -rd
-#            print candidate_pos
+            # create candidate position for next timestep # TODO check
+            candidate_pos = self.dynamics[['position_x', 'position_y']].iloc[tsi].values\
+                + self.dynamics[['velocity_x','velocity_y']].iloc[tsi].values*dt  # why not use veloList.loc[ts]? -rd
             
             if bounded is True:  # if walls are enabled
                 ## forbid mosquito from going out of bounds
                 # check x dim
-#                print candidate_pos[0]
                 if candidate_pos[0] < boundary[0]:  # too far left
                     candidate_pos[0] = boundary[0] + 1e-4
                     if self.bounce is "crash":
-                        self.dynamics.loc[self.dynamics.times == ts+dt, 'velocity_x'] = 0.
+                        self.dynamics['velocity_x'].iloc[tsi+1] = 0.
 #                        print "teleport! left wall"
                 elif candidate_pos[0] > boundary[1]:  # reached upwind wall
                     candidate_pos[0] = boundary[1] - 1e-4
@@ -218,20 +233,21 @@ class Trajectory:
                     candidate_pos[1] = boundary[2] + 1e-4
                     if self.bounce is "crash":
 #                        print "teleport!"
-                        self.dynamics.loc[self.dynamics.times == ts+dt, 'velocity_y'] = 0.
+                        self.dynamics['velocity_y'].iloc[tsi+1] = 0.
 #                        print "crash! top wall"
                 elif candidate_pos[1] < boundary[3]:  # too far down
                     candidate_pos[1] = boundary[3] - 1e-4
                     if self.bounce is "crash":
-                        self.dynamics.loc[self.dynamics.times == ts+dt, 'velocity_y'] = 0.
+                        self.dynamics['velocity_y'].iloc[tsi+1] = 0.
 #                        print "crash! bottom wall"
-                        
-            print self.dynamics.loc[self.dynamics.times <= ts+dt]
             
-            # update position in next timestep
-            self.dynamics.loc[self.dynamics.times == ts+dt, 'position_x'] = candidate_pos[0]
-            self.dynamics.loc[self.dynamics.times == ts+dt, 'position_y']= candidate_pos[1]
-    
+            # assign candidate_pos to future position
+            self.dynamics['position_x'].iloc[tsi+1] = candidate_pos[0]
+            self.dynamics['position_y'].iloc[tsi+1] = candidate_pos[1]
+            
+#            print "\n"
+#            print self.dynamics.loc[self.dynamics.times <= ts+dt]            
+            
             # if there is a target, check if we are finding it
             if self.target_pos is None:
                 self.metadata['target_found'][0]  = False
@@ -239,7 +255,7 @@ class Trajectory:
             elif norm(candidate_pos - self.target_pos) < self.detect_thresh:
                     self.metadata['target_found'][0]  = True
                     self.metadata['total_finds'] += 1
-                    self.metadata['time_to_target_find'][0] = self.timeList.loc[ts]  # should this be timeList[i+1]? -rd
+                    self.metadata['time_to_target_find'][0] = self.timeList.loc[ts]  # should this be timeList[i+1]? -rd # TODO fix .loc
                     break  # stop flying at source
             elif ts == self.Tmax-dt:  # ran out of time
                 self.metadata['target_found'][0]  = False
@@ -260,4 +276,4 @@ if __name__ == '__main__':
     wallF = (b, shrink, wallF_max, decay_const)  #(4e-1, 1e-6, 1e-7, 250)
     
     
-    mytraj = Trajectory(agent_pos="cage", target_pos="left", plotting = False, v0_stdev=0.01, wtf=7e-07, rf=4e-06, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=wallF)  #, wallF=(80, 1e-4)
+    mytraj = Trajectory(agent_pos="cage", target_pos="left", plotting = True, v0_stdev=0.01, wtf=7e-07, rf=4e-06, stimF_str=1e-4, beta=1e-5, Tmax=0.3, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=wallF)
