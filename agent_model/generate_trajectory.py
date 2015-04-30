@@ -126,15 +126,29 @@ class Trajectory:
         ## initialize all arrays
         
         
-#        ts_max = int(np.ceil(Tmax / dt))  # maximum time step
         
-        self.dynamics = pd.DataFrame(columns=['times', 'position_x', 'position_y',\
-        'velocity_x', 'velocity_y', 'acceleration_x', 'acceleration_y',\
-        'totalF_x', 'totalF_y', 'randF_x', 'randF_y', 'wallRepulsiveF_x',
-        'wallRepulsiveF_y', 'upwindF_x', 'upwindF_y', 'stimF_x', 'stimF_y', 'inPlume'])
-        # insert time
-        self.dynamics['times'] = np.arange(0, Tmax+dt, dt)
-        self.times = np.arange(0,Tmax+dt,dt) 
+
+        self._times = np.arange(0, Tmax, dt)
+        tsi_max = self._times.size  # maximum time step index
+        self._position_x = np.full(tsi_max, np.nan)
+        self._position_y = np.full(tsi_max, np.nan)
+        self._velocity_x = np.full(tsi_max, np.nan)
+        self._velocity_y = np.full(tsi_max, np.nan)
+        self._acceleration_x = np.full(tsi_max, np.nan)
+        self._acceleration_y = np.full(tsi_max, np.nan)
+        self._totalF_x = np.full(tsi_max, np.nan)
+        self._totalF_y = np.full(tsi_max, np.nan)
+        self._randF_x = np.full(tsi_max, np.nan)
+        self._randF_y = np.full(tsi_max, np.nan)
+        self._wallRepulsiveF_x = np.full(tsi_max, np.nan)
+        self._wallRepulsiveF_y = np.full(tsi_max, np.nan)
+        self._upwindF_x = np.full(tsi_max, np.nan)
+        self._upwindF_y = np.full(tsi_max, np.nan)
+        self._stimF_x = np.full(tsi_max, np.nan)
+        self._stimF_y = np.full(tsi_max, np.nan)
+        self._inPlume = np.full(tsi_max, np.nan)
+        
+        
         ########  Run simulation ##########
         # place agent
         r0 = place_agent(agent_pos)
@@ -144,12 +158,22 @@ class Trajectory:
         v0 = np.random.normal(0, self.v0_stdev, self.dim)
         
         ## insert initial position and velocity into positionList,veloList arrays # TODO fix loc
-        self.dynamics.loc[0, 'position_x'] = r0[0]
-        self.dynamics.loc[0, 'position_y'] = r0[1]
-        self.dynamics.loc[0, 'velocity_x'] = v0[0]
-        self.dynamics.loc[0, 'velocity_y'] = v0[1]
+        self._position_x[0] = r0[0]
+        self._position_y[0] = r0[1]
+        print "vx", self._velocity_x
+        self._velocity_x[0] = v0[0]
+        print "vx", self._velocity_x
+        self._velocity_y[0] = v0[1]
         
-        self.fly(self.dt, self.dynamics, detect_thresh, self.boundary, bounded)
+        self.fly(self.dt, tsi_max, detect_thresh, self.boundary, bounded)
+        
+        arraydict = {'times': self._times, 'position_x': self._position_x, 'position_y': self._position_y,\
+        'velocity_x': self._velocity_x, 'velocity_y': self._velocity_y, 'acceleration_x': self._acceleration_x, 'acceleration_y': self._acceleration_y,\
+        'totalF_x': self._totalF_x, 'totalF_y': self._totalF_y, 'randF_x': self._randF_x, 'randF_y': self._randF_y, 'wallRepulsiveF_x': self._wallRepulsiveF_x,
+        'wallRepulsiveF_y': self._wallRepulsiveF_y, 'upwindF_x': self._upwindF_x, 'upwindF_y': self._upwindF_y, 'stimF_x': self._stimF_x, 'stimF_y': self._stimF_y, 'inPlume': self._inPlume}
+        
+        self.dynamics = pd.DataFrame(arraydict)
+        print self.dynamics        
         
         if plotting is True:
             plot_kwargs = {'title':"Individual trajectory", 'titleappend':''}
@@ -161,61 +185,65 @@ class Trajectory:
 #            tot = ts + dt
 #            print self.dynamics['times'].iloc[tsi], (self.times.astype(float)==float(ts+0.01)).sum()
         
-    def fly(self, dt, dataframe, detect_thresh, boundary, bounded):
+    def fly(self, dt, tsi_max, detect_thresh, boundary, bounded):
         """Run the simulation using Euler's method
         """
         
                 
         
-        for tsi, row in self.dynamics.iterrows():
-            ts = row['times']
-            print ts
+        for tsi in range(tsi_max):
             
             # calculate drivers
             randF = baseline_driving_forces.random_force(self.rf)
-            self.dynamics['randF_x'].iloc[tsi] = randF[0]
-            self.dynamics['randF_y'].iloc[tsi] = randF[1]
+            self._randF_x[tsi] = randF[0]
+            self._randF_y[tsi] = randF[1]
             
             upwindF = baseline_driving_forces.upwindBiasForce(self.wtf)
-            self.dynamics['upwindF_x'].iloc[tsi] = upwindF[0]
-            self.dynamics['upwindF_y'].iloc[tsi] = upwindF[1]
+            self._upwindF_x[tsi] = upwindF[0]
+            self._upwindF_y[tsi] = upwindF[1]
             
-            wallRepulsiveF = baseline_driving_forces.repulsionF(self.dynamics[['position_x', 'position_y']].iloc[tsi].values, self.wallF)
-            self.dynamics['wallRepulsiveF_x'].iloc[tsi] = wallRepulsiveF[0]
-            self.dynamics['wallRepulsiveF_y'].iloc[tsi] = wallRepulsiveF[1]
+            wallRepulsiveF = baseline_driving_forces.repulsionF(np.array([self._position_x[tsi], self._position_y[tsi]]), self.wallF)
+            self._wallRepulsiveF_x[tsi] = wallRepulsiveF[0]
+            self._wallRepulsiveF_y[tsi] = wallRepulsiveF[1]
 #            print "velo", self.dynamics.loc[self.dynamics.times == ts, ['velocity_x', 'velocity_y']].values
             
-            if ts == 0.0:
-                stimF, inPlume = stim_biasF.abs_plume(self.dynamics[['position_x', 'position_y']].iloc[tsi].values[0],\
+            if tsi == 0:
+                stimF, inPlume = stim_biasF.abs_plume(np.array([self._position_x[tsi], self._position_y[tsi]]),\
                     self.stimF_str, False)
             else:
-                stimF, inPlume = stim_biasF.abs_plume(self.dynamics[['position_x', 'position_y']].iloc[tsi].values[0],\
-                    self.stimF_str, self.dynamics['inPlume'].iloc[tsi-1])
-            self.dynamics['inPlume'].iloc[tsi] = inPlume
-            self.dynamics['stimF_x'].iloc[tsi] = stimF[0]
-            self.dynamics['stimF_y'].iloc[tsi] = stimF[1]
+                stimF, inPlume = stim_biasF.abs_plume(np.array([self._position_x[tsi], self._position_y[tsi]]),\
+                    self.stimF_str, self._inPlume[tsi-1])
+            self._inPlume[tsi] = inPlume
+            self._stimF_x[tsi] = stimF[0]
+            self._stimF_y[tsi] = stimF[1]
             
             
             # calculate current force
             #spring graveyard ==> # -self.k*np.array([self.dynamics.loc[self.dynamics.times == ts, 'position_x'],
-            totalF = -self.beta*self.dynamics[['velocity_x','velocity_y']].iloc[tsi].values[0]\
+            totalF = -self.beta*np.array([self._velocity_x[tsi], self._velocity_y[tsi]])\
                       + randF + upwindF + wallRepulsiveF + stimF
-            self.dynamics['totalF_x'].iloc[tsi] = totalF[0]
-            self.dynamics['totalF_y'].iloc[tsi] = totalF[1]
+            self._totalF_x[tsi] = totalF[0]
+            self._totalF_y[tsi] = totalF[1]
             
             # calculate current acceleration
             accel = totalF/m
-            self.dynamics['acceleration_x'].iloc[tsi] = accel[0]
-            self.dynamics['acceleration_y'].iloc[tsi] = accel[1]
-    
+            self._acceleration_x[tsi] = accel[0]
+            self._acceleration_y[tsi] = accel[1]
+            
+            # if time is out, end loop
+            if tsi == tsi_max-1:
+                self.metadata['target_found'][0]  = False
+                self.metadata['time_to_target_find'][0] = np.nan
+                break  # stop flying at source            
+            
             # update velocity in next timestep
-            velo_future = self.dynamics[['velocity_x','velocity_y']].iloc[tsi].values[0] + accel*dt
-            self.dynamics['velocity_x'].iloc[tsi+1] = velo_future[0]
-            self.dynamics['velocity_y'].iloc[tsi+1] = velo_future[1]
+            velo_future = np.array([self._velocity_x[tsi], self._velocity_y[tsi]]) + accel*dt
+            self._velocity_x[tsi+1] = velo_future[0]
+            self._velocity_y[tsi+1] = velo_future[1]
             
             # create candidate position for next timestep # TODO check
-            candidate_pos = self.dynamics[['position_x', 'position_y']].iloc[tsi].values\
-                + self.dynamics[['velocity_x','velocity_y']].iloc[tsi].values*dt  # why not use veloList.loc[ts]? -rd
+            candidate_pos = np.array([self._position_x[tsi], self._position_y[tsi]]) \
+                + np.array([self._velocity_x[tsi], self._velocity_y[tsi]])*dt  # why not use veloList.loc[ts]? -rd
             
             if bounded is True:  # if walls are enabled
                 ## forbid mosquito from going out of bounds
@@ -223,7 +251,7 @@ class Trajectory:
                 if candidate_pos[0] < boundary[0]:  # too far left
                     candidate_pos[0] = boundary[0] + 1e-4
                     if self.bounce is "crash":
-                        self.dynamics['velocity_x'].iloc[tsi+1] = 0.
+                        self._velocity_x[tsi+1] = 0.
 #                        print "teleport! left wall"
                 elif candidate_pos[0] > boundary[1]:  # reached upwind wall
                     candidate_pos[0] = boundary[1] - 1e-4
@@ -233,17 +261,17 @@ class Trajectory:
                     candidate_pos[1] = boundary[2] + 1e-4
                     if self.bounce is "crash":
 #                        print "teleport!"
-                        self.dynamics['velocity_y'].iloc[tsi+1] = 0.
+                        self._velocity_y[tsi+1] = 0.
 #                        print "crash! top wall"
                 elif candidate_pos[1] < boundary[3]:  # too far down
                     candidate_pos[1] = boundary[3] - 1e-4
                     if self.bounce is "crash":
-                        self.dynamics['velocity_y'].iloc[tsi+1] = 0.
+                        self._velocity_y[tsi+1] = 0.
 #                        print "crash! bottom wall"
             
             # assign candidate_pos to future position
-            self.dynamics['position_x'].iloc[tsi+1] = candidate_pos[0]
-            self.dynamics['position_y'].iloc[tsi+1] = candidate_pos[1]
+            self._position_x[tsi+1] = candidate_pos[0]
+            self._position_y[tsi+1] = candidate_pos[1]
             
 #            print "\n"
 #            print self.dynamics.loc[self.dynamics.times <= ts+dt]            
@@ -257,10 +285,6 @@ class Trajectory:
                     self.metadata['total_finds'] += 1
                     self.metadata['time_to_target_find'][0] = self.timeList.loc[ts]  # should this be timeList[i+1]? -rd # TODO fix .loc
                     break  # stop flying at source
-            elif ts == self.Tmax-dt:  # ran out of time
-                self.metadata['target_found'][0]  = False
-                self.metadata['time_to_target_find'][0] = np.nan
-                break  # stop flying at source
             
 
 
@@ -276,4 +300,4 @@ if __name__ == '__main__':
     wallF = (b, shrink, wallF_max, decay_const)  #(4e-1, 1e-6, 1e-7, 250)
     
     
-    mytraj = Trajectory(agent_pos="cage", target_pos="left", plotting = True, v0_stdev=0.01, wtf=7e-07, rf=4e-06, stimF_str=1e-4, beta=1e-5, Tmax=0.3, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=wallF)
+    mytraj = Trajectory(agent_pos="cage", target_pos="left", plotting = True, v0_stdev=0.01, wtf=7e-07, rf=4e-06, stimF_str=1e-4, beta=1e-5, Tmax=15., dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=wallF)
