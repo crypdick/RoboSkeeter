@@ -14,6 +14,7 @@ Created on Thu Apr 23 13:04:37 2015
 
 @author: richard
 """
+import numpy as np
 
 #def force(dir=None):
 #    if dir=None:
@@ -24,7 +25,7 @@ def abs_plume(position, strength, inplume_past):
     should be"""
     dummy = True
     if dummy is True:
-        return [0, 0], False
+        return np.array([0, 0]), False
     else: #
         # what is the temp at this position?
-        return [0, 0], False
+        return np.array([0, 0]), False
