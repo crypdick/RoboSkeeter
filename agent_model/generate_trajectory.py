@@ -143,8 +143,6 @@ class Trajectory:
         self._wallRepulsiveF_y = np.full(tsi_max, np.nan)
         self._upwindF_x = np.full(tsi_max, np.nan)
         self._upwindF_y = np.full(tsi_max, np.nan)
-        self._brakeF_x = np.full(tsi_max, np.nan)
-        self._brakeF_y = np.full(tsi_max, np.nan)
         self._stimF_x = np.full(tsi_max, np.nan)
         self._stimF_y = np.full(tsi_max, np.nan)
         self._inPlume = np.full(tsi_max, np.nan)
@@ -174,7 +172,7 @@ class Trajectory:
 #        print self.dynamics        
         
         if plotting is True:
-            plot_kwargs = {'title':"Individual trajectory", 'titleappend':''}
+            plot_kwargs = {'title':"Individual agent trajectory", 'titleappend':''}
             plotting_funcs.plot_single_trajectory(self.dynamics, self.metadata, plot_kwargs)
 #    def fly2(self):
 #        dt = 0.01
@@ -204,9 +202,9 @@ class Trajectory:
             self._wallRepulsiveF_y[tsi] = wallRepulsiveF[1]
 #            print "velo", self.dynamics.loc[self.dynamics.times == ts, ['velocity_x', 'velocity_y']].values
             
-            # this may get updated if we find outselves crashing into the wall
-            self._brakeF_x[tsi] = 0.
-            self._brakeF_y[tsi] = 0.
+#            # this may get updated if we find outselves crashing into the wall
+#            self._brakeF_x[tsi] = 0.
+#            self._brakeF_y[tsi] = 0.
             
             # assume that in the first timestep we are not in the plume
             if tsi == 0:
@@ -219,54 +217,49 @@ class Trajectory:
             self._stimF_x[tsi] = stimF[0]
             self._stimF_y[tsi] = stimF[1]
             
-            outside_correct = True
-            while outside_correct is True:
-                # calculate current force
-                #spring graveyard ==> # -self.k*np.array([self.dynamics.loc[self.dynamics.times == ts, 'position_x'],
-                totalF = -self.beta*np.array([self._velocity_x[tsi], self._velocity_y[tsi]])\
-                      + randF + upwindF + wallRepulsiveF + stimF \
-                      + np.array([self._brakeF_x[tsi], self._brakeF_y[tsi]])
-                self._totalF_x[tsi] = totalF[0]
+            # calculate current force
+            #spring graveyard ==> # -self.k*np.array([self.dynamics.loc[self.dynamics.times == ts, 'position_x'],
+            totalF = -self.beta*np.array([self._velocity_x[tsi], self._velocity_y[tsi]])\
+                  + randF + upwindF + wallRepulsiveF + stimF
+            self._totalF_x[tsi] = totalF[0]
 #                print outside_correct
 #                print totalF
-                self._totalF_y[tsi] = totalF[1]
-                
-                # calculate current acceleration
-                accel = totalF/m
-                self._acceleration_x[tsi] = accel[0]
-                self._acceleration_y[tsi] = accel[1]
-                
-                # if time is out, end loop
-                # TODO: check that landing behavior is right
-                if tsi == tsi_max-1:
+            self._totalF_y[tsi] = totalF[1]
+            
+            # calculate current acceleration
+            accel = totalF/m
+            self._acceleration_x[tsi] = accel[0]
+            self._acceleration_y[tsi] = accel[1]
+            
+            # if time is out, end loop
+            # TODO: check that landing behavior is right
+            if tsi == tsi_max-1:
+                self.metadata['target_found'][0]  = False
+                self.metadata['time_to_target_find'][0] = np.nan
+                self.land(tsi)
+                break
+            
+            # update velocity in next timestep
+            velo_future = np.array([self._velocity_x[tsi], self._velocity_y[tsi]]) + accel*dt
+            self._velocity_x[tsi+1] = velo_future[0]
+            self._velocity_y[tsi+1] = velo_future[1]
+            
+            # create candidate position for next timestep
+            candidate_pos = np.array([self._position_x[tsi], self._position_y[tsi]]) \
+                + np.array([self._velocity_x[tsi], self._velocity_y[tsi]])*dt  # why not use veloList.loc[ts]? -rd
+            
+            if bounded is True:  # if walls are enabled
+                ## forbid mosquito from going out of bounds
+                if candidate_pos[0] > boundary[1]:  # reached far (upwind) wall
                     self.metadata['target_found'][0]  = False
                     self.metadata['time_to_target_find'][0] = np.nan
-                    self.land(tsi)
+                    self.land(tsi-1)  # stop flying at end, throw out last row
                     break
-                
-                # update velocity in next timestep
-                velo_future = np.array([self._velocity_x[tsi], self._velocity_y[tsi]]) + accel*dt
-                self._velocity_x[tsi+1] = velo_future[0]
-                self._velocity_y[tsi+1] = velo_future[1]
-                
-                # create candidate position for next timestep
-                candidate_pos = np.array([self._position_x[tsi], self._position_y[tsi]]) \
-                    + np.array([self._velocity_x[tsi], self._velocity_y[tsi]])*dt  # why not use veloList.loc[ts]? -rd
-                
-                if bounded is True:  # if walls are enabled
-                    ## forbid mosquito from going out of bounds
-                    if candidate_pos[0] > boundary[1]:  # reached far (upwind) wall
-                        self.metadata['target_found'][0]  = False
-                        self.metadata['time_to_target_find'][0] = np.nan
-                        self.land(tsi-1)  # stop flying at end, throw out last row
-                        break
-                    toggle, brakeF_x, brakeF_y = baseline_driving_forces.brakingF(candidate_pos, self._totalF_x[tsi], self._totalF_y[tsi], boundary)
-                    outside_correct = toggle
-                    if toggle is True:
-                        print tsi, "bounce~!"
+#                toggle, brakeF_x, brakeF_y = baseline_driving_forces.brakingF(candidate_pos, self._totalF_x[tsi], self._totalF_y[tsi], boundary)
+#                outside_correct = toggle
+#                if toggle is True:
+#                    print tsi, "bounce~!"
 #                    print outside_correct
-                    self._brakeF_x[tsi] = brakeF_x
-                    self._brakeF_y[tsi] = brakeF_y
             
                 # assign candidate_pos to future position
                 self._position_x[tsi+1] = candidate_pos[0]
@@ -285,14 +278,14 @@ class Trajectory:
 
     def land(self, tsi):
         # trim excess timebins in arrays
-        for array in self.arraydict.itervalues():
-            array = array[:tsi+1]
+        for key, array in self.arraydict.items():
+            self.arraydict[key] = array[:tsi+1]
             
 
 
 if __name__ == '__main__':
     # wallF params
-    wallF_max=1e-6#1e-7
+    wallF_max=9e-6#1e-7
     decay_const = 250
     
     # center repulsion params
@@ -302,4 +295,4 @@ if __name__ == '__main__':
     wallF = (b, shrink, wallF_max, decay_const)  #(4e-1, 1e-6, 1e-7, 250)
     
     
-    mytraj = Trajectory(agent_pos="cage", target_pos="left", plotting = True, v0_stdev=0.01, wtf=7e-07, rf=4e-06, stimF_str=1e-4, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=wallF)
+    mytraj = Trajectory(agent_pos="cage", target_pos="left", plotting = True, v0_stdev=0.01, wtf=7e-07, rf=4e-06, stimF_str=1e-4, beta=1e-5, Tmax=1, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=wallF)
