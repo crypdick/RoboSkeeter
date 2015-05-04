@@ -118,13 +118,23 @@ def repulsionF(position, wallF):
         return np.array([0., force_y])
 
 
-def stimulusDrivingForce():
-    """[PLACEHOLDER]
-    Force driving agegent towards stimulus source, determined by
-    temperature-stimulus at the current position at the current time: b(timeList(x,timeList))
-
-    TODO: Make two biased functions for this: accelList spatial-context dependent 
-    bias (e.g. to drive mosquitos away from walls), and accelList temp 
-    stimulus-dependent driving force.
-    """
-    pass
+#def brakingF(candidate_pos, totalF_x, totalF_y, boundary):
+#    # check x dim
+#    if candidate_pos[0] < boundary[0]:  # too far left
+#        outside_correct = True
+#        brakeF_x = -6 * totalF_x
+#        brakeF_y = 0.
+#    # check y dim
+#    if candidate_pos[1] > boundary[2]:  # too far up
+#        outside_correct = True
+#        brakeF_x = 0.
+#        brakeF_y = -6 * totalF_y
+##                        print "crash! top wall"
+#    elif candidate_pos[1] < boundary[3]:  # too far down
+#        outside_correct = True
+#        brakeF_x = 0.
+#        brakeF_y = -6 * totalF_y
+#    else:
+#        outside_correct, brakeF_x, brakeF_y = False, 0., 0.
+#        
+#    return outside_correct, brakeF_x, brakeF_y

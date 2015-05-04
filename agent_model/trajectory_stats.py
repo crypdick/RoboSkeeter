@@ -109,7 +109,7 @@ if __name__ == '__main__':
     #"stokes flow" occurs when 
     # don't let it go below aerodynamic damping? make it lower bound
     
-    plot_kwargs={'trajectories':False, 'heatmap':False, 'states':False, 'singletrajectories':False, 'force_scatter':True}
+    plot_kwargs={'trajectories':False, 'heatmap':True, 'states':False, 'singletrajectories':False, 'force_scatter':True}
     ensemble, metadata = main(wallF=wallF, plot_kwargs=plot_kwargs, beta = .4e-6)
     
 #    
