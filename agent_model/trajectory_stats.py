@@ -16,7 +16,7 @@ import pandas as pd
 import seaborn as sns
 
 
-def trajGenIter(agent_pos, target_pos, v0_stdev, k, beta, rf, wtf, Tmax, dt, total_trajectories, wallF, bounded, bounce, detect_thresh):
+def trajGenIter(agent_pos, target_pos, v0_stdev, k, beta, rf, wtf, Tmax, dt, total_trajectories, wallF, stimF_str, bounded, bounce, detect_thresh):
     """
     Run generate_trajectory total_trajectories times and return the results
     as arrays.
@@ -38,16 +38,20 @@ def trajGenIter(agent_pos, target_pos, v0_stdev, k, beta, rf, wtf, Tmax, dt, tot
     """
     
     ensemble = pd.DataFrame()
-
-    for traj_i in range(total_trajectories):
-        trajectory = generate_trajectory.Trajectory(agent_pos=agent_pos, target_pos=target_pos, v0_stdev=v0_stdev, k=k, beta=beta, rf=rf, wtf=wtf, Tmax=Tmax, dt=dt, detect_thresh=detect_thresh, wallF=wallF, bounded=bounded, bounce=bounce)
+    traj_count = 0
+    while traj_count < total_trajectories:
+        trajectory = generate_trajectory.Trajectory(agent_pos=agent_pos, target_pos=target_pos, v0_stdev=v0_stdev, k=k, beta=beta, rf=rf, wtf=wtf, Tmax=Tmax, dt=dt, detect_thresh=detect_thresh, wallF=wallF, stimF_str=stimF_str, bounded=bounded, bounce=bounce)
+        #throw out trajectories with huge accelerations        
+        if trajectory.dynamics['acceleration_y'].max(axis=0) > 30.:
+            continue
         # extract trajectory object attribs, append to our lists.
-        trajectory.dynamics['trajectory'] = traj_i
-        trajectory.dynamics.set_index('trajectory', append=True, inplace=True)
+        trajectory.dynamics['trajectory'] = traj_count
+        traj_count += 1
+#        trajectory.dynamics.set_index('trajectory', append=True, inplace=True)
         ensemble = ensemble.append(trajectory.dynamics)
-        trajectory.metadata['total_trajectories'] += 1
+        
 
-
+    trajectory.metadata['total_trajectories'] = total_trajectories
     trajectory.metadata['time_target_find_avg'] = T_find_stats(trajectory.metadata['time_to_target_find'])
     
     return ensemble, trajectory.metadata
@@ -68,20 +72,19 @@ def T_find_stats(t_targfinds):
         return Tfind_avg
 
     
-def main(agent_pos="cage", v0_stdev=0.01, k=0., beta=4e-6, rf=3e-6, wtf=7e-7, target_pos="left", Tmax=15.0, dt=0.01, total_trajectories=10, detect_thresh=0.023175, wallF=(4e-1, 1e-6, 1e-7, 250), bounded=True, bounce="crash", plot_kwargs={'trajectories':True, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_scatter':True}):
+def main(agent_pos="cage", v0_stdev=0.01, k=0., beta=4e-6, rf=3e-6, wtf=7e-7, target_pos="left", Tmax=15.0, dt=0.01, total_trajectories=2, detect_thresh=0.023175, wallF=(4e-1, 1e-6, 1e-7, 250), stimF_str = 0., bounded=True, bounce="crash", plot_kwargs={'trajectories':False, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_scatter':True}):
 #    pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, ensemble = trajGenIter(r0=r0, target_pos="left", v0_stdev=v0_stdev, k=k, beta=beta, rf=rf, wtf=wtf, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories, bounded=bounded, detect_thresh=detect_thresh)   # defaults
-    ensemble, metadata = trajGenIter(agent_pos=agent_pos, target_pos=target_pos, v0_stdev=v0_stdev, k=k, beta=beta, rf=rf, wtf=wtf, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories, wallF=wallF, bounded=bounded,  bounce=bounce, detect_thresh=detect_thresh)
+    ensemble, metadata = trajGenIter(agent_pos=agent_pos, target_pos=target_pos, v0_stdev=v0_stdev, k=k, beta=beta, rf=rf, wtf=wtf, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories, wallF=wallF, bounded=bounded,  bounce=bounce, detect_thresh=detect_thresh, stimF_str=stimF_str)
 
-
-    if plot_kwargs['heatmap']:
+    if plot_kwargs['heatmap'] is True:
 #         plot all trajectories
         plotting_funcs.trajectory_plots(ensemble, metadata, plot_kwargs=plot_kwargs)
-    if plot_kwargs['singletrajectories']:
+    if plot_kwargs['singletrajectories'] is True:
         plotting_funcs.plot_single_trajectory(ensemble, metadata, plot_kwargs=plot_kwargs)
-    if plot_kwargs['states']:
+    if plot_kwargs['states'] is True:
 #         plot histogram of pos, velo, accel distributions
         plotting_funcs.stateHistograms(ensemble, metadata, plot_kwargs=plot_kwargs)
-    if plot_kwargs['force_scatter']:
+    if plot_kwargs['force_scatter'] is True:
         plotting_funcs.force_scatter(ensemble)
         
 
@@ -90,12 +93,12 @@ def main(agent_pos="cage", v0_stdev=0.01, k=0., beta=4e-6, rf=3e-6, wtf=7e-7, ta
 
 if __name__ == '__main__':
     # wallF params
-    wallF_max=5e-7
-    decay_const = 250
+    wallF_max=9e-6#1e-7
+    decay_const = 90
         
     # center repulsion params
     b = 4e-1  # determines shape
-    shrink = 5e-7  # determines size/magnitude
+    shrink = 1e-6  # determines size/magnitude
     
     wallF = (b, shrink, wallF_max, decay_const)
     
@@ -106,8 +109,8 @@ if __name__ == '__main__':
     #"stokes flow" occurs when 
     # don't let it go below aerodynamic damping? make it lower bound
     
-    plot_kwargs={'trajectories':False, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_scatter':False}
-    ensemble, metadata = main(wallF=wallF, plot_kwargs=plot_kwargs, beta = .4e-6, total_trajectories=2)
+    plot_kwargs={'trajectories':False, 'heatmap':False, 'states':False, 'singletrajectories':False, 'force_scatter':True}
+    ensemble, metadata = main(wallF=wallF, plot_kwargs=plot_kwargs, beta = .4e-6)
     
 #    
 #    
