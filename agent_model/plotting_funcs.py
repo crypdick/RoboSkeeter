@@ -256,7 +256,7 @@ def force_scatter(ensemble, metadata):
 ##    forcefig = plt.figure(5, figsize=(9, 8))
 ##    gs2 = gridspec.GridSpec(2, 2)
 ##    Faxs = [fig.add_subplot(ss) for ss in gs2]
-#    forcefig = plt.figure(5)
+    forcefig = plt.figure(5)
 #    Faxs1 = forcefig.add_subplot(211)
 #    Faxs2 = forcefig.add_subplot(212)
     sns.violinplot(trim_ensembleF, color="Paired", lw=2, alpha=0.7)
@@ -268,7 +268,7 @@ def force_scatter(ensemble, metadata):
 #    remove_border()
     plt.tight_layout(pad=1.8)    
 
-    plt.ylabel("Force magnitude distribution")
+    plt.ylabel("Force magnitude distribution (newtons)")
     plt.savefig("./figs/Force Distributions b {beta},f {rf},wf {wtf},bounce {bounce},N {total_trajectories}.svg".format(beta=metadata['beta'], rf=metadata['rf'], wtf=metadata['wtf'], bounce=metadata['bounce'], total_trajectories=metadata['total_trajectories']), format='svg')
     
 
