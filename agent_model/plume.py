@@ -17,9 +17,24 @@ import pandas as pd
 
 #boundary = [2.0, 2.3, 0.15, -0.15, 1]  # these are real dims of our wind tunnel
 
-def main():
+
+def mkplume():
     plume = pd.read_csv('temperature_data/COMSOL2D_temp.csv')
+    # correct for model convention
+    plume['y'] = plume.y.values - 0.127
     return plume
+    
+
+def templookup(coords):
+    return 0
+    
+
+def main(coords = None):
+    plume = mkplume()
+    if coords != None:
+       temp = templookup(coords)
+    
+    
 
 if __name__ == '__main__':
     plume = main()

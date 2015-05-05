@@ -39,6 +39,8 @@ def place_agent(agent_pos):
         return [0.1524, 0.]  # center of box
     if agent_pos == "cage":  # bounds of cage
         return [np.random.uniform(0.1143, 0.1909), np.random.uniform(-0.0381, 0.0381)]
+    if agent_pos == "door":  # start trajectories when they exit the front door
+        return [0.1909, np.random.uniform(-0.0381, 0.0381)]
     else:
         raise Exception('invalid agent position specified')
 
@@ -295,4 +297,4 @@ if __name__ == '__main__':
     wallF = (b, shrink, wallF_max, decay_const)  #(4e-1, 1e-6, 1e-7, 250)
     
     
-    mytraj = Trajectory(agent_pos="cage", target_pos="left", plotting = True, v0_stdev=0.01, wtf=7e-07, rf=4e-06, stimF_str=1e-4, beta=1e-5, Tmax=1, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=wallF)
+    mytraj = Trajectory(agent_pos="door", target_pos="left", plotting = True, v0_stdev=0.01, wtf=7e-07, rf=4e-06, stimF_str=1e-4, beta=1e-5, Tmax=10, dt=0.001, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=wallF)
