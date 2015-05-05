@@ -248,9 +248,9 @@ def stateHistograms(ensemble, metadata, plot_kwargs=None):
     return xpos_counts_n, ypos_bins, ypos_counts, ypos_counts_n, vx_counts_n
 
 
-def force_scatter(ensemble):
+def force_scatter(ensemble, metadata):
     
-    trim_ensembleF = ensemble.loc[(ensemble['position_x']>0.25) & (ensemble['position_x']<0.85), ['totalF_x', 'totalF_y', 'randF_x', 'randF_y', 'stimF_x', 'stimF_y', 'upwindF_x', 'upwindF_y', 'wallRepulsiveF_x', 'wallRepulsiveF_y']]
+    trim_ensembleF = ensemble.loc[(ensemble['position_x']>0.25) & (ensemble['position_x']<0.85), ['totalF_x', 'totalF_y', 'randF_x', 'randF_y', 'stimF_x', 'stimF_y', 'upwindF_x', 'wallRepulsiveF_x', 'wallRepulsiveF_y']]
     # plot Forces
 #    f, axes = plt.subplots(2, 2, figsize=(9, 9), sharex=True, sharey=True)
 ##    forcefig = plt.figure(5, figsize=(9, 8))
@@ -262,9 +262,14 @@ def force_scatter(ensemble):
     sns.violinplot(trim_ensembleF, color="Paired", lw=2, alpha=0.7)
 #    tF = sns.jointplot('totalF_x', 'totalF_y', trim_ensemble, kind="hex", size=10)
     plt.suptitle("Force distributions")
-    plt.tight_layout(pad=1.3)    
+#    plt.xticks(range(4,((len(alignments.keys())+1)*4),4), [i[1] for i in medians_sgc], rotation=90, fontsize = 4)
+    plt.tick_params(axis='x', pad=4)
+    plt.xticks(rotation=40)
+#    remove_border()
+    plt.tight_layout(pad=1.8)    
 
     plt.ylabel("Force magnitude distribution")
+    plt.savefig("./figs/Force Distributions b {beta},f {rf},wf {wtf},bounce {bounce},N {total_trajectories}.svg".format(beta=metadata['beta'], rf=metadata['rf'], wtf=metadata['wtf'], bounce=metadata['bounce'], total_trajectories=metadata['total_trajectories']), format='svg')
     
 
 
