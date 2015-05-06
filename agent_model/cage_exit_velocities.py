@@ -26,26 +26,18 @@ door_region['magnitude'] = [np.linalg.norm(x) for x in door_region.values]
 door_region['angle'] = np.tan(door_region['velocity_y']/door_region['velocity_x']) % (2*np.pi)
 door_region['fraction'] = door_region['magnitude'] / door_region['magnitude'].sum()
 
-
-
-
-#what is bottom?
-
 N = 40  # number of bins
-#bottom = 0
-#max_height = 10
-#
-roundbins = np.linspace(0.0, 2 * np.pi, N, endpoint=False)
-##radii = max_height*np.random.rand(N)
-##theta = door_region['angle']
-##radii = door_region['magnitude']
+
+
+roundbins = np.linspace(0.0, 2 * np.pi, N)
+
 width = (2*np.pi) / N
 
 values, bin_edges = np.histogram(door_region['angle'], weights = door_region['fraction'], bins = roundbins)
 
 ax = plt.subplot(111, polar=True)
 
-ax.bar(bin_edges[:-1], values, width = width, linewidth = 0)
+ax.bar(bin_edges[:-1], values, width = width, linewidth = 0, alpha = 0.6)
 plt.xlim(min(bin_edges), max(bin_edges))
 
 # switch to radian labels
@@ -53,14 +45,8 @@ xT = plt.xticks()[0]
 xL=['0',r'$\frac{\pi}{4}$',r'$\frac{\pi}{2}$',r'$\frac{3\pi}{4}$',\
     r'$\pi$',r'$\frac{5\pi}{4}$',r'$\frac{3\pi}{2}$',r'$\frac{7\pi}{4}$']
 plt.xticks(xT, xL, size = 20)
-plt.title("Agent velocities 0.25 < x < 0.5, center repulsion on, n = 200")
-plt.savefig("./figs/Velocity compass, center repulsion on, N200.svg", format='svg')
-    
-#
-#
-### Use custom colors and opacity
-##for r, bar in zip(radii, bars):
-##    bar.set_facecolor(plt.cm.jet(r / 10.))
-##    bar.set_alpha(0.8)
+plt.title("Agent velocities 0.25 < x < 0.5, center repulsion on, n = 200", y=1.15)
+plt.savefig("./figs/Velocity compass, center repulsion off, N200.svg", format='svg')
+
 
 plt.show()
