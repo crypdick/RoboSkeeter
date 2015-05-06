@@ -6,12 +6,8 @@ Created on Thu Apr 23 10:53:11 2015
 
 @author: richard
 """
-import numpy as np
-from numpy import pi, sin, cos
-#import matplotlib.pyplot as plt
-#from matplotlib import cm
-#import mpl_toolkits.mplot3d.axes3d as axes3d
-#from scipy import spatial
+
+from scipy.spatial import cKDTree
 import pandas as pd
 
 
@@ -20,24 +16,32 @@ import pandas as pd
 
 def mkplume():
     plume = pd.read_csv('temperature_data/COMSOL2D_temp.csv')
+    # grab just last timestep of the plume
+    plume = plume.loc[:,['x', 'y', 't348']]
+    plume.rename(columns={'t348': 'temp'}, inplace=True)
     # correct for model convention
     plume['y'] = plume.y.values - 0.127
     return plume
+
+
+def mk_tree(plume):
+    return cKDTree(plume[['x', 'y']])
+#    return 0
+
+#def templookup(coords):
+#    return 0
     
 
-def templookup(coords):
-    return 0
-    
-
-def main(coords = None):
+def main():
     plume = mkplume()
-    if coords != None:
-       temp = templookup(coords)
+    plume_kdTree = mk_tree(plume)
+    
+    return plume, plume_kdTree
     
     
 
 if __name__ == '__main__':
-    plume = main()
+    plume, plume_kdTree = main()
 
 #class Plume():
 #    def __init__(self):
