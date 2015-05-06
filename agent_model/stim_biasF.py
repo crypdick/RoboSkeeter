@@ -37,7 +37,7 @@ plumeDirection = [left, right, none]
 import numpy as np
 
 
-def absoluteT_detect(temperature, threshold = 299.15):#, strength, inplume_past):
+def absoluteT_detect(temperature, threshold):#, strength, inplume_past):
     """given temperature, check if it's above our threshold
     return if we're in plume (bool)"""
     if temperature >= threshold:
@@ -63,24 +63,25 @@ def bound_crossing_status(current_status, past_status):
 
 
 def stimF_direction(cross_status, veloy):
-    # TODO
+    """
+    """
     return None
 
 
-def stimF(dir=None):
+def stimF(stimF_strength, dir=None):
     if dir == None:
         return [0, 0]
         
         
-def main(temperature, past_status, detection_type='absolute'):
+def main(temperature, velocity_y, stimF_strength, thresh=299.15, past_status=False, detection_type='absolute'):
     veloy = None
     if detection_type == 'absolute':
         curr_status = absoluteT_detect(temperature, thresh)
     cross_status = bound_crossing_status(curr_status, past_status)
     stimF_dir = stimF_direction(cross_status, veloy)
-    force = stimF()
+    force = stimF(stimF_strength)
     
-    return curr_status, force
+    return force, curr_status
     
     
     

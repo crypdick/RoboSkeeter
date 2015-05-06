@@ -151,14 +151,23 @@ class Trajectory:
         self._temperature = np.full(tsi_max, np.nan)
         self._inPlume = np.full(tsi_max, np.nan)
         
-        ########  Run simulation ##########
+        
+        self.fly(self.dt, tsi_max, detect_thresh, self.boundary, bounded)
+        
+        if plotting is True:
+            plot_kwargs = {'title':"Individual agent trajectory", 'titleappend':''}
+            plotting_funcs.plot_single_trajectory(self.dynamics, self.metadata, plot_kwargs)
+    
+    
+    def fly(self, dt, tsi_max, detect_thresh, boundary, bounded):
+        """Run the simulation using Euler's method
+        """
         # place agent
-        r0 = place_agent(agent_pos)
+        r0 = place_agent(self.metadata['initial_position'])
         self.dim = len(r0)  # get dimension
         
         # temperature plume
         self.plume, self.plume_kdTree = plume.main()
-        
         
         # generate random intial velocity condition
         v0 = np.random.normal(0, self.v0_stdev, self.dim)
@@ -168,10 +177,6 @@ class Trajectory:
         self._position_y[0] = r0[1]
         self._velocity_x[0] = v0[0]
         self._velocity_y[0] = v0[1]
-        self._temperature[0] = self.detect_temperature(r0)
-        self._stimF_x[0], self._stimF_y[0] = 0., 0.
-        
-
         
         self.arraydict = {'times': self._times, 'position_x': self._position_x, 'position_y': self._position_y,\
         'velocity_x': self._velocity_x, 'velocity_y': self._velocity_y, 'acceleration_x': self._acceleration_x,\
@@ -180,38 +185,10 @@ class Trajectory:
         'wallRepulsiveF_y': self._wallRepulsiveF_y, 'upwindF_x': self._upwindF_x, 'upwindF_y': self._upwindF_y,\
         'stimF_x': self._stimF_x, 'stimF_y': self._stimF_y, 'temperature': self._temperature, 'inPlume': self._inPlume}
         
-        self.fly(self.dt, tsi_max, detect_thresh, self.boundary, bounded)        
-
-        # dump values into a pandas dataframe
-        self.dynamics = pd.DataFrame(self.arraydict)
-        
-        if plotting is True:
-            plot_kwargs = {'title':"Individual agent trajectory", 'titleappend':''}
-            plotting_funcs.plot_single_trajectory(self.dynamics, self.metadata, plot_kwargs)
-            
-
-    def detect_temperature(self, position):
-        """Given position, find nearest temperature datum in our plume dataframe
-        using a k-d tree search.
-        
-        Input:
-        position: (list)
-            [xcoord, ycoord]
-        
-        Output:
-        tempearture: (float)
-            the nearest temperature
-        """
-        distance, index = self.plume_kdTree.query(position)
-        return self.plume.loc[index, 'temp']
-    
-    
-    def fly(self, dt, tsi_max, detect_thresh, boundary, bounded):
-        """Run the simulation using Euler's method
-        """
-        
-        
         for tsi in range(tsi_max):
+            # sense the temperature
+            self._temperature[tsi] = self.detect_temperature([self._position_x[tsi], self._position_y[tsi]])
+            
             # calculate drivers
             randF = baseline_driving_forces.random_force(self.rf)
             self._randF_x[tsi] = randF[0]
@@ -229,16 +206,15 @@ class Trajectory:
 #            self._brakeF_x[tsi] = 0.
 #            self._brakeF_y[tsi] = 0.
             
-            # assume that in the first timestep we are not in the plume
-#            if tsi == 0:
-##                stimF, inPlume = stim_biasF.abs_plume(np.array([self._position_x[tsi], self._position_y[tsi]]),\
-##                    self.stimF_str, False)
-#            else:
-#                stimF, inPlume = stim_biasF.abs_plume(np.array([self._position_x[tsi], self._position_y[tsi]]),\
-#                    self.stimF_str, self._inPlume[tsi-1])
-##            self._inPlume[tsi] = inPlume
-#            self._stimF_x[tsi] = stimF[0]
-#            self._stimF_y[tsi] = stimF[1]
+            try:
+                stimF, inPlume = stim_biasF.main(self._temperature[tsi], self._velocity_y[tsi],\
+                    self._inPlume[tsi-1], self.stimF_str)
+            except UnboundLocalError:
+                stimF, inPlume = stim_biasF.main(self._temperature[tsi], self._velocity_y[tsi],\
+                    False, self.stimF_str)
+            self._inPlume[tsi] = inPlume
+            self._stimF_x[tsi] = stimF[0]
+            self._stimF_y[tsi] = stimF[1]
             
             # calculate current force
             #spring graveyard ==> # -self.k*np.array([self.dynamics.loc[self.dynamics.times == ts, 'position_x'],
@@ -293,11 +269,31 @@ class Trajectory:
                     self.metadata['time_to_target_find'][0] = self._times[tsi]  # should this be timeList[i+1]? -rd # TODO fix .loc
                     self.land(tsi)  # stop flying at source
                     break
+                
+    
+    def detect_temperature(self, position):
+        """Given position, find nearest temperature datum in our plume dataframe
+        using a k-d tree search.
+        
+        Input:
+        position: (list)
+            [xcoord, ycoord]
+        
+        Output:
+        tempearture: (float)
+            the nearest temperature
+        """
+        distance, index = self.plume_kdTree.query(position)
+        return self.plume.loc[index, 'temp']
+
 
     def land(self, tsi):
         # trim excess timebins in arrays
         for key, array in self.arraydict.items():
             self.arraydict[key] = array[:tsi+1]
+            
+        # dump values into a pandas dataframe
+        self.dynamics = pd.DataFrame(self.arraydict)
             
 
 
@@ -313,4 +309,4 @@ if __name__ == '__main__':
     wallF = (b, shrink, wallF_max, decay_const)  #(4e-1, 1e-6, 1e-7, 250)
     
     
-    mytraj = Trajectory(agent_pos="door", target_pos="left", plotting = True, v0_stdev=0.01, wtf=7e-07, rf=4e-06, stimF_str=1e-4, beta=1e-5, Tmax=0.01, dt=0.001, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=wallF)
+    mytraj = Trajectory(agent_pos="door", target_pos="left", plotting = True, v0_stdev=0.01, wtf=7e-07, rf=4e-06, stimF_str=1e-4, beta=1e-5, Tmax=1, dt=0.001, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=wallF)

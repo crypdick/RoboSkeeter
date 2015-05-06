@@ -48,7 +48,7 @@ def trajGenIter(agent_pos, target_pos, v0_stdev, k, beta, rf, wtf, Tmax, dt, tot
         trajectory.dynamics['trajectory'] = traj_count
         traj_count += 1
 #        trajectory.dynamics.set_index('trajectory', append=True, inplace=True)
-        ensemble = ensemble.append(trajectory.dynamics)
+        ensemble = ensemble.append(trajectory.dynamics)  # TODO: check this is correct
         
 
     trajectory.metadata['total_trajectories'] = total_trajectories
@@ -72,7 +72,7 @@ def T_find_stats(t_targfinds):
         return Tfind_avg
 
     
-def main(agent_pos="door", v0_stdev=0.01, k=0., beta=4e-6, rf=3e-6, wtf=7e-7, target_pos="left", Tmax=15.0, dt=0.001, total_trajectories=200, detect_thresh=0.023175, wallF=(4e-1, 1e-6, 1e-7, 250), stimF_str = 0., bounded=True, bounce="crash", plot_kwargs={'trajectories':False, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_scatter':True}):
+def main(agent_pos="door", v0_stdev=0.01, k=0., beta=.4e-6, rf=3e-6, wtf=7e-7, target_pos="left", Tmax=15.0, dt=0.01, total_trajectories=200, detect_thresh=0.023175, wallF=(4e-1, 1e-6, 1e-7, 250), stimF_str = 0., bounded=True, bounce="crash", plot_kwargs={'trajectories':False, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_scatter':True}):
 #    pos, velos, accels, target_finds, t_targfinds, Tfind_avg, num_success, ensemble = trajGenIter(r0=r0, target_pos="left", v0_stdev=v0_stdev, k=k, beta=beta, rf=rf, wtf=wtf, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories, bounded=bounded, detect_thresh=detect_thresh)   # defaults
     ensemble, metadata = trajGenIter(agent_pos=agent_pos, target_pos=target_pos, v0_stdev=v0_stdev, k=k, beta=beta, rf=rf, wtf=wtf, Tmax=Tmax, dt=dt, total_trajectories=total_trajectories, wallF=wallF, bounded=bounded,  bounce=bounce, detect_thresh=detect_thresh, stimF_str=stimF_str)
 
@@ -87,7 +87,6 @@ def main(agent_pos="door", v0_stdev=0.01, k=0., beta=4e-6, rf=3e-6, wtf=7e-7, ta
     if plot_kwargs['force_scatter'] is True:
         plotting_funcs.force_scatter(ensemble, metadata)
         
-
     return ensemble, metadata
 
 
