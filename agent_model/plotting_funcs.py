@@ -28,7 +28,7 @@ def plot_single_trajectory(dynamics, metadata, plot_kwargs=None):
     currentAxis = plt.gca()
     cage = draw_cage()
     currentAxis.add_patch(cage)
-    currentAxis.axis([0,1,0.127, -0.127])
+    currentAxis.axis([0, 1, 0.127, -0.127])
     if metadata['target_position'] is not None:
         heaterCircle, detectCircle = draw_heaters(metadata['target_position'], metadata['detection_threshold'])
         currentAxis.add_artist(heaterCircle)
@@ -113,8 +113,8 @@ def trajectory_plots(ensemble, metadata, plot_kwargs=None):
 #        counts, xedges, yedges = np.histogram2d(ensemble['position_x'], ensemble['position_y'], bins=(100,30), range=[[0, 1], [-0.15, .15]])
         # only considering trajectories between 0.25 - 0.85 m in x direction   
         
-        trim_ensemble = ensemble.loc[(ensemble['position_x']>0.25) & (ensemble['position_x']<0.85)]
-        counts, xedges, yedges = np.histogram2d(trim_ensemble['position_x'], trim_ensemble['position_y'], bins=(100,30), range=[[0.25, 0.85], [-0.127, .127]])
+        trim_ensemble = ensemble.loc[(ensemble['position_x']>0.25) & (ensemble['position_x']<0.95)]
+        counts, xedges, yedges = np.histogram2d(trim_ensemble['position_x'], trim_ensemble['position_y'], bins=(100,30), range=[[0.25, 0.95], [-0.127, .127]])
         
         
         
@@ -137,7 +137,7 @@ def trajectory_plots(ensemble, metadata, plot_kwargs=None):
         ax.set_aspect('equal')
 #        ax.invert_yaxis()  # hack to match y axis convention --- now unneeded?
         ax.set_ylim([0.127, -.127])  # keep positive first to invert axis
-        ax.set_xlim([0.25, 0.85])
+        ax.set_xlim([0.25, 0.95])
         
         # overwrite previous plot schwag
         cbar = plt.colorbar(heatmap, shrink=0.5, pad=0.05)
@@ -250,7 +250,7 @@ def stateHistograms(ensemble, metadata, plot_kwargs=None):
 
 def force_scatter(ensemble, metadata):
     
-    trim_ensembleF = ensemble.loc[(ensemble['position_x']>0.25) & (ensemble['position_x']<0.85), ['totalF_x', 'totalF_y', 'randF_x', 'randF_y', 'stimF_x', 'stimF_y', 'upwindF_x', 'wallRepulsiveF_x', 'wallRepulsiveF_y']]
+    trim_ensembleF = ensemble.loc[(ensemble['position_x']>0.25) & (ensemble['position_x']<0.95), ['totalF_x', 'totalF_y', 'randF_x', 'randF_y', 'upwindF_x', 'wallRepulsiveF_x', 'wallRepulsiveF_y']] # TODO 'stimF_x', 'stimF_y'
     # plot Forces
 #    f, axes = plt.subplots(2, 2, figsize=(9, 9), sharex=True, sharey=True)
 ##    forcefig = plt.figure(5, figsize=(9, 8))

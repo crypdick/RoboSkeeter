@@ -63,7 +63,7 @@ def upwindBiasForce(wtf, upwind_direction=0, dim=2):
         upwind bias force x and y components as an array
     """
     if dim == 2:
-        if wtf == 0:
+        if wtf == None:
             return [0, 0]
         else:
             return [wtf, 0]  # wf is constant, directly to right
