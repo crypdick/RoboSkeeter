@@ -10,9 +10,6 @@ https://github.com/isomerase/
 from matplotlib import pyplot as plt
 import matplotlib.gridspec as gridspec
 import numpy as np
-import itertools
-from matplotlib.patches import Rectangle
-import matplotlib.ticker as mtick
 import seaborn as sns
 
 sns.set_palette("muted", 8)

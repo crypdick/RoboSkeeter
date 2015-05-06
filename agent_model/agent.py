@@ -260,6 +260,7 @@ class Agent():
                 self.metadata['target_found'][0]  = False
                 self.metadata['time_to_target_find'][0] = np.nan
                 arraydict = self.land(tsi-1, arraydict)
+                print "Throwing out trajectory, impossible acceleration!"
                 raise ValueError('Impossible acceleration! ', accel[0], accel[1])
             
             # if time is out, end loop
@@ -330,8 +331,10 @@ if __name__ == '__main__':
     myplume = plume.Plume()
     trajectories = trajectory.Trajectory()
     myagent = Agent(agent_pos="door", target_pos="left", v0_stdev=0.01, wtf=7e-07, rf=4e-06, stimF_str=1e-4, beta=1e-5, Tmax=15, dt=0.001, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=wallF)
-    myagent.fly(total_trajectories=1)
+    myagent.fly(total_trajectories=4)
     
     plot_kwargs = {'trajectories':False, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_scatter':True}
     
-    trajectories.describe(plot_kwargs)
+#    trajectories.describe(plot_kwargs)
+    trajectories.plot_single_trajectory()
+    

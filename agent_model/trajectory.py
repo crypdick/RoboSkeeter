@@ -50,9 +50,8 @@ class Trajectory():
         
         
     def plot_single_trajectory(self):
-        if __name__ == '__main__':
-            plot_kwargs = {'title':"Individual agent trajectory", 'titleappend':''}
-            plotting_funcs.plot_single_trajectory(self.ensemble, self.agent_info, plot_kwargs)
+        plot_kwargs = {'title':"Individual agent trajectory", 'titleappend':''}
+        plotting_funcs.plot_single_trajectory(self.ensemble.loc[self.ensemble['trajectory_num']==0], self.agent_info, plot_kwargs)
     
 
     def add_agent_info(self, data_dict):
@@ -76,4 +75,4 @@ class Trajectory():
         if plot_kwargs['force_scatter'] is True:
             plotting_funcs.force_violin(self.ensemble, self.agent_info)
     
-    def 
+#    def 
