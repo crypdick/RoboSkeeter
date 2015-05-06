@@ -18,7 +18,13 @@ def landscape(b, shrink, wallF_max=8e-8, decay_const = 90, mu=0.):
     gaussian params: mu, stdev, centerF_max
     """
 #    wallF_max = decay_const*(1/250)
-    fx = lambda pos : (wallF_max * np.exp(-1 * decay_const * (pos+0.127))) +  shrink * ( 1/(2*b) * np.exp(-1 * abs(pos-mu)/b) ) + (wallF_max * np.exp(1 * decay_const * (pos-0.127)))
+#    
+#    # landscape with repulsion in center
+#    fx = lambda pos : (wallF_max * np.exp(-1 * decay_const * (pos+0.127))) +  shrink * ( 1/(2*b) * np.exp(-1 * abs(pos-mu)/b) ) + (wallF_max * np.exp(1 * decay_const * (pos-0.127)))
+
+    # no center repulsion; only wall repulsion
+    fx = lambda pos : (wallF_max * np.exp(-1 * decay_const * (pos+0.127))) + (wallF_max * np.exp(1 * decay_const * (pos-0.127)))
+
 #    fx = lambda pos : (wallF_max * np.exp(-1 * decay_const * (pos+0.127))) +  shrink * ( 1/(2*b) * np.exp(-1 * abs(pos-mu)/b) ) + (wallF_max * np.exp(1 * decay_const * (pos-0.127)))
 #    fx = lambda pos : ( 1/(2*b) * np.exp(-1 * abs(pos-mu)/b) ) * .01
     return fx
