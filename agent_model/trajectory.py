@@ -58,10 +58,7 @@ class Trajectory():
         for key, value in data_dict.iteritems():
             self.agent_info[key] = value
             
-    def conclusion_stats(self, total_trajectories):
-        self.add_agent_info({'total_trajectories': total_trajectories, 'time_target_find_avg': T_find_stats(self.agent_info['time_to_target_find'])})
-    
-    
+            
     def describe(self, plot_kwargs={'trajectories':False, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_scatter':True}):
         print self.ensemble.describe()
         if plot_kwargs['heatmap'] is True:

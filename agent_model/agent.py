@@ -160,7 +160,9 @@ class Agent():
     #        trajectory.dynamics.set_index('trajectory', append=True, inplace=True)
             trajectories.append_ensemble(array_dict)  # TODO: check this is correct
             
-        trajectories.conclusion_stats(total_trajectories, )
+        # concluding stats
+        trajectories.add_agent_info({'total_trajectories': total_trajectories, 'time_target_find_avg': trajectory.T_find_stats(trajectories.agent_info['time_to_target_find'])})
+    
         
         if __name__ == '__main__' and total_trajectories == 1:
             trajectories.plot_single_trajectory()
