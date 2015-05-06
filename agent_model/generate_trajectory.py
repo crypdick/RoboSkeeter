@@ -83,8 +83,12 @@ class Trajectory:
 
     Returns:
         trajectory object
+        
+    TODO: would it make more sense to make fly and land separate functions, since we never need to use
+    those methods with the trajectory object in other scripts? Or maybe an agent class that takes
+    a trajectory class?
     """
-    def __init__(self, agent_pos, v0_stdev, Tmax, dt, target_pos, beta, rf, wtf, stimF_str, detect_thresh, bounded, bounce, wallF, plotting=False, title="Individual trajectory", titleappend = '', k=0.):
+    def __init__(self, agent_pos, v0_stdev, Tmax, dt, target_pos, beta, rf, wtf, stimF_str, detect_thresh, bounded, bounce, wallF, k=0.):
         """ Initialize object with instant variables, and trigger other funcs. 
         """
         self.boundary = [0.0, 1.0, 0.127, -0.127]  # these are real dims of our wind tunnel
@@ -153,10 +157,6 @@ class Trajectory:
         
         
         self.fly(self.dt, tsi_max, detect_thresh, self.boundary, bounded)
-        
-        if plotting is True:
-            plot_kwargs = {'title':"Individual agent trajectory", 'titleappend':''}
-            plotting_funcs.plot_single_trajectory(self.dynamics, self.metadata, plot_kwargs)
     
     
     def fly(self, dt, tsi_max, detect_thresh, boundary, bounded):
@@ -227,6 +227,11 @@ class Trajectory:
             accel = totalF/m
             self._acceleration_x[tsi] = accel[0]
             self._acceleration_y[tsi] = accel[1]
+            if accel[1] > 50. or accel[0] > 50.:
+                self.metadata['target_found'][0]  = False
+                self.metadata['time_to_target_find'][0] = np.nan
+                self.land(tsi-1)
+                raise ValueError('Impossible acceleration! ', accel[0], accel[1])
             
             # if time is out, end loop
             # TODO: check that landing behavior is right
@@ -294,7 +299,10 @@ class Trajectory:
             
         # dump values into a pandas dataframe
         self.dynamics = pd.DataFrame(self.arraydict)
-            
+        
+        if __name__ == '__main__':
+            plot_kwargs = {'title':"Individual agent trajectory", 'titleappend':''}
+            plotting_funcs.plot_single_trajectory(self.dynamics, self.metadata, plot_kwargs)
 
 
 if __name__ == '__main__':
@@ -309,4 +317,4 @@ if __name__ == '__main__':
     wallF = (b, shrink, wallF_max, decay_const)  #(4e-1, 1e-6, 1e-7, 250)
     
     
-    mytraj = Trajectory(agent_pos="door", target_pos="left", plotting = True, v0_stdev=0.01, wtf=7e-07, rf=4e-06, stimF_str=1e-4, beta=1e-5, Tmax=1, dt=0.001, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=wallF)
+    mytraj = Trajectory(agent_pos="door", target_pos="left", v0_stdev=0.01, wtf=7e-07, rf=4e-06, stimF_str=1e-4, beta=1e-5, Tmax=15, dt=0.001, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=wallF)

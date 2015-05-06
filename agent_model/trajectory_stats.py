@@ -40,9 +40,9 @@ def trajGenIter(agent_pos, target_pos, v0_stdev, k, beta, rf, wtf, Tmax, dt, tot
     ensemble = pd.DataFrame()
     traj_count = 0
     while traj_count < total_trajectories:
-        trajectory = generate_trajectory.Trajectory(agent_pos=agent_pos, target_pos=target_pos, v0_stdev=v0_stdev, k=k, beta=beta, rf=rf, wtf=wtf, Tmax=Tmax, dt=dt, detect_thresh=detect_thresh, wallF=wallF, stimF_str=stimF_str, bounded=bounded, bounce=bounce)
-        #throw out trajectories with huge accelerations        
-        if trajectory.dynamics['acceleration_y'].max(axis=0) > 30.:
+        try:
+            trajectory = generate_trajectory.Trajectory(agent_pos=agent_pos, target_pos=target_pos, v0_stdev=v0_stdev, k=k, beta=beta, rf=rf, wtf=wtf, Tmax=Tmax, dt=dt, detect_thresh=detect_thresh, wallF=wallF, stimF_str=stimF_str, bounded=bounded, bounce=bounce)
+        except ValueError:  # throw out trajectories with impossible accels
             continue
         # extract trajectory object attribs, append to our lists.
         trajectory.dynamics['trajectory'] = traj_count
@@ -85,7 +85,7 @@ def main(agent_pos="door", v0_stdev=0.01, k=0., beta=.4e-6, rf=3e-6, wtf=7e-7, t
 #         plot histogram of pos, velo, accel distributions
         plotting_funcs.stateHistograms(ensemble, metadata, plot_kwargs=plot_kwargs)
     if plot_kwargs['force_scatter'] is True:
-        plotting_funcs.force_scatter(ensemble, metadata)
+        plotting_funcs.force_violin(ensemble, metadata)
         
     return ensemble, metadata
 
@@ -118,5 +118,5 @@ if __name__ == '__main__':
 #  critical damping beta=1
 #       slightly more interesting beta=0.1
 #
-#    
+
     

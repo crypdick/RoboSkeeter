@@ -248,7 +248,7 @@ def stateHistograms(ensemble, metadata, plot_kwargs=None):
     return xpos_counts_n, ypos_bins, ypos_counts, ypos_counts_n, vx_counts_n
 
 
-def force_scatter(ensemble, metadata):
+def force_violin(ensemble, metadata):
     
     trim_ensembleF = ensemble.loc[(ensemble['position_x']>0.25) & (ensemble['position_x']<0.95), ['totalF_x', 'totalF_y', 'randF_x', 'randF_y', 'upwindF_x', 'wallRepulsiveF_x', 'wallRepulsiveF_y']] # TODO 'stimF_x', 'stimF_y'
     # plot Forces
