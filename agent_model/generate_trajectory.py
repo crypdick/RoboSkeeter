@@ -12,6 +12,7 @@ import pandas as pd
 import plotting_funcs
 import baseline_driving_forces
 import stim_biasF
+import plume
 
 
 ## define params
@@ -23,9 +24,9 @@ def place_heater(target_pos):
     if target_pos is None:
             return None
     elif target_pos == "left":
-        return [0.86, -0.0507]
+        return [0.8651, -0.0507]
     elif target_pos == "right":
-        return [0.86, 0.0507]
+        return [0.8651, 0.0507]
     elif type(target_pos) is list:
         return target_pos
     else:
@@ -147,12 +148,17 @@ class Trajectory:
         self._upwindF_y = np.full(tsi_max, np.nan)
         self._stimF_x = np.full(tsi_max, np.nan)
         self._stimF_y = np.full(tsi_max, np.nan)
+        self._temperature = np.full(tsi_max, np.nan)
         self._inPlume = np.full(tsi_max, np.nan)
         
         ########  Run simulation ##########
         # place agent
         r0 = place_agent(agent_pos)
         self.dim = len(r0)  # get dimension
+        
+        # temperature plume
+        self.plume, self.plume_kdTree = plume.main()
+        
         
         # generate random intial velocity condition
         v0 = np.random.normal(0, self.v0_stdev, self.dim)
@@ -162,34 +168,50 @@ class Trajectory:
         self._position_y[0] = r0[1]
         self._velocity_x[0] = v0[0]
         self._velocity_y[0] = v0[1]
+        self._temperature[0] = self.detect_temperature(r0)
+        self._stimF_x[0], self._stimF_y[0] = 0., 0.
+        
+
         
         self.arraydict = {'times': self._times, 'position_x': self._position_x, 'position_y': self._position_y,\
-        'velocity_x': self._velocity_x, 'velocity_y': self._velocity_y, 'acceleration_x': self._acceleration_x, 'acceleration_y': self._acceleration_y,\
-        'totalF_x': self._totalF_x, 'totalF_y': self._totalF_y, 'randF_x': self._randF_x, 'randF_y': self._randF_y, 'wallRepulsiveF_x': self._wallRepulsiveF_x,
-        'wallRepulsiveF_y': self._wallRepulsiveF_y, 'upwindF_x': self._upwindF_x, 'upwindF_y': self._upwindF_y, 'stimF_x': self._stimF_x, 'stimF_y': self._stimF_y, 'inPlume': self._inPlume}
+        'velocity_x': self._velocity_x, 'velocity_y': self._velocity_y, 'acceleration_x': self._acceleration_x,\
+        'acceleration_y': self._acceleration_y, 'totalF_x': self._totalF_x, 'totalF_y': self._totalF_y,\
+        'randF_x': self._randF_x, 'randF_y': self._randF_y, 'wallRepulsiveF_x': self._wallRepulsiveF_x,\
+        'wallRepulsiveF_y': self._wallRepulsiveF_y, 'upwindF_x': self._upwindF_x, 'upwindF_y': self._upwindF_y,\
+        'stimF_x': self._stimF_x, 'stimF_y': self._stimF_y, 'temperature': self._temperature, 'inPlume': self._inPlume}
         
         self.fly(self.dt, tsi_max, detect_thresh, self.boundary, bounded)        
 
+        # dump values into a pandas dataframe
         self.dynamics = pd.DataFrame(self.arraydict)
-#        print self.dynamics        
         
         if plotting is True:
             plot_kwargs = {'title':"Individual agent trajectory", 'titleappend':''}
             plotting_funcs.plot_single_trajectory(self.dynamics, self.metadata, plot_kwargs)
-#    def fly2(self):
-#        dt = 0.01
-#        for tsi,ts in enumerate(self.times[:10]):
-#            #self.dynamics.loc[self.dynamics['times'] == ts+dt, 'position_y'] = candidate_pos[1]
-#            tot = ts + dt
-#            print self.dynamics['times'].iloc[tsi], (self.times.astype(float)==float(ts+0.01)).sum()
+            
+
+    def detect_temperature(self, position):
+        """Given position, find nearest temperature datum in our plume dataframe
+        using a k-d tree search.
         
+        Input:
+        position: (list)
+            [xcoord, ycoord]
+        
+        Output:
+        tempearture: (float)
+            the nearest temperature
+        """
+        distance, index = self.plume_kdTree.query(position)
+        return self.plume.loc[index, 'temp']
+    
+    
     def fly(self, dt, tsi_max, detect_thresh, boundary, bounded):
         """Run the simulation using Euler's method
         """
         
         
         for tsi in range(tsi_max):
-#            print tsi
             # calculate drivers
             randF = baseline_driving_forces.random_force(self.rf)
             self._randF_x[tsi] = randF[0]
@@ -202,30 +224,27 @@ class Trajectory:
             wallRepulsiveF = baseline_driving_forces.repulsionF(np.array([self._position_x[tsi], self._position_y[tsi]]), self.wallF)
             self._wallRepulsiveF_x[tsi] = wallRepulsiveF[0]
             self._wallRepulsiveF_y[tsi] = wallRepulsiveF[1]
-#            print "velo", self.dynamics.loc[self.dynamics.times == ts, ['velocity_x', 'velocity_y']].values
             
 #            # this may get updated if we find outselves crashing into the wall
 #            self._brakeF_x[tsi] = 0.
 #            self._brakeF_y[tsi] = 0.
             
             # assume that in the first timestep we are not in the plume
-            if tsi == 0:
-                stimF, inPlume = stim_biasF.abs_plume(np.array([self._position_x[tsi], self._position_y[tsi]]),\
-                    self.stimF_str, False)
-            else:
-                stimF, inPlume = stim_biasF.abs_plume(np.array([self._position_x[tsi], self._position_y[tsi]]),\
-                    self.stimF_str, self._inPlume[tsi-1])
-            self._inPlume[tsi] = inPlume
-            self._stimF_x[tsi] = stimF[0]
-            self._stimF_y[tsi] = stimF[1]
+#            if tsi == 0:
+##                stimF, inPlume = stim_biasF.abs_plume(np.array([self._position_x[tsi], self._position_y[tsi]]),\
+##                    self.stimF_str, False)
+#            else:
+#                stimF, inPlume = stim_biasF.abs_plume(np.array([self._position_x[tsi], self._position_y[tsi]]),\
+#                    self.stimF_str, self._inPlume[tsi-1])
+##            self._inPlume[tsi] = inPlume
+#            self._stimF_x[tsi] = stimF[0]
+#            self._stimF_y[tsi] = stimF[1]
             
             # calculate current force
             #spring graveyard ==> # -self.k*np.array([self.dynamics.loc[self.dynamics.times == ts, 'position_x'],
             totalF = -self.beta*np.array([self._velocity_x[tsi], self._velocity_y[tsi]])\
-                  + randF + upwindF + wallRepulsiveF + stimF
+                  + randF + upwindF + wallRepulsiveF# + stimF
             self._totalF_x[tsi] = totalF[0]
-#                print outside_correct
-#                print totalF
             self._totalF_y[tsi] = totalF[1]
             
             # calculate current acceleration
@@ -267,9 +286,6 @@ class Trajectory:
                 self._position_x[tsi+1] = candidate_pos[0]
                 self._position_y[tsi+1] = candidate_pos[1]
             
-#            print "\n"
-#            print self.dynamics.loc[self.dynamics.times <= ts+dt]            
-            
             # if there is a target, check if we are finding it                
             if norm(candidate_pos - self.target_pos) < self.detect_thresh:
                     self.metadata['target_found'][0]  = True
@@ -297,4 +313,4 @@ if __name__ == '__main__':
     wallF = (b, shrink, wallF_max, decay_const)  #(4e-1, 1e-6, 1e-7, 250)
     
     
-    mytraj = Trajectory(agent_pos="door", target_pos="left", plotting = True, v0_stdev=0.01, wtf=7e-07, rf=4e-06, stimF_str=1e-4, beta=1e-5, Tmax=10, dt=0.001, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=wallF)
+    mytraj = Trajectory(agent_pos="door", target_pos="left", plotting = True, v0_stdev=0.01, wtf=7e-07, rf=4e-06, stimF_str=1e-4, beta=1e-5, Tmax=0.01, dt=0.001, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=wallF)
