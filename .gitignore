@@ -67,3 +67,4 @@ Agent Model/writeup.txt
 /.project
 /dick_pickle.py
 /Changelog.txt~
+/agent_model/temperature_data/LH_50_tempfield-10s.csv
