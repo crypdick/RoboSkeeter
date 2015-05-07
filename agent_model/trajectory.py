@@ -49,27 +49,88 @@ class Trajectory():
         self.ensemble = self.ensemble.append(trajectory)
         
         
-    def plot_single_trajectory(self):
-        plot_kwargs = {'title':"Individual agent trajectory", 'titleappend':''}
-        plotting_funcs.plot_single_trajectory(self.ensemble.loc[self.ensemble['trajectory_num']==0], self.agent_info, plot_kwargs)
+    def plot_single_trajectory(self, trajectory_i=0):
+        plot_kwargs = {'title':"Individual agent trajectory", 'titleappend':'( #{})'.format(trajectory_i)}
+        plotting_funcs.plot_single_trajectory(self.ensemble.loc[self.ensemble['trajectory_num']==trajectory_i], self.agent_info, plot_kwargs)
     
 
     def add_agent_info(self, data_dict):
         for key, value in data_dict.iteritems():
             self.agent_info[key] = value
             
+    def plot_force_violin(self):
+        plotting_funcs.force_violin(self.ensemble, self.agent_info)
+        
+    
+    def plot_posheatmap(self):
+        plotting_funcs.heatmaps(self.ensemble, self.agent_info)
+        
+    
+    def plot_kinematic_hists(self, ensemble='none', titleappend=''):
+        print titleappend
+        if type(ensemble) == 'none':
+            ensemble = self.ensemble
+            ensemble = ensemble.loc[(ensemble['position_x'] >0.25) & (ensemble['position_x'] <0.95)]
+        plotting_funcs.stateHistograms(ensemble, self.agent_info, titleappend)
+        
+    def plot_door_velocity_compass(self):
+        import door_region_analysis
+        
+        door_region_analysis.main(self.ensemble, self.agent_info)
+        
+    def plot_sliced_hists(self):
+        """Plot histograms from 0.25 < x < 0.95, as well as that same space
+        divided into 4 equal 0.15 m segments 
+        """
+        x_edges = np.linspace(.25,.95,5)
+        
+        print "full ensemble"
+        full_ensemble = self.ensemble.loc[(self.ensemble['position_x'] > x_edges[0]) \
+            & (self.ensemble['position_x'] < x_edges[4])]
+        self.plot_kinematic_hists(ensemble=full_ensemble, titleappend=' {} < x <= {}'.format(x_edges[0], x_edges[4]))
+        
+        print "downwind half ensemble"
+        downwind_ensemble = self.ensemble.loc[(self.ensemble['position_x'] > x_edges[0]) \
+            & (self.ensemble['position_x'] < x_edges[2])]
+        self.plot_kinematic_hists(ensemble=downwind_ensemble, titleappend=' {} < x <= {}'.format(x_edges[0], x_edges[2]))
+
+        print "upwind half ensemble"
+        upwind_ensemble = self.ensemble.loc[(self.ensemble['position_x'] > x_edges[2]) \
+            & (self.ensemble['position_x'] < x_edges[4])]
+        self.plot_kinematic_hists(ensemble=upwind_ensemble, titleappend=' {} < x <= {}'.format(x_edges[2], x_edges[4]))        
+        
+        print "first quarter ensemble"
+        ensemble1 = self.ensemble.loc[(self.ensemble['position_x'] > x_edges[0]) \
+            & (self.ensemble['position_x'] <= x_edges[1])]
+        self.plot_kinematic_hists(ensemble=ensemble1, titleappend=' {} < x <= {}'.format(x_edges[0], x_edges[1]))
+        
+        print "second quarter ensemble"
+        ensemble2 = self.ensemble.loc[(self.ensemble['position_x'] > x_edges[1]) \
+            & (self.ensemble['position_x'] <= x_edges[2])]
+        self.plot_kinematic_hists(ensemble=ensemble2, titleappend=' {} < x <= {}'.format(x_edges[1], x_edges[2]))
+        
+        print "third quarter ensemble"
+        ensemble3 = self.ensemble.loc[(self.ensemble['position_x'] > x_edges[2]) \
+            & (self.ensemble['position_x'] <= x_edges[3])]
+        self.plot_kinematic_hists(ensemble=ensemble3, titleappend=' {} < x <= {}'.format(x_edges[2], x_edges[3]))
+
+        print "fourth quarter ensemble"
+        ensemble4 = self.ensemble.loc[(self.ensemble['position_x'] > x_edges[3]) \
+            & (self.ensemble['position_x'] <= x_edges[4])]
+        self.plot_kinematic_hists(ensemble=ensemble4, titleappend=' {} < x <= {}'.format(x_edges[3], x_edges[4]))
+        
             
-    def describe(self, plot_kwargs={'trajectories':False, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_scatter':True}):
+            
+    def describe(self, plot_kwargs={'trajectories':False, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_violin':True}):
         print self.ensemble.describe()
         if plot_kwargs['heatmap'] is True:
-  #         plot all trajectories
-            plotting_funcs.trajectory_plots(self.ensemble, self.agent_info, plot_kwargs=plot_kwargs)
+            self.plot_posheatmap()
         if plot_kwargs['singletrajectories'] is True:
-            plotting_funcs.plot_single_trajectory(self.ensemble, self.agent_info, plot_kwargs=plot_kwargs)
+            self.plot_single_trajectory()
         if plot_kwargs['states'] is True:
     #         plot histogram of pos, velo, accel distributions
-            plotting_funcs.stateHistograms(self.ensemble, self.agent_info, plot_kwargs=plot_kwargs)
-        if plot_kwargs['force_scatter'] is True:
-            plotting_funcs.force_violin(self.ensemble, self.agent_info)
+            self.plot_kinematic_hists()
+        if plot_kwargs['force_violin'] is True:
+            self.plot_force_violin()
     
 #    def 
