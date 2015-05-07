@@ -30,12 +30,9 @@ import plume
 import trajectory
 
 
-## define params
-# population weight data: 2.88 +- 0.35mg
-m = 3.0e-6 #2.88e-6  # mass (kg) =2.88 mg
-
-
 def place_heater(target_pos):
+    ''' TODO
+    '''
     if target_pos is None:
             return None
     elif target_pos == "left":
@@ -49,6 +46,8 @@ def place_heater(target_pos):
 
 
 def place_agent(agent_pos):
+    ''' TODO
+    '''
     if type(agent_pos) is list:
         return agent_pos
     if agent_pos == "center":
@@ -78,7 +77,8 @@ class Agent():
         k: (float)
             spring constant, disabled 
         beta: (float)
-            damping force (kg/s)  NOTE: if beta is too big, things blow up
+            damping force (kg/s). Undamped = 0, Critical damping = 1,
+            normal range ~1e-5. NOTE: if beta is too big, things blow up
         rf: (float)
             random driving force exp term for exp distribution 
         wtf: (float)
@@ -86,8 +86,6 @@ class Agent():
         detect_thresh: (float)
             distance mozzie can detect target in (m), 2 cm + radius of heaters,
             (0.00635m/2= 0.003175)
-        bounce: (None, "crash")
-            "crash" sets whether agent velocity gets set to zero in the corresponding component if it crashes into a wall
         boundary: (array)
             specify where walls are  (minx, maxx, miny, maxy)
         
@@ -97,13 +95,13 @@ class Agent():
     
 
     Returns:
-        trajectory object
-        
-    TODO: would it make more sense to make fly and land separate functions, since we never need to use
-    those methods with the trajectory object in other scripts? Or maybe an agent class that takes
-    a trajectory class?
+        Agent object
+
     """
-    def __init__(self, agent_pos, v0_stdev, Tmax, dt, target_pos, beta, rf, wtf, stimF_str, detect_thresh, bounded, bounce, wallF, k=0.):
+    def __init__(self, Trajectory_object, Plume_object, agent_pos='door', v0_stdev=0.01, Tmax=15, dt=0.01,\
+        target_pos='left', beta=1e-5, rf=4e-06, wtf=7e-07, stimF_str=1e-4, \
+        detect_thresh=0.023175, bounded=True, \
+        wallF_params=(4e-1, 1e-6, 1e-7, 250, "walls_only"), k=0.):
         """ Initialize object with instant variables, and trigger other funcs. 
         """
         self.boundary = [0.0, 1.0, 0.127, -0.127]  # these are real dims of our wind tunnel
@@ -115,9 +113,9 @@ class Agent():
         self.rf = rf
         self.wtf = wtf
         self.detect_thresh = detect_thresh     
-        self.bounce = bounce
-        self.wallF = wallF
+        self.wallF_params = wallF_params
         self.stimF_str = stimF_str
+        
         
         # place heater
         self.target_pos = place_heater(target_pos)
@@ -126,6 +124,8 @@ class Agent():
         self.t_targfound = np.nan
         
         self.metadata = dict()
+        # population weight data: 2.88 +- 0.35mg
+        self.metadata['mass'] = 3.0e-6 # 2.88e-6  # mass (kg) =2.88 mg
         self.metadata['time_max'] = Tmax
         self.metadata['boundary'] = self.boundary
         self.metadata['target_position'] = self.target_pos
@@ -136,39 +136,42 @@ class Agent():
         self.metadata['beta'] = beta
         self.metadata['rf'] = rf
         self.metadata['wtf'] = wtf
-        self.metadata['bounce'] = bounce
-        self.metadata['wallF'] = wallF
+        self.metadata['wallF_params'] = wallF_params
         # for stats, later
-        self.metadata['total_trajectories'] = 0
         self.metadata['time_target_find_avg'] = []
         self.metadata['total_finds'] = 0
         self.metadata['target_found'] = [False]
         self.metadata['time_to_target_find'] = [np.nan] # TODO: make sure these lists are concating correctly
+        
+        self.trajectory_obj = Trajectory_object
 
     def fly(self, total_trajectories=1):
-        trajectories.add_agent_info(self.metadata)
-        
+        ''' TODO
+        '''
         traj_count = 0
         while traj_count < total_trajectories:
             try:
-                array_dict = self._fly_single(self.dt, self.detect_thresh, self.boundary)
+                array_dict = self._fly_single(self.dt, self.metadata['mass'], self.detect_thresh, self.boundary)
             except ValueError:  # throw out trajectories with impossible accels
                 continue
             # extract trajectory object attribs, append to our lists.
             array_dict['trajectory_num'] = traj_count
             traj_count += 1
     #        trajectory.dynamics.set_index('trajectory', append=True, inplace=True)
-            trajectories.append_ensemble(array_dict)  # TODO: check this is correct
-            
+            self.trajectory_obj.append_ensemble(array_dict)  # TODO: check this is correct
+        
+        
+        self.metadata['total_trajectories'] = total_trajectories
+        self.trajectory_obj.add_agent_info(self.metadata)
         # concluding stats
-        trajectories.add_agent_info({'total_trajectories': total_trajectories, 'time_target_find_avg': trajectory.T_find_stats(trajectories.agent_info['time_to_target_find'])})
+        self.trajectory_obj.add_agent_info({'time_target_find_avg': trajectory.T_find_stats(self.trajectory_obj.agent_info['time_to_target_find'])})
     
         
-        if __name__ == '__main__' and total_trajectories == 1:
-            trajectories.plot_single_trajectory()
+#        if __name__ == '__main__' and total_trajectories == 1:
+#            self.trajectory_obj.plot_single_trajectory()
 
     
-    def _fly_single(self, dt, detect_thresh, boundary, bounded=True):
+    def _fly_single(self, dt, m, detect_thresh, boundary, bounded=True):
         """Run the simulation using Euler's method
     
         First put everything into np arrays, then at end put it into a Pandas DF
@@ -229,7 +232,7 @@ class Agent():
             _upwindF_x[tsi] = upwindF[0]
             _upwindF_y[tsi] = upwindF[1]
             
-            wallRepulsiveF = baseline_driving_forces.repulsionF(np.array([_position_x[tsi], _position_y[tsi]]), self.wallF)
+            wallRepulsiveF = baseline_driving_forces.repulsionF(np.array([_position_x[tsi], _position_y[tsi]]), self.wallF_params)
             _wallRepulsiveF_x[tsi] = wallRepulsiveF[0]
             _wallRepulsiveF_y[tsi] = wallRepulsiveF[1]
             
@@ -288,12 +291,6 @@ class Agent():
                     self.metadata['target_found'][0]  = False
                     self.metadata['time_to_target_find'][0] = np.nan
                     arraydict = self.land(tsi-1, arraydict)  # stop flying at end, throw out last row
-                    break
-#                toggle, brakeF_x, brakeF_y = baseline_driving_forces.brakingF(candidate_pos, _totalF_x[tsi], _totalF_y[tsi], boundary)
-#                outside_correct = toggle
-#                if toggle is True:
-#                    print tsi, "bounce~!"
-#                    print outside_correct
             
                 # assign candidate_pos to future position
                 _position_x[tsi+1] = candidate_pos[0]
@@ -311,11 +308,17 @@ class Agent():
 
 
     def land(self, tsi, arraydict):
-        # trim excess timebins in arrays
+        ''' trim excess timebins in arrays
+        '''
+        # 
         for key, array in arraydict.items():
             arraydict[key] = array[:tsi+1]
             
         return arraydict
+        
+    def show_landscape(self):
+        import repulsion_landscape
+        repulsion_landscape.main(self.wallF_params, None, plotting=True)
 
 
 if __name__ == '__main__':
@@ -327,16 +330,18 @@ if __name__ == '__main__':
     b = 4e-1  # determines shape
     shrink = 1e-6  # determines size/magnitude
     
-    wallF = (b, shrink, wallF_max, decay_const)  #(4e-1, 1e-6, 1e-7, 250)
-    
+    wallF_params = (b, shrink, wallF_max, decay_const, "walls_only")  #(4e-1, 1e-6, 1e-7, 250)
+
     # temperature plume
     myplume = plume.Plume()
     trajectories = trajectory.Trajectory()
-    myagent = Agent(agent_pos="door", target_pos="left", v0_stdev=0.01, wtf=7e-07, rf=4e-06, stimF_str=1e-4, beta=1e-5, Tmax=15, dt=0.001, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=wallF)
-    myagent.fly(total_trajectories=4)
+    myagent = Agent(trajectories, myplume, agent_pos="door", target_pos="left", v0_stdev=0.01, wtf=7e-07,\
+        rf=4e-06, stimF_str=1e-4, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, \
+        bounded=True, wallF_params=wallF_params)
+    myagent.fly(total_trajectories=1)
     
     plot_kwargs = {'trajectories':False, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_scatter':True}
     
 #    trajectories.describe(plot_kwargs)
-    trajectories.plot_single_trajectory()
+#    self.trajectory_obj.plot_single_trajectory()
     
