@@ -13,20 +13,25 @@ from scipy.misc import derivative as deriv
 import scipy.integrate as integr
 
 
-def landscape(b, shrink, wallF_max=8e-8, decay_const = 90, mu=0.):
+def landscape(b, shrink, wallF_max=8e-8, decay_const = 90, mu=0., repulsion_type="walls_only"):
     """exponential decay params: wallF_max, decay_const
     gaussian params: mu, stdev, centerF_max
     """
 #    wallF_max = decay_const*(1/250)
-#    
-#    # landscape with repulsion in center
-#    fx = lambda pos : (wallF_max * np.exp(-1 * decay_const * (pos+0.127))) +  shrink * ( 1/(2*b) * np.exp(-1 * abs(pos-mu)/b) ) + (wallF_max * np.exp(1 * decay_const * (pos-0.127)))
+    if repulsion_type == 'walls+center':
+        # landscape with repulsion in center
+        fx = lambda pos : (wallF_max * np.exp(-1 * decay_const * (pos+0.127))) +  shrink * ( 1/(2*b) * np.exp(-1 * abs(pos-mu)/b) ) + (wallF_max * np.exp(1 * decay_const * (pos-0.127)))
+    
+    if repulsion_type == 'walls_only':
+        # no center repulsion; only wall repulsion
+        fx = lambda pos : (wallF_max * np.exp(-1 * decay_const * (pos+0.127))) + (wallF_max * np.exp(1 * decay_const * (pos-0.127)))
 
-    # no center repulsion; only wall repulsion
-    fx = lambda pos : (wallF_max * np.exp(-1 * decay_const * (pos+0.127))) + (wallF_max * np.exp(1 * decay_const * (pos-0.127)))
-
-#    fx = lambda pos : (wallF_max * np.exp(-1 * decay_const * (pos+0.127))) +  shrink * ( 1/(2*b) * np.exp(-1 * abs(pos-mu)/b) ) + (wallF_max * np.exp(1 * decay_const * (pos-0.127)))
-#    fx = lambda pos : ( 1/(2*b) * np.exp(-1 * abs(pos-mu)/b) ) * .01
+    if repulsion_type == 'walls+trenches':
+#        raise NotImplementedError
+        fx = lambda pos : (wallF_max * np.exp(-1 * decay_const * (pos+0.127))) +  shrink * ( 1/(2*b) * np.exp(-1 * abs(pos-0.10)/b) ) + (wallF_max * np.exp(1 * decay_const * (pos-0.127)))
+    if repulsion_type == 'center_only':    
+        fx = lambda pos : ( 1/(2*b) * np.exp(-1 * abs(pos-mu)/b) ) * .01
+        
     return fx
 
 
@@ -59,7 +64,7 @@ def plot_landscape(repulsion_fxn, wallF):
     
     plt.tight_layout()
     
-    b, shrink, wallF_max, decay_const = wallF
+    b, shrink, wallF_max, decay_const, _ = wallF
     plt.savefig("./figs/repulsion_landscape wallF_max{wallF_max} decay_const{decay_const} b{b} shrink{shrink}.svg".format(wallF_max=wallF_max, decay_const=decay_const, b=b, shrink=shrink), format='svg')
     plt.show()
     
@@ -101,11 +106,11 @@ def main(wallF, pos_y=None, plotting=False):
     
     if pos_y != None:
         repF = deriv(repulsion_fxn, pos_y, dx=0.00001)
+        return -1*repF  # this is the force on the agent in the y component
     
     if plotting is True:
         plot_landscape(repulsion_fxn, wallF)
         
-    return -1*repF  # this is the force on the agent in the y component
 
 
 if __name__ == '__main__':
@@ -118,6 +123,6 @@ if __name__ == '__main__':
     shrink = 1e-6  # determines size/magnitude
     
     wallF = (b, shrink, wallF_max, decay_const)
-    force_y = main(wallF, 0, plotting=True)
+    force_y = main(wallF, None, plotting=True)
     
-    solve_lamba2a_ratio(wallF_max, decay_const)
+#    solve_lamba2a_ratio(wallF_max, decay_const)
