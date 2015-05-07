@@ -1,3 +1,24 @@
+5/7/15
+Sweet new class system
+Sweet new Pandas dataframes
+Got plume data in a plume class
+        -get_temp() method
+Everytime I run any figure, saves figures automatically and embeds the parameters into the fname
+Excluding downwind and upwind-most parts from analysis due to camera z uncertainty.
+Violin plots
+Compass plots
+
+
+Sanity checks + lifesaving features
+e.g. all figures are automatically saved w/ parameters embedded in the filename
+segregated functions into scripts based on category (I/O, plotting , math, etc)
+
+
+flag for repulsion type
+make plots with center repulsion, w/o, and with trenches
+
+full, down/upwind, quarters plots
+
 4/16/15
 finished repulsion landscape-based Forces. 
 	TODO: fit the forces to Sharri distributions
