@@ -68,3 +68,7 @@ Agent Model/writeup.txt
 /dick_pickle.py
 /Changelog.txt~
 /agent_model/temperature_data/LH_50_tempfield-10s.csv
+/behavioral_experiments/position/data/dynamical_trajectories/controlsample1.csv
+/behavioral_experiments/position/data/dynamical_trajectories/controlsample2.csv
+/behavioral_experiments/position/data/dynamical_trajectories/rightplumesample1.csv
+/behavioral_experiments/position/data/dynamical_trajectories/rightplumesample2.csv
