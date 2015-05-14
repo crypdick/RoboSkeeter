@@ -13,10 +13,14 @@ from scipy.misc import derivative as deriv
 import scipy.integrate as integr
 
 
-def landscape(b, shrink, wallF_max=8e-8, decay_const = 90, mu=0., repulsion_type="walls_only"):
+def landscape(b, shrink, wallF_max, decay_const, repulsion_type, mu=0.):
     """exponential decay params: wallF_max, decay_const
     gaussian params: mu, stdev, centerF_max
+    
+    repulsion_type: (str)
+        "walls_only", 'walls+trenches', 'walls+center', 'center_only'
     """
+#    print "repulsion type ", repulsion_type
 #    wallF_max = decay_const*(1/250)
     if repulsion_type == 'walls+center':
         # landscape with repulsion in center
@@ -36,8 +40,11 @@ def landscape(b, shrink, wallF_max=8e-8, decay_const = 90, mu=0., repulsion_type
 
 
 def plot_landscape(repulsion_fxn, wallF):
+    print wallF
+    b, shrink, wallF_max, decay_const, repulsion_type = wallF
     fig, axarr = plt.subplots(2, sharex=True)
     fig.set_size_inches(10,10)
+    plt.suptitle(repulsion_type, y=1.05)
     
     ycoords = np.linspace(-0.127, 0.127, 200)
     scariness = repulsion_fxn(ycoords)
@@ -64,7 +71,6 @@ def plot_landscape(repulsion_fxn, wallF):
     
     plt.tight_layout()
     
-    b, shrink, wallF_max, decay_const, _ = wallF
     plt.savefig("./figs/repulsion_landscape wallF_max{wallF_max} decay_const{decay_const} b{b} shrink{shrink}.svg".format(wallF_max=wallF_max, decay_const=decay_const, b=b, shrink=shrink), format='svg')
     plt.show()
     
@@ -121,8 +127,9 @@ if __name__ == '__main__':
     # center repulsion params
     b = 4e-1  # determines shape
     shrink = 1e-6  # determines size/magnitude
+    repulsion_type = 'walls_only'
     
-    wallF = (b, shrink, wallF_max, decay_const)
+    wallF = (b, shrink, wallF_max, decay_const, repulsion_type)
     force_y = main(wallF, None, plotting=True)
     
 #    solve_lamba2a_ratio(wallF_max, decay_const)
