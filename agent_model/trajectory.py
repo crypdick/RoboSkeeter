@@ -68,15 +68,23 @@ class Trajectory():
     
     def plot_kinematic_hists(self, ensemble='none', titleappend=''):
         print titleappend
-        if type(ensemble) == 'none':
+        if type(ensemble) is str:
             ensemble = self.ensemble
             ensemble = ensemble.loc[(ensemble['position_x'] >0.25) & (ensemble['position_x'] <0.95)]
         plotting_funcs.stateHistograms(ensemble, self.agent_info, titleappend)
         
-    def plot_door_velocity_compass(self):
-        import door_region_analysis
+    def plot_door_velocity_compass(self, region='door', kind='bin_average'):
         
-        door_region_analysis.main(self.ensemble, self.agent_info)
+        if region == 'door':
+            """plot the area """
+            ensemble = self.ensemble.loc[((self.ensemble['position_x']>0.25) & (self.ensemble['position_x']<0.5)), ['velocity_x', 'velocity_y']]
+        else:
+            ensemble = self.ensemble
+            
+        plotting_funcs.compass_plots(ensemble, self.agent_info, kind)
+      
+      
+        
         
     def plot_sliced_hists(self):
         """Plot histograms from 0.25 < x < 0.95, as well as that same space
@@ -97,27 +105,30 @@ class Trajectory():
         print "upwind half ensemble"
         upwind_ensemble = self.ensemble.loc[(self.ensemble['position_x'] > x_edges[2]) \
             & (self.ensemble['position_x'] < x_edges[4])]
-        self.plot_kinematic_hists(ensemble=upwind_ensemble, titleappend=' {} < x <= {}'.format(x_edges[2], x_edges[4]))        
-        
-        print "first quarter ensemble"
-        ensemble1 = self.ensemble.loc[(self.ensemble['position_x'] > x_edges[0]) \
-            & (self.ensemble['position_x'] <= x_edges[1])]
-        self.plot_kinematic_hists(ensemble=ensemble1, titleappend=' {} < x <= {}'.format(x_edges[0], x_edges[1]))
-        
-        print "second quarter ensemble"
-        ensemble2 = self.ensemble.loc[(self.ensemble['position_x'] > x_edges[1]) \
-            & (self.ensemble['position_x'] <= x_edges[2])]
-        self.plot_kinematic_hists(ensemble=ensemble2, titleappend=' {} < x <= {}'.format(x_edges[1], x_edges[2]))
-        
-        print "third quarter ensemble"
-        ensemble3 = self.ensemble.loc[(self.ensemble['position_x'] > x_edges[2]) \
-            & (self.ensemble['position_x'] <= x_edges[3])]
-        self.plot_kinematic_hists(ensemble=ensemble3, titleappend=' {} < x <= {}'.format(x_edges[2], x_edges[3]))
-
-        print "fourth quarter ensemble"
-        ensemble4 = self.ensemble.loc[(self.ensemble['position_x'] > x_edges[3]) \
-            & (self.ensemble['position_x'] <= x_edges[4])]
-        self.plot_kinematic_hists(ensemble=ensemble4, titleappend=' {} < x <= {}'.format(x_edges[3], x_edges[4]))
+        self.plot_kinematic_hists(ensemble=upwind_ensemble, titleappend=' {} < x <= {}'.format(x_edges[2], x_edges[4]))    
+#        
+#        print "first quarter ensemble"
+#        ensemble1 = self.ensemble.loc[(self.ensemble['position_x'] > x_edges[0]) \
+#            & (self.ensemble['position_x'] <= x_edges[1])]
+#        self.plot_kinematic_hists(ensemble=ensemble1, titleappend=' {} < x <= {}'.format(x_edges[0], x_edges[1]))
+#        
+#        print "second quarter ensemble"
+#        ensemble2 = self.ensemble.loc[(self.ensemble['position_x'] > x_edges[1]) \
+#            & (self.ensemble['position_x'] <= x_edges[2])]
+#        self.plot_kinematic_hists(ensemble=ensemble2, titleappend=' {} < x <= {}'.format(x_edges[1], x_edges[2]))
+#        
+#        print "third quarter ensemble"
+#        ensemble3 = self.ensemble.loc[(self.ensemble['position_x'] > x_edges[2]) \
+#            & (self.ensemble['position_x'] <= x_edges[3])]
+#        self.plot_kinematic_hists(ensemble=ensemble3, titleappend=' {} < x <= {}'.format(x_edges[2], x_edges[3]))
+#
+#        print "fourth quarter ensemble"
+#        ensemble4 = self.ensemble.loc[(self.ensemble['position_x'] > x_edges[3]) \
+#            & (self.ensemble['position_x'] <= x_edges[4])]
+#        self.plot_kinematic_hists(ensemble=ensemble4, titleappend=' {} < x <= {}'.format(x_edges[3], x_edges[4]))
+#        
+        print "full- + up- + down-wind"
+        plotting_funcs.stateHistograms(full_ensemble, self.agent_info, titleappend = '', upw_ensemble = upwind_ensemble, downw_ensemble = downwind_ensemble)
         
             
             
