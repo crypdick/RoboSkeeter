@@ -64,6 +64,10 @@ class Agent():
     """Generate agent
 
     Args:
+        Trajectory_object: (trajectory object)
+            
+        Plume_object: (plume object)
+            
         agent_position: (list/array, "cage", "center")
             sets initial position r0 (meters)
         v0_stdev: (float)
@@ -144,6 +148,8 @@ class Agent():
         self.metadata['time_to_target_find'] = [np.nan] # TODO: make sure these lists are concating correctly
         
         self.trajectory_obj = Trajectory_object
+        self.Plume_object = Plume_object
+
 
     def fly(self, total_trajectories=1):
         ''' TODO
@@ -221,7 +227,7 @@ class Agent():
         
         for tsi in range(tsi_max):
             # sense the temperature
-            _temperature[tsi] = myplume.temp_lookup([_position_x[tsi], _position_y[tsi]])
+            _temperature[tsi] = self.Plume_object.temp_lookup([_position_x[tsi], _position_y[tsi]])
             
             # calculate drivers
             randF = baseline_driving_forces.random_force(self.rf)
@@ -316,6 +322,7 @@ class Agent():
             
         return arraydict
         
+        
     def show_landscape(self):
         import repulsion_landscape
         repulsion_landscape.main(self.wallF_params, None, plotting=True)
@@ -329,8 +336,9 @@ if __name__ == '__main__':
     # center repulsion params
     b = 4e-1  # determines shape
     shrink = 1e-6  # determines size/magnitude
+    repulsion_type = "walls_only"
     
-    wallF_params = (b, shrink, wallF_max, decay_const, "walls_only")  #(4e-1, 1e-6, 1e-7, 250)
+    wallF_params = (b, shrink, wallF_max, decay_const, repulsion_type)  #(4e-1, 1e-6, 1e-7, 250)
 
     # temperature plume
     myplume = plume.Plume()
