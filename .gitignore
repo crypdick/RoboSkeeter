@@ -150,3 +150,119 @@ Agent Model/writeup.txt
 /behavioral_experiments/position/correlation_figs/rightplumesample2/velo_y - PACF.svg
 /behavioral_experiments/position/correlation_figs/rightplumesample2/velo_z - ACF.svg
 /behavioral_experiments/position/correlation_figs/rightplumesample2/velo_z - PACF.svg
+/behavioral_experiments/position/data/dynamical_trajectories/controls_w_1.csv
+/behavioral_experiments/position/data/dynamical_trajectories/controls_w_2.csv
+/behavioral_experiments/position/data/dynamical_trajectories/rightplume_w_1.csv
+/behavioral_experiments/position/data/dynamical_trajectories/rightplume_w_2.csv
+/behavioral_experiments/position/correlation_figs/bak/controlsample2/accel_x - ACF.svg
+/behavioral_experiments/position/correlation_figs/bak/controlsample2/accel_x - PACF.svg
+/behavioral_experiments/position/correlation_figs/bak/controlsample2/accel_y - ACF.svg
+/behavioral_experiments/position/correlation_figs/bak/controlsample2/accel_y - PACF.svg
+/behavioral_experiments/position/correlation_figs/bak/controlsample2/accel_z - ACF.svg
+/behavioral_experiments/position/correlation_figs/bak/controlsample2/accel_z - PACF.svg
+/behavioral_experiments/position/correlation_figs/bak/controlsample2/angular_velo - ACF.svg
+/behavioral_experiments/position/correlation_figs/bak/controlsample2/angular_velo - PACF.svg
+/behavioral_experiments/position/correlation_figs/bak/controlsample2/pos_x - ACF.svg
+/behavioral_experiments/position/correlation_figs/bak/controlsample2/pos_x - PACF.svg
+/behavioral_experiments/position/correlation_figs/bak/controlsample2/pos_y - ACF.svg
+/behavioral_experiments/position/correlation_figs/bak/controlsample2/pos_y - PACF.svg
+/behavioral_experiments/position/correlation_figs/bak/controlsample2/pos_z - ACF.svg
+/behavioral_experiments/position/correlation_figs/bak/controlsample2/pos_z - PACF.svg
+/behavioral_experiments/position/correlation_figs/bak/controlsample2/velo_x - ACF.svg
+/behavioral_experiments/position/correlation_figs/bak/controlsample2/velo_x - PACF.svg
+/behavioral_experiments/position/correlation_figs/bak/controlsample2/velo_y - ACF.svg
+/behavioral_experiments/position/correlation_figs/bak/controlsample2/velo_y - PACF.svg
+/behavioral_experiments/position/correlation_figs/bak/controlsample2/velo_z - ACF.svg
+/behavioral_experiments/position/correlation_figs/bak/controlsample2/velo_z - PACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample1/accel_x - ACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample1/accel_x - PACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample1/accel_y - ACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample1/accel_y - PACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample1/accel_z - ACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample1/accel_z - PACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample1/angular_velo - ACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample1/angular_velo - PACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample1/pos_x - ACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample1/pos_x - PACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample1/pos_y - ACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample1/pos_y - PACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample1/pos_z - ACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample1/pos_z - PACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample1/velo_x - ACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample1/velo_x - PACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample1/velo_y - ACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample1/velo_y - PACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample1/velo_z - ACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample1/velo_z - PACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample2/accel_x - ACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample2/accel_x - PACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample2/accel_y - ACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample2/accel_y - PACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample2/accel_z - ACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample2/accel_z - PACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample2/angular_velo - ACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample2/angular_velo - PACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample2/pos_x - ACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample2/pos_x - PACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample2/pos_y - ACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample2/pos_y - PACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample2/pos_z - ACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample2/pos_z - PACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample2/velo_x - ACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample2/velo_x - PACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample2/velo_y - ACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample2/velo_y - PACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample2/velo_z - ACF.svg
+/behavioral_experiments/position/correlation_figs/bak/rightplumesample2/velo_z - PACF.svg
+/behavioral_experiments/position/correlation_figs/controls_2_sample/accel_x - ACF.svg
+/behavioral_experiments/position/correlation_figs/controls_2_sample/accel_x - PACF.svg
+/behavioral_experiments/position/correlation_figs/controls_2_sample/accel_y - ACF.svg
+/behavioral_experiments/position/correlation_figs/controls_2_sample/accel_y - PACF.svg
+/behavioral_experiments/position/correlation_figs/controls_2_sample/accel_z - ACF.svg
+/behavioral_experiments/position/correlation_figs/controls_2_sample/accel_z - PACF.svg
+/behavioral_experiments/position/correlation_figs/controls_2_sample/angular_velo - ACF.svg
+/behavioral_experiments/position/correlation_figs/controls_2_sample/pos_x - ACF.svg
+/behavioral_experiments/position/correlation_figs/controls_2_sample/pos_x - PACF.svg
+/behavioral_experiments/position/correlation_figs/controls_2_sample/pos_y - ACF.svg
+/behavioral_experiments/position/correlation_figs/controls_2_sample/pos_y - PACF.svg
+/behavioral_experiments/position/correlation_figs/controls_2_sample/pos_z - ACF.svg
+/behavioral_experiments/position/correlation_figs/controls_2_sample/pos_z - PACF.svg
+/behavioral_experiments/position/correlation_figs/controls_2_sample/velo_x - ACF.svg
+/behavioral_experiments/position/correlation_figs/controls_2_sample/velo_x - PACF.svg
+/behavioral_experiments/position/correlation_figs/controls_2_sample/velo_y - ACF.svg
+/behavioral_experiments/position/correlation_figs/controls_2_sample/velo_y - PACF.svg
+/behavioral_experiments/position/correlation_figs/controls_2_sample/velo_z - ACF.svg
+/behavioral_experiments/position/correlation_figs/controls_2_sample/velo_z - PACF.svg
+/behavioral_experiments/position/data/dynamical_trajectories/.~lock.controls_1_sample.csv#
+/behavioral_experiments/position/data/dynamical_trajectories/controls_1_sample.csv
+/behavioral_experiments/position/data/dynamical_trajectories/controls_2_sample.csv
+/behavioral_experiments/position/data/dynamical_trajectories/unusable/controls_w_1.csv
+/behavioral_experiments/position/data/dynamical_trajectories/unusable/controlsample1.csv
+/behavioral_experiments/position/data/dynamical_trajectories/unusable/controlsample2.csv
+/behavioral_experiments/position/data/dynamical_trajectories/unusable/rightplumesample1.csv
+/behavioral_experiments/position/data/dynamical_trajectories/unusable/rightplumesample2.csv
+/behavioral_experiments/position/correlation_figs/controls_1_sample/accel_x - ACF.svg
+/behavioral_experiments/position/correlation_figs/controls_1_sample/accel_x - PACF.svg
+/behavioral_experiments/position/correlation_figs/controls_1_sample/accel_y - ACF.svg
+/behavioral_experiments/position/correlation_figs/controls_1_sample/accel_y - PACF.svg
+/behavioral_experiments/position/correlation_figs/controls_1_sample/accel_z - ACF.svg
+/behavioral_experiments/position/correlation_figs/controls_1_sample/accel_z - PACF.svg
+/behavioral_experiments/position/correlation_figs/controls_1_sample/angular_velo - ACF.svg
+/behavioral_experiments/position/correlation_figs/controls_1_sample/angular_velo - PACF.svg
+/behavioral_experiments/position/correlation_figs/controls_1_sample/heading_angle - ACF.svg
+/behavioral_experiments/position/correlation_figs/controls_1_sample/heading_angle - PACF.svg
+/behavioral_experiments/position/correlation_figs/controls_1_sample/pos_x - ACF.svg
+/behavioral_experiments/position/correlation_figs/controls_1_sample/pos_x - PACF.svg
+/behavioral_experiments/position/correlation_figs/controls_1_sample/pos_y - ACF.svg
+/behavioral_experiments/position/correlation_figs/controls_1_sample/pos_y - PACF.svg
+/behavioral_experiments/position/correlation_figs/controls_1_sample/pos_z - ACF.svg
+/behavioral_experiments/position/correlation_figs/controls_1_sample/pos_z - PACF.svg
+/behavioral_experiments/position/correlation_figs/controls_1_sample/velo_x - ACF.svg
+/behavioral_experiments/position/correlation_figs/controls_1_sample/velo_x - PACF.svg
+/behavioral_experiments/position/correlation_figs/controls_1_sample/velo_y - ACF.svg
+/behavioral_experiments/position/correlation_figs/controls_1_sample/velo_y - PACF.svg
+/behavioral_experiments/position/correlation_figs/controls_1_sample/velo_z - ACF.svg
+/behavioral_experiments/position/correlation_figs/controls_1_sample/velo_z - PACF.svg
+/behavioral_experiments/position/correlation_figs/controls_2_sample/angular_velo - PACF.svg
+/behavioral_experiments/position/correlation_figs/controls_2_sample/heading_angle - ACF.svg
+/behavioral_experiments/position/correlation_figs/controls_2_sample/heading_angle - PACF.svg
