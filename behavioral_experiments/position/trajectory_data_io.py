@@ -8,8 +8,7 @@ import os
 import pandas as pd
 
 script_dir = os.path.dirname(__file__) #<-- absolute dir the script is in
-rel_data_path = "trajectory_data/"
-    
+
     
 def load_csv(file_path):
 #    file_path = os.path.join(script_dir, rel_data_path, filename)
@@ -31,3 +30,11 @@ def write_csv(trajectory_list, filepath):
         # so that the csv doesn't have empty fields
         file_path = os.path.join(dir, "Processed/", filename + "_SPLIT_" + str(i))
         trajectory.to_csv(file_path, index=False)
+        
+def load_trajectory_dynamics_csv(data_name):
+    dyn_traj_reldir = "data/dynamical_trajectories/"
+    file_path = os.path.join(script_dir, dyn_traj_reldir, data_name + ".csv")
+    dyn_trajectory_DF = pd.read_csv(file_path, header=None, na_values="NaN").T
+    dyn_trajectory_DF.columns = ['pos_x','pos_y','pos_z', 'velo_x', 'velo_y', 'velo_z', 'accel_x', 'accel_y', 'accel_z']
+    #'_x', '_y', '_z',
+    return dyn_trajectory_DF, data_name
