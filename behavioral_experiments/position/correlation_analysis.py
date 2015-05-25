@@ -38,7 +38,7 @@ for csv_fname in csv_list:
     for label, col in df.iteritems():
     #    kwargs = {'title': 'Autocorrelation %s' % label}
         print label
-#        print df
+        
         acf_fig = statsmodels.graphics.tsaplots.plot_acf(col, lags = 70)
         plt.savefig("./correlation_figs/{data_name}/{label} - ACF.svg".format(label=label, data_name = csv_fname), format="svg")
         plt.show()
