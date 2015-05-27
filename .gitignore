@@ -555,3 +555,67 @@ Agent Model/writeup.txt
 /behavioral_experiments/position/data/dynamical_trajectories/Right Plume-50.csv
 /behavioral_experiments/position/data/dynamical_trajectories/Right Plume-51.csv
 /behavioral_experiments/position/data/dynamical_trajectories/Right Plume-52.csv
+/behavioral_experiments/position/correlation_figs/Control-27/accel_x - ACF.svg
+/behavioral_experiments/position/correlation_figs/Control-27/accel_x - PACF.svg
+/behavioral_experiments/position/correlation_figs/Control-27/accel_y - ACF.svg
+/behavioral_experiments/position/correlation_figs/Control-27/accel_y - PACF.svg
+/behavioral_experiments/position/correlation_figs/Control-27/accel_z - ACF.svg
+/behavioral_experiments/position/correlation_figs/Control-27/accel_z - PACF.svg
+/behavioral_experiments/position/correlation_figs/Control-27/angular_velo_3D - ACF.svg
+/behavioral_experiments/position/correlation_figs/Control-27/angular_velo_3D - PACF.svg
+/behavioral_experiments/position/correlation_figs/Control-27/angular_velo_xy - ACF.svg
+/behavioral_experiments/position/correlation_figs/Control-27/angular_velo_xy - PACF.svg
+/behavioral_experiments/position/correlation_figs/Control-27/angular_velo_yz - ACF.svg
+/behavioral_experiments/position/correlation_figs/Control-27/angular_velo_yz - PACF.svg
+/behavioral_experiments/position/correlation_figs/Control-27/curve - ACF.svg
+/behavioral_experiments/position/correlation_figs/Control-27/curve - PACF.svg
+/behavioral_experiments/position/correlation_figs/Control-27/heading_angle - ACF.svg
+/behavioral_experiments/position/correlation_figs/Control-27/heading_angle - PACF.svg
+/behavioral_experiments/position/correlation_figs/Control-27/pos_x - ACF.svg
+/behavioral_experiments/position/correlation_figs/Control-27/pos_x - PACF.svg
+/behavioral_experiments/position/correlation_figs/Control-27/pos_y - ACF.svg
+/behavioral_experiments/position/correlation_figs/Control-27/pos_y - PACF.svg
+/behavioral_experiments/position/correlation_figs/Control-27/pos_z - ACF.svg
+/behavioral_experiments/position/correlation_figs/Control-27/pos_z - PACF.svg
+/behavioral_experiments/position/correlation_figs/Control-27/velo_x - ACF.svg
+/behavioral_experiments/position/correlation_figs/Control-27/velo_x - PACF.svg
+/behavioral_experiments/position/correlation_figs/Control-27/velo_y - ACF.svg
+/behavioral_experiments/position/correlation_figs/Control-27/velo_y - PACF.svg
+/behavioral_experiments/position/correlation_figs/Control-27/velo_z - ACF.svg
+/behavioral_experiments/position/correlation_figs/Control-27/velo_z - PACF.svg
+/behavioral_experiments/position/correlation_figs/_OLSmethod/acf_curve.svg
+/behavioral_experiments/position/correlation_figs/_OLSmethod/acf_velox.svg
+/behavioral_experiments/position/correlation_figs/_OLSmethod/acf_veloy.svg
+/behavioral_experiments/position/correlation_figs/_OLSmethod/acf_veloz.svg
+/behavioral_experiments/position/correlation_figs/_OLSmethod/pacf_curve.svg
+/behavioral_experiments/position/correlation_figs/_OLSmethod/pacf_velox.svg
+/behavioral_experiments/position/correlation_figs/_OLSmethod/pacf_veloy.svg
+/behavioral_experiments/position/correlation_figs/_OLSmethod/pacf_veloz.svg
+/behavioral_experiments/position/correlation_figs/_ywunbiased/acf_curve.svg
+/behavioral_experiments/position/correlation_figs/_ywunbiased/acf_velox.svg
+/behavioral_experiments/position/correlation_figs/_ywunbiased/acf_veloy.svg
+/behavioral_experiments/position/correlation_figs/_ywunbiased/acf_veloz.svg
+/behavioral_experiments/position/correlation_figs/_ywunbiased/pacf_curve.svg
+/behavioral_experiments/position/correlation_figs/_ywunbiased/pacf_velox.svg
+/behavioral_experiments/position/correlation_figs/_ywunbiased/pacf_veloy.svg
+/behavioral_experiments/position/correlation_figs/_ywunbiased/pacf_veloz.svg
+/behavioral_experiments/position/correlation_figs/acf_logcurve.svg
+/behavioral_experiments/position/correlation_figs/pacf_logcurve.svg
+/behavioral_experiments/position/correlation_figs/unit traces/Control-27/acf_curve.svg
+/behavioral_experiments/position/correlation_figs/unit traces/Control-27/acf_velox.svg
+/behavioral_experiments/position/correlation_figs/unit traces/Control-27/acf_veloy.svg
+/behavioral_experiments/position/correlation_figs/unit traces/Control-27/acf_veloz.svg
+/behavioral_experiments/position/correlation_figs/unit traces/Control-27/pacf_curve.svg
+/behavioral_experiments/position/correlation_figs/unit traces/Control-27/pacf_velox.svg
+/behavioral_experiments/position/correlation_figs/unit traces/Control-27/pacf_veloy.svg
+/behavioral_experiments/position/correlation_figs/unit traces/Control-27/pacf_veloz.svg
+/behavioral_experiments/position/correlation_figs/unit traces/Control-27_unit traces.zip
+/behavioral_experiments/position/data/dynamical_trajectories/Right Plume/Right Plume-01.csv
+/behavioral_experiments/position/data/dynamical_trajectories/Right Plume/Right Plume-02.csv
+/behavioral_experiments/position/data/dynamical_trajectories/Right Plume/Right Plume-03.csv
+/behavioral_experiments/position/data/dynamical_trajectories/Right Plume/Right Plume-04.csv
+/behavioral_experiments/position/data/dynamical_trajectories/Right Plume/Right Plume-05.csv
+/behavioral_experiments/position/data/dynamical_trajectories/Right Plume/Right Plume-06.csv
+/behavioral_experiments/position/data/dynamical_trajectories/Right Plume/Right Plume-07.csv
+/behavioral_experiments/position/data/dynamical_trajectories/Right Plume/Right Plume-08.csv
+/behavioral_experiments/position/data/dynamical_trajectories/Right Plume/Right Plume-09.csv

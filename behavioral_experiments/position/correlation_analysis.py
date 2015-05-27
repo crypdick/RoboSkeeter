@@ -43,7 +43,7 @@ for csv_fname in csv_list:
         plt.savefig("./correlation_figs/{data_name}/{label} - ACF.svg".format(label=label, data_name = csv_fname), format="svg")
         plt.show()
         
-        pacf_fig = statsmodels.graphics.tsaplots.plot_pacf(col, lags = 70)
+        pacf_fig = statsmodels.graphics.tsaplots.plot_pacf(col, lags = 70, method='ywmle')
         plt.savefig("./correlation_figs/{data_name}/{label} - PACF.svg".format(label=label, data_name = csv_fname), format="svg")
         plt.show()
     
