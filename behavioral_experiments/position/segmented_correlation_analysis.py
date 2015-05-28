@@ -51,6 +51,7 @@ MIN_TRAJECTORY_LEN = 400
 
 # make list of all csvs in dir
 def make_csv_name_list():
+    # TODO export this to io
     dyn_traj_reldir = "data/dynamical_trajectories/"
     print "Loading + filtering CSV files from ", dyn_traj_reldir
     os.chdir(dyn_traj_reldir)
@@ -62,17 +63,21 @@ def make_csv_name_list():
 
 
 def csvList2dfList(csv_list):
+    # TODO export this to io
     print "Extracting csv data."
     df_dict = {}
+    xyz_dict = {}
     for csv_fname in csv_list:
         df = trajectory_data_io.load_trajectory_dynamics_csv(csv_fname)
-        df_xyz = df[['pos_x', 'pos_y', 'pos_z']]
         df_vars = df[INTERESTED_VALS] # slice only cols we want
-        df_vars['log_curve'] = np.log(df_vars['curve'].values)
+        df_vars['log_curve'] = np.log(df_vars.loc[:,'curve'])
         INTERESTED_VALS.append('log_curve')
         df_dict[csv_fname] = df_vars
+        
+        df_xyz = df[['pos_x', 'pos_y', 'pos_z']]
+        xyz_dict[csv_fname] = df_xyz
     
-    return df_dict, df_xyz
+    return df_dict, xyz_dict
 
 
 def DF_dict2analyzedSegments(DF_dict):
@@ -102,15 +107,16 @@ def segment_analysis(csv_fname, trajectory_df):
         
         # for each trajectory, loop through segments
         analysis_df = []
+        data_matrix = np.zeros((2*len(INTERESTED_VALS), LAGS+1))# TODO, num_segments)
         for segment_i in range(num_segments):
             # slice out segment from trajectory
             segment = trajectory_df[segment_i:segment_i+WINDOW_LEN]
             
             ## for segment, run PACF and ACF for each feature
             
-            data_matrix = np.zeros((2*len(INTERESTED_VALS), LAGS+1))
             
-            # calculate ACF and PACF for all our interesting columns
+            
+            # do analysis variable by variable
             for var_name, var_values in segment.iteritems():
                 # make dictionary for column indices
                 var_index = segment.columns.get_loc(var_name)
@@ -120,23 +126,22 @@ def segment_analysis(csv_fname, trajectory_df):
                 col_acf = acf(var_values, nlags=LAGS)#, alpha=.05,  qstat= True)
                 
                 # store data
-                data_matrix[colindex] = col_acf
+                data_matrix[var_index] = col_acf
                 ## , acf_confint, acf_qstats, acf_pvals
                 col_pacf = pacf(var_values, nlags=LAGS, method='ywmle')
                 # TODO: check for PACF values above or below +-1
-                data_matrix[colindex+len(INTERESTED_VALS)] = col_pacf
+                data_matrix[var_index+len(INTERESTED_VALS)] = col_pacf
                 
                 ##############
-                
-                unique_seg_names = num_segments
-                graph_matrix = np.empty((num_segments, LAGS+1))
-                graph_matrix.fill(np.nan)
-                # "for each unique segment/segment index..."
-                for i in range(len(unique_seg_names)):
-                    # ... look up seg name, grab the ACF values
-                    segment_slice = analysis_DF.loc[segment_analysis_DF['Segment']==np.unique(analysis_DF.Segment.values)[i],:]
-                    segment_ACF = segment_slice.acf_velox
-                    graph_matrix[i] = segment_ACF
+#                
+#                graph_matrix = np.empty((num_segments, LAGS+1))
+#                graph_matrix.fill(np.nan)
+#                # "for each unique segment/segment index..."
+#                for i in range(num_segments):
+#                    # ... look up seg name, grab the ACF values
+#                    segment_slice = analysis_DF.loc[segment_analysis_DF['Segment']==np.unique(analysis_DF.Segment.values)[i],:]
+#                    segment_ACF = segment_slice.acf_velox
+#                    graph_matrix[i] = segment_ACF
                 ##########
             
             
@@ -161,7 +166,7 @@ def segment_analysis(csv_fname, trajectory_df):
                   
 
                       
-def plot_analysis(analysis_DF, xyz):
+def plot_analysis(analysis_DF):
     print "Plotting."
     analysis_types = {'acf_velox': "ACF Velocity x", 'acf_veloy': "ACF Velocity y",\
                  'acf_veloz': "ACF Velocity Z", 'acf_curve': "ACF curvature", \
@@ -186,7 +191,7 @@ def plot_analysis(analysis_DF, xyz):
         fig = plt.figure()
         conf_ints = [95, 68]
         sns.tsplot(analysis_DF, time="Lags", unit="Segment", condition="Condition",\
-                     value=analysis, err_palette= sns.color_palette("Set2", 450),\
+                     value=analysis, err_palette= palette,\
                                                 err_style="unit_traces") # uncomment for unit traces
 #                                                err_style="ci_band", ci = conf_ints) # uncomment for CIs
         sns.plt.title(title)
@@ -208,38 +213,25 @@ def plot_analysis(analysis_DF, xyz):
     
     if np.isnan(graph_matrix).any(): # we have nans
         print "Error! NaNs in matrix!"
-    
-#    # plot trajectory
-##    %matplotlib [gui]
-    threedee = plt.figure().gca(projection='3d')
-    N = len(xyz.index)
-    for i in xrange(N-1):
-    #    threedee.plot(xyz.pos_x, xyz.pos_y, xyz.pos_z) , color=sns.color_palette("husl", 450*i/N))
-        threedee.plot(xyz.pos_y[i:i+2].values, xyz.pos_x[i:i+2].values, xyz.pos_z[i:i+2].values, color=palette[255*i/N])
-        
-#    threedee.auto_scale_xyz(*[[np.min(scaling), np.max(scaling)]*3])
-    threedee.set_xlim(0, 1)
-    threedee.set_ylim(0.127, -0.127)
-    threedee.set_zlim(0, 0.3)
-    threedee.set_xlabel('Y')
-    threedee.set_ylabel('X')
-    threedee.set_zlabel('Z')
-    threedee.set_title('Mosquito trajectory')
-    plt.show()
+
     
     return graph_matrix
 
 
+
+    
     
 #csv_list = make_csv_name_list()
 
 csv_list = ['Control-27']
 #csv_list = ['Right Plume-01', 'Right Plume-02', 'Right Plume-03', 'Right Plume-04', 'Right Plume-05']#, 'Right Plume-06', 'Right Plume-07']
-trajectory_DFs_dict, xyz = csvList2dfList(csv_list)
+trajectory_DFs_dict, xyz_dict = csvList2dfList(csv_list)
 trajectory_DF = pd.concat(trajectory_DFs_dict.values())
 
 segment_analysis_DF = DF_dict2analyzedSegments(trajectory_DFs_dict)
 
 #plt.style.use('ggplot')
-graph_matrix = plot_analysis(segment_analysis_DF, xyz)
+graph_matrix = plot_analysis(segment_analysis_DF)
+
+plot3D_trajectory(xyz_dict)
 
