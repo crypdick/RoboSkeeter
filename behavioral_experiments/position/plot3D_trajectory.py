@@ -29,7 +29,6 @@ def plot3D_trajectory(xyz):
     N = len(xyz.index)
     color = iter(plt.cm.Set2(np.linspace(0,1,N)))
     for i in xrange(N-1):
-        print i, N
         c=next(color)
     #    threedee.plot(xyz.pos_x, xyz.pos_y, xyz.pos_z) , color=sns.color_palette("husl", 450*i/N))
         threedee.plot(xyz.pos_y[i:i+2].values, xyz.pos_x[i:i+2].values, xyz.pos_z[i:i+2].values, color=c)#palette[450*i/N])
