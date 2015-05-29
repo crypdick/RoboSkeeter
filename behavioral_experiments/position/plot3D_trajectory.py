@@ -19,7 +19,7 @@ from glob import glob
 import matplotlib as mpl
 
 
-def plot3D_trajectory(xyz):
+def plot3D_trajectory(xyz, csv_name):
 ###    %matplotlib Qt4Agg
 #    palette = sns.color_palette("Pastel1", 450)
     
@@ -44,6 +44,7 @@ def plot3D_trajectory(xyz):
     threedee.set_ylabel('X')
     threedee.set_zlabel('Z')
     threedee.set_title('Mosquito trajectory')
+    plt.savefig("./correlation_figs/{data_name}/{data_name} Trajectory.svg".format(data_name = csv_name), format="svg")
     plt.show()
 #    fig = plt.figure()
 #    ax = fig.gca(projection='3d')
@@ -61,14 +62,17 @@ def make_csv_name_list():
     
     return csv_list
 
-csv_list = make_csv_name_list()
-print "Please select mosquito trajectory to plot."
-for i, name in enumerate(csv_list):
-    print "Option ", i, ": ", name
-
-csv_i = int(raw_input("Trajectory of your desires: "))
-
-df = trajectory_data_io.load_trajectory_dynamics_csv(csv_list[csv_i])
-xyz = df[['pos_x', 'pos_y', 'pos_z']]
-
-plot3D_trajectory(xyz)
+if __name__ == '__main__':
+    csv_list = make_csv_name_list()
+    print "Please select mosquito trajectory to plot."
+    for i, name in enumerate(csv_list):
+        print "Option ", i, ": ", name
+    
+    csv_i = int(raw_input("Trajectory of your desires: "))
+    csv_name = csv_list[csv_i]
+    
+    df = trajectory_data_io.load_trajectory_dynamics_csv(csv_name)
+    xyz = df[['pos_x', 'pos_y', 'pos_z']]
+    
+    plot3D_trajectory(xyz, csv_name)
+    
