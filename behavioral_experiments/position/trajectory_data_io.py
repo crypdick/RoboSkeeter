@@ -6,6 +6,8 @@ Created on Tue Apr 21 17:21:42 2015
 """
 import os
 import pandas as pd
+import numpy as np
+import csv
 
 script_dir = os.path.dirname(__file__) #<-- absolute dir the script is in
 
@@ -36,11 +38,19 @@ def write_csv(trajectory_list, filepath):
 def load_trajectory_dynamics_csv(data_fname):
     dyn_traj_reldir = "data/dynamical_trajectories/"
     file_path = os.path.join(os.path.dirname(__file__), dyn_traj_reldir, data_fname + ".csv")
-    dyn_trajectory_DF = pd.read_csv(file_path, header=None, na_values="NaN")
+    numrows = sum(1 for row in csv.reader(open(file_path)))
+#    arrays = [np.tile(np.array([data_fname]), numrows),
+#          np.arange(numrows)]
+    dyn_trajectory_DF = pd.read_csv(file_path, header=None, na_values="NaN")#, index_col= arrays)
     dyn_trajectory_DF.fillna(value=0, inplace=True)
+    dflen = len(dyn_trajectory_DF.index)
     dyn_trajectory_DF.columns = ['pos_x','pos_y','pos_z', 'velo_x', 'velo_y',
         'velo_z', 'accel_x', 'accel_y', 'accel_z', 'angular_velo_xy',
         'angular_velo_yz', 'angular_velo_3D', 'heading_angle', 'curve']
     #'_x', '_y', '_z',
+    dyn_trajectory_DF.index.names = ['timestep']
     
-    return dyn_trajectory_DF
+    return pd.concat([dyn_trajectory_DF], keys=[data_fname])
+    
+    
+#    return dyn_trajectory_DF
