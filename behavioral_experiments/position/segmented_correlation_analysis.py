@@ -66,26 +66,26 @@ def make_csv_name_list():
     return csv_list
 
 
-def csvList2dfList(csv_list):
+def csvList2df(csv_list):
     # TODO export this to io
     print "Extracting csv data."
-    df_dict = {}
+    df_list = []
     for csv_fname in csv_list:
         df = trajectory_data_io.load_trajectory_dynamics_csv(csv_fname)
         df_vars = df[INTERESTED_VALS] # slice only cols we want
         df_vars['log_curve'] = np.log(df_vars.loc[:,'curve'])
-        INTERESTED_VALS.append('log_curve')
-        df_dict[csv_fname] = df_vars
-        
-    return df_dict
+        df_list.append(df_vars)
+    INTERESTED_VALS.append('log_curve')
+
+    return pd.concat(df_list)
 
 
-def DF_dict2analyzedSegments(DF_dict):
+def DF2analyzedSegments(DF):
     print "Segmenting data, running ACF + PACF analysis."
     analyzed_segment_list = []
     super_data_list = []
     t0 = time.time()
-    for csv_fname, DF in DF_dict.iteritems():
+    for csv_fname, DF in trajectory_DF.groupby(level=0):
 #        pool = mp.Pool(processes = 4)
 #        results = [pool.apply(segment_analysis, args=(csv_fname, DF)) for csv_fname, DF in DF_dict.iteritems()]
 #        analysis_df, super_data_matrix = segment_analysis(csv_fname, DF)
@@ -99,7 +99,8 @@ def DF_dict2analyzedSegments(DF_dict):
     print "Segment analysis finished in %f seconds." % (t1-t0)
 #    return pd.concat(results)
 #    return pd.concat(analyzed_segment_list), super_data_matrix 
-    return super_data_list[0] # TODO get rid of 0
+    print super_data_list
+    return pd.concat(super_data_list, axis=1)
             
 
 def segment_analysis(csv_fname, trajectory_df):
@@ -120,10 +121,7 @@ def segment_analysis(csv_fname, trajectory_df):
             # slice out segment from trajectory
             segment = trajectory_df[segment_i:segment_i+WINDOW_LEN]
             
-#            segmentdict = {}
             data_matrix = np.zeros((2*len(INTERESTED_VALS), LAGS+1))
-#            ACF_matrix = np.empty((num_segments,  LAGS+1))
-#            PACF_matrix = np.empty((num_segments,  LAGS+1))
             
             ## for segment, run PACF and ACF for each feature
             
@@ -175,17 +173,18 @@ def segment_analysis(csv_fname, trajectory_df):
 #                                            pacf_logcurve=data_matrix[4+len(INTERESTED_VALS)]
 #                                            )))
             
-#        
+        major_axis=[np.array([csv_fname]*num_segments), np.array(["{index:0>3d}".format(index=segment_i) for segment_i in range(num_segments)])]
         p = pd.Panel(super_data,
              items=['acf_velox', 'acf_veloy','acf_veloz', 'acf_curve', 'acf_logcurve', 'pacf_velox', 'pacf_veloy', 'pacf_veloz', 'pacf_curve', 'pacf_logcurve'],
-            major_axis=np.array(["{name:s} seg{index:0>3d}".format(name=csv_fname, index=segment_i) for segment_i in range(num_segments)]),
+#            major_axis=np.array(["{name:s} seg{index:0>3d}".format(name=csv_fname, index=segment_i) for segment_i in range(num_segments)]),
+            major_axis=major_axis,            
             minor_axis=np.arange(LAGS+1))
 #        return pd.concat(analysis_df), p
         return p
                   
 
                       
-def plot_analysis(analysis_DF):
+def plot_analysis(analysis_panel):
     print "Plotting."
     analysis_types = {'acf_velox': "ACF Velocity x", 'acf_veloy': "ACF Velocity y",\
                  'acf_veloz': "ACF Velocity Z", 'acf_curve': "ACF curvature", \
@@ -195,69 +194,64 @@ def plot_analysis(analysis_DF):
                 'pacf_logcurve': "PACF log(curvature)"}
     
     
+#    print type(analysis_panel)
+    num_segs = analysis_panel.shape[1] *1.0 # turn to floats
     
-#    unique_seg_names = np.unique(analysis_DF.Segment.values)
-    num_segs = analysis_DF.shape[1]
-    
-    
-#    graph_matrix = np.empty((len(unique_seg_names), LAGS+1))
-#    graph_matrix.fill(np.nan)
-    # "for each unique segment/segment index..."
-#    for i in range(num_segs):
-#        # ... look up seg name, grab the ACF values
-#        segment_slice = analysis_DF.loc[segment_analysis_DF['Segment']==np.unique(analysis_DF.Segment.values)[i],:]
-#        segment_ACF = segment_slice.acf_velox
-#        graph_matrix[i] = segment_ACF
 
     for analysis, title in analysis_types.iteritems():
-        df = analysis_DF[analysis]
-        
-        
-        fig = plt.figure()
-        plt.title(title)
-        plt.ylabel("Correlation")
-        plt.xlabel("Lags")
-        plt.ylim([-1, 1])
-        
-        seg_iterator = df.iterrows()
-        
-        # plot flat
-        color = iter(plt.cm.Set2(np.linspace(0,1,num_segs)))
-        for index, seg in seg_iterator:
-            c=next(color)
-            sns.plt.plot(seg, color=c)
-        
-        # plot as a surface
-        surfacefig = plt.figure()
-        surfaceax = surfacefig.gca(projection='3d')
-        x = np.arange(LAGS+1)
-        y = np.arange(num_segs)
-        
-        X, Y = np.meshgrid(x, y)
-#        print "x shape", X.shape # 602, 21
-#        print "y shape", Y.shape
-        
-#        color = plt.cm.Set2(np.linspace(0,1,num_segs))
-#        color = np.expand_dims(color, axis=1)
-#        color = np.tile(color, (1,LAGS+1,1))
-#        print color
-        surfaceax.plot_surface(X, Y, df,  cmap=plt.cm.Set2(fc))#, color=color)
-        plt.show()
-        
-        
-#        fig = plt.figure()
-#        conf_ints = [95, 68]
-#        sns.tsplot(df)
-##        sns.tsplot(df, time="Lags", unit="Segment", condition="Condition",\
-##                     value=analysis, err_palette= palette,\
-##                                                err_style="unit_traces") # uncomment for unit traces
-###                                                err_style="ci_band", ci = conf_ints) # uncomment for CIs
-#        sns.plt.title(title)
-#        sns.plt.ylabel("Correlation")
-#        sns.plt.ylim([-1, 1])
-##        plt.savefig("./correlation_figs/{data_name}/{label}.svg".format(label=analysis, data_name = a_trajectory), format="svg")
-#        plt.savefig("./correlation_figs/{label}.svg".format(label=analysis), format="svg")
-#        sns.plt.show()
+        DF = analysis_panel[analysis].sortlevel(0)
+        #TODO figure out DF.index.lexsort_depth error
+        for csv_fname, df in DF.groupby(level=0):
+            if not os.path.exists('./correlation_figs/{data_name}'.format(data_name = csv_fname)):
+                os.makedirs('./correlation_figs/{data_name}'.format(data_name = csv_fname))
+            fig = plt.figure()
+            plt.title(csv_fname + " " + title)
+            plt.ylabel("Correlation")
+            plt.xlabel("Lags")
+            plt.ylim([-1, 1])
+            
+            seg_iterator = df.iterrows()
+            
+            # plot flat
+            color = iter(plt.cm.Set2(np.linspace(0,1,num_segs)))
+            for index, seg in seg_iterator:
+                c=next(color)
+                sns.plt.plot(seg, color=c)
+            plt.savefig("./correlation_figs/{data_name}/{data_name} - 2D{label}.svg".format(label=analysis, data_name = csv_fname), format="svg")
+            
+            # plot as a surface
+            surfacefig = plt.figure()
+            surfaceax = surfacefig.gca(projection='3d')
+            x = np.arange(LAGS+1.0)
+            y = np.arange(num_segs)
+            
+            XX, YY = np.meshgrid(x, y)
+    
+            surf = surfaceax.plot_surface(XX, YY, df, shade=False,
+                             facecolors=plt.cm.Set2((YY-YY.min())/(YY.max()-YY.min())))
+                    
+            plt.title(csv_fname + " " + title)
+            surfaceax.set_xlabel("Lags")
+            surfaceax.set_ylabel("Segment Index")
+            surfaceax.set_zlabel("Correlation")
+            plt.draw() # you need this to get the edge color
+            line = np.array(surf.get_edgecolor())
+            surf.set_edgecolor(line*np.array([0,0,0,0])+1) # make lines white, and keep alpha==1. It's an array of colors like this: [r,g,b,alpha]
+            plt.savefig("./correlation_figs/{data_name}/{data_name} - 3D{label}.svg".format(label=analysis, data_name = csv_fname), format="svg")
+            
+    #        fig = plt.figure()
+    #        conf_ints = [95, 68]
+    #        sns.tsplot(df)
+    ##        sns.tsplot(df, time="Lags", unit="Segment", condition="Condition",\
+    ##                     value=analysis, err_palette= palette,\
+    ##                                                err_style="unit_traces") # uncomment for unit traces
+    ###                                                err_style="ci_band", ci = conf_ints) # uncomment for CIs
+    #        sns.plt.title(title)
+    #        sns.plt.ylabel("Correlation")
+    #        sns.plt.ylim([-1, 1])
+            
+    #        plt.savefig("./correlation_figs/{label}.svg".format(label=analysis), format="svg")
+    #        sns.plt.show()
 
     
     
@@ -277,16 +271,17 @@ def plot_analysis(analysis_DF):
 
     
     
-#csv_list = make_csv_name_list()
+csv_list = make_csv_name_list()
 
-csv_list = ['Control-27']
-#csv_list = ['Right Plume-01', 'Right Plume-02', 'Right Plume-03', 'Right Plume-04', 'Right Plume-05']#, 'Right Plume-06', 'Right Plume-07']
-trajectory_DFs_dict = csvList2dfList(csv_list)
-trajectory_DF = pd.concat(trajectory_DFs_dict.values())
-
-#segment_analysis_DF, super_data = DF_dict2analyzedSegments(trajectory_DFs_dict)
-super_data = DF_dict2analyzedSegments(trajectory_DFs_dict)
-
-#plt.style.use('ggplot')
-#graph_matrix = plot_analysis(segment_analysis_DF)
-graph_matrix = plot_analysis(super_data)
+##csv_list = ['Right Plume-39']
+##name = csv_list[0]
+##csv_list = ['Right Plume-01', 'Right Plume-02', 'Right Plume-03', 'Right Plume-04', 'Right Plume-05']#, 'Right Plume-06', 'Right Plume-07']
+trajectory_DF = csvList2df(csv_list)
+#trajectory_DF = pd.concat(trajectory_DFs_dict.values())
+#
+##segment_analysis_DF, super_data = DF_dict2analyzedSegments(trajectory_DFs_dict)
+analysis_panel = DF2analyzedSegments(trajectory_DF)
+##
+###plt.style.use('ggplot')
+###graph_matrix = plot_analysis(segment_analysis_DF)
+#graph_matrix = plot_analysis(analysis_panel)
