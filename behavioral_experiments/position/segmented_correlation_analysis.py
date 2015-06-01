@@ -99,7 +99,7 @@ def DF2analyzedSegments(DF):
     print "Segment analysis finished in %f seconds." % (t1-t0)
 #    return pd.concat(results)
 #    return pd.concat(analyzed_segment_list), super_data_matrix 
-    print super_data_list
+#    print super_data_list
     return pd.concat(super_data_list, axis=1)
             
 
@@ -179,6 +179,7 @@ def segment_analysis(csv_fname, trajectory_df):
 #            major_axis=np.array(["{name:s} seg{index:0>3d}".format(name=csv_fname, index=segment_i) for segment_i in range(num_segments)]),
             major_axis=major_axis,            
             minor_axis=np.arange(LAGS+1))
+        p.major_axis.names = ['Trajectory', 'segment_ID']
 #        return pd.concat(analysis_df), p
         return p
                   
@@ -192,10 +193,15 @@ def plot_analysis(analysis_panel):
                 'pacf_velox': "PACF Velocity x", 'pacf_veloy': "PACF Velocity y", \
                 'pacf_veloz': "PACF Velocity z", 'pacf_curve': "PACF curvature", \
                 'pacf_logcurve': "PACF log(curvature)"}
-    
+    type2raw = {'acf_velox': "velo_x", 'acf_veloy': "velo_y",\
+                 'acf_veloz': "velo_z", 'acf_curve': "curve", \
+                 'acf_logcurve': "log_curve",\
+                'pacf_velox': "velo_x", 'pacf_veloy': "velo_y", \
+                'pacf_veloz': "velo_z", 'pacf_curve': "curve", \
+                'pacf_logcurve': "log_curve"}
     
 #    print type(analysis_panel)
-    num_segs = analysis_panel.shape[1] *1.0 # turn to floats
+   
     
 
     for analysis, title in analysis_types.iteritems():
@@ -204,6 +210,11 @@ def plot_analysis(analysis_panel):
         for csv_fname, df in DF.groupby(level=0):
             if not os.path.exists('./correlation_figs/{data_name}'.format(data_name = csv_fname)):
                 os.makedirs('./correlation_figs/{data_name}'.format(data_name = csv_fname))
+            
+            # num segs in this csv
+            num_segs = df.shape[0] *1.0 # turn to floats
+            
+            
             fig = plt.figure()
             plt.title(csv_fname + " " + title)
             plt.ylabel("Correlation")
@@ -216,7 +227,8 @@ def plot_analysis(analysis_panel):
             color = iter(plt.cm.Set2(np.linspace(0,1,num_segs)))
             for index, seg in seg_iterator:
                 c=next(color)
-                sns.plt.plot(seg, color=c)
+                sns.plt.plot(seg, color=c, alpha=0.6)
+            plt.plot(range(21), np.zeros(21), color='lightgray')
             plt.savefig("./correlation_figs/{data_name}/{data_name} - 2D{label}.svg".format(label=analysis, data_name = csv_fname), format="svg")
             
             # plot as a surface
@@ -225,20 +237,51 @@ def plot_analysis(analysis_panel):
             x = np.arange(LAGS+1.0)
             y = np.arange(num_segs)
             
+                
+            
             XX, YY = np.meshgrid(x, y)
+#            print csv_fname, "xx", XX.shape, "yy", YY.shape, "df", df.shape
     
             surf = surfaceax.plot_surface(XX, YY, df, shade=False,
-                             facecolors=plt.cm.Set2((YY-YY.min())/(YY.max()-YY.min())))
+                             facecolors=plt.cm.Set2((YY-YY.min())/(YY.max()-YY.min())), cstride=1, rstride=5, alpha=0.7)
+            zeroplane = np.zeros_like(XX)
+#            print csv_fname, "xx", XX.shape, "yy", YY.shape, "z", zeroplane.shape
+            surfaceax.plot_surface(XX, YY, zeroplane, color='lightgray', linewidth=0, alpha=0.3)
                     
             plt.title(csv_fname + " " + title)
             surfaceax.set_xlabel("Lags")
             surfaceax.set_ylabel("Segment Index")
             surfaceax.set_zlabel("Correlation")
+            surfaceax.set_zlim(-1, 1)
             plt.draw() # you need this to get the edge color
             line = np.array(surf.get_edgecolor())
             surf.set_edgecolor(line*np.array([0,0,0,0])+1) # make lines white, and keep alpha==1. It's an array of colors like this: [r,g,b,alpha]
             plt.savefig("./correlation_figs/{data_name}/{data_name} - 3D{label}.svg".format(label=analysis, data_name = csv_fname), format="svg")
             
+#            # plot relevant raw data, colorized
+            variable = type2raw[analysis]
+            raw_data = trajectory_DF.xs(csv_fname, level='Trajectory')[variable].values
+            x = range(len(raw_data))
+            variable_trace = plt.figure()
+            ax1 = variable_trace.add_subplot(111) # regular resolution color map
+#            
+#            
+            cm = plt.get_cmap('Set2')
+            
+            # first we substract WINDOWLEN from range so that we only color the starting
+            #points of each window. then we append black values to the end of 
+            # the color cycle to make that part of the plots black
+            color_cycle = [cm(1.*i/(num_segs-1-WINDOW_LEN)) for i in range(int(num_segs)-1-WINDOW_LEN)]
+            color_cycle = color_cycle + [(0., 0., 0., 1.)]*WINDOW_LEN
+            ax1.set_color_cycle(color_cycle)
+            for i in range(int(num_segs)-1):
+                ax1.plot(x[i:i+2], raw_data[i:i+2])
+            plt.title(csv_fname + " " + variable)
+            plt.xlabel('Trajectory data timestep (ms)')
+            plt.ylabel('Value recorded (SI units)')
+            plt.savefig("./correlation_figs/{data_name}/{data_name} - raw {variable}.svg".format(data_name = csv_fname, variable = variable), format="svg")
+            
+                
     #        fig = plt.figure()
     #        conf_ints = [95, 68]
     #        sns.tsplot(df)
@@ -273,7 +316,7 @@ def plot_analysis(analysis_panel):
     
 csv_list = make_csv_name_list()
 
-##csv_list = ['Right Plume-39']
+##csv_list = ['Right Plume-39', 'Control-27']
 ##name = csv_list[0]
 ##csv_list = ['Right Plume-01', 'Right Plume-02', 'Right Plume-03', 'Right Plume-04', 'Right Plume-05']#, 'Right Plume-06', 'Right Plume-07']
 trajectory_DF = csvList2df(csv_list)
@@ -284,4 +327,4 @@ analysis_panel = DF2analyzedSegments(trajectory_DF)
 ##
 ###plt.style.use('ggplot')
 ###graph_matrix = plot_analysis(segment_analysis_DF)
-#graph_matrix = plot_analysis(analysis_panel)
+plot_analysis(analysis_panel)
