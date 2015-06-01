@@ -41,16 +41,33 @@ def load_trajectory_dynamics_csv(data_fname):
     numrows = sum(1 for row in csv.reader(open(file_path)))
 #    arrays = [np.tile(np.array([data_fname]), numrows),
 #          np.arange(numrows)]
-    dyn_trajectory_DF = pd.read_csv(file_path, header=None, na_values="NaN")#, index_col= arrays)
+    dyn_trajectory_DF = pd.read_csv(file_path, header=None, na_values="NaN")#, index_col= arrays) index_col = ['Trajectory_ID', 'timestep'])#
     dyn_trajectory_DF.fillna(value=0, inplace=True)
+#    dyn_trajectory_DF.index.name = 'timestep'
     dflen = len(dyn_trajectory_DF.index)
+#    arrays=[np.array([data_fname]*numrows), np.arange(numrows)]
+#    tuples = list(zip(*arrays))
+#    index = MultiIndex.from_tuples(tuples, names=['first', 'second'])
+    
     dyn_trajectory_DF.columns = ['pos_x','pos_y','pos_z', 'velo_x', 'velo_y',
         'velo_z', 'accel_x', 'accel_y', 'accel_z', 'angular_velo_xy',
         'angular_velo_yz', 'angular_velo_3D', 'heading_angle', 'curve']
-    #'_x', '_y', '_z',
-    dyn_trajectory_DF.index.names = ['timestep']
     
-    return pd.concat([dyn_trajectory_DF], keys=[data_fname])
+    # add trajectory name to index
+#    dyn_trajectory_DF['Trajectory'] = data_fname
+#    dyn_trajectory_DF.set_index(index, append=True, inplac)
+#    dyn_trajectory_DF.set_index('Trajectory', append=True)
+    #'_x', '_y', '_z',
+#    dyn_trajectory_DF.index.names[0] = 'Trajectory_ID'
+#    dyn_trajectory_DF.index.names = ['timestep']
+    
+    new = pd.concat([dyn_trajectory_DF], keys=[data_fname])
+    new.index.names = ['Trajectory', 'timestep']
+    
+    
+    return new
+#    return dyn_trajectory_DF
     
     
 #    return dyn_trajectory_DF
+a = load_trajectory_dynamics_csv('Control-27')
