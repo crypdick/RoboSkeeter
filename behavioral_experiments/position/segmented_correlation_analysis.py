@@ -155,7 +155,7 @@ def segment_analysis(csv_fname, trajectory_df):
                 # TODO: check for PACF values above or below +-1
                 super_data[var_index+len(INTERESTED_VALS), segment_i, :] = col_pacf
                 super_data_confint_lower[var_index+len(INTERESTED_VALS), segment_i, :] = pacf_confint[:,0]
-                super_data_confint_upper[var_index+len(INTERESTED_VALS), segment_i, :] = pacf_confint[:,0]
+                super_data_confint_upper[var_index+len(INTERESTED_VALS), segment_i, :] = pacf_confint[:,1]
 
                 
                 
@@ -230,15 +230,15 @@ def plot_analysis(analysis_panel, confint_lower_panel, confint_upper_panel):
             plt.xlabel("Lags")
             plt.ylim([-1, 1])
             
-            seg_iterator = df.iterrows()
-            
-            # plot flat
-            color = iter(plt.cm.Set2(np.linspace(0,1,num_segs)))
-            for index, seg in seg_iterator:
-                c=next(color)
-                sns.plt.plot(seg, color=c, alpha=0.6)
-            plt.plot(range(21), np.zeros(21), color='lightgray')
-            plt.savefig("./correlation_figs/{data_name}/{data_name} - 2D{label}.svg".format(label=analysis, data_name = csv_fname), format="svg")
+#            seg_iterator = df.iterrows()
+#            
+#            # plot flat
+#            color = iter(plt.cm.Set2(np.linspace(0,1,num_segs)))
+#            for index, seg in seg_iterator:
+#                c=next(color)
+#                sns.plt.plot(seg, color=c, alpha=0.6)
+#            plt.plot(range(21), np.zeros(21), color='lightgray')
+#            plt.savefig("./correlation_figs/{data_name}/{data_name} - 2D{label}.svg".format(label=analysis, data_name = csv_fname), format="svg")
             
             # plot as a surface
             surfacefig = plt.figure()
@@ -251,16 +251,15 @@ def plot_analysis(analysis_panel, confint_lower_panel, confint_upper_panel):
                 
             
             XX, YY = np.meshgrid(x, y)
-#            print csv_fname, "xx", XX.shape, "yy", YY.shape, "df", df.shape
     
             surf = surfaceax.plot_surface(XX, YY, df, shade=False,
-                             facecolors=plt.cm.Set2((YY-YY.min())/(YY.max()-YY.min())), cstride=1, rstride=5, alpha=0.7)
+                             facecolors=plt.cm.Set2((YY-YY.min()) / (YY.max()-YY.min())), cstride=1, rstride=5, alpha=0.7)
+            # add grey plane at corr=0
             zeroplane = np.zeros_like(XX)
-#            print csv_fname, "xx", XX.shape, "yy", YY.shape, "z", zeroplane.shape
             surfaceax.plot_surface(XX, YY, zeroplane, color='lightgray', linewidth=0, alpha=0.3)
-            # plot upper conf int
-            surfaceax.plot_surface(XX, YY, df_upper, color='r', alpha=0.1, linewidth=0)
-            surfaceax.plot_surface(XX, YY, df_lower, color='r', alpha=0.1, linewidth=0)
+#            # plot upper conf int
+#            surfaceax.plot_surface(XX, YY, df_upper, color='r', alpha=0.1, linewidth=0)
+#            surfaceax.plot_surface(XX, YY, df_lower, color='r', alpha=0.1, linewidth=0)
                     
             
             surfaceax.set_xlabel("Lags")
