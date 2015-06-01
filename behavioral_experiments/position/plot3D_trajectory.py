@@ -17,9 +17,9 @@ import seaborn as sns
 import pandas as pd
 from glob import glob
 import matplotlib as mpl
+            
 
-
-def plot3D_trajectory(xyz, csv_name):
+def plot3D_trajectory(xyz, csv_name, WINDOW_LEN):
 ###    %matplotlib Qt4Agg
 #    palette = sns.color_palette("Pastel1", 450)
     
@@ -27,9 +27,15 @@ def plot3D_trajectory(xyz, csv_name):
     fig = plt.figure()
     threedee = fig.gca(projection='3d')
     N = len(xyz.index)
-    color = iter(plt.cm.Set2(np.linspace(0,1,N)))
+    
+
+    cm = plt.get_cmap('Set2')
+    color_cycle = [cm(1.*i/(N-1-WINDOW_LEN)) for i in range(int(N)-1-WINDOW_LEN)]
+    color_cycle = color_cycle + [(0., 0., 0., 1.)]*(WINDOW_LEN)
+    
+    color = iter(color_cycle)
     for i in xrange(N-1):
-        c=next(color)
+        c = next(color)
     #    threedee.plot(xyz.pos_x, xyz.pos_y, xyz.pos_z) , color=sns.color_palette("husl", 450*i/N))
         threedee.plot(xyz.pos_y[i:i+2].values, xyz.pos_x[i:i+2].values, xyz.pos_z[i:i+2].values, color=c)#palette[450*i/N])
 #        print 450*i/N
@@ -74,5 +80,5 @@ if __name__ == '__main__':
     df = trajectory_data_io.load_trajectory_dynamics_csv(csv_name)
     xyz = df[['pos_x', 'pos_y', 'pos_z']]
     
-    plot3D_trajectory(xyz, csv_name)
+    plot3D_trajectory(xyz, csv_name, WINDOW_LEN = 100)
     
