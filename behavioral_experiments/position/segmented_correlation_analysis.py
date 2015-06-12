@@ -33,6 +33,7 @@ INTERESTED_VALS = ['velo_x', 'velo_y', 'velo_z', 'curve']
 WINDOW_LEN = 100
 LAGS = 20
 MIN_TRAJECTORY_LEN = 400
+CONFINT_THRESH = 0.5
 
 #
 ## testing parrallelizing code
@@ -82,29 +83,33 @@ def csvList2df(csv_list):
 
 def DF2analyzedSegments(DF):
     print "Segmenting data, running ACF + PACF analysis."
-    analyzed_segment_list = []
-    super_data_list = []
-    confint_lower_list = []
-    confint_upper_list = []
+#    analyzed_segment_list = []
+#    super_data_list = []
+#    confint_lower_list = []
+#    confint_upper_list = []
+    filtered_data_list = []
     t0 = time.time()
     for csv_fname, DF in trajectory_DF.groupby(level=0):
 #        pool = mp.Pool(processes = 4)
 #        results = [pool.apply(segment_analysis, args=(csv_fname, DF)) for csv_fname, DF in DF_dict.iteritems()]
 #        analysis_df, super_data_matrix = segment_analysis(csv_fname, DF)
-        super_data_panel, confint_lower, confint_upper = segment_analysis(csv_fname, DF)
+#        super_data_panel, confint_lower, confint_upper = segment_analysis(csv_fname, DF)
+        filtered_panel = segment_analysis(csv_fname, DF)
 #        if analysis_df is None: # our df was too small to analyze
 #            pass
 #        else:
 #            analyzed_segment_list.append(analysis_df)
-        super_data_list.append(super_data_panel)
-        confint_lower_list.append(confint_lower)
-        confint_upper_list.append(confint_upper)
+#        super_data_list.append(super_data_panel)
+#        confint_lower_list.append(confint_lower)
+#        confint_upper_list.append(confint_upper)
+        filtered_data_list.append(filtered_panel)
     t1 = time.time()
     print "Segment analysis finished in %f seconds." % (t1-t0)
 #    return pd.concat(results)
 #    return pd.concat(analyzed_segment_list), super_data_matrix 
 #    print super_data_list
-    return pd.concat(super_data_list, axis=1), pd.concat(confint_lower_list, axis=1), pd.concat(confint_upper_list, axis=1), 
+    return pd.concat(filtered_data_list, axis=1)
+#    return pd.concat(super_data_list, axis=1), pd.concat(confint_lower_list, axis=1), pd.concat(confint_upper_list, axis=1), 
             
 
 def segment_analysis(csv_fname, trajectory_df):
@@ -117,9 +122,10 @@ def segment_analysis(csv_fname, trajectory_df):
         # for each trajectory, loop through segments
 
 #        super_data = np.zeros((num_segments+1, LAGS+1+1, 2*len(INTERESTED_VALS)+1))
-        super_data = np.zeros((2*len(INTERESTED_VALS), num_segments, LAGS+1))
-        super_data_confint_upper = np.zeros((2*len(INTERESTED_VALS), num_segments, LAGS+1))
-        super_data_confint_lower = np.zeros((2*len(INTERESTED_VALS), num_segments, LAGS+1))
+#        super_data = np.zeros((2*len(INTERESTED_VALS), num_segments, LAGS+1))
+#        super_data_confint_upper = np.zeros((2*len(INTERESTED_VALS), num_segments, LAGS+1))
+#        super_data_confint_lower = np.zeros((2*len(INTERESTED_VALS), num_segments, LAGS+1))
+        confident_data = np.zeros((2*len(INTERESTED_VALS), num_segments, LAGS+1))
 #        segmentnames = np.ndarray.flatten( np.array([["{name:s} seg{index:0>3d}".format(name="C", index=segment_i)]*(LAGS+1) for segment_i in range(num_segments)]) )
         
         for segment_i in range(num_segments):
@@ -145,17 +151,32 @@ def segment_analysis(csv_fname, trajectory_df):
                 col_acf, acf_confint = acf(var_values, nlags=LAGS, alpha=.05)#,  qstat= True)
                 
                 # store data
-                super_data[var_index, segment_i, :] = col_acf
-                super_data_confint_lower[var_index, segment_i, :] = acf_confint[:,0]
-                super_data_confint_upper[var_index, segment_i, :] = acf_confint[:,1]
+#                super_data[var_index, segment_i, :] = col_acf
+#                super_data_confint_lower[var_index, segment_i, :] = acf_confint[:,0]
+#                super_data_confint_upper[var_index, segment_i, :] = acf_confint[:,1]
+                # make confident data
+                acf_confint_distance = acf_confint[:,1] - acf_confint[:,0]
+                ACF_conf_booltable = acf_confint_distance[:] >= CONFINT_THRESH
+                filtered_data = col_acf
+                filtered_data[ACF_conf_booltable] = 0.
+                confident_data[var_index, segment_i, :] = filtered_data
+                
                 
                 
                 ## , acf_confint, acf_qstats, acf_pvals
                 col_pacf, pacf_confint = pacf(var_values, nlags=LAGS, method='ywmle', alpha=.05)
                 # TODO: check for PACF values above or below +-1
-                super_data[var_index+len(INTERESTED_VALS), segment_i, :] = col_pacf
-                super_data_confint_lower[var_index+len(INTERESTED_VALS), segment_i, :] = pacf_confint[:,0]
-                super_data_confint_upper[var_index+len(INTERESTED_VALS), segment_i, :] = pacf_confint[:,1]
+#                super_data[var_index+len(INTERESTED_VALS), segment_i, :] = col_pacf
+#                super_data_confint_lower[var_index+len(INTERESTED_VALS), segment_i, :] = pacf_confint[:,0]
+#                super_data_confint_upper[var_index+len(INTERESTED_VALS), segment_i, :] = pacf_confint[:,1]
+                
+                # make confident data
+                pacf_confint_distance = pacf_confint[:,1] - pacf_confint[:,0]
+                PACF_conf_booltable = pacf_confint_distance[:] >= CONFINT_THRESH
+                filtered_data = col_pacf # make a copy
+                filtered_data[PACF_conf_booltable] = 0.
+                confident_data[var_index+len(INTERESTED_VALS), segment_i, :] = filtered_data
+                
 
                 
                 
@@ -163,33 +184,44 @@ def segment_analysis(csv_fname, trajectory_df):
         # analysis panel  
         major_axis=[np.array([csv_fname]*num_segments), np.array(["{index:0>3d}".format(index=segment_i) for segment_i in range(num_segments)])]
         
-        p = pd.Panel(super_data,
-             items=['acf_velox', 'acf_veloy','acf_veloz', 'acf_curve', 'acf_logcurve', 'pacf_velox', 'pacf_veloy', 'pacf_veloz', 'pacf_curve', 'pacf_logcurve'],
-#            major_axis=np.array(["{name:s} seg{index:0>3d}".format(name=csv_fname, index=segment_i) for segment_i in range(num_segments)]),
-            major_axis=major_axis,            
-            minor_axis=np.arange(LAGS+1))
-        p.major_axis.names = ['Trajectory', 'segment_ID']
-
-        # confint panel
-        p_confint_upper = pd.Panel(super_data_confint_upper,
-             items=['acf_velox', 'acf_veloy','acf_veloz', 'acf_curve', 'acf_logcurve', 'pacf_velox', 'pacf_veloy', 'pacf_veloz', 'pacf_curve', 'pacf_logcurve'],
-#            major_axis=np.array(["{name:s} seg{index:0>3d}".format(name=csv_fname, index=segment_i) for segment_i in range(num_segments)]),
-            major_axis=major_axis,            
-            minor_axis=np.arange(LAGS+1))
-        p_confint_upper.major_axis.names = ['Trajectory', 'segment_ID']  
+#        p = pd.Panel(super_data,
+#             items=['acf_velox', 'acf_veloy','acf_veloz', 'acf_curve', 'acf_logcurve', 'pacf_velox', 'pacf_veloy', 'pacf_veloz', 'pacf_curve', 'pacf_logcurve'],
+##            major_axis=np.array(["{name:s} seg{index:0>3d}".format(name=csv_fname, index=segment_i) for segment_i in range(num_segments)]),
+#            major_axis=major_axis,            
+#            minor_axis=np.arange(LAGS+1))
+#        p.major_axis.names = ['Trajectory', 'segment_ID']
+#
+#        # confint panel
+#        p_confint_upper = pd.Panel(super_data_confint_upper,
+#             items=['acf_velox', 'acf_veloy','acf_veloz', 'acf_curve', 'acf_logcurve', 'pacf_velox', 'pacf_veloy', 'pacf_veloz', 'pacf_curve', 'pacf_logcurve'],
+##            major_axis=np.array(["{name:s} seg{index:0>3d}".format(name=csv_fname, index=segment_i) for segment_i in range(num_segments)]),
+#            major_axis=major_axis,            
+#            minor_axis=np.arange(LAGS+1))
+#        p_confint_upper.major_axis.names = ['Trajectory', 'segment_ID']  
+#        
+#        p_confint_lower = pd.Panel(super_data_confint_lower,
+#             items=['acf_velox', 'acf_veloy','acf_veloz', 'acf_curve', 'acf_logcurve', 'pacf_velox', 'pacf_veloy', 'pacf_veloz', 'pacf_curve', 'pacf_logcurve'],
+##            major_axis=np.array(["{name:s} seg{index:0>3d}".format(name=csv_fname, index=segment_i) for segment_i in range(num_segments)]),
+#            major_axis=major_axis,            
+#            minor_axis=np.arange(LAGS+1))
+#        p_confint_lower.major_axis.names = ['Trajectory', 'segment_ID'] 
         
-        p_confint_lower = pd.Panel(super_data_confint_lower,
+        # analysis panel  
+        
+        filtpanel = pd.Panel(confident_data,
              items=['acf_velox', 'acf_veloy','acf_veloz', 'acf_curve', 'acf_logcurve', 'pacf_velox', 'pacf_veloy', 'pacf_veloz', 'pacf_curve', 'pacf_logcurve'],
 #            major_axis=np.array(["{name:s} seg{index:0>3d}".format(name=csv_fname, index=segment_i) for segment_i in range(num_segments)]),
             major_axis=major_axis,            
             minor_axis=np.arange(LAGS+1))
-        p_confint_lower.major_axis.names = ['Trajectory', 'segment_ID'] 
+        filtpanel.major_axis.names = ['Trajectory', 'segment_ID']
         
-        return p, p_confint_upper, p_confint_lower
+        
+        return filtpanel
+#        return p, p_confint_upper, p_confint_lower, filtpanel
                   
 
                       
-def plot_analysis(analysis_panel, confint_lower_panel, confint_upper_panel):
+def plot_analysis(analysis_panel):#, confint_lower_panel, confint_upper_panel):
     print "Plotting."
     analysis_types = {'acf_velox': "ACF Velocity x", 'acf_veloy': "ACF Velocity y",\
                  'acf_veloz': "ACF Velocity Z", 'acf_curve': "ACF curvature", \
@@ -210,8 +242,8 @@ def plot_analysis(analysis_panel, confint_lower_panel, confint_upper_panel):
 
     for analysis, title in analysis_types.iteritems():
         DF = analysis_panel[analysis].sortlevel(0)
-        DF_lower = confint_lower_panel[analysis].sortlevel(0)
-        DF_upper = confint_upper_panel[analysis].sortlevel(0)
+#        DF_lower = confint_lower_panel[analysis].sortlevel(0)
+#        DF_upper = confint_upper_panel[analysis].sortlevel(0)
         #TODO figure out DF.index.lexsort_depth error
         for csv_fname, df in DF.groupby(level=0):
             if not os.path.exists('./correlation_figs/{data_name}'.format(data_name = csv_fname)):
@@ -221,15 +253,15 @@ def plot_analysis(analysis_panel, confint_lower_panel, confint_upper_panel):
             num_segs = df.shape[0] *1.0 # turn to floats
             
             # select confint data
-            df_lower = DF_lower.xs(csv_fname, level='Trajectory')
-            df_upper = DF_upper.xs(csv_fname, level='Trajectory')
+#            df_lower = DF_lower.xs(csv_fname, level='Trajectory')
+#            df_upper = DF_upper.xs(csv_fname, level='Trajectory')
             
-            fig = plt.figure()
-            plt.title(csv_fname + " " + title)
-            plt.ylabel("Correlation")
-            plt.xlabel("Lags")
-            plt.ylim([-1, 1])
-            
+#            fig = plt.figure()
+#            plt.title(csv_fname + " " + title)
+#            plt.ylabel("Correlation")
+#            plt.xlabel("Lags")
+#            plt.ylim([-1, 1])
+#            
 #            seg_iterator = df.iterrows()
 #            
 #            # plot flat
@@ -336,8 +368,10 @@ trajectory_DF = csvList2df(csv_list)
 #trajectory_DF = pd.concat(trajectory_DFs_dict.values())
 #
 ##segment_analysis_DF, super_data = DF_dict2analyzedSegments(trajectory_DFs_dict)
-analysis_panel, confint_lower_panel, confint_upper_panel = DF2analyzedSegments(trajectory_DF)
+#analysis_panel, confint_lower_panel, confint_upper_panel = DF2analyzedSegments(trajectory_DF)
+filtered_panel = DF2analyzedSegments(trajectory_DF)
 ##
 ###plt.style.use('ggplot')
 ###graph_matrix = plot_analysis(segment_analysis_DF)
-plot_analysis(analysis_panel, confint_lower_panel, confint_upper_panel)
+#plot_analysis(analysis_panel, confint_lower_panel, confint_upper_panel)
+plot_analysis(filtered_panel)

@@ -64,7 +64,6 @@ def load_trajectory_dynamics_csv(data_fname):
     new = pd.concat([dyn_trajectory_DF], keys=[data_fname])
     new.index.names = ['Trajectory', 'timestep']
     
-    
     return new
 #    return dyn_trajectory_DF
     
