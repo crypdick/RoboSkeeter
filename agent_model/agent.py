@@ -108,6 +108,7 @@ class Agent():
         wallF_params=(4e-1, 1e-6, 1e-7, 250, "walls_only"), k=0.):
         """ Initialize object with instant variables, and trigger other funcs. 
         """
+        
         self.boundary = [0.0, 1.0, 0.127, -0.127]  # these are real dims of our wind tunnel
         self.Tmax = Tmax
         self.dt = dt
@@ -164,7 +165,7 @@ class Agent():
             array_dict['trajectory_num'] = traj_count
             traj_count += 1
     #        trajectory.dynamics.set_index('trajectory', append=True, inplace=True)
-            self.trajectory_obj.append_ensemble(array_dict)  # TODO: check this is correct
+            self.trajectory_obj.append_ensemble(array_dict)
         
         
         self.metadata['total_trajectories'] = total_trajectories
@@ -183,6 +184,8 @@ class Agent():
         First put everything into np arrays, then at end put it into a Pandas DF
         this speeds up the code thousands of times
         """
+        BOUNCE = "elastic"        
+        
         tsi_max = int(np.ceil(self.metadata['time_max'] / dt))  # N bins/maximum time step
         _times = np.linspace(0, self.metadata['time_max'], tsi_max)
         _position_x = np.full(tsi_max, np.nan)
@@ -249,7 +252,7 @@ class Agent():
             try:
                 stimF, inPlume = stim_biasF.main(_temperature[tsi], _velocity_y[tsi],\
                     _inPlume[tsi-1], self.stimF_str)
-            except UnboundLocalError:
+            except UnboundLocalError: # TODO: wtf?
                 stimF, inPlume = stim_biasF.main(_temperature[tsi], _velocity_y[tsi],\
                     False, self.stimF_str)
             _inPlume[tsi] = inPlume
@@ -267,15 +270,15 @@ class Agent():
             accel = totalF/m
             _acceleration_x[tsi] = accel[0]
             _acceleration_y[tsi] = accel[1]
-            if accel[1] > 50. or accel[0] > 50.:
+            if accel[1] > 50. or accel[0] > 50.: # TODO major bug: fix problem with huge 
+                # wall repulsion forces
                 self.metadata['target_found'][0]  = False
                 self.metadata['time_to_target_find'][0] = np.nan
                 arraydict = self.land(tsi-1, arraydict)
                 print "Throwing out trajectory, impossible acceleration!"
                 raise ValueError('Impossible acceleration! ', accel[0], accel[1])
             
-            # if time is out, end loop
-            # TODO: check that landing behavior is right
+             # if time is out, end loop before velocity calculations
             if tsi == tsi_max-1:
                 self.metadata['target_found'][0]  = False
                 self.metadata['time_to_target_find'][0] = np.nan
@@ -287,18 +290,46 @@ class Agent():
             _velocity_x[tsi+1] = velo_future[0]
             _velocity_y[tsi+1] = velo_future[1]
             
-            # create candidate position for next timestep
+            # solve candidate position for next timestep
             candidate_pos = np.array([_position_x[tsi], _position_y[tsi]]) \
                 + np.array([_velocity_x[tsi], _velocity_y[tsi]])*dt  # why not use veloList.loc[ts]? -rd
             
-            if bounded is True:  # if walls are enabled
+            # if walls are enabled, manage collisions
+            if bounded is True:  
                 ## forbid mosquito from going out of bounds
-                if candidate_pos[0] > boundary[1]:  # reached far (upwind) wall
+                
+                # x dim
+                if candidate_pos[0] > boundary[1]:  # reached far (upwind) wall (end)
                     self.metadata['target_found'][0]  = False
                     self.metadata['time_to_target_find'][0] = np.nan
                     arraydict = self.land(tsi-1, arraydict)  # stop flying at end, throw out last row
+                if candidate_pos[0] < boundary[0]:  # too far left
+                    candidate_pos[0] = boundary[0] + 1e-4
+                    if BOUNCE == 'elastic':
+                        _velocity_x[tsi+1] = _velocity_x[tsi+1] * -1
+                        print "boom! left"
+                    elif BOUNCE == 'crash':
+                        _velocity_x[tsi+1] = 0.
             
-                # assign candidate_pos to future position
+                #y dim
+                if candidate_pos[1] > boundary[2]:  # too far up
+                    candidate_pos[1] = boundary[2] + 1e-4
+                    if BOUNCE == 'elastic':
+                        _velocity_y[tsi+1] = _velocity_y[tsi+1] * -1
+                        print "boom! top"
+                    elif BOUNCE == "crash":
+#                        print "teleport!"
+                        _velocity_y[tsi+1] = 0.
+#                        print "crash! top wall"
+                if candidate_pos[1] < boundary[3]:  # too far down
+                    candidate_pos[1] = boundary[3] - 1e-4
+                    if BOUNCE == 'elastic':
+                        _velocity_y[tsi+1] = _velocity_y[tsi+1] * -1
+                        print "boom! bottom"
+                    elif BOUNCE == 'crash':
+                        _velocity_y[tsi+1] = 0.
+
+                # save screened candidate_pos to future position
                 _position_x[tsi+1] = candidate_pos[0]
                 _position_y[tsi+1] = candidate_pos[1]
             
@@ -346,10 +377,9 @@ if __name__ == '__main__':
     myagent = Agent(trajectories, myplume, agent_pos="door", target_pos="left", v0_stdev=0.01, wtf=7e-07,\
         rf=4e-06, stimF_str=1e-4, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, \
         bounded=True, wallF_params=wallF_params)
-    myagent.fly(total_trajectories=1)
+    myagent.fly(total_trajectories=100)
     
-    plot_kwargs = {'trajectories':False, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_scatter':True}
-    
-#    trajectories.describe(plot_kwargs)
+   
+#    trajectories.describe(plot_kwargs = {'trajectories':False, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_scatter':True, 'force_violin':True})
 #    self.trajectory_obj.plot_single_trajectory()
     
