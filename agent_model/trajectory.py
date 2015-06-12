@@ -143,5 +143,11 @@ class Trajectory():
             self.plot_kinematic_hists()
         if plot_kwargs['force_violin'] is True:
             self.plot_force_violin()
+            
+    def dump2csvs(self):
+        for trajectory_i in self.ensemble.trajectory_num.unique():
+            temp_traj = self.ensemble[self.ensemble['trajectory_num'] == trajectory_i]
+            temp_array = temp_traj[['position_x', 'position_y']].values
+            np.savetxt(str(trajectory_i) + ".csv", temp_array, delimiter=",")
     
 #    def 
