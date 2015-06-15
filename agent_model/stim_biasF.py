@@ -34,10 +34,8 @@ plumeDirection = [left, right, none]
 
 
 """
-import numpy as np
 
-
-def absoluteT_detect(temperature, threshold):#, strength, inplume_past):
+def absoluteT_threshold_check(temperature, threshold):#, strength, inplume_past):
     """given temperature, check if it's above our threshold
     return if we're in plume (bool)"""
     if temperature >= threshold:
@@ -46,42 +44,52 @@ def absoluteT_detect(temperature, threshold):#, strength, inplume_past):
         return False
         
 
-def bound_crossing_status(current_status, past_status):
+def check_crossing_state(current_state, past_state):
     """in2in, out2in - stay, entering plume
     out2out - off, searching
     in2out - reverse, exiting
     """
-    if current_status == False and past_status == False:
+    if current_state == False and past_state == False:
         # we are not in plume and weren't in last ts
         return 'searching'
-    if current_status == True and past_status == False:
-        # entering plume, or staying in plume
+    if current_state == True and past_state == False:
+        # entering plume
         return 'entering'
-    if current_status == False and past_status == True:
+    if current_state == True and past_state == True:
+        # we stayed in the plume
+        return 'staying'
+    if current_state == False and past_state == True:
         # exiting the plume
         return "exiting"
 
 
 def stimF_direction(cross_status, veloy):
-    """
+    """Given the crossing state and current crosswind velocity, return which
+    direction we should be flying in.
+    
+    TODO: solve for direction lookkup given cross status (searching, entering, staying, exiting)
     """
     return None
 
 
 def stimF(stimF_strength, dir=None):
+    """given force direction and strength, return a force vector
+    
+    TODO: add forces for other directions
+    """
     if dir == None:
         return [0, 0]
         
         
-def main(temperature, velocity_y, stimF_strength, thresh=299.15, past_status=False, detection_type='absolute'):
+def main(temperature, velocity_y, stimF_strength, thresh=299.15, past_state=False, detection_type='absolute'):
     veloy = None
     if detection_type == 'absolute':
-        curr_status = absoluteT_detect(temperature, thresh)
-    cross_status = bound_crossing_status(curr_status, past_status)
-    stimF_dir = stimF_direction(cross_status, veloy)
-    force = stimF(stimF_strength)
+        curr_status = absoluteT_threshold_check(temperature, thresh)
+    cross_state = check_crossing_state(curr_status, past_state)
+    stimF_dir = stimF_direction(cross_state, veloy)
+    stim_F = stimF(stimF_strength, stimF_dir)
     
-    return force, curr_status
+    return stim_F, curr_status
     
     
     
