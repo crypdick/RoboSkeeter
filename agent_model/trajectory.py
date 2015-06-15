@@ -4,6 +4,7 @@ Created on Tue May  5 21:15:28 2015
 
 @author: richard
 
+creates a trajectory object that has a bunch of sweet methods.
 takes vectors from agent and adds it to ensemble
 
 trajectory.ensemble
