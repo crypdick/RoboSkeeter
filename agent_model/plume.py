@@ -27,9 +27,11 @@ def mkplume():
     plume = pd.read_csv('temperature_data/LH_50_tempfield-10s.csv')
     # grab just last timestep of the plume
     plume = plume.loc[:,['x', 'y', 'T2 (K) @ t=30']]
+    # label pandas columns
     plume.rename(columns={'T2 (K) @ t=30': 'temp'}, inplace=True)
-    # correct for model convention
+    # correction for model convention
     plume['y'] = plume.y.values - 0.127
+    
     return plume
 
 
@@ -58,11 +60,13 @@ class Plume():
         tempearture: (float)
             the nearest temperature
         """
+        
         distance, index = self.plume_kdTree.query(position)
+        
         return self.plume.loc[index, 'temp']
         
     def show(self):
-        ''' TODO plot the plume
+        ''' show a plot of the plume object
         '''
         from matplotlib import pyplot as plt
         
@@ -71,15 +75,10 @@ class Plume():
         ax.set_aspect('equal')
         ax.invert_yaxis()
 
-        
-    
 
 def main():
-    plume = Plume()
-    
-    return plume
-    
-    
+    return Plume()
+      
 
 if __name__ == '__main__':
     plume = main()
