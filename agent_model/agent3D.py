@@ -247,21 +247,25 @@ class Agent():
         
         # generate a flight!
         for tsi in range(tsi_max):
+            print tsi, "tsi"
             # sense the temperature
             _temperature[tsi] = self.Plume_object.temp_lookup([_position_x[tsi], _position_y[tsi]])
             
             # calculate driving forces
-            randF = baseline_driving_forces3D.random_force(self.rf)
+            randF = baseline_driving_forces3D.random_force(self.rf, dim=self.dim)
+            print randF, "randF"
             _randF_x[tsi] = randF[0]
             _randF_y[tsi] = randF[1]
             _randF_z[tsi] = randF[2]
             
-            upwindF = baseline_driving_forces3D.upwindBiasForce(self.wtf)
+            upwindF = baseline_driving_forces3D.upwindBiasForce(self.wtf, dim=self.dim)
+            print upwindF, "upwindF"
             _upwindF_x[tsi] = upwindF[0]
             _upwindF_y[tsi] = upwindF[1]
             _upwindF_z[tsi] = upwindF[2]
             
             wallRepulsiveF = baseline_driving_forces3D.repulsionF(np.array([_position_x[tsi], _position_y[tsi]]), self.wallF_params)
+            print wallRepulsiveF, "wallRepulsiveF"
             _wallRepulsiveF_x[tsi] = wallRepulsiveF[0]
             _wallRepulsiveF_y[tsi] = wallRepulsiveF[1]
             _wallRepulsiveF_z[tsi] = wallRepulsiveF[2]
@@ -273,18 +277,24 @@ class Agent():
             try:
                 stimF, inPlume = stim_biasF3D.main(_temperature[tsi], _velocity_y[tsi],\
                     _inPlume[tsi-1], self.stimF_str)
+                print "here"
             except UnboundLocalError: # TODO: wtf?
                 stimF, inPlume = stim_biasF3D.main(_temperature[tsi], _velocity_y[tsi],\
                     False, self.stimF_str)
+                print "erorr"
             _inPlume[tsi] = inPlume
+            print inPlume, "inplume"
+            print stimF, "stimF"
             _stimF_x[tsi] = stimF[0]
             _stimF_y[tsi] = stimF[1]
             _stimF_z[tsi] = stimF[2]
             
+            print "checkpoint"
             # calculate current force
             #spring graveyard ==> # -self.k*np.array([self.dynamics.loc[self.dynamics.times == ts, 'position_x'],
-            totalF = -self.beta*np.array([_velocity_x[tsi], _velocity_y[tsi]])\
-                  + randF + upwindF + wallRepulsiveF# + stimF
+            totalF = -self.beta*np.array([_velocity_x[tsi], _velocity_y[tsi], _velocity_z[tsi]])\
+                  + randF + upwindF + wallRepulsiveF# + stimF # FIXME
+            print totalF, "totalF"
             _totalF_x[tsi] = totalF[0]
             _totalF_y[tsi] = totalF[1]
             _totalF_z[tsi] = totalF[2]
@@ -295,12 +305,13 @@ class Agent():
             _acceleration_y[tsi] = accel[1]
             _acceleration_z[tsi] = accel[2]
             if accel.max() > 50.: # TODO major bug: fix problem with huge 
+                print "oh my"
                 # wall repulsion forces
                 self.metadata['target_found'][0]  = False
                 self.metadata['time_to_target_find'][0] = np.nan
                 arraydict = self.land(tsi-1, arraydict)
                 print "Throwing out trajectory, impossible acceleration!"
-                raise ValueError('Impossible acceleration! ', accel[0], accel[1])
+                raise ValueError('Impossible acceleration! ', accel[0], accel[1], accel[2])
             
              # if time is out, end loop before velocity calculations
             if tsi == tsi_max-1:
@@ -318,6 +329,8 @@ class Agent():
             # solve candidate position for next timestep
             candidate_pos = np.array([_position_x[tsi], _position_y[tsi], _position_z[tsi]]) \
                 + np.array([_velocity_x[tsi], _velocity_y[tsi], _velocity_z[tsi]])*dt  # why not use veloList.loc[ts]? -rd
+            
+            print candidate_pos, "candidate pos"
             
             # if walls are enabled, manage collisions
             if bounded is True:  
@@ -359,6 +372,8 @@ class Agent():
                 # save screened candidate_pos to future position
                 _position_x[tsi+1] = candidate_pos[0]
                 _position_y[tsi+1] = candidate_pos[1]
+                _position_z[tsi+1] = candidate_pos[2]
+                print "candidate pos saved"
             
             # if there is a target, check if we are finding it                
             if norm(candidate_pos - self.target_pos) < self.detect_thresh:

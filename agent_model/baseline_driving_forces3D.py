@@ -32,6 +32,14 @@ def random_force(rf, dim=2):
         scale = 1.82216219069
         mag = np.random.lognormal(mean=mu, sigma=sigma, size=1)
         return mag * ends * rf
+    if dim == 3: # FIXME: 3d symmetric
+        ends = gen_symm_vecs(3)
+        # following params were fitted from the Dickinson fligt data
+        mu = 0.600023812816
+        sigma = 0.719736466122
+        scale = 1.82216219069
+        mag = np.random.lognormal(mean=mu, sigma=sigma, size=1)
+        return mag * ends * rf
     else:
         raise NotImplementedError('Too many dimensions!')
 
@@ -64,10 +72,16 @@ def upwindBiasForce(wtf, upwind_direction=0, dim=2):
         upwind bias force x and y components as an array
     """
     if dim == 2:
+        print "crap!"
         if wtf == None:
             return [0, 0]
         else:
             return [wtf, 0]  # wf is constant, directly to right
+    elif dim == 3:
+        if wtf == None:
+            return [0, 0, 0]
+        else:
+            return [wtf, 0, 0]  # wf is constant, directly to right
     else:
         raise NotImplementedError('wind bias only works in 2D right now!')
 
@@ -112,11 +126,11 @@ def repulsionF(position, wallF):
     """repulsion as a function of position.
     """
     if wallF is None:
-        return np.array([0., 0.])
+        return np.array([0., 0., 0.])
     else:
         posx, posy = position
         force_y = repulsion_landscape3D.main(wallF, posy)
-        return np.array([0., force_y])
+        return np.array([0., force_y, 0.]) # FIXME Z
 
 
 #def brakingF(candidate_pos, totalF_x, totalF_y, boundary):

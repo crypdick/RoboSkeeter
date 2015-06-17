@@ -78,7 +78,7 @@ def stimF(stimF_strength, dir=None):
     TODO: add forces for other directions
     """
     if dir == None:
-        return [0, 0]
+        return [0, 0, 0]
         
         
 def main(temperature, velocity_y, stimF_strength, thresh=299.15, past_state=False, detection_type='absolute'):
