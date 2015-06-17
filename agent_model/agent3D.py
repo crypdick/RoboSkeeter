@@ -34,9 +34,9 @@ def place_heater(target_pos):
     if target_pos is None:
             return None
     elif target_pos == "left":
-        return [0.8651, -0.0507]
+        return [0.8651, -0.0507, 0.]
     elif target_pos == "right":
-        return [0.8651, 0.0507]
+        return [0.8651, 0.0507, 0.]
     elif type(target_pos) is list:
         return target_pos
     else:
@@ -50,11 +50,14 @@ def place_agent(agent_pos):
     if type(agent_pos) is list:
         return agent_pos
     if agent_pos == "center":
-        return [0.1524, 0.]  # center of box
+        return [0.1524, 0., 0.]  # center of box
+        # FIXME cage height
     if agent_pos == "cage":  # bounds of cage
-        return [np.random.uniform(0.1143, 0.1909), np.random.uniform(-0.0381, 0.0381)]
+        return [np.random.uniform(0.1143, 0.1909), np.random.uniform(-0.0381, 0.0381), np.random.uniform(0., 0.1016)]
+        # FIXME cage height
     if agent_pos == "door":  # start trajectories when they exit the front door
-        return [0.1909, np.random.uniform(-0.0381, 0.0381)]
+        return [0.1909, np.random.uniform(-0.0381, 0.0381), np.random.uniform(0., 0.1016)]
+        # FIXME cage height
     else:
         raise Exception('invalid agent position specified')
 
@@ -108,7 +111,7 @@ class Agent():
         """ Initialize object with instant variables, and trigger other funcs. 
         """
         
-        self.boundary = [0.0, 1.0, 0.127, -0.127]  # these are real dims of our wind tunnel
+        self.boundary = [0.0, 1.0, 0.127, -0.127, 0., 0.3]  # these are real dims of our wind tunnel
         self.Tmax = Tmax
         self.dt = dt
         self.v0_stdev = v0_stdev
@@ -190,20 +193,28 @@ class Agent():
         _times = np.linspace(0, self.metadata['time_max'], tsi_max)
         _position_x = np.full(tsi_max, np.nan)
         _position_y = np.full(tsi_max, np.nan)
+        _position_z = np.full(tsi_max, np.nan)
         _velocity_x = np.full(tsi_max, np.nan)
         _velocity_y = np.full(tsi_max, np.nan)
+        _velocity_z = np.full(tsi_max, np.nan)
         _acceleration_x = np.full(tsi_max, np.nan)
         _acceleration_y = np.full(tsi_max, np.nan)
+        _acceleration_z = np.full(tsi_max, np.nan)
         _totalF_x = np.full(tsi_max, np.nan)
         _totalF_y = np.full(tsi_max, np.nan)
+        _totalF_z = np.full(tsi_max, np.nan)
         _randF_x = np.full(tsi_max, np.nan)
         _randF_y = np.full(tsi_max, np.nan)
+        _randF_z = np.full(tsi_max, np.nan)
         _wallRepulsiveF_x = np.full(tsi_max, np.nan)
         _wallRepulsiveF_y = np.full(tsi_max, np.nan)
+        _wallRepulsiveF_z = np.full(tsi_max, np.nan)
         _upwindF_x = np.full(tsi_max, np.nan)
         _upwindF_y = np.full(tsi_max, np.nan)
+        _upwindF_z = np.full(tsi_max, np.nan)
         _stimF_x = np.full(tsi_max, np.nan)
         _stimF_y = np.full(tsi_max, np.nan)
+        _stimF_z = np.full(tsi_max, np.nan)        
         _temperature = np.full(tsi_max, np.nan)
         _inPlume = np.full(tsi_max, np.nan)
         
@@ -217,16 +228,21 @@ class Agent():
         ## store initial position and velocity values
         _position_x[0] = r0[0]
         _position_y[0] = r0[1]
+        _position_z[0] = r0[2]
         _velocity_x[0] = v0[0]
         _velocity_y[0] = v0[1]
+        _velocity_z[0] = v0[2]
         
         # make dictionary for creating Pandas df, later
         arraydict = {'times': _times, 'position_x': _position_x, 'position_y': _position_y,\
-        'velocity_x': _velocity_x, 'velocity_y': _velocity_y, 'acceleration_x': _acceleration_x,\
-        'acceleration_y': _acceleration_y, 'totalF_x': _totalF_x, 'totalF_y': _totalF_y,\
-        'randF_x': _randF_x, 'randF_y': _randF_y, 'wallRepulsiveF_x': _wallRepulsiveF_x,\
-        'wallRepulsiveF_y': _wallRepulsiveF_y, 'upwindF_x': _upwindF_x, 'upwindF_y': _upwindF_y,\
-        'stimF_x': _stimF_x, 'stimF_y': _stimF_y, 'temperature': _temperature,\
+        'position_z': _position_z,
+        'velocity_x': _velocity_x, 'velocity_y': _velocity_y, 'velocity_z': _velocity_z,\
+        'acceleration_x': _acceleration_x, 'acceleration_y': _acceleration_y, 'acceleration_z': _acceleration_z,\
+        'totalF_x': _totalF_x, 'totalF_y': _totalF_y, 'totalF_z': _totalF_z,\
+        'randF_x': _randF_x, 'randF_y': _randF_y, 'randF_z': _randF_z, 'wallRepulsiveF_x': _wallRepulsiveF_x,\
+        'wallRepulsiveF_y': _wallRepulsiveF_y, 'wallRepulsiveF_z': _wallRepulsiveF_z,\
+        'upwindF_x': _upwindF_x, 'upwindF_y': _upwindF_y, 'upwindF_z': _upwindF_z,\
+        'stimF_x': _stimF_x, 'stimF_y': _stimF_y, 'stimF_z': _stimF_z, 'temperature': _temperature,\
         'inPlume': _inPlume}
         
         # generate a flight!
@@ -238,14 +254,17 @@ class Agent():
             randF = baseline_driving_forces3D.random_force(self.rf)
             _randF_x[tsi] = randF[0]
             _randF_y[tsi] = randF[1]
+            _randF_z[tsi] = randF[2]
             
             upwindF = baseline_driving_forces3D.upwindBiasForce(self.wtf)
             _upwindF_x[tsi] = upwindF[0]
             _upwindF_y[tsi] = upwindF[1]
+            _upwindF_z[tsi] = upwindF[2]
             
             wallRepulsiveF = baseline_driving_forces3D.repulsionF(np.array([_position_x[tsi], _position_y[tsi]]), self.wallF_params)
             _wallRepulsiveF_x[tsi] = wallRepulsiveF[0]
             _wallRepulsiveF_y[tsi] = wallRepulsiveF[1]
+            _wallRepulsiveF_z[tsi] = wallRepulsiveF[2]
             
 #            # this may get updated if we find outselves crashing into the wall
 #            _brakeF_x[tsi] = 0.
@@ -260,6 +279,7 @@ class Agent():
             _inPlume[tsi] = inPlume
             _stimF_x[tsi] = stimF[0]
             _stimF_y[tsi] = stimF[1]
+            _stimF_z[tsi] = stimF[2]
             
             # calculate current force
             #spring graveyard ==> # -self.k*np.array([self.dynamics.loc[self.dynamics.times == ts, 'position_x'],
@@ -267,12 +287,14 @@ class Agent():
                   + randF + upwindF + wallRepulsiveF# + stimF
             _totalF_x[tsi] = totalF[0]
             _totalF_y[tsi] = totalF[1]
+            _totalF_z[tsi] = totalF[2]
             
             # calculate current acceleration
             accel = totalF/m
             _acceleration_x[tsi] = accel[0]
             _acceleration_y[tsi] = accel[1]
-            if accel[1] > 50. or accel[0] > 50.: # TODO major bug: fix problem with huge 
+            _acceleration_z[tsi] = accel[2]
+            if accel.max() > 50.: # TODO major bug: fix problem with huge 
                 # wall repulsion forces
                 self.metadata['target_found'][0]  = False
                 self.metadata['time_to_target_find'][0] = np.nan
@@ -288,13 +310,14 @@ class Agent():
                 break
             
             # update velocity in next timestep
-            velo_future = np.array([_velocity_x[tsi], _velocity_y[tsi]]) + accel*dt
+            velo_future = np.array([_velocity_x[tsi], _velocity_y[tsi], _velocity_z[tsi]]) + accel*dt
             _velocity_x[tsi+1] = velo_future[0]
             _velocity_y[tsi+1] = velo_future[1]
+            _velocity_z[tsi+1] = velo_future[2]
             
             # solve candidate position for next timestep
-            candidate_pos = np.array([_position_x[tsi], _position_y[tsi]]) \
-                + np.array([_velocity_x[tsi], _velocity_y[tsi]])*dt  # why not use veloList.loc[ts]? -rd
+            candidate_pos = np.array([_position_x[tsi], _position_y[tsi], _position_z[tsi]]) \
+                + np.array([_velocity_x[tsi], _velocity_y[tsi], _velocity_z[tsi]])*dt  # why not use veloList.loc[ts]? -rd
             
             # if walls are enabled, manage collisions
             if bounded is True:  
@@ -330,6 +353,8 @@ class Agent():
                         print "boom! bottom"
                     elif BOUNCE == 'crash':
                         _velocity_y[tsi+1] = 0.
+                
+                # TODO: z dim
 
                 # save screened candidate_pos to future position
                 _position_x[tsi+1] = candidate_pos[0]
