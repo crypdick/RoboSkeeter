@@ -46,6 +46,7 @@ def gen_symm_vecs(dims):
     mags = linalg.norm(vecs, axis=-1)
 
     ends = vecs / mags[..., newaxis]
+    
     return ends  # vector
 
 

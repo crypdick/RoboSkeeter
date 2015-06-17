@@ -22,8 +22,6 @@ agent:
 
 import numpy as np
 from numpy.linalg import norm
-import pandas as pd
-import plotting_funcs
 import baseline_driving_forces
 import stim_biasF
 import plume
@@ -31,7 +29,7 @@ import trajectory
 
 
 def place_heater(target_pos):
-    ''' TODO
+    ''' puts a heater in the correct position in the wind tunnel
     '''
     if target_pos is None:
             return None
@@ -46,7 +44,8 @@ def place_heater(target_pos):
 
 
 def place_agent(agent_pos):
-    ''' TODO
+    ''' puts the agent in an initial position, usually within the bounds of the
+    cage
     '''
     if type(agent_pos) is list:
         return agent_pos
@@ -153,7 +152,7 @@ class Agent():
 
 
     def fly(self, total_trajectories=1):
-        ''' TODO
+        ''' iterates _fly_single total_trajectories times
         '''
         traj_count = 0
         while traj_count < total_trajectories:
@@ -186,6 +185,7 @@ class Agent():
         """
         BOUNCE = "elastic"        
         
+        # initialize np arrays
         tsi_max = int(np.ceil(self.metadata['time_max'] / dt))  # N bins/maximum time step
         _times = np.linspace(0, self.metadata['time_max'], tsi_max)
         _position_x = np.full(tsi_max, np.nan)
@@ -214,12 +214,13 @@ class Agent():
         # generate random intial velocity condition
         v0 = np.random.normal(0, self.v0_stdev, self.dim)
         
-        ## insert initial position and velocity into positionList,veloList arrays
+        ## store initial position and velocity values
         _position_x[0] = r0[0]
         _position_y[0] = r0[1]
         _velocity_x[0] = v0[0]
         _velocity_y[0] = v0[1]
         
+        # make dictionary for creating Pandas df, later
         arraydict = {'times': _times, 'position_x': _position_x, 'position_y': _position_y,\
         'velocity_x': _velocity_x, 'velocity_y': _velocity_y, 'acceleration_x': _acceleration_x,\
         'acceleration_y': _acceleration_y, 'totalF_x': _totalF_x, 'totalF_y': _totalF_y,\
@@ -228,11 +229,12 @@ class Agent():
         'stimF_x': _stimF_x, 'stimF_y': _stimF_y, 'temperature': _temperature,\
         'inPlume': _inPlume}
         
+        # generate a flight!
         for tsi in range(tsi_max):
             # sense the temperature
             _temperature[tsi] = self.Plume_object.temp_lookup([_position_x[tsi], _position_y[tsi]])
             
-            # calculate drivers
+            # calculate driving forces
             randF = baseline_driving_forces.random_force(self.rf)
             _randF_x[tsi] = randF[0]
             _randF_y[tsi] = randF[1]
@@ -361,7 +363,7 @@ class Agent():
 
 if __name__ == '__main__':
     # wallF params
-    wallF_max=9e-6#1e-7
+    wallF_max=9e-6 #1e-7
     decay_const = 250
     
     # center repulsion params
@@ -373,11 +375,11 @@ if __name__ == '__main__':
 
     # temperature plume
     myplume = plume.Plume()
-    trajectories = trajectory.Trajectory()
+    trajectories = trajectory.Trajectory() # instantiate empty trajectories object
     myagent = Agent(trajectories, myplume, agent_pos="door", target_pos="left", v0_stdev=0.01, wtf=7e-07,\
         rf=4e-06, stimF_str=1e-4, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, \
         bounded=True, wallF_params=wallF_params)
-    myagent.fly(total_trajectories=100)
+    myagent.fly(total_trajectories=1)
     
    
 #    trajectories.describe(plot_kwargs = {'trajectories':False, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_scatter':True, 'force_violin':True})
