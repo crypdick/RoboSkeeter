@@ -51,7 +51,7 @@ class Trajectory():
         
         
     def plot_single_trajectory(self, trajectory_i=0):
-        plot_kwargs = {'title':"Individual agent trajectory", 'titleappend':'( #{})'.format(trajectory_i)}
+        plot_kwargs = {'title':"Individual agent trajectory", 'titleappend':' (id = {})'.format(trajectory_i)}
         plotting_funcs3D.plot_single_trajectory(self.ensemble.loc[self.ensemble['trajectory_num']==trajectory_i], self.agent_info, plot_kwargs)
     
 
@@ -83,6 +83,10 @@ class Trajectory():
             ensemble = self.ensemble
             
         plotting_funcs3D.compass_plots(ensemble, self.agent_info, kind)
+        
+    def plot_single_3Dtrajectory(self, trajectory_i=0):
+        plot_kwargs = {'title':"Individual agent trajectory", 'titleappend':' (id = {})'.format(trajectory_i)}
+        plotting_funcs3D.plot3D_trajectory(self.ensemble.loc[self.ensemble['trajectory_num']==trajectory_i], self.agent_info, plot_kwargs)
       
       
         

@@ -10,6 +10,7 @@ https://github.com/isomerase/
 from matplotlib import pyplot as plt
 import matplotlib.gridspec as gridspec
 import numpy as np
+from mpl_toolkits.mplot3d import Axes3D
 import seaborn as sns
 
 sns.set_palette("muted", 8)
@@ -25,7 +26,7 @@ def plot_single_trajectory(dynamics, metadata, plot_kwargs=None):
     currentAxis = plt.gca()
     cage = draw_cage()
     currentAxis.add_patch(cage)
-    currentAxis.axis([0, 1, 0.127, -0.127])
+    currentAxis.axis(metadata['boundary'][0:4])
     if metadata['target_position'] is not None:
         heaterCircle, detectCircle = draw_heaters(metadata['target_position'], metadata['detection_threshold'])
         currentAxis.add_artist(heaterCircle)
@@ -42,14 +43,15 @@ def plot_single_trajectory(dynamics, metadata, plot_kwargs=None):
 
 def draw_cage():
     # makes a little box where the cage is
-    cage_midX, cage_midY = 0.1524, 0.
-    return plt.Rectangle((cage_midX - 0.0381, cage_midY - 0.0381), 0.0762, 0.0762, facecolor='none')
+    cage_midX, cage_midY = 0.1524, 0. # TODO: turn to absolute boundaries and put in metadata
+    return plt.Rectangle((cage_midX - 0.0381, cage_midY - 0.0381), 0.0762, 0.0762, facecolor='none') # FIXME get rid of hardcoded number
     
 
 def draw_heaters(target_pos, detect_thresh):
     # draws a circle where the heater is
-    heaterCircle = plt.Circle((target_pos[0], target_pos[1],), 0.003175, color='r')  # 0.003175 is diam of our heater
+    heaterCircle = plt.Circle((target_pos[0], target_pos[1],), target_pos[4], color='r')
     detectCircle = plt.Circle((target_pos[0], target_pos[1],), detect_thresh, color='gray', fill=False, linestyle='dashed')
+    
     return heaterCircle, detectCircle
 
 
@@ -273,7 +275,7 @@ def stateHistograms(ensemble, metadata, plot_kwargs=None, titleappend='', upw_en
 
 def force_violin(ensemble, metadata):
     
-    ensembleF = ensemble.loc[(ensemble['position_x']>0.25) & (ensemble['position_x']<0.95), ['totalF_x', 'totalF_y', 'randF_x', 'randF_y', 'upwindF_x', 'wallRepulsiveF_x', 'wallRepulsiveF_y']] # TODO 'stimF_x', 'stimF_y'
+    ensembleF = ensemble.loc[(ensemble['position_x']>0.25) & (ensemble['position_x']<0.95), ['totalF_x', 'totalF_y', 'totalF_z', 'randF_x', 'randF_y', 'randF_z', 'upwindF_x', 'wallRepulsiveF_x', 'wallRepulsiveF_y', 'wallRepulsiveF_z']] # TODO 'stimF_x', 'stimF_y'
     # plot Forces
 #    f, axes = plt.subplots(2, 2, figsize=(9, 9), sharex=True, sharey=True)
 ##    forcefig = plt.figure(5, figsize=(9, 8))
@@ -332,25 +334,64 @@ def compass_plots(ensemble, metadata, kind):
             bin_magnitudes = ensemble.loc[((ensemble['angle'] > roundbins[i]) & (ensemble['angle'] < roundbins[i+1])), ['magnitude']]
             bin_mag_avg = bin_magnitudes.sum() / bin_magnitudes.size
             bin_mag_avgs[i] = bin_mag_avg
-        
-        
+
+def cylinder(center_x, center_y, z_min, z_max, r=0.01905, n=5):
+    '''
+    Returns the unit cylinder that corresponds to the curve r.
+    INPUTS:  r - a vector of radii
+             n - number of coordinates to return for each element in r
+             TODO: update with new params
+
+    OUTPUTS: x,y,z - coordinates of points
     
+    modified from http://python4econ.blogspot.com/2013/03/matlabs-cylinder-command-in-python.html
+    '''
+
+    # ensure that r is a column vector
+    r = np.atleast_2d(r)
+    r_rows, r_cols = r.shape
     
-    #what is bottom?
+    if r_cols > r_rows:
+        r = r.T
+
+    # find points along x and y axes
+    points  = np.linspace(0, 2*np.pi, n+1) # generate evenly spacesd rads
+    x = np.cos(points) * r + center_x
+    y = np.sin(points) * r + center_y
+
+    # find points along z axis
+    rpoints = np.atleast_2d(np.linspace(z_min, z_max, len(r)))
+    z = np.ones((1, n+1)) * rpoints.T
     
+    return x, y, z
+
+def plot3D_trajectory(ensemble, metadata, plot_kwargs=None):
+    '''plotting without coloring
+    '''
+
+    fig3D = plt.figure()
+    threedee = fig3D.gca(projection='3d')
+    threedee.auto_scale_xyz([0., 0.3], [0., 1.], [0., 0.254])
+    threedee.plot(ensemble.position_y, ensemble.position_x, ensemble.position_z) 
+
+    # Cylinder
+
+    # get points from cylinder and plot
+    cx, cy, cz = cylinder(*metadata['target_position'])
+    threedee.plot_wireframe(cx, cy, cz)
     
-    ##radii = max_height*np.random.rand(N)
-    ##theta = ensemble['angle']
-    ##radii = ensemble['magnitude']
-      
-    #
-    #
-    ### Use custom colors and opacity
-    ##for r, bar in zip(radii, bars):
-    ##    bar.set_facecolor(plt.cm.jet(r / 10.))
-    ##    bar.set_alpha(0.8)
-    
+    # Note! I set the y axis to be the X data and vice versa
+    threedee.set_ylim(0., 1.)
+    threedee.set_xlim(0.127, -0.127)
+    threedee.set_zlim(0., 0.254)
+    threedee.set_xlabel("Crosswind/$y$ (meters)", fontsize=14) # remember! x,y switched in plot() above!
+    threedee.set_ylabel("Upwind/$x$ (meters)", fontsize=14)
+    threedee.set_zlabel("Elevation/$z$ (meters)", fontsize=14)
+    threedee.set_title(plot_kwargs['title'] + plot_kwargs['titleappend'], fontsize=20)
+#    plt.savefig("./correlation_figs/{data_name}/{data_name} Trajectory.svg".format(data_name = csv_name), format="svg")
     plt.show()
+
+# todo: plot cylinder, detect circle, cage
 
 
 #if __name__ == '__main__':
