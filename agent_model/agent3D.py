@@ -31,12 +31,15 @@ import trajectory3D
 def place_heater(target_pos):
     ''' puts a heater in the correct position in the wind tunnel
     '''
+    zmin = 0.03800
+    zmax = 0.11340
+    diam = 0.01905
     if target_pos is None:
             return None
     elif target_pos == "left":
-        return [0.8651, -0.0507, 0.]
+        return [0.8651, -0.0507, zmin, zmax, diam]
     elif target_pos == "right":
-        return [0.8651, 0.0507, 0.]
+        return [0.8651, 0.0507, zmin, zmax, diam]
     elif type(target_pos) is list:
         return target_pos
     else:
@@ -111,7 +114,7 @@ class Agent():
         """ Initialize object with instant variables, and trigger other funcs. 
         """
         
-        self.boundary = [0.0, 1.0, 0.127, -0.127, 0., 0.3]  # these are real dims of our wind tunnel
+        self.boundary = [0.0, 1.0, 0.127, -0.127, 0., 0.254]  # these are real dims of our wind tunnel
         self.Tmax = Tmax
         self.dt = dt
         self.v0_stdev = v0_stdev
@@ -246,7 +249,8 @@ class Agent():
         'inPlume': _inPlume}
         
         # generate a flight!
-        for tsi in range(tsi_max):
+        for tsi in xrange(tsi_max):
+            print tsi_max
             print tsi, "tsi"
             # sense the temperature
             _temperature[tsi] = self.Plume_object.temp_lookup([_position_x[tsi], _position_y[tsi]])
@@ -266,9 +270,8 @@ class Agent():
             
             wallRepulsiveF = baseline_driving_forces3D.repulsionF(np.array([_position_x[tsi], _position_y[tsi]]), self.wallF_params)
             print wallRepulsiveF, "wallRepulsiveF"
-            _wallRepulsiveF_x[tsi] = wallRepulsiveF[0]
-            _wallRepulsiveF_y[tsi] = wallRepulsiveF[1]
-            _wallRepulsiveF_z[tsi] = wallRepulsiveF[2]
+            _wallRepulsiveF_x[tsi], _wallRepulsiveF_y[tsi], _wallRepulsiveF_z[tsi] = wallRepulsiveF
+            # TODO: make all like above
             
 #            # this may get updated if we find outselves crashing into the wall
 #            _brakeF_x[tsi] = 0.
@@ -304,7 +307,8 @@ class Agent():
             _acceleration_x[tsi] = accel[0]
             _acceleration_y[tsi] = accel[1]
             _acceleration_z[tsi] = accel[2]
-            if accel.max() > 50.: # TODO major bug: fix problem with huge 
+            print accel, "accel"
+            if accel.max() > 50.: # TODO major bug: fix problem with huge accels!
                 print "oh my"
                 # wall repulsion forces
                 self.metadata['target_found'][0]  = False
@@ -318,6 +322,7 @@ class Agent():
                 self.metadata['target_found'][0]  = False
                 self.metadata['time_to_target_find'][0] = np.nan
                 arraydict = self.land(tsi, arraydict)
+                print "out of time"
                 break
             
             # update velocity in next timestep
@@ -325,6 +330,7 @@ class Agent():
             _velocity_x[tsi+1] = velo_future[0]
             _velocity_y[tsi+1] = velo_future[1]
             _velocity_z[tsi+1] = velo_future[2]
+            print "velo_future",velo_future
             
             # solve candidate position for next timestep
             candidate_pos = np.array([_position_x[tsi], _position_y[tsi], _position_z[tsi]]) \
@@ -335,13 +341,16 @@ class Agent():
             # if walls are enabled, manage collisions
             if bounded is True:  
                 ## forbid mosquito from going out of bounds
+                print "testing bounds"
                 
                 # x dim
                 if candidate_pos[0] > boundary[1]:  # reached far (upwind) wall (end)
+                    print "a"
                     self.metadata['target_found'][0]  = False
                     self.metadata['time_to_target_find'][0] = np.nan
                     arraydict = self.land(tsi-1, arraydict)  # stop flying at end, throw out last row
                 if candidate_pos[0] < boundary[0]:  # too far left
+                    print "b"
                     candidate_pos[0] = boundary[0] + 1e-4
                     if BOUNCE == 'elastic':
                         _velocity_x[tsi+1] = _velocity_x[tsi+1] * -1
@@ -350,8 +359,9 @@ class Agent():
                         _velocity_x[tsi+1] = 0.
             
                 #y dim
-                if candidate_pos[1] > boundary[2]:  # too far up
-                    candidate_pos[1] = boundary[2] + 1e-4
+                if candidate_pos[1] > boundary[2]:  # too left
+                    print "c"
+                    candidate_pos[1] = boundary[2] + 1e-4 # note, left is going more negative in our convention
                     if BOUNCE == 'elastic':
                         _velocity_y[tsi+1] = _velocity_y[tsi+1] * -1
                         print "boom! top"
@@ -359,7 +369,8 @@ class Agent():
 #                        print "teleport!"
                         _velocity_y[tsi+1] = 0.
 #                        print "crash! top wall"
-                if candidate_pos[1] < boundary[3]:  # too far down
+                if candidate_pos[1] < boundary[3]:  # too far right
+                    print "d"
                     candidate_pos[1] = boundary[3] - 1e-4
                     if BOUNCE == 'elastic':
                         _velocity_y[tsi+1] = _velocity_y[tsi+1] * -1
@@ -367,21 +378,41 @@ class Agent():
                     elif BOUNCE == 'crash':
                         _velocity_y[tsi+1] = 0.
                 
-                # TODO: z dim
-
+                # z dim
+                if candidate_pos[2] > boundary[5]:  # too far above
+                    print "e"
+                    candidate_pos[2] = boundary[5] - 1e-4
+                    if BOUNCE == 'elastic':
+                        _velocity_z[tsi+1] = _velocity_z[tsi+1] * -1
+                        print "boom! top"
+                    elif BOUNCE == "crash":
+#                        print "teleport!"
+                        _velocity_z[tsi+1] = 0.
+#                        print "crash! top wall"
+                if candidate_pos[2] < boundary[4]:  # too far below
+                    print "e"
+                    candidate_pos[2] = boundary[4] + 1e-4
+                    if BOUNCE == 'elastic':
+                        _velocity_z[tsi+1] = _velocity_z[tsi+1] * -1
+                        print "boom! bottom"
+                    elif BOUNCE == 'crash':
+                        _velocity_z[tsi+1] = 0.
+                        
                 # save screened candidate_pos to future position
                 _position_x[tsi+1] = candidate_pos[0]
                 _position_y[tsi+1] = candidate_pos[1]
                 _position_z[tsi+1] = candidate_pos[2]
-                print "candidate pos saved"
+                print "candidate pos saved as ", candidate_pos
             
             # if there is a target, check if we are finding it                
-            if norm(candidate_pos - self.target_pos) < self.detect_thresh:
+            if norm(candidate_pos - self.target_pos[0:3]) < self.detect_thresh:
                     self.metadata['target_found'][0]  = True
                     self.metadata['total_finds'] += 1
                     self.metadata['time_to_target_find'][0] = _times[tsi]  # should this be timeList[i+1]? -rd # TODO fix .loc
                     arraydict = self.land(tsi, arraydict)  # stop flying at source
+                    print "source found"
                     break
+            print "end of loop"
         
         return arraydict
 
@@ -417,11 +448,11 @@ if __name__ == '__main__':
     myplume = plume3D.Plume()
     trajectories = trajectory3D.Trajectory() # instantiate empty trajectories object
     myagent = Agent(trajectories, myplume, agent_pos="door", target_pos="left", v0_stdev=0.01, wtf=7e-07,\
-        rf=4e-06, stimF_str=1e-4, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, \
+        rf=4e-06, stimF_str=1e-4, beta=1e-5, Tmax=15., dt=0.01, detect_thresh=0.023175, \
         bounded=True, wallF_params=wallF_params)
     myagent.fly(total_trajectories=1)
     
    
 #    trajectories.describe(plot_kwargs = {'trajectories':False, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_scatter':True, 'force_violin':True})
-    trajectories.plot_single_trajectory()
+    trajectories.plot_single_3Dtrajectory()
     

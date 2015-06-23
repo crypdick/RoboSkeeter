@@ -346,7 +346,7 @@ def cylinder(center_x, center_y, z_min, z_max, r=0.01905, n=5):
     
     modified from http://python4econ.blogspot.com/2013/03/matlabs-cylinder-command-in-python.html
     '''
-
+    # TODO: FIXME cylinder not plotting in correct place
     # ensure that r is a column vector
     r = np.atleast_2d(r)
     r_rows, r_cols = r.shape
