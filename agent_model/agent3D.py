@@ -26,6 +26,7 @@ import baseline_driving_forces3D
 import stim_biasF3D
 import plume3D
 import trajectory3D
+import repulsion_landscape3D
 
 
 def place_heater(target_pos):
@@ -155,6 +156,9 @@ class Agent():
         
         self.trajectory_obj = Trajectory_object
         self.Plume_object = Plume_object
+        
+        # create repulsion landscape
+        self._repulsion_funcs = repulsion_landscape3D.landscape(normed=True)
 
 
     def fly(self, total_trajectories=1):
@@ -268,7 +272,10 @@ class Agent():
             _upwindF_y[tsi] = upwindF[1]
             _upwindF_z[tsi] = upwindF[2]
             
-            wallRepulsiveF = baseline_driving_forces3D.repulsionF(np.array([_position_x[tsi], _position_y[tsi]]), self.wallF_params)
+            wallRepulsiveF = baseline_driving_forces3D.repulsionF(\
+                np.array([_position_x[tsi], _position_y[tsi], _position_z[tsi]]),\
+                self._repulsion_funcs, self.wallF_params)
+#            wallRepulsiveF = self.wallF_params[0] * baseline_driving_forces3D.repulsionF(np.array([_position_x[tsi], _position_y[tsi]]), self.wallF_params)
             print wallRepulsiveF, "wallRepulsiveF"
             _wallRepulsiveF_x[tsi], _wallRepulsiveF_y[tsi], _wallRepulsiveF_z[tsi] = wallRepulsiveF
             # TODO: make all like above
@@ -314,7 +321,7 @@ class Agent():
                 self.metadata['target_found'][0]  = False
                 self.metadata['time_to_target_find'][0] = np.nan
                 arraydict = self.land(tsi-1, arraydict)
-                print "Throwing out trajectory, impossible acceleration!"
+                print "Throwing out trajectory, impossible acceleration!", accel
                 raise ValueError('Impossible acceleration! ', accel[0], accel[1], accel[2])
             
              # if time is out, end loop before velocity calculations
@@ -434,15 +441,9 @@ class Agent():
 
 if __name__ == '__main__':
     # wallF params
-    wallF_max=9e-6 #1e-7
-    decay_const = 250
+    scalar = 1e-7
     
-    # center repulsion params
-    b = 4e-1  # determines shape
-    shrink = 1e-6  # determines size/magnitude
-    repulsion_type = "walls_only"
-    
-    wallF_params = (b, shrink, wallF_max, decay_const, repulsion_type)  #(4e-1, 1e-6, 1e-7, 250)
+    wallF_params = [scalar]  #(4e-1, 1e-6, 1e-7, 250)
 
     # temperature plume
     myplume = plume3D.Plume()
