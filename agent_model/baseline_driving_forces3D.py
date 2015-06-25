@@ -7,9 +7,8 @@ Our driving forces.
 @author: Richard Decal
 """
 import numpy as np
-from numpy import linalg, newaxis, random
-from matplotlib import collections
-import repulsion_landscape3D
+from numpy import linalg, newaxis
+from scipy.integrate import quad
 
 
 def random_force(rf, dim=2):
@@ -122,15 +121,18 @@ def upwindBiasForce(wtf, upwind_direction=0, dim=2):
 #    return y0 * np.exp(-1 * wallF * distance)
 
 
-def repulsionF(position, wallF):
+def repulsionF(position, repulsion_funcs, wallF_params):
     """repulsion as a function of position.
     """
-    if wallF is None:
-        return np.array([0., 0., 0.])
-    else:
-        posx, posy = position
-        force_y = repulsion_landscape3D.main(wallF, posy)
-        return np.array([0., force_y, 0.]) # FIXME Z
+    scalar = wallF_params[0]
+    intd = 0.003 /2 # integratal distance in mm
+    pos_x, pos_y, pos_z = position
+    repulsion_x, repulsion_y, repulsion_z = repulsion_funcs
+    
+    # [0] to discard error term
+    return scalar * np.array([quad(repulsion_x, pos_x-intd, pos_x+intd)[0], \
+        quad(repulsion_y, pos_y-intd, pos_y+intd)[0],\
+        quad(repulsion_z, pos_z-intd, pos_z+intd)[0]])
 
 
 #def brakingF(candidate_pos, totalF_x, totalF_y, boundary):

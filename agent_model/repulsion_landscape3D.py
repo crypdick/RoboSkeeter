@@ -5,46 +5,62 @@ Created on Sun Apr 12 16:41:26 2015
 Given an agent crosswind position, return force.
 
 @author: Richard Decal
+
+TODO: create fxn once,
+then solve for forces as needed
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.misc import derivative as deriv
-import scipy.integrate as integr
+from scipy.integrate import quad
 
 
-def landscape(b, shrink, wallF_max, decay_const, repulsion_type, mu=0.):
+def landscape(normed=True):
     """exponential decay params: wallF_max, decay_const
     gaussian params: mu, stdev, centerF_max
     
     repulsion_type: (str)
         "walls_only", 'walls+trenches', 'walls+center', 'center_only'
     """
-#    print "repulsion type ", repulsion_type
-#    wallF_max = decay_const*(1/250)
-    if repulsion_type == 'walls+center':
-        # landscape with repulsion in center
-        fx = lambda pos : (wallF_max * np.exp(-1 * decay_const * (pos+0.127))) +  shrink * ( 1/(2*b) * np.exp(-1 * abs(pos-mu)/b) ) + (wallF_max * np.exp(1 * decay_const * (pos-0.127)))
+#    if repulsion_type == 'gaussian_sum':
+    # gass func has the form: np.exp(-np.power(pos - mu, 2.) / (2 * np.power(sig, 2.)))
     
-    if repulsion_type == 'walls_only':
-        # no center repulsion; only wall repulsion
-        fx = lambda pos : (wallF_max * np.exp(-1 * decay_const * (pos+0.127))) + (wallF_max * np.exp(1 * decay_const * (pos-0.127)))
-
-    if repulsion_type == 'walls+trenches':
-#        raise NotImplementedError
-        fx = lambda pos : (wallF_max * np.exp(-1 * decay_const * (pos+0.127))) +  shrink * ( 1/(2*b) * np.exp(-1 * abs(pos-0.10)/b) ) + (wallF_max * np.exp(1 * decay_const * (pos-0.127)))
-    if repulsion_type == 'center_only':    
-        fx = lambda pos : ( 1/(2*b) * np.exp(-1 * abs(pos-mu)/b) ) * .01
+    # set up repulsion field in y dim
+    A_left = 1
+    mu_left = -.09 # TODO fit
+    sig_left = .01   # TODO fit
+    A_center = .2
+    mu_center = 0 # TODO fit
+    sig_center = .05 # TODO fit
+    A_right = 1
+    mu_right = .09 # TODO fit
+    sig_right = .01 # TODO fit
+    repulsion_y = lambda pos_y: A_left * np.exp(-np.power(pos_y - mu_left, 2.) / (2 * np.power(sig_left, 2.))) +\
+        A_center * np.exp(-np.power(pos_y - mu_center, 2.) / (2 * np.power(sig_center, 2.))) +\
+            A_right * np.exp(-np.power(pos_y - mu_right, 2.) / (2 * np.power(sig_right, 2.)))
+    if normed is True:
+        # divide function by its area to get normalized function
+        (area, err) = quad(repulsion_y, -1, 1)
+        normed_repulsion_y = lambda pos_y: repulsion_y(pos_y) / area
         
-    return fx
+    # TODO: implement
+    repulsion_x = lambda pos_x: pos_x * 0
+    normed_repulsion_x = repulsion_x
+    
+    repulsion_z = lambda pos_z: pos_z * 0
+    normed_repulsion_z = repulsion_z
+    
+    if normed is True:
+        return [normed_repulsion_x, normed_repulsion_y, normed_repulsion_z]
+    else:
+        return [repulsion_x, repulsion_y, repulsion_z]
 
 
-def plot_landscape(repulsion_fxn, wallF):
-    print wallF
-    b, shrink, wallF_max, decay_const, repulsion_type = wallF
+def plot_landscape(repulsion_fxn):
     fig, axarr = plt.subplots(2, sharex=True)
     fig.set_size_inches(10,10)
-    plt.suptitle(repulsion_type, y=1.05)
+#    plt.suptitle("repulsion_type", y=1.05)
     
     ycoords = np.linspace(-0.127, 0.127, 200)
     scariness = repulsion_fxn(ycoords)
@@ -71,7 +87,6 @@ def plot_landscape(repulsion_fxn, wallF):
     
     plt.tight_layout()
     
-    plt.savefig("./figs/repulsion_landscape wallF_max{wallF_max} decay_const{decay_const} b{b} shrink{shrink}.svg".format(wallF_max=wallF_max, decay_const=decay_const, b=b, shrink=shrink), format='svg')
     plt.show()
     
     
@@ -107,29 +122,29 @@ def solve_lamba2a_ratio(wallF_max=8e-8, decay_const = 90):
 #    print fxlambda
 #    print fxdecays
 
-def main(wallF, pos_y=None, plotting=False):
-    repulsion_fxn = landscape(*wallF)
+
+
+def main(plotting=False):
     
-    if pos_y != None:
-        repF = deriv(repulsion_fxn, pos_y, dx=0.00001)
-        return -1*repF  # this is the force on the agent in the y component
+#    repulsion_type = 'gaussian_sum'
+    repulsion_funcs = landscape(normed=True)
+    
+
+    
+    
+#    if pos_y != None:
+#        repF = deriv(fy, pos_y, dx=0.00001)
+#        return -1*repF  # this is the force on the agent in the y component
     
     if plotting is True:
-        plot_landscape(repulsion_fxn, wallF)
+        plot_landscape(repulsion_funcs[1]) # plot y repulsion landscape
         
-
+    return repulsion_funcs
+        
+    
 
 if __name__ == '__main__':
-    # wallF params
-    wallF_max=9e-6#1e-7
-    decay_const = 90
-    
-    # center repulsion params
-    b = 4e-1  # determines shape
-    shrink = 1e-6  # determines size/magnitude
-    repulsion_type = 'walls_only'
-    
-    wallF = (b, shrink, wallF_max, decay_const, repulsion_type)
-    force_y = main(wallF, None, plotting=True)
+#    force_y = main(plotting=True)
+    repulsion_funcs = main(plotting=True)
     
 #    solve_lamba2a_ratio(wallF_max, decay_const)
