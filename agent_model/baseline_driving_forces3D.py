@@ -21,8 +21,7 @@ def random_force(rf, dim=2):
     Returns:
         random force x and y components (array)
     """
-    if rf == 0.:
-        return np.array([0., 0.])
+    mag_thresh = 3e-6
     if dim == 2:
         ends = gen_symm_vecs(2)
         # following params were fitted from the Dickinson fligt data
@@ -38,6 +37,8 @@ def random_force(rf, dim=2):
         sigma = 0.719736466122
         scale = 1.82216219069
         mag = np.random.lognormal(mean=mu, sigma=sigma, size=1)
+        if mag * rf > mag_thresh: # filter out huge magnitudes
+            return ends * mag_thresh
         return mag * ends * rf
     else:
         raise NotImplementedError('Too many dimensions!')

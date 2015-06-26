@@ -383,6 +383,7 @@ def plot3D_trajectory(ensemble, metadata, plot_kwargs=None):
     # Note! I set the y axis to be the X data and vice versa
     threedee.set_ylim(0., 1.)
     threedee.set_xlim(0.127, -0.127)
+    threedee.invert_xaxis() # fix for y convention 
     threedee.set_zlim(0., 0.254)
     threedee.set_xlabel("Crosswind/$y$ (meters)", fontsize=14) # remember! x,y switched in plot() above!
     threedee.set_ylabel("Upwind/$x$ (meters)", fontsize=14)
