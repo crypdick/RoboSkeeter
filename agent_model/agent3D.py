@@ -254,67 +254,41 @@ class Agent():
         
         # generate a flight!
         for tsi in xrange(tsi_max):
-            print tsi_max
-            print tsi, "tsi"
             # sense the temperature
             _temperature[tsi] = self.Plume_object.temp_lookup([_position_x[tsi], _position_y[tsi]])
             
             # calculate driving forces
             randF = baseline_driving_forces3D.random_force(self.rf, dim=self.dim)
-            print randF, "randF"
-            _randF_x[tsi] = randF[0]
-            _randF_y[tsi] = randF[1]
-            _randF_z[tsi] = randF[2]
+            _randF_x[tsi], _randF_y[tsi], _randF_z[tsi] = randF
             
             upwindF = baseline_driving_forces3D.upwindBiasForce(self.wtf, dim=self.dim)
-            print upwindF, "upwindF"
-            _upwindF_x[tsi] = upwindF[0]
-            _upwindF_y[tsi] = upwindF[1]
-            _upwindF_z[tsi] = upwindF[2]
+            _upwindF_x[tsi], _upwindF_y[tsi], _upwindF_z[tsi] = upwindF
+
             
             wallRepulsiveF = baseline_driving_forces3D.repulsionF(\
                 np.array([_position_x[tsi], _position_y[tsi], _position_z[tsi]]),\
                 self._repulsion_funcs, self.wallF_params)
-#            wallRepulsiveF = self.wallF_params[0] * baseline_driving_forces3D.repulsionF(np.array([_position_x[tsi], _position_y[tsi]]), self.wallF_params)
-            print wallRepulsiveF, "wallRepulsiveF"
             _wallRepulsiveF_x[tsi], _wallRepulsiveF_y[tsi], _wallRepulsiveF_z[tsi] = wallRepulsiveF
-            # TODO: make all like above
-            
-#            # this may get updated if we find outselves crashing into the wall
-#            _brakeF_x[tsi] = 0.
-#            _brakeF_y[tsi] = 0.
             
             try:
                 stimF, inPlume = stim_biasF3D.main(_temperature[tsi], _velocity_y[tsi],\
                     _inPlume[tsi-1], self.stimF_str)
-                print "here"
             except UnboundLocalError: # TODO: wtf?
                 stimF, inPlume = stim_biasF3D.main(_temperature[tsi], _velocity_y[tsi],\
                     False, self.stimF_str)
                 print "erorr"
             _inPlume[tsi] = inPlume
-            print inPlume, "inplume"
-            print stimF, "stimF"
-            _stimF_x[tsi] = stimF[0]
-            _stimF_y[tsi] = stimF[1]
-            _stimF_z[tsi] = stimF[2]
+            _stimF_x[tsi], _stimF_y[tsi], _stimF_z[tsi] = stimF
             
-            print "checkpoint"
             # calculate current force
             #spring graveyard ==> # -self.k*np.array([self.dynamics.loc[self.dynamics.times == ts, 'position_x'],
             totalF = -self.beta*np.array([_velocity_x[tsi], _velocity_y[tsi], _velocity_z[tsi]])\
                   + randF + upwindF + wallRepulsiveF# + stimF # FIXME
-            print totalF, "totalF"
-            _totalF_x[tsi] = totalF[0]
-            _totalF_y[tsi] = totalF[1]
-            _totalF_z[tsi] = totalF[2]
+            _totalF_x[tsi], _totalF_y[tsi], _totalF_z[tsi] = totalF
             
             # calculate current acceleration
-            accel = totalF/m
-            _acceleration_x[tsi] = accel[0]
-            _acceleration_y[tsi] = accel[1]
-            _acceleration_z[tsi] = accel[2]
-            print accel, "accel"
+            accel = totalF / m
+            _acceleration_x[tsi], _acceleration_y[tsi], _acceleration_z[tsi] = accel
             if accel.max() > 50.: # TODO major bug: fix problem with huge accels!
                 print "oh my"
                 # wall repulsion forces
@@ -329,35 +303,29 @@ class Agent():
                 self.metadata['target_found'][0]  = False
                 self.metadata['time_to_target_find'][0] = np.nan
                 arraydict = self.land(tsi, arraydict)
-                print "out of time"
                 break
             
             # update velocity in next timestep
-            velo_future = np.array([_velocity_x[tsi], _velocity_y[tsi], _velocity_z[tsi]]) + accel*dt
-            _velocity_x[tsi+1] = velo_future[0]
-            _velocity_y[tsi+1] = velo_future[1]
-            _velocity_z[tsi+1] = velo_future[2]
-            print "velo_future",velo_future
+            _velocity_x[tsi+1], _velocity_y[tsi+1], _velocity_z[tsi+1] =\
+                np.array([_velocity_x[tsi], _velocity_y[tsi], _velocity_z[tsi]]) + accel*dt
+
             
             # solve candidate position for next timestep
             candidate_pos = np.array([_position_x[tsi], _position_y[tsi], _position_z[tsi]]) \
                 + np.array([_velocity_x[tsi], _velocity_y[tsi], _velocity_z[tsi]])*dt  # why not use veloList.loc[ts]? -rd
             
-            print candidate_pos, "candidate pos"
-            
             # if walls are enabled, manage collisions
             if bounded is True:  
                 ## forbid mosquito from going out of bounds
-                print "testing bounds"
                 
                 # x dim
                 if candidate_pos[0] > boundary[1]:  # reached far (upwind) wall (end)
-                    print "a"
                     self.metadata['target_found'][0]  = False
                     self.metadata['time_to_target_find'][0] = np.nan
                     arraydict = self.land(tsi-1, arraydict)  # stop flying at end, throw out last row
+                    break
                 if candidate_pos[0] < boundary[0]:  # too far left
-                    print "b"
+                    print "too far left"
                     candidate_pos[0] = boundary[0] + 1e-4
                     if BOUNCE == 'elastic':
                         _velocity_x[tsi+1] = _velocity_x[tsi+1] * -1
@@ -367,27 +335,25 @@ class Agent():
             
                 #y dim
                 if candidate_pos[1] > boundary[2]:  # too left
-                    print "c"
+                    print "too left"
                     candidate_pos[1] = boundary[2] + 1e-4 # note, left is going more negative in our convention
                     if BOUNCE == 'elastic':
                         _velocity_y[tsi+1] = _velocity_y[tsi+1] * -1
-                        print "boom! top"
                     elif BOUNCE == "crash":
 #                        print "teleport!"
                         _velocity_y[tsi+1] = 0.
 #                        print "crash! top wall"
                 if candidate_pos[1] < boundary[3]:  # too far right
-                    print "d"
+                    print "too far right"
                     candidate_pos[1] = boundary[3] - 1e-4
                     if BOUNCE == 'elastic':
                         _velocity_y[tsi+1] = _velocity_y[tsi+1] * -1
-                        print "boom! bottom"
                     elif BOUNCE == 'crash':
                         _velocity_y[tsi+1] = 0.
                 
                 # z dim
                 if candidate_pos[2] > boundary[5]:  # too far above
-                    print "e"
+                    print "too far above"
                     candidate_pos[2] = boundary[5] - 1e-4
                     if BOUNCE == 'elastic':
                         _velocity_z[tsi+1] = _velocity_z[tsi+1] * -1
@@ -397,19 +363,15 @@ class Agent():
                         _velocity_z[tsi+1] = 0.
 #                        print "crash! top wall"
                 if candidate_pos[2] < boundary[4]:  # too far below
-                    print "e"
+                    print "too far below"
                     candidate_pos[2] = boundary[4] + 1e-4
                     if BOUNCE == 'elastic':
                         _velocity_z[tsi+1] = _velocity_z[tsi+1] * -1
-                        print "boom! bottom"
                     elif BOUNCE == 'crash':
                         _velocity_z[tsi+1] = 0.
                         
                 # save screened candidate_pos to future position
-                _position_x[tsi+1] = candidate_pos[0]
-                _position_y[tsi+1] = candidate_pos[1]
-                _position_z[tsi+1] = candidate_pos[2]
-                print "candidate pos saved as ", candidate_pos
+                _position_x[tsi+1], _position_y[tsi+1], _position_z[tsi+1] = candidate_pos
             
             # if there is a target, check if we are finding it                
             if norm(candidate_pos - self.target_pos[0:3]) < self.detect_thresh:
@@ -419,7 +381,6 @@ class Agent():
                     arraydict = self.land(tsi, arraydict)  # stop flying at source
                     print "source found"
                     break
-            print "end of loop"
         
         return arraydict
 
@@ -427,7 +388,6 @@ class Agent():
     def land(self, tsi, arraydict):
         ''' trim excess timebins in arrays
         '''
-        # 
         for key, array in arraydict.items():
             arraydict[key] = array[:tsi+1]
             
@@ -449,7 +409,7 @@ if __name__ == '__main__':
     myplume = plume3D.Plume()
     trajectories = trajectory3D.Trajectory() # instantiate empty trajectories object
     myagent = Agent(trajectories, myplume, agent_pos="door", target_pos="left", v0_stdev=0.01, wtf=7e-07,\
-        rf=4e-06, stimF_str=1e-4, beta=1e-5, Tmax=15., dt=0.01, detect_thresh=0.023175, \
+        rf=4e-05, stimF_str=1e-4, beta=1e-5, Tmax=15., dt=0.01, detect_thresh=0.023175, \
         bounded=True, wallF_params=wallF_params)
     myagent.fly(total_trajectories=1)
     
