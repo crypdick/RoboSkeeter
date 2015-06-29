@@ -42,7 +42,7 @@ def landscape(normed=True):
     if normed is True:
         # divide function by its area to get normalized function
         (area, err) = quad(repulsion_y, -1, 1)
-        normed_repulsion_y = lambda pos_y: repulsion_y(pos_y) / area
+        normed_repulsion_y = lambda pos_y: 1 - (repulsion_y(pos_y) / area)
         
     # TODO: implement
     repulsion_x = lambda pos_x: pos_x * 0
