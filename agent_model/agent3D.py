@@ -228,21 +228,15 @@ class Agent():
         # place agent
         r0 = place_agent(self.metadata['initial_position'])
         self.dim = len(r0)  # get dimension
+        _position_x[0], _position_y[0], _position_z[0] = r0 # store initial position
         
         # generate random intial velocity condition
         v0 = np.random.normal(0, self.v0_stdev, self.dim)
         
-        ## store initial position and velocity values
-        _position_x[0] = r0[0]
-        _position_y[0] = r0[1]
-        _position_z[0] = r0[2]
-        _velocity_x[0] = v0[0]
-        _velocity_y[0] = v0[1]
-        _velocity_z[0] = v0[2]
         
         # make dictionary for creating Pandas df, later
         arraydict = {'times': _times, 'position_x': _position_x, 'position_y': _position_y,\
-        'position_z': _position_z,
+        'position_z': _position_z,\
         'velocity_x': _velocity_x, 'velocity_y': _velocity_y, 'velocity_z': _velocity_z,\
         'acceleration_x': _acceleration_x, 'acceleration_y': _acceleration_y, 'acceleration_z': _acceleration_z,\
         'totalF_x': _totalF_x, 'totalF_y': _totalF_y, 'totalF_z': _totalF_z,\
@@ -270,54 +264,54 @@ class Agent():
                 self._repulsion_funcs, self.wallF_params)
             _wallRepulsiveF_x[tsi], _wallRepulsiveF_y[tsi], _wallRepulsiveF_z[tsi] = wallRepulsiveF
             
-            try:
-                stimF, inPlume = stim_biasF3D.main(_temperature[tsi], _velocity_y[tsi],\
+            if tsi == 0:
+                stimF, inPlume = stim_biasF3D.main(_temperature[tsi], v0[1],\
                     _inPlume[tsi-1], self.stimF_str)
-            except UnboundLocalError: # TODO: wtf?
-                stimF, inPlume = stim_biasF3D.main(_temperature[tsi], _velocity_y[tsi],\
-                    False, self.stimF_str)
-                print "erorr"
+            else:
+                try:
+                    stimF, inPlume = stim_biasF3D.main(_temperature[tsi], _velocity_y[tsi],\
+                        _inPlume[tsi-1], self.stimF_str)
+                except UnboundLocalError: # TODO: wtf?
+                    stimF, inPlume = stim_biasF3D.main(_temperature[tsi], _velocity_y[tsi],\
+                        False, self.stimF_str)
+                    print "erorr"
             _inPlume[tsi] = inPlume
             _stimF_x[tsi], _stimF_y[tsi], _stimF_z[tsi] = stimF
             
             # calculate current force
-            #spring graveyard ==> # -self.k*np.array([self.dynamics.loc[self.dynamics.times == ts, 'position_x'],
-            totalF = -self.beta*np.array([_velocity_x[tsi], _velocity_y[tsi], _velocity_z[tsi]])\
+            if tsi == 0:
+                totalF = -self.beta*v0 + randF + upwindF + wallRepulsiveF# + stimF # FIXME
+            else:
+                totalF = -self.beta*np.array([_velocity_x[tsi-1], _velocity_y[tsi-1], _velocity_z[tsi-1]])\
                   + randF + upwindF + wallRepulsiveF# + stimF # FIXME
             _totalF_x[tsi], _totalF_y[tsi], _totalF_z[tsi] = totalF
             
             # calculate current acceleration
             accel = totalF / m
             _acceleration_x[tsi], _acceleration_y[tsi], _acceleration_z[tsi] = accel
-            if accel.max() > 50.: # TODO major bug: fix problem with huge accels!
-                print "oh my"
-                # wall repulsion forces
-                self.metadata['target_found'][0]  = False
-                self.metadata['time_to_target_find'][0] = np.nan
-                arraydict = self.land(tsi-1, arraydict)
-                print "Throwing out trajectory, impossible acceleration!", accel
-                raise ValueError('Impossible acceleration! ', accel[0], accel[1], accel[2])
             
-             # if time is out, end loop before velocity calculations
+            # calculate velocity
+            if tsi == 0:
+                _velocity_x[tsi], _velocity_y[tsi], _velocity_z[tsi] =\
+                v0 + accel*dt
+            else:
+                _velocity_x[tsi], _velocity_y[tsi], _velocity_z[tsi] =\
+                np.array([_velocity_x[tsi-1], _velocity_y[tsi-1], _velocity_z[tsi-1]]) + accel*dt
+
+            
+            # if time is out, end loop before we solve for future position
             if tsi == tsi_max-1:
                 self.metadata['target_found'][0]  = False
                 self.metadata['time_to_target_find'][0] = np.nan
                 arraydict = self.land(tsi, arraydict)
-                break
-            
-            # update velocity in next timestep
-            _velocity_x[tsi+1], _velocity_y[tsi+1], _velocity_z[tsi+1] =\
-                np.array([_velocity_x[tsi], _velocity_y[tsi], _velocity_z[tsi]]) + accel*dt
-
+                break            
             
             # solve candidate position for next timestep
             candidate_pos = np.array([_position_x[tsi], _position_y[tsi], _position_z[tsi]]) \
-                + np.array([_velocity_x[tsi], _velocity_y[tsi], _velocity_z[tsi]])*dt  # why not use veloList.loc[ts]? -rd
-            
-            # if walls are enabled, manage collisions
+                + np.array([_velocity_x[tsi], _velocity_y[tsi], _velocity_z[tsi]])*dt
+#            
+            # if walls are enabled, forbid mosquito from going out of bounds
             if bounded is True:  
-                ## forbid mosquito from going out of bounds
-                
                 # x dim
                 if candidate_pos[0] > boundary[1]:  # reached far (upwind) wall (end)
                     self.metadata['target_found'][0]  = False
@@ -371,7 +365,17 @@ class Agent():
                         _velocity_z[tsi+1] = 0.
                         
                 # save screened candidate_pos to future position
-                _position_x[tsi+1], _position_y[tsi+1], _position_z[tsi+1] = candidate_pos
+            _position_x[tsi+1], _position_y[tsi+1], _position_z[tsi+1] = candidate_pos
+            
+#            # test the kinematics ex-post facto
+#            real_velo = (candidate_pos - np.array([_position_x[tsi], _position_y[tsi], _position_z[tsi]])) / dt
+#            _velocity_x[tsi], _velocity_y[tsi], _velocity_z[tsi] = real_velo
+#            
+#            if tsi == 0:
+#                real_accel = (real_velo - v0) / dt
+#            else:
+#                real_accel = (real_velo - np.array([_velocity_x[tsi-1], _velocity_y[tsi-1], _velocity_z[tsi-1]])) / dt
+#            _acceleration_x[tsi], _acceleration_y[tsi], _acceleration_z[tsi] = real_accel
             
             # if there is a target, check if we are finding it                
             if norm(candidate_pos - self.target_pos[0:3]) < self.detect_thresh:
