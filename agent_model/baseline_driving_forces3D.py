@@ -9,6 +9,7 @@ Our driving forces.
 import numpy as np
 from numpy import linalg, newaxis
 from scipy.integrate import quad
+from scipy.misc import derivative as deriv
 
 
 def random_force(rf, dim=2):
@@ -126,14 +127,30 @@ def repulsionF(position, repulsion_funcs, wallF_params):
     """repulsion as a function of position.
     """
     scalar = wallF_params[0]
-    intd = 0.003 /2 # integratal distance in mm
+    intd = 0.003 / 2 # integratal distance in mm
     pos_x, pos_y, pos_z = position
     repulsion_x, repulsion_y, repulsion_z = repulsion_funcs
+    dx = 0.00001
+    
+    # solve direction of forces
+    slope_rep_x, slope_rep_y, slope_rep_z = deriv(repulsion_x, pos_x, dx=dx), deriv(repulsion_y, pos_y, dx=dx), deriv(repulsion_z, pos_z, dx=dx)
+    directions = []
+    for slope in [slope_rep_x, slope_rep_y, slope_rep_z]:
+        if slope < 0:
+            directions.append(1)
+        elif slope > 0:
+            directions.append(-1)
+        else: # this shouldn't happen
+            directions.append(0)
     
     # [0] to discard error term
-    return scalar * np.array([quad(repulsion_x, pos_x-intd, pos_x+intd)[0], \
-        quad(repulsion_y, pos_y-intd, pos_y+intd)[0],\
-        quad(repulsion_z, pos_z-intd, pos_z+intd)[0]])
+    repulsionF =  scalar * np.array([slope_rep_x * quad(repulsion_x, pos_x-intd, pos_x+intd)[0], \
+        slope_rep_y * quad(repulsion_y, pos_y-intd, pos_y+intd)[0],\
+        slope_rep_z * quad(repulsion_z, pos_z-intd, pos_z+intd)[0]])
+        
+#    print "pos", position
+#    print "repF", repulsionF
+    return repulsionF
 
 
 #def brakingF(candidate_pos, totalF_x, totalF_y, boundary):
