@@ -43,6 +43,7 @@ def landscape(normed=True):
         # divide function by its area to get normalized function
         (area, err) = quad(repulsion_y, -1, 1)
         normed_repulsion_y = lambda pos_y: 1 - (repulsion_y(pos_y) / area)
+#        normed_repulsion_y = repulsion_y # TODO delete
         
     # TODO: implement
     repulsion_x = lambda pos_x: pos_x * 0
@@ -57,37 +58,38 @@ def landscape(normed=True):
         return [repulsion_x, repulsion_y, repulsion_z]
 
 
-def plot_landscape(repulsion_fxn):
-    fig, axarr = plt.subplots(2, sharex=True)
-    fig.set_size_inches(10,10)
-#    plt.suptitle("repulsion_type", y=1.05)
-    
-    ycoords = np.linspace(-0.127, 0.127, 200)
-    scariness = repulsion_fxn(ycoords)
-    
-    axarr[1].plot(ycoords, scariness)
-    axarr[1].set_title("Crosswind repulsion landscape", fontsize = 14)
-    axarr[1].set_xlim(-0.127, 0.127)
-    axarr[1].set_ylabel("Scariness")
-    axarr[1].xaxis.grid(True)
-#    axarr[0].savefig("repulsion_landscape.png")
-    
-    # plot derivative
-    slopes = deriv(repulsion_fxn, ycoords, dx=0.00001)
-    
-    axarr[0].axhline(y=0, color="grey", lw=1, alpha=0.4)
-#    axarr[1].plot(ycoords, slopes, label="derivative")
-    axarr[0].plot(ycoords, -1* slopes, label="-derivative of landscape")
-    axarr[0].set_title("Crosswind force (-slope of scariness)", fontsize = 14)
-    axarr[0].set_xlim(-0.127, 0.127)
-    axarr[1].set_xlabel("Agent crosswind position (meters)")
-    axarr[0].set_ylabel("Force in the $+y$ direction")
-    axarr[0].xaxis.grid(True)
-    axarr[0].legend()
-    
-    plt.tight_layout()
-    
-    plt.show()
+def plot_landscape(repulsion_fxns):
+    for repulsion_fxn in repulsion_fxns:
+        fig, axarr = plt.subplots(2, sharex=True)
+        fig.set_size_inches(10,10)
+    #    plt.suptitle("repulsion_type", y=1.05)
+        
+        ycoords = np.linspace(-0.127, 0.127, 200)
+        scariness = repulsion_fxn(ycoords)
+        
+        axarr[1].plot(ycoords, scariness)
+        axarr[1].set_title("Crosswind repulsion landscape", fontsize = 14)
+        axarr[1].set_xlim(-0.127, 0.127)
+        axarr[1].set_ylabel("Scariness")
+        axarr[1].xaxis.grid(True)
+    #    axarr[0].savefig("repulsion_landscape.png")
+        
+        # plot derivative
+        slopes = deriv(repulsion_fxn, ycoords, dx=0.00001)
+        
+        axarr[0].axhline(y=0, color="grey", lw=1, alpha=0.4)
+    #    axarr[1].plot(ycoords, slopes, label="derivative")
+        axarr[0].plot(ycoords, -1* slopes, label="-derivative of landscape")
+        axarr[0].set_title("Crosswind force (-slope of scariness)", fontsize = 14)
+        axarr[0].set_xlim(-0.127, 0.127)
+        axarr[1].set_xlabel("Agent crosswind position (meters)")
+        axarr[0].set_ylabel("Force in the $+y$ direction")
+        axarr[0].xaxis.grid(True)
+        axarr[0].legend()
+        
+        plt.tight_layout()
+        
+        plt.show()
     
     
 def solve_lamba2a_ratio(wallF_max=8e-8, decay_const = 90):
@@ -137,7 +139,7 @@ def main(plotting=False):
 #        return -1*repF  # this is the force on the agent in the y component
     
     if plotting is True:
-        plot_landscape(repulsion_funcs[1]) # plot y repulsion landscape
+        plot_landscape(repulsion_funcs) # plot y repulsion landscape
         
     return repulsion_funcs
         
