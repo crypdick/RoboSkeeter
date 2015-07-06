@@ -6,7 +6,7 @@ Given an agent crosswind position, return force.
 
 @author: Richard Decal
 
-TODO: create fxn once,
+create fxn once,
 then solve for forces as needed
 """
 

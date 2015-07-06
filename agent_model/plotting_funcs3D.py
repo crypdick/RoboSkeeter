@@ -154,8 +154,8 @@ def heatmaps(ensemble, metadata):
 
 def stateHistograms(ensemble, metadata, plot_kwargs=None, titleappend='', upw_ensemble = "none", downw_ensemble = "none"):
     
-    fig = plt.figure(4, figsize=(9, 8))
-    gs1 = gridspec.GridSpec(2, 2)
+    fig = plt.figure(5)#, figsize=(9, 8))
+    gs1 = gridspec.GridSpec(2, 3)
     axs = [fig.add_subplot(ss) for ss in gs1]
     fig.suptitle("Agent Model Flight Distributions"+titleappend, fontsize=14)   
     # position distributions
@@ -191,7 +191,7 @@ def stateHistograms(ensemble, metadata, plot_kwargs=None, titleappend='', upw_en
     axs[1].plot(ypos_bins[:-1]+pos_binwidth/2, ypos_counts_n, lw=2, label = "Full")
     axs[1].set_xlim(ypos_min+pos_binwidth/2, ypos_max-pos_binwidth/2)  # hack to hide gaps
     axs[1].fill_between(ypos_bins[:-1]+pos_binwidth/2, 0, ypos_counts_n, facecolor='blue', alpha=0.1)
-    if type(downw_ensemble) != str:
+    if type(downw_ensemble) != str: # TODO: is this alright with 3D flights?
         ypos_counts, ypos_bins = np.histogram(downw_ensemble['position_y'], bins=np.linspace(ypos_min, ypos_max, (ypos_max-ypos_min)/pos_binwidth))
         ypos_counts_n = ypos_counts/ ypos_counts.astype(float).sum()
         axs[1].plot(ypos_bins[:-1]+pos_binwidth/2, ypos_counts_n, lw=2, label = "Full")
@@ -208,6 +208,29 @@ def stateHistograms(ensemble, metadata, plot_kwargs=None, titleappend='', upw_en
     axs[1].set_xlabel("Position ($m$)")
     axs[1].set_ylabel("Probability")
     
+#    Z 
+    zpos_min, zpos_max = 0, 0.254
+    zpos_counts, zpos_bins = np.histogram(ensemble['position_z'], bins=np.linspace(zpos_min, zpos_max, (zpos_max-zpos_min)/pos_binwidth))
+    zpos_counts_n = zpos_counts/ zpos_counts.astype(float).sum()
+    axs[2].plot(zpos_bins[:-1]+pos_binwidth/2, zpos_counts_n, lw=2, label = "Full")
+    axs[2].set_xlim(zpos_min+pos_binwidth/2, zpos_max-pos_binwidth/2)  # hack to hide gaps
+    axs[2].fill_between(zpos_bins[:-1]+pos_binwidth/2, 0, zpos_counts_n, facecolor='blue', alpha=0.1)
+    if type(downw_ensemble) != str:
+        zpos_counts, zpos_bins = np.histogram(downw_ensemble['position_y'], bins=np.linspace(zpos_min, zpos_max, (zpos_max-zpos_min)/pos_binwidth))
+        zpos_counts_n = zpos_counts/ zpos_counts.astype(float).sum()
+        axs[2].plot(zpos_bins[:-1]+pos_binwidth/2, zpos_counts_n, lw=2, label = "Full")
+        axs[2].set_xlim(zpos_min+pos_binwidth/2, zpos_max-pos_binwidth/2)  # hack to hide gaps
+        axs[2].fill_between(zpos_bins[:-1]+pos_binwidth/2, 0, zpos_counts_n, facecolor='blue', alpha=0.1)
+    if type(upw_ensemble) != str:
+        zpos_counts, zpos_bins = np.histogram(upw_ensemble['position_y'], bins=np.linspace(zpos_min, zpos_max, (zpos_max-zpos_min)/pos_binwidth))
+        zpos_counts_n = zpos_counts/ zpos_counts.astype(float).sum()
+        axs[2].plot(zpos_bins[:-1]+pos_binwidth/2, zpos_counts_n, lw=2, label = "Full")
+        axs[2].set_xlim(zpos_min+pos_binwidth/2, zpos_max-pos_binwidth/2)  # hack to hide gaps
+        axs[2].fill_between(zpos_bins[:-1]+pos_binwidth/2, 0, zpos_counts_n, facecolor='blue', alpha=0.1)
+        axs[2].legend()
+    axs[2].set_title("Elevation ($z$) Position Distributions")
+    axs[2].set_xlabel("Position ($m$)")
+    axs[2].set_ylabel("Probability")
 
     ## Velo distributions
     vmin, vmax = -1.0, 1.
@@ -216,26 +239,32 @@ def stateHistograms(ensemble, metadata, plot_kwargs=None, titleappend='', upw_en
     # vx component
     vx_counts, vx_bins = np.histogram(ensemble['velocity_x'], bins=np.linspace(vmin, vmax, (vmax-vmin)/velo_bindwidth))
     vx_counts_n = vx_counts / vx_counts.astype(float).sum()
-    axs[2].plot(vx_bins[:-1], vx_counts_n, label="$\dot{x}$")
-    axs[2].fill_between(vx_bins[:-1], 0, vx_counts_n, facecolor='blue', alpha=0.1)
+    axs[3].plot(vx_bins[:-1], vx_counts_n, label="$\dot{x}$")
+    axs[3].fill_between(vx_bins[:-1], 0, vx_counts_n, facecolor='blue', alpha=0.1)
     # vy component
     vy_counts, vy_bins = np.histogram(ensemble['velocity_y'], bins=np.linspace(vmin, vmax, (vmax-vmin)/velo_bindwidth))
     vy_counts_n= vy_counts / vy_counts.astype(float).sum()
-    axs[2].plot(vy_bins[:-1], vy_counts_n, label="$\dot{y}$")
-    axs[2].fill_between(vy_bins[:-1], 0, vy_counts_n, facecolor='green', alpha=0.1)
+    axs[3].plot(vy_bins[:-1], vy_counts_n, label="$\dot{y}$")
+    axs[3].fill_between(vy_bins[:-1], 0, vy_counts_n, facecolor='green', alpha=0.1)
+    # vz component
+    vz_counts, vz_bins = np.histogram(ensemble['velocity_z'], bins=np.linspace(vmin, vmax, (vmax-vmin)/velo_bindwidth))
+    vz_counts_n= vz_counts / vz_counts.astype(float).sum()
+    axs[3].plot(vz_bins[:-1], vz_counts_n, label="$\dot{z}$")
+    axs[3].fill_between(vz_bins[:-1], 0, vz_counts_n, facecolor='red', alpha=0.1)
     # |v|
+    abs_velo_vectors = np.array([ensemble.velocity_x.values, ensemble.velocity_y.values, ensemble.velocity_z.values]).T
     velo_all_magn = []
-#    for v in velo_all:
-#        velo_all_magn.append(np.linalg.norm(v))
-#    vabs_counts, vabs_bins = np.histogram(velo_all_magn, bins=np.linspace(vmin, vmax, (vmax-vmin)/velo_bindwidth))
-#    vabs_counts_n = vabs_counts / vabs_counts.astype(float).sum()
-#    axs[2].plot(vabs_bins[:-1], vabs_counts_n, label='$|\mathbf{v}|$', color=sns.desaturate("black", .4), lw=2)
-#    axs[2].fill_between(vabs_bins[:-1], 0, vabs_counts_n, facecolor='yellow', alpha=0.1)
+    for vector in abs_velo_vectors:
+        velo_all_magn.append(np.linalg.norm(vector))
+    vabs_counts, vabs_bins = np.histogram(velo_all_magn, bins=np.linspace(vmin, vmax, (vmax-vmin)/velo_bindwidth))
+    vabs_counts_n = vabs_counts / vabs_counts.astype(float).sum()
+    axs[3].plot(vabs_bins[:-1], vabs_counts_n, label='$|\mathbf{v}|$', color=sns.desaturate("black", .4), lw=2)
+    axs[3].fill_between(vabs_bins[:-1], 0, vabs_counts_n, facecolor='yellow', alpha=0.1)
     
-    axs[2].set_title("Velocity Distributions")
-    axs[2].set_xlabel("Velocity ($m/s$)", fontsize=12)
-    axs[2].set_ylabel("Probability", fontsize=12)
-    axs[2].legend(fontsize=14)
+    axs[3].set_title("Velocity Distributions")
+    axs[3].set_xlabel("Velocity ($m/s$)", fontsize=12)
+    axs[3].set_ylabel("Probability", fontsize=12)
+    axs[3].legend(fontsize=14)
     
     ## Acceleration distributions
 #    accel_all = np.concatenate(accels, axis=0)
@@ -246,31 +275,37 @@ def stateHistograms(ensemble, metadata, plot_kwargs=None, titleappend='', upw_en
     # ax component
     ax_counts, ax_bins = np.histogram(ensemble['acceleration_x'], bins=np.linspace(amin, amax, (amax-amin)/accel_binwidth))
     ax_counts_n = ax_counts / ax_counts.astype(float).sum()
-    axs[3].plot(ax_bins[:-1], ax_counts_n, label="$\ddot{x}$", lw=2)
-    axs[3].fill_between(ax_bins[:-1], 0, ax_counts_n, facecolor='blue', alpha=0.1)
+    axs[4].plot(ax_bins[:-1], ax_counts_n, label="$\ddot{x}$", lw=2)
+    axs[4].fill_between(ax_bins[:-1], 0, ax_counts_n, facecolor='blue', alpha=0.1)
     # ay component
     ay_counts, ay_bins = np.histogram(ensemble['acceleration_y'], bins=np.linspace(amin, amax, (amax-amin)/accel_binwidth))
     ay_counts_n = ay_counts / ay_counts.astype(float).sum()
-    axs[3].plot(ay_bins[:-1], ay_counts_n, label="$\ddot{y}$", lw=2)
-    axs[3].fill_between(ay_bins[:-1], 0, ay_counts_n, facecolor='green', alpha=0.1)
+    axs[4].plot(ay_bins[:-1], ay_counts_n, label="$\ddot{y}$", lw=2)
+    axs[4].fill_between(ay_bins[:-1], 0, ay_counts_n, facecolor='green', alpha=0.1)
+    # az component
+    az_counts, az_bins = np.histogram(ensemble['acceleration_z'], bins=np.linspace(amin, amax, (amax-amin)/accel_binwidth))
+    az_counts_n = az_counts / az_counts.astype(float).sum()
+    axs[4].plot(az_bins[:-1], az_counts_n, label="$\ddot{z}$", lw=2)
+    axs[4].fill_between(az_bins[:-1], 0, az_counts_n, facecolor='red', alpha=0.1)
     # |a|
-#    accel_all_magn = []
-#    for a in accel_all:
-#        accel_all_magn.append(np.linalg.norm(a))
-#    aabs_counts, aabs_bins = np.histogram(accel_all_magn, bins=np.linspace(amin, amax, (amax-amin)/accel_binwidth))
-#    aabs_counts_n = aabs_counts/ aabs_counts.astype(float).sum()
-#    axs[3].plot(aabs_bins[:-1], aabs_counts_n, label='$|\mathbf{a}|$', color=sns.desaturate("black", .4), lw=2)
-#    axs[3].fill_between(aabs_bins[:-1], 0, aabs_counts_n, facecolor='yellow', alpha=0.1)
-    axs[3].set_title("Acceleration Distribution")
-    axs[3].set_xlabel("Acceleration ($m^s/s$)")
-    axs[3].set_ylabel("Probability")
-    axs[3].legend(fontsize=14)
-    
+    abs_accel_vectors =np.array([ensemble.acceleration_x.values, ensemble.acceleration_y.values, ensemble.acceleration_z.values]).T
+    accel_all_magn = []
+    for vector in abs_accel_vectors:
+        accel_all_magn.append(np.linalg.norm(vector))
+    aabs_counts, aabs_bins = np.histogram(accel_all_magn, bins=np.linspace(amin, amax, (amax-amin)/accel_binwidth))
+    aabs_counts_n = aabs_counts/ aabs_counts.astype(float).sum()
+    axs[4].plot(aabs_bins[:-1], aabs_counts_n, label='$|\mathbf{a}|$', color=sns.desaturate("black", .4), lw=2)
+    axs[4].fill_between(aabs_bins[:-1], 0, aabs_counts_n, facecolor='yellow', alpha=0.1)
+    axs[4].set_title("Acceleration Distribution")
+    axs[4].set_xlabel("Acceleration ($m^s/s$)")
+    axs[4].set_ylabel("Probability")
+    axs[4].legend(fontsize=14)
+     
     gs1.tight_layout(fig, rect=[0, 0.03, 1, 0.95])  # overlapping text hack
     plt.savefig("./figs/Agent Distributions b {beta},f {rf},wf {wtf},,N {total_trajectories}.svg".format(beta=metadata['beta'], rf=metadata['rf'], wtf=metadata['wtf'], total_trajectories=metadata['total_trajectories']), format='svg')
     plt.show()
     
-    return xpos_counts_n, ypos_bins, ypos_counts, ypos_counts_n, vx_counts_n
+#    return xpos_counts_n, ypos_bins, ypos_counts, ypos_counts_n, vx_counts_n
 
 
 def force_violin(ensemble, metadata):
@@ -334,6 +369,7 @@ def compass_plots(ensemble, metadata, kind):
             bin_magnitudes = ensemble.loc[((ensemble['angle'] > roundbins[i]) & (ensemble['angle'] < roundbins[i+1])), ['magnitude']]
             bin_mag_avg = bin_magnitudes.sum() / bin_magnitudes.size
             bin_mag_avgs[i] = bin_mag_avg
+
 
 def cylinder(center_x, center_y, z_min, z_max, r=0.01905, n=5):
     '''
