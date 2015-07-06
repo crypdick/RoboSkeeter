@@ -17,7 +17,50 @@ agent:
         -land --> mytrajectory.append(vectors)
 -store agent as pickle
     http://www.rafekettler.com/magicmethods.html#callable
-    
+   
+   
+GOALS
+#
+Plotting
+#
+#####GOAL: Have same figures for both agent/ model
+fix stats plotting functions to accept 3D data (e.g. heatmaps)
+kinematic state histograrms +z
+
+#
+model building
+#
+!implement repulsion functions for x, z dimensions
+Kalman filter
+upwind downwind decision policy?
+
+#
+monte carlo fitting
+#
+!        make cost function
+!        fit "prior" kinematics
+!        run monte carlo for each kinematic to fit params of model to the kinematic fit 
+
+#
+EVERYTHING PLUME
+#
+! add plume
+! add plume interaction forces (decision policies)
+
+
+#
+Analysis
+#
+autocorrelation, PACF of the heading angle
+make color coding 3D trajectories
+--lowest--
+do plume trigger analysis 
+turn ratio
+downwind bouts --
+
+turns:
+heading == difference b/w 0 and actual
+ang velo == 
 """
 
 import numpy as np
@@ -202,6 +245,7 @@ class Agent():
         _position_y = np.full(tsi_max, np.nan)
         _position_z = np.full(tsi_max, np.nan)
         _velocity_x = np.full(tsi_max, np.nan)
+        _post_velocity_x = np.full(tsi_max, np.nan)
         _velocity_y = np.full(tsi_max, np.nan)
         _velocity_z = np.full(tsi_max, np.nan)
         _acceleration_x = np.full(tsi_max, np.nan)
@@ -237,7 +281,7 @@ class Agent():
         # make dictionary for creating Pandas df, later
         arraydict = {'times': _times, 'position_x': _position_x, 'position_y': _position_y,\
         'position_z': _position_z,\
-        'velocity_x': _velocity_x, 'velocity_y': _velocity_y, 'velocity_z': _velocity_z,\
+        'velocity_x': _velocity_x, 'post_velocity_x': _post_velocity_x, 'velocity_y': _velocity_y, 'velocity_z': _velocity_z,\
         'acceleration_x': _acceleration_x, 'acceleration_y': _acceleration_y, 'acceleration_z': _acceleration_z,\
         'totalF_x': _totalF_x, 'totalF_y': _totalF_y, 'totalF_z': _totalF_z,\
         'randF_x': _randF_x, 'randF_y': _randF_y, 'randF_z': _randF_z, 'wallRepulsiveF_x': _wallRepulsiveF_x,\
@@ -368,7 +412,8 @@ class Agent():
             _position_x[tsi+1], _position_y[tsi+1], _position_z[tsi+1] = candidate_pos
             
 #            # test the kinematics ex-post facto
-#            real_velo = (candidate_pos - np.array([_position_x[tsi], _position_y[tsi], _position_z[tsi]])) / dt
+            real_velo = (candidate_pos - np.array([_position_x[tsi], _position_y[tsi], _position_z[tsi]])) / dt
+            _post_velocity_x[tsi] = real_velo[0]
 #            _velocity_x[tsi], _velocity_y[tsi], _velocity_z[tsi] = real_velo
 #            
 #            if tsi == 0:
