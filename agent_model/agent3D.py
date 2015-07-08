@@ -24,22 +24,21 @@ GOALS
 Plotting
 #
 #####GOAL: Have same figures for both agent/ model
-fix stats plotting functions to accept 3D data (e.g. heatmaps)
-kinematic state histograrms +z
 
 #
 model building
 #
-!implement repulsion functions for x, z dimensions
+!implement repulsion functions for x, y, z dimensions
+    polyfit each distribution? -- waiting for sharri
 Kalman filter
 upwind downwind decision policy?
 
 #
 monte carlo fitting
 #
-!        make cost function
-!        fit "prior" kinematics
-!        run monte carlo for each kinematic to fit params of model to the kinematic fit 
+!fit "prior" kinematics-- waiting for sharri
+!make cost function
+!run monte carlo for each kinematic to fit params of model to the kinematic fit
 
 #
 EVERYTHING PLUME
@@ -51,9 +50,9 @@ EVERYTHING PLUME
 #
 Analysis
 #
+--lowest--
 autocorrelation, PACF of the heading angle
 make color coding 3D trajectories
---lowest--
 do plume trigger analysis 
 turn ratio
 downwind bouts --
@@ -74,6 +73,8 @@ import repulsion_landscape3D
 
 def place_heater(target_pos):
     ''' puts a heater in the correct position in the wind tunnel
+    
+    returns [x,y, zmin, zmax, diam]
     '''
     zmin = 0.03800
     zmax = 0.11340
@@ -107,6 +108,12 @@ def place_agent(agent_pos):
         # FIXME cage height
     else:
         raise Exception('invalid agent position specified')
+    
+    
+def score_output(desired_output, output):
+    """take the root mean square error of two kinematic distributions    
+    """
+    pass
 
 
 class Agent():
@@ -266,8 +273,12 @@ class Agent():
         _stimF_x = np.full(tsi_max, np.nan)
         _stimF_y = np.full(tsi_max, np.nan)
         _stimF_z = np.full(tsi_max, np.nan)        
-        _temperature = np.full(tsi_max, np.nan)
-        _inPlume = np.full(tsi_max, np.nan)
+#        _temperature = np.full(tsi_max, np.nan) # depreciated
+        self._inPlume = np.full(tsi_max, np.nan)
+        _plume_experience = np.full(tsi_max, np.nan)
+        _turning = np.full(tsi_max, np.nan)
+        _heading_angle = np.full(tsi_max, np.nan)
+        _angular_velocity = np.full(tsi_max, np.nan)
         
         # place agent
         r0 = place_agent(self.metadata['initial_position'])
@@ -287,13 +298,18 @@ class Agent():
         'randF_x': _randF_x, 'randF_y': _randF_y, 'randF_z': _randF_z, 'wallRepulsiveF_x': _wallRepulsiveF_x,\
         'wallRepulsiveF_y': _wallRepulsiveF_y, 'wallRepulsiveF_z': _wallRepulsiveF_z,\
         'upwindF_x': _upwindF_x, 'upwindF_y': _upwindF_y, 'upwindF_z': _upwindF_z,\
-        'stimF_x': _stimF_x, 'stimF_y': _stimF_y, 'stimF_z': _stimF_z, 'temperature': _temperature,\
-        'inPlume': _inPlume}
+        'stimF_x': _stimF_x, 'stimF_y': _stimF_y, 'stimF_z': _stimF_z,\
+        'inPlume': self._inPlume}
         
         # generate a flight!
         for tsi in xrange(tsi_max):
             # sense the temperature
-            _temperature[tsi] = self.Plume_object.temp_lookup([_position_x[tsi], _position_y[tsi]])
+#            _temperature[tsi] = self.Plume_object.temp_lookup([_position_x[tsi], _position_y[tsi]]) # depreciated
+            self._inPlume[tsi] = self.Plume_object.check_for_plume([_position_x[tsi], _position_y[tsi], _position_z[tsi]])
+            if tsi == 0:
+                _plume_experience[tsi] = 'searching'
+            else:
+                _plume_experience[tsi] = _check_crossing_state(tsi)
             
             # calculate driving forces
             randF = baseline_driving_forces3D.random_force(self.rf, dim=self.dim)
@@ -310,16 +326,15 @@ class Agent():
             
             if tsi == 0:
                 stimF, inPlume = stim_biasF3D.main(_temperature[tsi], v0[1],\
-                    _inPlume[tsi-1], self.stimF_str)
+                    self._inPlume[tsi-1], self.stimF_str)
             else:
                 try:
                     stimF, inPlume = stim_biasF3D.main(_temperature[tsi], _velocity_y[tsi],\
-                        _inPlume[tsi-1], self.stimF_str)
+                        self._inPlume[tsi-1], self.stimF_str)
                 except UnboundLocalError: # TODO: wtf?
                     stimF, inPlume = stim_biasF3D.main(_temperature[tsi], _velocity_y[tsi],\
                         False, self.stimF_str)
                     print "erorr"
-            _inPlume[tsi] = inPlume
             _stimF_x[tsi], _stimF_y[tsi], _stimF_z[tsi] = stimF
             
             # calculate current force
@@ -446,6 +461,28 @@ class Agent():
     def show_landscape(self):
         import repulsion_landscape
         repulsion_landscape.main(self.wallF_params, None, plotting=True)
+        
+    def _check_crossing_state(self, tsi):
+        """
+        out2out - searching
+            TODO: differentiate b/w plume-trigger exit and just searching
+        out2in - entering plume
+        in2in - staying
+        in2out - exiting
+        """
+        current_state, past_state = self._inPlume[tsi], self._inPlume[tsi-1]
+        if current_state == False and past_state == False:
+            # we are not in plume and weren't in last ts
+            return 'searching'
+        if current_state == True and past_state == False:
+            # entering plume
+            return 'entering'
+        if current_state == True and past_state == True:
+            # we stayed in the plume
+            return 'staying'
+        if current_state == False and past_state == True:
+            # exiting the plume
+            return "exiting"
 
 
 if __name__ == '__main__':
