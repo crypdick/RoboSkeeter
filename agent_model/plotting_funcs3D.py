@@ -48,8 +48,10 @@ def draw_cage():
     
 
 def draw_heaters(target_pos, detect_thresh):
-    # draws a circle where the heater is
-    heaterCircle = plt.Circle((target_pos[0], target_pos[1],), target_pos[4], color='r')
+    """ draws a circle where the heater is
+    target_pos vector is [x,y, zmin, zmax, diam]
+    """
+    heaterCircle = plt.Circle((target_pos[0], target_pos[1],), target_pos[4]/2, color='r')
     detectCircle = plt.Circle((target_pos[0], target_pos[1],), detect_thresh, color='gray', fill=False, linestyle='dashed')
     
     return heaterCircle, detectCircle
