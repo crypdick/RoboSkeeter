@@ -35,32 +35,14 @@ plumeDirection = [left, right, none]
 
 """
 
-def absoluteT_threshold_check(temperature, threshold):#, strength, inplume_past):
-    """given temperature, check if it's above our threshold
-    return if we're in plume (bool)"""
-    if temperature >= threshold:
-        return True
-    else:
-        return False
-        
-
-def check_crossing_state(current_state, past_state):
-    """in2in, out2in - stay, entering plume
-    out2out - off, searching
-    in2out - reverse, exiting
-    """
-    if current_state == False and past_state == False:
-        # we are not in plume and weren't in last ts
-        return 'searching'
-    if current_state == True and past_state == False:
-        # entering plume
-        return 'entering'
-    if current_state == True and past_state == True:
-        # we stayed in the plume
-        return 'staying'
-    if current_state == False and past_state == True:
-        # exiting the plume
-        return "exiting"
+# depreciated
+#def absoluteT_threshold_check(temperature, threshold):#, strength, inplume_past):
+#    """given temperature, check if it's above our threshold
+#    return if we're in plume (bool)"""
+#    if temperature >= threshold:
+#        return True
+#    else:
+#        return False
 
 
 def stimF_direction(cross_status, veloy):
@@ -79,9 +61,8 @@ def stimF(stimF_strength, dir=None):
     """
     if dir == None:
         return [0, 0, 0]
-        
-        
-def main(temperature, velocity_y, stimF_strength, thresh=299.15, past_state=False, detection_type='absolute'):
+   
+def main velocity_y, stimF_strength, past_state=False, detection_type='absolute'):
     veloy = None
     if detection_type == 'absolute':
         curr_status = absoluteT_threshold_check(temperature, thresh)
@@ -90,6 +71,17 @@ def main(temperature, velocity_y, stimF_strength, thresh=299.15, past_state=Fals
     stim_F = stimF(stimF_strength, stimF_dir)
     
     return stim_F, curr_status
+     
+# depreciated
+#def main(temperature, velocity_y, stimF_strength, thresh=299.15, past_state=False, detection_type='absolute'):
+#    veloy = None
+#    if detection_type == 'absolute':
+#        curr_status = absoluteT_threshold_check(temperature, thresh)
+#    cross_state = check_crossing_state(curr_status, past_state)
+#    stimF_dir = stimF_direction(cross_state, veloy)
+#    stim_F = stimF(stimF_strength, stimF_dir)
+#    
+#    return stim_F, curr_status
     
     
     
