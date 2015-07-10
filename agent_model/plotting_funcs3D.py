@@ -335,7 +335,7 @@ def force_violin(ensemble, metadata):
         beta=metadata['beta'], rf=metadata['biasF_scale'], wtf=metadata['wtf'], total_trajectories=metadata['total_trajectories']), format='svg')
     
 
-def compass_histogram(ensemble, metadata, kind):
+def velo_compass_histogram(ensemble, metadata, kind):
     N = 40
     roundbins = np.linspace(0.0, 2 * np.pi, N)
     
@@ -373,6 +373,62 @@ def compass_histogram(ensemble, metadata, kind):
             bin_magnitudes = ensemble.loc[((ensemble['angle'] > roundbins[i]) & (ensemble['angle'] < roundbins[i+1])), ['magnitude']]
             bin_mag_avg = bin_magnitudes.sum() / bin_magnitudes.size
             bin_mag_avgs[i] = bin_mag_avg
+
+
+def compass_histogram(vector_name, ensemble, metadata, kind='bin_average'):
+    N = 40
+    roundbins = np.linspace(0.0, 2 * np.pi, N)
+    width = (2*np.pi) / N
+    
+    
+    if kind == 'global_normalize':
+        ensemble['fraction'] = ensemble['magnitude'] / ensemble['magnitude'].sum()
+    
+        values, bin_edges = np.histogram(ensemble['angle'], weights = ensemble['fraction'], bins = roundbins)
+        
+        compassfig = plt.figure()
+        ax = plt.subplot(111, polar=True)
+        
+        ax.bar(bin_edges[:-1], values, width = width, linewidth = 0)
+        plt.xlim(min(bin_edges), max(bin_edges))
+        
+        # switch to radian labels
+        xT = plt.xticks()[0]
+        xL=['0',r'$\frac{\pi}{4}$',r'$\frac{\pi}{2}$',r'$\frac{3\pi}{4}$',\
+            r'$\pi$',r'$\frac{5\pi}{4}$',r'$\frac{3\pi}{2}$',r'$\frac{7\pi}{4}$']
+        plt.xticks(xT, xL, size = 20)
+        plt.title("Agent velocities 0.25 < x < 0.5, center repulsion on (n = {})".format(metadata['total_trajectories']), y=1.1)
+        plt.savefig("./figs/Velocity compass, center repulsion on_ beta{beta}_rf{biasF_scale}_wf{wtf}_N{total_trajectories}.svg".format(\
+            beta=metadata['beta'], biasF_scale=metadata['biasF_scale'], wtf=metadata['wtf'], total_trajectories=metadata['total_trajectories']), format="svg")
+    
+    if kind == 'bin_average':
+        """for each bin, we want the average magnitude
+        select bin range with pandas,
+        sum(magnitude) / n_vectors
+        """
+        bin_mag_avgs = np.zeros(N-1)
+        for i in range(N-1): # for bin
+            # select all magnitudes in the bin
+            bin_magnitudes = ensemble.loc[((ensemble['angle'] > roundbins[i]) & (ensemble['angle'] < roundbins[i+1])), ['magnitude']]
+            bin_mag_avg = bin_magnitudes.sum() / bin_magnitudes.size
+            bin_mag_avgs[i] = bin_mag_avg
+        
+        compassfig = plt.figure()
+        ax = plt.subplot(111, polar=True)
+        
+        ax.bar(roundbins[:-1], bin_mag_avgs, width = width, linewidth = 0)
+#        plt.xlim(min(bin_edges), max(bin_edges))
+        
+        # switch to radian labels
+        xT = plt.xticks()[0]
+        xL=['0',r'$\frac{\pi}{4}$',r'$\frac{\pi}{2}$',r'$\frac{3\pi}{4}$',\
+            r'$\pi$',r'$\frac{5\pi}{4}$',r'$\frac{3\pi}{2}$',r'$\frac{7\pi}{4}$']
+        plt.xticks(xT, xL, size = 20)
+        plt.title("Avg. {name} vector magnitude in xy plane (n = {N})".format(N = metadata['total_trajectories'], name=vector_name))
+        plt.savefig("./figs/Avg mag distribution of {name}_xy compass _beta{beta}_bF{biasF_scale}_wf{wtf}_N{total_trajectories}.svg".format(\
+            beta=metadata['beta'], biasF_scale=metadata['biasF_scale'], wtf=metadata['wtf'], total_trajectories=metadata['total_trajectories'], name=vector_name), format="svg")
+    
+        
 
 
 def cylinder(center_x, center_y, z_min, z_max, r=0.01905, n=5):
