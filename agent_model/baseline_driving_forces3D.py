@@ -12,7 +12,7 @@ from scipy.integrate import quad
 from scipy.misc import derivative as deriv
 
 
-def random_force(rf, dim=2):
+def bias_force(rf, bias='uniform'):
     """Generate random-direction force vector at each timestep from double-
     exponential distribution given exponent term rf.
 
@@ -23,26 +23,52 @@ def random_force(rf, dim=2):
         random force x and y components (array)
     """
     mag_thresh = 3e-6
-    if dim == 2:
-        ends = gen_symm_vecs(2)
-        # following params were fitted from the Dickinson fligt data
-        mu = 0.600023812816
-        sigma = 0.719736466122
-        scale = 1.82216219069
-        mag = np.random.lognormal(mean=mu, sigma=sigma, size=1)
-        return mag * ends * rf
-    if dim == 3: # FIXME: 3d symmetric
-        ends = gen_symm_vecs(3)
-        # following params were fitted from the Dickinson fligt data
-        mu = 0.600023812816
-        sigma = 0.719736466122
-        scale = 1.82216219069
-        mag = np.random.lognormal(mean=mu, sigma=sigma, size=1)
-        if mag * rf > mag_thresh: # filter out huge magnitudes
-            return ends * mag_thresh
-        return mag * ends * rf
-    else:
-        raise NotImplementedError('Too many dimensions!')
+    # FIXME: 3d symmetric
+    ends = gen_symm_vecs(3)
+    # following params were fitted from the Dickinson fligt data
+    mu = 0.600023812816
+    sigma = 0.719736466122
+    scale = 1.82216219069
+    mag = np.random.lognormal(mean=mu, sigma=sigma, size=1)
+    if mag * rf > mag_thresh: # filter out huge magnitudes
+        return ends * mag_thresh
+
+    return mag * ends * rf
+
+        
+#==============================================================================
+### depreciated
+# def random_force(rf, dim=2):
+#     """Generate random-direction force vector at each timestep from double-
+#     exponential distribution given exponent term rf.
+# 
+#     Args:
+#         rf: random force distribution exponent (float)
+# 
+#     Returns:
+#         random force x and y components (array)
+#     """
+#     mag_thresh = 3e-6
+#     if dim == 2:
+#         ends = gen_symm_vecs(2)
+#         # following params were fitted from the Dickinson fligt data
+#         mu = 0.600023812816
+#         sigma = 0.719736466122
+#         scale = 1.82216219069
+#         mag = np.random.lognormal(mean=mu, sigma=sigma, size=1)
+#         return mag * ends * rf
+#     if dim == 3: # FIXME: 3d symmetric
+#         ends = gen_symm_vecs(3)
+#         # following params were fitted from the Dickinson fligt data
+#         mu = 0.600023812816
+#         sigma = 0.719736466122
+#         scale = 1.82216219069
+#         mag = np.random.lognormal(mean=mu, sigma=sigma, size=1)
+#         if mag * rf > mag_thresh: # filter out huge magnitudes
+#             return ends * mag_thresh
+#         return mag * ends * rf
+#     else:
+#==============================================================================
 
 
 def gen_symm_vecs(dims):
