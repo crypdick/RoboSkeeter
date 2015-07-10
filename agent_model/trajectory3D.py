@@ -55,8 +55,8 @@ class Trajectory():
         plotting_funcs3D.plot_single_trajectory(self.ensemble.loc[self.ensemble['trajectory_num']==trajectory_i], self.agent_info, plot_kwargs)
     
 
-    def add_agent_info(self, data_dict):
-        for key, value in data_dict.iteritems():
+    def add_agent_info(self, metadata_dict):
+        for key, value in metadata_dict.iteritems():
             self.agent_info[key] = value
             
     def plot_force_violin(self):
@@ -82,7 +82,13 @@ class Trajectory():
         else:
             ensemble = self.ensemble
             
-        plotting_funcs3D.compass_plots(ensemble, self.agent_info, kind)
+        plotting_funcs3D.compass_histogram(ensemble, self.agent_info, kind)
+        
+    def plot_compass(self, kind='bin_average'):
+        for force in self.agent_info['forces']:
+            magnitudes, thetas = getattr(self.ensemble, name+'_xy_mag').values, getattr(V, name+'_xy_theta').values
+            
+#        plotting_funcs3D.compass_histogram(ensemble, self.agent_info, kind)
         
     def plot_single_3Dtrajectory(self, trajectory_i=0):
         plot_kwargs = {'title':"Individual agent trajectory", 'titleappend':' (id = {})'.format(trajectory_i)}
@@ -134,7 +140,15 @@ class Trajectory():
 #        
         print "full- + up- + down-wind"
         plotting_funcs3D.stateHistograms(full_ensemble, self.agent_info, titleappend = '', upw_ensemble = upwind_ensemble, downw_ensemble = downwind_ensemble)
-        
+    
+    
+    def plume_stats(self):
+        """ 
+        in plume == 1, out == 0. therefore sum/n is % in plume
+        """
+        in_out = self.ensemble.inPlume.values
+        print "Total timesteps: {size}. Total time in plume: {vecsum}. Ratio:"\
+            "{ratio}".format(size=in_out.size, vecsum=in_out.sum(), ratio=in_out.sum()/in_out.size)
             
             
     def describe(self, plot_kwargs={'trajectories':False, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_violin':True}):
@@ -148,6 +162,7 @@ class Trajectory():
             self.plot_kinematic_hists()
         if plot_kwargs['force_violin'] is True:
             self.plot_force_violin()
+            
             
     def dump2csvs(self):
         for trajectory_i in self.ensemble.trajectory_num.unique():
