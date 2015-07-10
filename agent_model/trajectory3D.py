@@ -59,6 +59,7 @@ class Trajectory():
         for key, value in metadata_dict.iteritems():
             self.agent_info[key] = value
             
+            
     def plot_force_violin(self):
         plotting_funcs3D.force_violin(self.ensemble, self.agent_info)
         
@@ -74,6 +75,7 @@ class Trajectory():
             ensemble = ensemble.loc[(ensemble['position_x'] >0.25) & (ensemble['position_x'] <0.95)]
         plotting_funcs3D.stateHistograms(ensemble, self.agent_info, titleappend)
         
+        
     def plot_door_velocity_compass(self, region='door', kind='bin_average'):
         
         if region == 'door':
@@ -82,13 +84,20 @@ class Trajectory():
         else:
             ensemble = self.ensemble
             
-        plotting_funcs3D.compass_histogram(ensemble, self.agent_info, kind)
+        plotting_funcs3D.velo_compass_histogram(ensemble, self.agent_info, kind)
         
     def plot_compass(self, kind='bin_average'):
-        for force in self.agent_info['forces']:
-            magnitudes, thetas = getattr(self.ensemble, name+'_xy_mag').values, getattr(V, name+'_xy_theta').values
+        for vector_name in self.agent_info['forces']+self.agent_info['kinematic_vals']:
+            # from enemble, selec mag and theta
+            ensemble = eval("self.ensemble[['"+vector_name+"_xy_mag', '"+vector_name+"_xy_theta']]")
+            # rename col to play nice w plotting function
+            ensemble.rename(columns={vector_name+'_xy_mag': 'magnitude', vector_name+'_xy_theta': 'angle'}, inplace=True)
+            plotting_funcs3D.compass_histogram(vector_name, ensemble, self.agent_info)
+#            magnitudes, thetas = getattr(self.ensemble, name+).values, getattr(V, name+'_xy_theta').values
+#            plotting_funcs3D.compass_histogram(force, magnitudes, thetas, self.agent_info)
             
-#        plotting_funcs3D.compass_histogram(ensemble, self.agent_info, kind)
+#        
+        
         
     def plot_single_3Dtrajectory(self, trajectory_i=0):
         plot_kwargs = {'title':"Individual agent trajectory", 'titleappend':' (id = {})'.format(trajectory_i)}
