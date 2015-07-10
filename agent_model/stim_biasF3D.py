@@ -62,18 +62,7 @@ def stimF(stimF_strength, dir=None):
     if dir == None:
         return [0, 0, 0]
    
-def main velocity_y, stimF_strength, past_state=False, detection_type='absolute'):
-    veloy = None
-    if detection_type == 'absolute':
-        curr_status = absoluteT_threshold_check(temperature, thresh)
-    cross_state = check_crossing_state(curr_status, past_state)
-    stimF_dir = stimF_direction(cross_state, veloy)
-    stim_F = stimF(stimF_strength, stimF_dir)
-    
-    return stim_F, curr_status
-     
-# depreciated
-#def main(temperature, velocity_y, stimF_strength, thresh=299.15, past_state=False, detection_type='absolute'):
+#def main velocity_y, stimF_strength, past_state=False, detection_type='absolute'):
 #    veloy = None
 #    if detection_type == 'absolute':
 #        curr_status = absoluteT_threshold_check(temperature, thresh)
@@ -82,6 +71,20 @@ def main velocity_y, stimF_strength, past_state=False, detection_type='absolute'
 #    stim_F = stimF(stimF_strength, stimF_dir)
 #    
 #    return stim_F, curr_status
+     
+#==============================================================================
+# # depreciated
+# #def main(temperature, velocity_y, stimF_strength, thresh=299.15, past_state=False, detection_type='absolute'):
+# #    veloy = None
+# #    if detection_type == 'absolute':
+# #        curr_status = absoluteT_threshold_check(temperature, thresh)
+# #    cross_state = check_crossing_state(curr_status, past_state)
+# #    stimF_dir = stimF_direction(cross_state, veloy)
+# #    stim_F = stimF(stimF_strength, stimF_dir)
+     #    
+#    return stim_F, curr_status
+#==============================================================================
+
     
     
     
