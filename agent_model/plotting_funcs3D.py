@@ -38,7 +38,7 @@ def plot_single_trajectory(dynamics, metadata, plot_kwargs=None):
     plt.title(plot_kwargs['title'] + plot_kwargs['titleappend'], fontsize=20)
     plt.xlabel("Upwind/$x$ (meters)", fontsize=14)
     plt.ylabel("Crosswind/$y$ (meters)", fontsize=14)
-    plt.savefig("./figs/indiv_traj beta{beta}_f{rf}_wf{wtf}.svg".format(beta=metadata['beta'], rf=metadata['rf'], wtf=metadata['wtf']), format="svg")    
+    plt.savefig("./figs/indiv_traj beta{beta}_f{rf}_wf{wtf}.svg".format(beta=metadata['beta'], rf=metadata['biasF_scale'], wtf=metadata['wtf']), format="svg")    
 
 
 def draw_cage():
@@ -72,7 +72,7 @@ def trajectory_plots(ensemble, metadata, plot_kwargs=None):
 #            ax.plot(posx, posy, lw=2, alpha=1)
 #        ax.axis([0,1,0.127, -0.127])  # slight y padding for graphs
 #    title_append = r""" $T_max$ = {0} secs, $\beta = {2}$, $f = {3}$, $wtf = {4}$.
-##                """.format(metadata['time_max'], metadata['total_trajectories'], metadata['beta'], metadata['rf'], metadata['wtf'])
+##                """.format(metadata['time_max'], metadata['total_trajectories'], metadata['beta'], metadata['biasF_scale'], metadata['wtf'])
 #                
 
 #
@@ -87,7 +87,7 @@ def trajectory_plots(ensemble, metadata, plot_kwargs=None):
 ##    
 #    # save before overlaying heatmap
 #    plt.savefig("./figs/Trajectories b{beta} f{rf} wf{wtf} N{total_trajectories}.png"\
-#        .format(beta=metadata['beta'], rf=metadata['rf'], wtf=metadata['wtf'], total_trajectories=metadata['total_trajectories']))
+#        .format(beta=metadata['beta'], rf=metadata['biasF_scale'], wtf=metadata['wtf'], total_trajectories=metadata['total_trajectories']))
 #    
 ############################################## NEW HEATMAP #######################
 #    ## Position heatmap
@@ -109,7 +109,7 @@ def trajectory_plots(ensemble, metadata, plot_kwargs=None):
 #            # draw cage
 #            cage = draw_cage()
 #            hextraj.ax_joint.add_patch(cage)
-#        plt.savefig("./figs/Trajectories sns heatmap beta{beta}_f{rf}_wf{wtf}_N{total_trajectories}.png".format(beta=metadata['beta'], rf=metadata['rf'], wtf=metadata['wtf'], total_trajectories=metadata['total_trajectories']))
+#        plt.savefig("./figs/Trajectories sns heatmap beta{beta}_f{rf}_wf{wtf}_N{total_trajectories}.png".format(beta=metadata['beta'], rf=metadata['biasF_scale'], wtf=metadata['wtf'], total_trajectories=metadata['total_trajectories']))
 #            
         ########## OLD HEATMAP ##############################################
         # crunch the data
@@ -150,7 +150,7 @@ def heatmaps(ensemble, metadata):
         plt.title("Agent trajectories 2D position histogram (n = {})".format(metadata['total_trajectories']))
         plt.xlabel("Upwind/$x$ (meters)")
         plt.ylabel("Crosswind/$y$ (meters)")
-        plt.savefig("./figs/Trajectories heatmap beta{beta}_f{rf}_wf{wtf}_N{total_trajectories}.svg".format(beta=metadata['beta'], rf=metadata['rf'], wtf=metadata['wtf'], total_trajectories=metadata['total_trajectories']), format="svg")
+        plt.savefig("./figs/Trajectories heatmap beta{beta}_f{rf}_wf{wtf}_N{total_trajectories}.svg".format(beta=metadata['beta'], rf=metadata['biasF_scale'], wtf=metadata['wtf'], total_trajectories=metadata['total_trajectories']), format="svg")
         plt.show()
 
 
@@ -304,7 +304,7 @@ def stateHistograms(ensemble, metadata, plot_kwargs=None, titleappend='', upw_en
     axs[4].legend(fontsize=14)
      
     gs1.tight_layout(fig, rect=[0, 0.03, 1, 0.95])  # overlapping text hack
-    plt.savefig("./figs/Agent Distributions b {beta},f {rf},wf {wtf},,N {total_trajectories}.svg".format(beta=metadata['beta'], rf=metadata['rf'], wtf=metadata['wtf'], total_trajectories=metadata['total_trajectories']), format='svg')
+    plt.savefig("./figs/Agent Distributions b {beta},f {rf},wf {wtf},,N {total_trajectories}.svg".format(beta=metadata['beta'], rf=metadata['biasF_scale'], wtf=metadata['wtf'], total_trajectories=metadata['total_trajectories']), format='svg')
     plt.show()
     
 #    return xpos_counts_n, ypos_bins, ypos_counts, ypos_counts_n, vx_counts_n
@@ -331,10 +331,11 @@ def force_violin(ensemble, metadata):
     plt.tight_layout(pad=1.8)    
 
     plt.ylabel("Force magnitude distribution (newtons)")
-    plt.savefig("./figs/Force Distributions b {beta},f {rf},wf {wtf},N {total_trajectories}.svg".format(beta=metadata['beta'], rf=metadata['rf'], wtf=metadata['wtf'], total_trajectories=metadata['total_trajectories']), format='svg')
+    plt.savefig("./figs/Force Distributions b {beta},f {rf},wf {wtf},N {total_trajectories}.svg".format(\
+        beta=metadata['beta'], rf=metadata['biasF_scale'], wtf=metadata['wtf'], total_trajectories=metadata['total_trajectories']), format='svg')
     
 
-def compass_plots(ensemble, metadata, kind):
+def compass_histogram(ensemble, metadata, kind):
     N = 40
     roundbins = np.linspace(0.0, 2 * np.pi, N)
     
@@ -347,6 +348,7 @@ def compass_plots(ensemble, metadata, kind):
     
         values, bin_edges = np.histogram(ensemble['angle'], weights = ensemble['fraction'], bins = roundbins)
         
+        compassfig = plt.figure()
         ax = plt.subplot(111, polar=True)
         
         ax.bar(bin_edges[:-1], values, width = width, linewidth = 0)
@@ -358,8 +360,8 @@ def compass_plots(ensemble, metadata, kind):
             r'$\pi$',r'$\frac{5\pi}{4}$',r'$\frac{3\pi}{2}$',r'$\frac{7\pi}{4}$']
         plt.xticks(xT, xL, size = 20)
         plt.title("Agent velocities 0.25 < x < 0.5, center repulsion on (n = {})".format(metadata['total_trajectories']), y=1.1)
-        plt.savefig("./figs/Velocity compass, center repulsion on_ beta{beta}_f{rf}_wf{wtf}_N{total_trajectories}.svg".format(beta=metadata['beta'], rf=metadata['rf'], wtf=metadata['wtf'], total_trajectories=metadata['total_trajectories']), format="svg")
-      
+        plt.savefig("./figs/Velocity compass, center repulsion on_ beta{beta}_rf{biasF_scale}_wf{wtf}_N{total_trajectories}.svg".format(\
+            beta=metadata['beta'], biasF_scale=metadata['biasF_scale'], wtf=metadata['wtf'], total_trajectories=metadata['total_trajectories']), format="svg")
     
     if kind == 'bin_average':
         """for each bin, we want the average magnitude
