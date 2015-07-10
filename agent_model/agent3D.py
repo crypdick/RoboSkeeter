@@ -33,6 +33,12 @@ model building
 Kalman filter
 upwind downwind decision policy?
 
+plume triggered stats:
+if in-> out, grab 1s
+check velocity_y component. sort left, right.
+plot compass plots
+
+
 #
 monte carlo fitting
 #
@@ -201,8 +207,8 @@ class Agent():
         # for stats, later
         self.metadata['time_target_find_avg'] = []
         self.metadata['total_finds'] = 0
-        self.metadata['target_found'] = [False]
-        self.metadata['time_to_target_find'] = [np.nan] # TODO: make sure these lists are concating correctly
+#        self.metadata['target_found'] = [False]
+#        self.metadata['time_to_target_find'] = [np.nan] # TODO: make sure these lists are concating correctly
         
         self.metadata['kinematic_vals'] = ['velocity', 'acceleration']
         self.metadata['forces'] = ['totalF', 'biasF', 'wallRepulsiveF', 'upwindF', 'stimF']
@@ -238,7 +244,7 @@ class Agent():
         self.metadata['total_trajectories'] = total_trajectories
         self.trajectory_obj.add_agent_info(self.metadata)
         # concluding stats
-        self.trajectory_obj.add_agent_info({'time_target_find_avg': trajectory3D.T_find_stats(self.trajectory_obj.agent_info['time_to_target_find'])})
+#        self.trajectory_obj.add_agent_info({'time_target_find_avg': trajectory3D.T_find_stats(self.trajectory_obj.agent_info['time_to_target_find'])})
     
         
 #        if __name__ == '__main__' and total_trajectories == 1:
@@ -349,8 +355,8 @@ class Agent():
             
             # if time is out, end loop before we solve for future position
             if tsi == tsi_max-1:
-                self.metadata['target_found'][0]  = False
-                self.metadata['time_to_target_find'][0] = np.nan
+#                self.metadata['target_found'][0]  = False
+#                self.metadata['time_to_target_find'][0] = np.nan
                 V = self.land(tsi, V)
                 break            
             
@@ -362,8 +368,8 @@ class Agent():
             if bounded is True:  
                 # x dim
                 if candidate_pos[0] > boundary[1]:  # reached far (upwind) wall (end)
-                    self.metadata['target_found'][0]  = False
-                    self.metadata['time_to_target_find'][0] = np.nan
+#                    self.metadata['target_found'][0]  = False
+#                    self.metadata['time_to_target_find'][0] = np.nan
                     V = self.land(tsi-1, V)  # stop flying at end, throw out last row
                     break
                 if candidate_pos[0] < boundary[0]:  # too far left
@@ -446,13 +452,13 @@ class Agent():
 #            V.acceleration_x[tsi], V.acceleration_y[tsi], V.acceleration_z[tsi] = real_accel
             
             # if there is a target, check if we are finding it                
-            if norm(candidate_pos - self.target_pos[0:3]) < self.detect_thresh:
-                    self.metadata['target_found'][0]  = True
-                    self.metadata['total_finds'] += 1
-                    self.metadata['time_to_target_find'][0] = _times[tsi]  # should this be timeList[i+1]? -rd # TODO fix .loc
-                    V = self.land(tsi, V)  # stop flying at source
-                    print "source found"
-                    break
+#            if norm(candidate_pos - self.target_pos[0:3]) < self.detect_thresh:
+#                    self.metadata['target_found'][0]  = True
+#                    self.metadata['total_finds'] += 1
+#                    self.metadata['time_to_target_find'][0] = V.times[tsi]  # should this be timeList[i+1]?
+#                    V = self.land(tsi, V)  # stop flying at source
+#                    print "source found"
+#                    break
         
         return V
 
@@ -533,7 +539,7 @@ if __name__ == '__main__':
     myagent = Agent(trajectories, myplume, agent_pos="door", target_pos="left", v0_stdev=0.01, wtf=7e-07,\
         biasF_scale=4e-05, stimF_str=1e-4, beta=1e-5, Tmax=15., dt=0.01, detect_thresh=0.023175, \
         bounded=True, wallF_params=wallF_params)
-    myagent.fly(total_trajectories=1)
+    myagent.fly(total_trajectories=100)
     
    
 #    trajectories.describe(plot_kwargs = {'trajectories':False, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_scatter':True, 'force_violin':True})

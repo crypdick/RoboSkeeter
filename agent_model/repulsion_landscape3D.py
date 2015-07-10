@@ -27,22 +27,22 @@ def landscape(normed=True):
     # gass func has the form: np.exp(-np.power(pos - mu, 2.) / (2 * np.power(sig, 2.)))
     
     # set up repulsion field in y dim
-    A_left = 1
+    A_left = 1.
     mu_left = -.09 # TODO fit
     sig_left = .01   # TODO fit
     A_center = .2
     mu_center = 0 # TODO fit
     sig_center = .05 # TODO fit
-    A_right = 1
+    A_right = 1.
     mu_right = .09 # TODO fit
     sig_right = .01 # TODO fit
-    repulsion_y = lambda pos_y: A_left * np.exp(-np.power(pos_y - mu_left, 2.) / (2 * np.power(sig_left, 2.))) +\
+    repulsion_y = lambda pos_y: 1 - (A_left * np.exp(-np.power(pos_y - mu_left, 2.) / (2 * np.power(sig_left, 2.))) +\
         A_center * np.exp(-np.power(pos_y - mu_center, 2.) / (2 * np.power(sig_center, 2.))) +\
-            A_right * np.exp(-np.power(pos_y - mu_right, 2.) / (2 * np.power(sig_right, 2.)))
+            A_right * np.exp(-np.power(pos_y - mu_right, 2.) / (2 * np.power(sig_right, 2.))))
     if normed is True:
         # divide function by its area to get normalized function
         (area, err) = quad(repulsion_y, -1, 1)
-        normed_repulsion_y = lambda pos_y: 1 - (repulsion_y(pos_y) / area)
+        normed_repulsion_y = lambda pos_y: repulsion_y(pos_y) / area
 #        normed_repulsion_y = repulsion_y # TODO delete
         
     # TODO: implement
@@ -129,7 +129,7 @@ def solve_lamba2a_ratio(wallF_max=8e-8, decay_const = 90):
 def main(plotting=False):
     
 #    repulsion_type = 'gaussian_sum'
-    repulsion_funcs = landscape(normed=True)
+    repulsion_funcs = landscape(normed=False)
     
 
     

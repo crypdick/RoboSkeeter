@@ -21,22 +21,22 @@ import plotting_funcs3D
 import numpy as np
 
 
-def T_find_stats(t_targfinds):
-    """Target finding stats. Returns average time to find the target, and the
-    number of successes
-    
-    TODO:  find tfind stats for ensemble
-    """
-    t_targfinds = np.array(t_targfinds)
-    t_finds_NoNaNs = t_targfinds[~np.isnan(t_targfinds)]  # remove NaNs
-    if len(t_finds_NoNaNs) == 0:
-
-        return np.nan  # no target finds, no stats to run
-    else:
-        num_success = float(len(t_finds_NoNaNs))
-        Tfind_avg = sum(t_finds_NoNaNs)/len(t_finds_NoNaNs)
-
-        return Tfind_avg
+#def T_find_stats(t_targfinds):
+#    """Target finding stats. Returns average time to find the target, and the
+#    number of successes
+#    
+#    TODO:  find tfind stats for ensemble
+#    """
+#    t_targfinds = np.array(t_targfinds)
+#    t_finds_NoNaNs = t_targfinds[~np.isnan(t_targfinds)]  # remove NaNs
+#    if len(t_finds_NoNaNs) == 0:
+#
+#        return np.nan  # no target finds, no stats to run
+#    else:
+#        num_success = float(len(t_finds_NoNaNs))
+#        Tfind_avg = sum(t_finds_NoNaNs)/len(t_finds_NoNaNs)
+#
+#        return Tfind_avg
 
 
 class Trajectory():
