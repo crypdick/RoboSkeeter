@@ -301,7 +301,7 @@ class Agent():
             biasF = baseline_driving_forces3D.bias_force(self.biasF_scale)
             V.biasF_x[tsi], V.biasF_y[tsi], V.biasF_z[tsi] = biasF
             
-            upwindF = baseline_driving_forces3D.upwindBiasForce(self.wtf, dim=self.dim)
+            upwindF = baseline_driving_forces3D.upwindBiasForce(self.wtf)
             V.upwindF_x[tsi], V.upwindF_y[tsi], V.upwindF_z[tsi] = upwindF
 
             
@@ -503,7 +503,10 @@ class Agent():
         for name in self.metadata['kinematic_vals']+self.metadata['forces']: #['velocity', 'acceleration', 'biasF', 'wallRepulsiveF', 'upwindF', 'stimF']
             # adds attribute to V
             x_component, y_component = getattr(V, name+'_x'), getattr(V, name+'_y')
-            setattr(V, name+'_xy_theta', np.arctan(y_component/x_component))
+            angle = np.arctan2(y_component, x_component)
+            angle[angle<0] += 2*np.pi # get vals b/w [0,2pi]
+#            print angle
+            setattr(V, name+'_xy_theta', angle)
             setattr(V, name+'_xy_mag', np.sqrt((y_component)**2 + (x_component)**2))
         
         return V

@@ -85,7 +85,7 @@ def gen_symm_vecs(dims):
     return ends  # vector
 
 
-def upwindBiasForce(wtf, upwind_direction=0, dim=2):
+def upwindBiasForce(wtf, upwind_direction=0.):
     """Biases the agent to fly upwind. Constant push with strength wtf
     
     [formerly]: Picks the direction +- pi/2 rads from
@@ -98,19 +98,10 @@ def upwindBiasForce(wtf, upwind_direction=0, dim=2):
     Returns:
         upwind bias force x and y components as an array
     """
-    if dim == 2:
-        print "crap!"
-        if wtf == None:
-            return [0, 0]
-        else:
-            return [wtf, 0]  # wf is constant, directly to right
-    elif dim == 3:
-        if wtf == None:
-            return [0, 0, 0]
-        else:
-            return [wtf, 0, 0]  # wf is constant, directly to right
+    if wtf == None:
+        return [0., 0., 0.]
     else:
-        raise NotImplementedError('wind bias only works in 2D right now!')
+        return [wtf, 0., 0.]  # wf is constant, directly to right
 
 
 #def wall_force_field(current_pos, current_velo, wallF, wallX_pos=[0., 1.], wallY_pos=[-0.15, 0.15]):
