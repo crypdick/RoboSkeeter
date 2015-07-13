@@ -167,19 +167,22 @@ def stateHistograms(ensemble, metadata, plot_kwargs=None, titleappend='', upw_en
     # X pos
     xpos_min, xpos_max = 0.25, .85
     xpos_counts, xpos_bins = np.histogram(ensemble['position_x'], bins=np.linspace(xpos_min, xpos_max, (xpos_max-xpos_min) / pos_binwidth))
-    xpos_counts_n = xpos_counts.astype(int) / float(xpos_counts.size)
-    axs[0].plot(xpos_bins[:-1]+pos_binwidth/2, xpos_counts_n, lw=2, label = "Full")
-    axs[0].bar(xpos_bins[:-1], xpos_counts_n, xpos_bins[1]-xpos_bins[0], facecolor='blue', linewidth=0, alpha=0.1)
+    xpos_counts = xpos_counts.astype(float)
+    xpos_counts_norm = xpos_counts / xpos_counts.sum()
+    axs[0].plot(xpos_bins[:-1]+pos_binwidth/2, xpos_counts_norm, lw=2, label = "Full")
+    axs[0].bar(xpos_bins[:-1], xpos_counts_norm, xpos_bins[1]-xpos_bins[0], facecolor='blue', linewidth=0, alpha=0.1)
     if type(downw_ensemble) != str:
         xpos_counts, xpos_bins = np.histogram(downw_ensemble['position_x'], bins=np.linspace(xpos_min, xpos_max, (xpos_max-xpos_min) / pos_binwidth))
-        xpos_counts_n = xpos_counts.astype(int) / float(xpos_counts.size)
-        axs[0].plot(xpos_bins[:-1]+pos_binwidth/2, xpos_counts_n, lw=2, label = "Downwind")
-        axs[0].bar(xpos_bins[:-1], xpos_counts_n, xpos_bins[1]-xpos_bins[0], facecolor='blue', linewidth=0, alpha=0.1)
+        xpos_counts = xpos_counts.astype(float)
+        xpos_counts_norm = xpos_counts / xpos_counts.sum()
+        axs[0].plot(xpos_bins[:-1]+pos_binwidth/2, xpos_counts_norm, lw=2, label = "Downwind")
+        axs[0].bar(xpos_bins[:-1], xpos_counts_norm, xpos_bins[1]-xpos_bins[0], facecolor='blue', linewidth=0, alpha=0.1)
     if type(upw_ensemble) != str:
         xpos_counts, xpos_bins = np.histogram(upw_ensemble['position_x'], bins=np.linspace(xpos_min, xpos_max, (xpos_max-xpos_min) / pos_binwidth))
-        xpos_counts_n = xpos_counts.astype(int) / float(xpos_counts.size)
-        axs[0].plot(xpos_bins[:-1]+pos_binwidth/2, xpos_counts_n, lw=2, label = "Upwind")
-        axs[0].bar(xpos_bins[:-1], xpos_counts_n, xpos_bins[1]-xpos_bins[0], facecolor='blue', linewidth=0, alpha=0.1)
+        xpos_counts = xpos_counts.astype(float)
+        xpos_counts_norm = xpos_counts/ xpos_counts.sum()
+        axs[0].plot(xpos_bins[:-1]+pos_binwidth/2, xpos_counts_norm, lw=2, label = "Upwind")
+        axs[0].bar(xpos_bins[:-1], xpos_counts_norm, xpos_bins[1]-xpos_bins[0], facecolor='blue', linewidth=0, alpha=0.1)
         axs[0].legend()
     axs[0].set_title("Upwind ($x$) Position Distributions", fontsize=12)
     axs[0].set_xlim(xpos_min+pos_binwidth/2, xpos_max-pos_binwidth/2)
@@ -189,22 +192,25 @@ def stateHistograms(ensemble, metadata, plot_kwargs=None, titleappend='', upw_en
     # Y pos
     ypos_min, ypos_max = -0.127, 0.127
     ypos_counts, ypos_bins = np.histogram(ensemble['position_y'], bins=np.linspace(ypos_min, ypos_max, (ypos_max-ypos_min)/pos_binwidth))
-    ypos_counts_n = ypos_counts/ ypos_counts.astype(float).sum()
-    axs[1].plot(ypos_bins[:-1]+pos_binwidth/2, ypos_counts_n, lw=2, label = "Full")
+    ypos_counts = ypos_counts.astype(float)
+    ypos_counts_norm = ypos_counts/ ypos_counts.sum()
+    axs[1].plot(ypos_bins[:-1]+pos_binwidth/2, ypos_counts_norm, lw=2, label = "Full")
     axs[1].set_xlim(ypos_min+pos_binwidth/2, ypos_max-pos_binwidth/2)  # hack to hide gaps
-    axs[1].fill_between(ypos_bins[:-1]+pos_binwidth/2, 0, ypos_counts_n, facecolor='blue', alpha=0.1)
+    axs[1].fill_between(ypos_bins[:-1]+pos_binwidth/2, 0, ypos_counts_norm, facecolor='blue', alpha=0.1)
     if type(downw_ensemble) != str: # TODO: is this alright with 3D flights?
         ypos_counts, ypos_bins = np.histogram(downw_ensemble['position_y'], bins=np.linspace(ypos_min, ypos_max, (ypos_max-ypos_min)/pos_binwidth))
-        ypos_counts_n = ypos_counts/ ypos_counts.astype(float).sum()
-        axs[1].plot(ypos_bins[:-1]+pos_binwidth/2, ypos_counts_n, lw=2, label = "Full")
+        ypos_counts = ypos_counts.astype(float)
+        ypos_counts_norm = ypos_counts/ ypos_counts.sum()
+        axs[1].plot(ypos_bins[:-1]+pos_binwidth/2, ypos_counts_norm, lw=2, label = "Full")
         axs[1].set_xlim(ypos_min+pos_binwidth/2, ypos_max-pos_binwidth/2)  # hack to hide gaps
-        axs[1].fill_between(ypos_bins[:-1]+pos_binwidth/2, 0, ypos_counts_n, facecolor='blue', alpha=0.1)
+        axs[1].fill_between(ypos_bins[:-1]+pos_binwidth/2, 0, ypos_counts_norm, facecolor='blue', alpha=0.1)
     if type(upw_ensemble) != str:
         ypos_counts, ypos_bins = np.histogram(upw_ensemble['position_y'], bins=np.linspace(ypos_min, ypos_max, (ypos_max-ypos_min)/pos_binwidth))
-        ypos_counts_n = ypos_counts/ ypos_counts.astype(float).sum()
-        axs[1].plot(ypos_bins[:-1]+pos_binwidth/2, ypos_counts_n, lw=2, label = "Full")
+        ypos_counts = ypos_counts.astype(float)
+        ypos_counts_norm = ypos_counts/ ypos_counts.sum()
+        axs[1].plot(ypos_bins[:-1]+pos_binwidth/2, ypos_counts_norm, lw=2, label = "Full")
         axs[1].set_xlim(ypos_min+pos_binwidth/2, ypos_max-pos_binwidth/2)  # hack to hide gaps
-        axs[1].fill_between(ypos_bins[:-1]+pos_binwidth/2, 0, ypos_counts_n, facecolor='blue', alpha=0.1)
+        axs[1].fill_between(ypos_bins[:-1]+pos_binwidth/2, 0, ypos_counts_norm, facecolor='blue', alpha=0.1)
         axs[1].legend()
     axs[1].set_title("Cross-wind ($y$) Position Distributions")
     axs[1].set_xlabel("Position ($m$)")
@@ -213,22 +219,25 @@ def stateHistograms(ensemble, metadata, plot_kwargs=None, titleappend='', upw_en
 #    Z 
     zpos_min, zpos_max = 0, 0.254
     zpos_counts, zpos_bins = np.histogram(ensemble['position_z'], bins=np.linspace(zpos_min, zpos_max, (zpos_max-zpos_min)/pos_binwidth))
-    zpos_counts_n = zpos_counts/ zpos_counts.astype(float).sum()
-    axs[2].plot(zpos_bins[:-1]+pos_binwidth/2, zpos_counts_n, lw=2, label = "Full")
+    zpos_counts = zpos_counts.astype(float)
+    zpos_counts_norm = zpos_counts/ zpos_counts.sum()
+    axs[2].plot(zpos_bins[:-1]+pos_binwidth/2, zpos_counts_norm, lw=2, label = "Full")
     axs[2].set_xlim(zpos_min+pos_binwidth/2, zpos_max-pos_binwidth/2)  # hack to hide gaps
-    axs[2].fill_between(zpos_bins[:-1]+pos_binwidth/2, 0, zpos_counts_n, facecolor='blue', alpha=0.1)
+    axs[2].fill_between(zpos_bins[:-1]+pos_binwidth/2, 0, zpos_counts_norm, facecolor='blue', alpha=0.1)
     if type(downw_ensemble) != str:
         zpos_counts, zpos_bins = np.histogram(downw_ensemble['position_y'], bins=np.linspace(zpos_min, zpos_max, (zpos_max-zpos_min)/pos_binwidth))
-        zpos_counts_n = zpos_counts/ zpos_counts.astype(float).sum()
-        axs[2].plot(zpos_bins[:-1]+pos_binwidth/2, zpos_counts_n, lw=2, label = "Full")
+        zpos_counts = zpos_counts.astype(float)
+        zpos_counts_norm = zpos_counts/ zpos_counts.sum()
+        axs[2].plot(zpos_bins[:-1]+pos_binwidth/2, zpos_counts_norm, lw=2, label = "Full")
         axs[2].set_xlim(zpos_min+pos_binwidth/2, zpos_max-pos_binwidth/2)  # hack to hide gaps
-        axs[2].fill_between(zpos_bins[:-1]+pos_binwidth/2, 0, zpos_counts_n, facecolor='blue', alpha=0.1)
+        axs[2].fill_between(zpos_bins[:-1]+pos_binwidth/2, 0, zpos_counts_norm, facecolor='blue', alpha=0.1)
     if type(upw_ensemble) != str:
         zpos_counts, zpos_bins = np.histogram(upw_ensemble['position_y'], bins=np.linspace(zpos_min, zpos_max, (zpos_max-zpos_min)/pos_binwidth))
-        zpos_counts_n = zpos_counts/ zpos_counts.astype(float).sum()
-        axs[2].plot(zpos_bins[:-1]+pos_binwidth/2, zpos_counts_n, lw=2, label = "Full")
+        zpos_counts = zpos_counts.astype(float)
+        zpos_counts_norm = zpos_counts/ zpos_counts.sum()
+        axs[2].plot(zpos_bins[:-1]+pos_binwidth/2, zpos_counts_norm, lw=2, label = "Full")
         axs[2].set_xlim(zpos_min+pos_binwidth/2, zpos_max-pos_binwidth/2)  # hack to hide gaps
-        axs[2].fill_between(zpos_bins[:-1]+pos_binwidth/2, 0, zpos_counts_n, facecolor='blue', alpha=0.1)
+        axs[2].fill_between(zpos_bins[:-1]+pos_binwidth/2, 0, zpos_counts_norm, facecolor='blue', alpha=0.1)
         axs[2].legend()
     axs[2].set_title("Elevation ($z$) Position Distributions")
     axs[2].set_xlabel("Position ($m$)")
@@ -240,17 +249,20 @@ def stateHistograms(ensemble, metadata, plot_kwargs=None, titleappend='', upw_en
     
     # vx component
     vx_counts, vx_bins = np.histogram(ensemble['velocity_x'], bins=np.linspace(vmin, vmax, (vmax-vmin)/velo_bindwidth))
-    vx_counts_n = vx_counts / vx_counts.astype(float).sum()
+    vx_counts = vx_counts.astype(float)
+    vx_counts_n = vx_counts / vx_counts.sum()
     axs[3].plot(vx_bins[:-1], vx_counts_n, label="$\dot{x}$")
     axs[3].fill_between(vx_bins[:-1], 0, vx_counts_n, facecolor='blue', alpha=0.1)
     # vy component
     vy_counts, vy_bins = np.histogram(ensemble['velocity_y'], bins=np.linspace(vmin, vmax, (vmax-vmin)/velo_bindwidth))
-    vy_counts_n= vy_counts / vy_counts.astype(float).sum()
+    vy_counts = vy_counts.astype(float)
+    vy_counts_n= vy_counts / vy_counts.sum()
     axs[3].plot(vy_bins[:-1], vy_counts_n, label="$\dot{y}$")
     axs[3].fill_between(vy_bins[:-1], 0, vy_counts_n, facecolor='green', alpha=0.1)
     # vz component
     vz_counts, vz_bins = np.histogram(ensemble['velocity_z'], bins=np.linspace(vmin, vmax, (vmax-vmin)/velo_bindwidth))
-    vz_counts_n= vz_counts / vz_counts.astype(float).sum()
+    vz_counts = vz_counts.astype(float)
+    vz_counts_n= vz_counts / vz_counts.sum()
     axs[3].plot(vz_bins[:-1], vz_counts_n, label="$\dot{z}$")
     axs[3].fill_between(vz_bins[:-1], 0, vz_counts_n, facecolor='red', alpha=0.1)
     # |v|
@@ -259,7 +271,8 @@ def stateHistograms(ensemble, metadata, plot_kwargs=None, titleappend='', upw_en
     for vector in abs_velo_vectors:
         velo_all_magn.append(np.linalg.norm(vector))
     vabs_counts, vabs_bins = np.histogram(velo_all_magn, bins=np.linspace(vmin, vmax, (vmax-vmin)/velo_bindwidth))
-    vabs_counts_n = vabs_counts / vabs_counts.astype(float).sum()
+    vabs_counts = vabs_counts.astype(float)
+    vabs_counts_n = vabs_counts / vabs_counts.sum()
     axs[3].plot(vabs_bins[:-1], vabs_counts_n, label='$|\mathbf{v}|$', color=sns.desaturate("black", .4), lw=2)
     axs[3].fill_between(vabs_bins[:-1], 0, vabs_counts_n, facecolor='yellow', alpha=0.1)
     
@@ -276,17 +289,20 @@ def stateHistograms(ensemble, metadata, plot_kwargs=None, titleappend='', upw_en
     
     # ax component
     ax_counts, ax_bins = np.histogram(ensemble['acceleration_x'], bins=np.linspace(amin, amax, (amax-amin)/accel_binwidth))
-    ax_counts_n = ax_counts / ax_counts.astype(float).sum()
+    ax_counts = ax_counts.astype(float)
+    ax_counts_n = ax_counts / ax_counts.sum()
     axs[4].plot(ax_bins[:-1], ax_counts_n, label="$\ddot{x}$", lw=2)
     axs[4].fill_between(ax_bins[:-1], 0, ax_counts_n, facecolor='blue', alpha=0.1)
     # ay component
     ay_counts, ay_bins = np.histogram(ensemble['acceleration_y'], bins=np.linspace(amin, amax, (amax-amin)/accel_binwidth))
-    ay_counts_n = ay_counts / ay_counts.astype(float).sum()
+    ay_counts = ay_counts.astype(float)
+    ay_counts_n = ay_counts / ay_counts.sum()
     axs[4].plot(ay_bins[:-1], ay_counts_n, label="$\ddot{y}$", lw=2)
     axs[4].fill_between(ay_bins[:-1], 0, ay_counts_n, facecolor='green', alpha=0.1)
     # az component
     az_counts, az_bins = np.histogram(ensemble['acceleration_z'], bins=np.linspace(amin, amax, (amax-amin)/accel_binwidth))
-    az_counts_n = az_counts / az_counts.astype(float).sum()
+    az_counts = az_counts.astype(float)
+    az_counts_n = az_counts / az_counts.sum()
     axs[4].plot(az_bins[:-1], az_counts_n, label="$\ddot{z}$", lw=2)
     axs[4].fill_between(az_bins[:-1], 0, az_counts_n, facecolor='red', alpha=0.1)
     # |a|
@@ -295,7 +311,8 @@ def stateHistograms(ensemble, metadata, plot_kwargs=None, titleappend='', upw_en
     for vector in abs_accel_vectors:
         accel_all_magn.append(np.linalg.norm(vector))
     aabs_counts, aabs_bins = np.histogram(accel_all_magn, bins=np.linspace(amin, amax, (amax-amin)/accel_binwidth))
-    aabs_counts_n = aabs_counts/ aabs_counts.astype(float).sum()
+    aabs_counts = aabs_counts.astype(float)
+    aabs_counts_n = aabs_counts/ aabs_counts.sum()
     axs[4].plot(aabs_bins[:-1], aabs_counts_n, label='$|\mathbf{a}|$', color=sns.desaturate("black", .4), lw=2)
     axs[4].fill_between(aabs_bins[:-1], 0, aabs_counts_n, facecolor='yellow', alpha=0.1)
     axs[4].set_title("Acceleration Distribution")
@@ -307,7 +324,7 @@ def stateHistograms(ensemble, metadata, plot_kwargs=None, titleappend='', upw_en
     plt.savefig("./figs/Agent Distributions b {beta},f {rf},wf {wtf},,N {total_trajectories}.svg".format(beta=metadata['beta'], rf=metadata['biasF_scale'], wtf=metadata['wtf'], total_trajectories=metadata['total_trajectories']), format='svg')
     plt.show()
     
-#    return xpos_counts_n, ypos_bins, ypos_counts, ypos_counts_n, vx_counts_n
+#    return xpos_counts_norm, ypos_bins, ypos_counts, ypos_counts_norm, vx_counts_n
 
 
 def force_violin(ensemble, metadata):
@@ -375,44 +392,44 @@ def velo_compass_histogram(ensemble, metadata, kind):
             bin_mag_avgs[i] = bin_mag_avg
 
 
-def compass_histogram(vector_name, ensemble, metadata, kind='bin_average'):
+def compass_histogram(vector_name, ensemble, metadata, kind='avg_mag_per_bin', title='', fname=''):
     N = 40
     roundbins = np.linspace(0.0, 2 * np.pi, N)
     width = (2*np.pi) / N
     
     
-    if kind == 'global_normalize':
-        ensemble['fraction'] = ensemble['magnitude'] / ensemble['magnitude'].sum()
+#    if kind == 'global_normalize':
+#        ensemble['fraction'] = ensemble['magnitude'] / ensemble['magnitude'].sum()
+#    
+#        values, bin_edges = np.histogram(ensemble['angle'], weights = ensemble['fraction'], bins = roundbins)
+#        
+#        compassfig = plt.figure()
+#        ax = plt.subplot(111, polar=True)
+#        
+#        ax.bar(bin_edges[:-1], values, width = width, linewidth = 0)
+#        plt.xlim(min(bin_edges), max(bin_edges))
+#        
+#        # switch to radian labels
+#        xT = plt.xticks()[0]
+#        xL=['0',r'$\frac{\pi}{4}$',r'$\frac{\pi}{2}$',r'$\frac{3\pi}{4}$',\
+#            r'$\pi$',r'$\frac{5\pi}{4}$',r'$\frac{3\pi}{2}$',r'$\frac{7\pi}{4}$']
+#        plt.xticks(xT, xL, size = 20)
+#        plt.title("Agent velocities 0.25 < x < 0.5, center repulsion on (n = {})".format(metadata['total_trajectories']), y=1.1)
+#        plt.savefig("./figs/Compass plot , center repulsion on_ beta{beta}_rf{biasF_scale}_wf{wtf}_N{total_trajectories}.svg".format(\
+#            beta=metadata['beta'], biasF_scale=metadata['biasF_scale'], wtf=metadata['wtf'], total_trajectories=metadata['total_trajectories']), format="svg")
     
-        values, bin_edges = np.histogram(ensemble['angle'], weights = ensemble['fraction'], bins = roundbins)
-        
-        compassfig = plt.figure()
-        ax = plt.subplot(111, polar=True)
-        
-        ax.bar(bin_edges[:-1], values, width = width, linewidth = 0)
-        plt.xlim(min(bin_edges), max(bin_edges))
-        
-        # switch to radian labels
-        xT = plt.xticks()[0]
-        xL=['0',r'$\frac{\pi}{4}$',r'$\frac{\pi}{2}$',r'$\frac{3\pi}{4}$',\
-            r'$\pi$',r'$\frac{5\pi}{4}$',r'$\frac{3\pi}{2}$',r'$\frac{7\pi}{4}$']
-        plt.xticks(xT, xL, size = 20)
-        plt.title("Agent velocities 0.25 < x < 0.5, center repulsion on (n = {})".format(metadata['total_trajectories']), y=1.1)
-        plt.savefig("./figs/Velocity compass, center repulsion on_ beta{beta}_rf{biasF_scale}_wf{wtf}_N{total_trajectories}.svg".format(\
-            beta=metadata['beta'], biasF_scale=metadata['biasF_scale'], wtf=metadata['wtf'], total_trajectories=metadata['total_trajectories']), format="svg")
-    
-    if kind == 'bin_average':
+    if kind == 'avg_mag_per_bin':
         """for each bin, we want the average magnitude
         select bin range with pandas,
-        sum(magnitude) / n_vectors
         """
         bin_mag_avgs = np.zeros(N-1)
         for i in range(N-1): # for bin
             # select all magnitudes in the bin
-            bin_magnitudes = ensemble.loc[((ensemble['angle'] > roundbins[i]) & (ensemble['angle'] < roundbins[i+1])), ['magnitude']]
+            bin_magnitudes = ensemble.loc[((ensemble['angle'] >= roundbins[i]) & (ensemble['angle'] < roundbins[i+1])), ['magnitude']]
+            # find their mean
             bin_mag_avg = bin_magnitudes.sum() / bin_magnitudes.size
             bin_mag_avgs[i] = bin_mag_avg
-        
+
         compassfig = plt.figure()
         ax = plt.subplot(111, polar=True)
         
@@ -424,9 +441,8 @@ def compass_histogram(vector_name, ensemble, metadata, kind='bin_average'):
         xL=['0',r'$\frac{\pi}{4}$',r'$\frac{\pi}{2}$',r'$\frac{3\pi}{4}$',\
             r'$\pi$',r'$\frac{5\pi}{4}$',r'$\frac{3\pi}{2}$',r'$\frac{7\pi}{4}$']
         plt.xticks(xT, xL, size = 20)
-        plt.title("Avg. {name} vector magnitude in xy plane (n = {N})".format(N = metadata['total_trajectories'], name=vector_name))
-        plt.savefig("./figs/Avg mag distribution of {name}_xy compass _beta{beta}_bF{biasF_scale}_wf{wtf}_N{total_trajectories}.svg".format(\
-            beta=metadata['beta'], biasF_scale=metadata['biasF_scale'], wtf=metadata['wtf'], total_trajectories=metadata['total_trajectories'], name=vector_name), format="svg")
+        plt.title(title)
+        plt.savefig("./figs/Compass {fname}.svg".format(fname=fname), format="svg")
     
         
 
@@ -507,4 +523,4 @@ def plot3D_trajectory(ensemble, metadata, plot_kwargs=None):
 #    ensemble, metadata = trajectory_stats.main()
 #        
 #    trajectory_plots(ensemble, metadata, heatmap=True, trajectoryPlot = True)
-#    xpos_counts_n, ypos_bins, ypos_counts, ypos_counts_n, vx_counts_n = stateHistograms(ensemble, metadata)
+#    xpos_counts_norm, ypos_bins, ypos_counts, ypos_counts_norm, vx_counts_n = stateHistograms(ensemble, metadata)
