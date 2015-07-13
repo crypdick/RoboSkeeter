@@ -43,7 +43,7 @@ class Trajectory():
     def __init__(self):
         self.ensemble = pd.DataFrame()
         self.agent_info = {}
-        
+
         
     def append_ensemble(self, arraydict):
         trajectory = pd.DataFrame(arraydict)
@@ -76,7 +76,7 @@ class Trajectory():
         plotting_funcs3D.stateHistograms(ensemble, self.agent_info, titleappend)
         
         
-    def plot_door_velocity_compass(self, region='door', kind='bin_average'):
+    def plot_door_velocity_compass(self, region='door', kind='avg_mag_per_bin'):
         
         if region == 'door':
             """plot the area """
@@ -85,18 +85,41 @@ class Trajectory():
             ensemble = self.ensemble
             
         plotting_funcs3D.velo_compass_histogram(ensemble, self.agent_info, kind)
-        
-    def plot_compass(self, kind='bin_average'):
+    
+
+    def plot_kinematic_compass(self, kind='avg_mag_per_bin', data=None, flags=''):
+        if data is None:
+            data = self.ensemble
         for vector_name in self.agent_info['forces']+self.agent_info['kinematic_vals']:
             # from enemble, selec mag and theta
-            ensemble = eval("self.ensemble[['"+vector_name+"_xy_mag', '"+vector_name+"_xy_theta']]")
+            df = eval("data[['"+vector_name+"_xy_mag', '"+vector_name+"_xy_theta']]")
             # rename col to play nice w plotting function
-            ensemble.rename(columns={vector_name+'_xy_mag': 'magnitude', vector_name+'_xy_theta': 'angle'}, inplace=True)
-            plotting_funcs3D.compass_histogram(vector_name, ensemble, self.agent_info)
+            df.rename(columns={vector_name+'_xy_mag': 'magnitude', vector_name+'_xy_theta': 'angle'}, inplace=True)
+            
+            title = "{flag} Avg. {name} vector magnitude in xy plane (n = {N})".format(\
+            N = self.agent_info['total_trajectories'], name=vector_name,\
+            flag=flags)
+            fname = "{flag} Avg mag distribution of {name}_xy compass _beta{beta}_bF{biasF_scale}_wf{wtf}_N{total_trajectories}".format(\
+            beta=self.agent_info['beta'], biasF_scale=self.agent_info['biasF_scale'],
+            wtf=self.agent_info['wtf'], total_trajectories=self.agent_info['total_trajectories'],
+            name=vector_name, flag=flags)
+  
+            
+            plotting_funcs3D.compass_histogram(vector_name, df, self.agent_info, title=title, fname=fname)
 #            magnitudes, thetas = getattr(self.ensemble, name+).values, getattr(V, name+'_xy_theta').values
 #            plotting_funcs3D.compass_histogram(force, magnitudes, thetas, self.agent_info)
-            
-#        
+       
+    def plot_plume_triggered_compass(self, kind='avg_mag_per_bin'):
+        behaviors = ['searching', 'entering', 'staying', 'Left_plume, exit left',
+            'Left_plume, exit right', "Right_plume, exit left", "Right_plume, exit right"]
+        for behavior in behaviors:
+            ensemble = self.ensemble.loc[self.ensemble.plume_experience == behavior]
+            if ensemble.empty is True:
+                print "no data for ", behavior
+                pass
+            else:
+#                print ensemble
+                self.plot_kinematic_compass(data=ensemble, flags='Plume Triggered {}'.format(behavior))
         
         
     def plot_single_3Dtrajectory(self, trajectory_i=0):

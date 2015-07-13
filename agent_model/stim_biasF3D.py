@@ -54,13 +54,12 @@ def stimF_direction(cross_status, veloy):
     return None
 
 
-def stimF(stimF_strength, dir=None):
+def stimF(experience, stimF_strength):
     """given force direction and strength, return a force vector
     
     TODO: add forces for other directions
     """
-    if dir == None:
-        return [0, 0, 0]
+    return [0., 0., 0.]
    
 #def main velocity_y, stimF_strength, past_state=False, detection_type='absolute'):
 #    veloy = None
