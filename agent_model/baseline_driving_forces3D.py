@@ -101,8 +101,7 @@ def upwindBiasForce(wtf, upwind_direction=0.):
     if wtf == None:
         return [0., 0., 0.]
     else:
-        return [wtf, 0., 0.]  # wf is constant, directly to right
-
+        return [wtf, 0., 0.]  # wf is constant, directly upwind
 
 #def wall_force_field(current_pos, current_velo, wallF, wallX_pos=[0., 1.], wallY_pos=[-0.15, 0.15]):
 #    """If agent gets too close to wall, inflict it with repulsive forces as a function of how close it is to the wall and it's speed towards the wall.
@@ -162,8 +161,8 @@ def repulsionF(position, repulsion_funcs, wallF_params):
     
     # [0] to discard error term
     repulsionF =  scalar * np.array([slope_rep_x * quad(repulsion_x, pos_x-intd, pos_x+intd)[0], \
-        slope_rep_y * quad(repulsion_y, pos_y-intd, pos_y+intd)[0],\
-        slope_rep_z * quad(repulsion_z, pos_z-intd, pos_z+intd)[0]])
+        scalar * slope_rep_y * quad(repulsion_y, pos_y-intd, pos_y+intd)[0],\
+        scalar * slope_rep_z * quad(repulsion_z, pos_z-intd, pos_z+intd)[0]])
         
 #    print "pos", position
 #    print "repF", repulsionF
