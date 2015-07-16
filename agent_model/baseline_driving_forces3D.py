@@ -153,16 +153,16 @@ def repulsionF(position, repulsion_funcs, wallF_params):
     directions = []
     for slope in [slope_rep_x, slope_rep_y, slope_rep_z]:
         if slope < 0:
-            directions.append(1)
+            directions.append(1.)
         elif slope > 0:
-            directions.append(-1)
+            directions.append(-1.)
         else: # this shouldn't happen
-            directions.append(0)
+            directions.append(0.)
     
     # [0] to discard error term
-    repulsionF =  scalar * np.array([slope_rep_x * quad(repulsion_x, pos_x-intd, pos_x+intd)[0], \
-        scalar * slope_rep_y * quad(repulsion_y, pos_y-intd, pos_y+intd)[0],\
-        scalar * slope_rep_z * quad(repulsion_z, pos_z-intd, pos_z+intd)[0]])
+    repulsionF =  scalar * np.array([directions[0] * quad(repulsion_x, pos_x-intd, pos_x+intd)[0], \
+        scalar * directions[1] * quad(repulsion_y, pos_y-intd, pos_y+intd)[0],\
+        scalar * directions[2] * quad(repulsion_z, pos_z-intd, pos_z+intd)[0]])
         
 #    print "pos", position
 #    print "repF", repulsionF
