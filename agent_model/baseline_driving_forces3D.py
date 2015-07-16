@@ -23,9 +23,9 @@ def bias_force(rf, bias='uniform'):
         random force x and y components (array)
     """
     mag_thresh = 3e-6
-    # FIXME: 3d symmetric
+    # TODO fit to Sharri's data instead
     ends = gen_symm_vecs(3)
-    # following params were fitted from the Dickinson fligt data
+    # following params were fitted from the Dickinson flight data
     mu = 0.600023812816
     sigma = 0.719736466122
     scale = 1.82216219069

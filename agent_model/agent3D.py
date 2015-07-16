@@ -109,12 +109,13 @@ def place_agent(agent_pos):
         # FIXME cage height
     else:
         raise Exception('invalid agent position specified')
-    
+
     
 def score_output(desired_output, output):
     """take the root mean square error of two kinematic distributions    
     """
     pass
+
 
 def solve_heading(velo_x, velo_y):
     theta = atan2(velo_y, velo_x)
@@ -581,7 +582,7 @@ class Object(object):
 
 if __name__ == '__main__':
     # wallF params
-    scalar = 1e-7
+    scalar = 1e-8
     
     wallF_params = [scalar]  #(4e-1, 1e-6, 1e-7, 250)
 

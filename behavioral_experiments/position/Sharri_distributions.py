@@ -23,7 +23,7 @@ for file in glob("*.csv"):
     abspath = os.path.abspath(file)
     filename, extension = os.path.splitext ( os.path.basename(abspath) )
     print abspath
-    arrays["{0}".format(filename)] = np.loadtxt(open(file, "rb"), delimiter=",")
+    arrays["{}".format(filename)] = np.loadtxt(open(file, "rb"), delimiter=",")
     
 # Plot!
 fig, axs = sns.plt.subplots(1, 1)#, tight_layout=True)
