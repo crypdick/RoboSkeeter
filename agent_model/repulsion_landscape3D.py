@@ -74,7 +74,7 @@ def z_dist(pos_z):
     # max 0.190997 at z=0.233635, scalar is therefore
     scalar = 1. / 0.190997
 
-    return (0.13083 * np.exp(-np.power(pos_z - 0.23437, 2.) / (np.power(0.0052473, 2.))) +
+    return scalar * (0.13083 * np.exp(-np.power(pos_z - 0.23437, 2.) / (np.power(0.0052473, 2.))) +
         0.086796 * np.exp(-np.power(pos_z - 0.2245, 2.) / (np.power(0.0132, 2.))) +
         0.036283 * np.exp(-np.power(pos_z - 0.19091, 2.) / (np.power(0.035445, 2.))))
 
@@ -135,8 +135,10 @@ def plot_landscape(BOUNDS):
             coords = np.linspace(BOUNDS[0], BOUNDS[1], resolution)
         elif i == 1:
             dim = 'y'
-            bounds = BOUNDS[2:4]
-            coords = np.linspace(BOUNDS[3], BOUNDS[2], resolution) # flip order to compensate for our convention
+            print BOUNDS
+            bounds = BOUNDS[2:4][::-1] # flip order to compensate for our convention
+            print bounds
+            coords = np.linspace(bounds[0], bounds[1], resolution) 
             coords = coords[::-1] # and re-reverse to get proper figures
         elif i == 2:
             dim = 'z'
