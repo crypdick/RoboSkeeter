@@ -137,8 +137,8 @@ def heatmaps(ensemble, metadata):
     #        if metadata['total_trajectories'] > 100:
     #            plt.cla()
     heatmap = ax.pcolormesh(xedges, yedges, probs, cmap=plt.cm.Oranges, vmin=0.)  # , vmax=.2)
-    if metadata['target_position'] is not None:
-        heaterCircle, detectCircle = draw_heaters(metadata['target_position'], metadata['detection_threshold'])
+    if metadata['heater_position'] is not None:
+        heaterCircle, detectCircle = draw_heaters(metadata['heater_position'], metadata['detection_threshold'])
         ax.add_artist(heaterCircle)
         ax.add_artist(detectCircle)
     #        #
@@ -274,7 +274,7 @@ def stateHistograms(
     axs[2].set_ylabel("Probability")
 
     ## Velo distributions
-    vmin, vmax = -1.0, 1.
+    vmin, vmax = -.7, .7
     velo_bindwidth = 0.02
 
     # vx component
@@ -319,7 +319,7 @@ def stateHistograms(
     ## Acceleration distributions
     #    accel_all = np.concatenate(accels, axis=0)
 
-    amin, amax = -10., 10
+    amin, amax = -4., 4.
     accel_binwidth = 0.2
 
     # ax component
