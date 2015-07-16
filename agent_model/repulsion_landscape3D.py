@@ -20,6 +20,7 @@ from scipy.integrate import quad
 INT_DIST = 0.003 / 2. # integratal distance in mm
 DX = 0.00001
 BOUNDS = [0.0, 1.0, 0.127, -0.127, 0., 0.254]
+SCALING = 9.5
 
 def x_dist(pos_x):
     # Up/downwind (x) repulsion # TODO: @Sharri this means that agent is pushed downwind by this force
@@ -28,13 +29,14 @@ def x_dist(pos_x):
     # where coefficients are -0.011364	0.015125
     return (-0.011364) * pos_x + 0.015125
 
+(total_area_x, err_x) = quad(x_dist, BOUNDS[0], BOUNDS[1])
+
 def x_prob(pos_x):
-    (total_area_x, err_x) = quad(x_dist, BOUNDS[0], BOUNDS[1])
     prob_pos_x = quad(x_dist, pos_x-INT_DIST, pos_x+INT_DIST)[0] / total_area_x
     return prob_pos_x
 
 def x_weight_fxn(pos_x):
-    return 1. - x_prob(pos_x)
+    return 1. - SCALING * x_prob(pos_x)
 
 def y_dist(pos_y):
     # Crosswind (y) repulsion
@@ -45,14 +47,15 @@ def y_dist(pos_y):
          -80641 * pos_y **6 + -204.09 * pos_y **5 + 1516.4 * pos_y **4 + -17.248 * pos_y **3
          + (-3.2367 * pos_y **2) + 0.16778 * pos_y + 0.0089941)
 
+(total_area_y, err_y) = quad(y_dist, BOUNDS[3], BOUNDS[2]) # boundaries +/- switched in our convention
+
 def y_prob(pos_y):
     # divide by its area to get normalized distribution
-    (total_area_y, err_y) = quad(y_dist, BOUNDS[3], BOUNDS[2]) # boundaries +/- switched in our convention
     prob_pos_y = quad(y_dist, pos_y-INT_DIST, pos_y+INT_DIST)[0] / total_area_y
     return prob_pos_y
 
 def y_weight_fxn(pos_y):
-    return 1. - y_prob(pos_y)
+    return 1. - SCALING * y_prob(pos_y)
 
 def z_dist(pos_z):
     # Elevation (z) repulsion
@@ -65,13 +68,14 @@ def z_dist(pos_z):
         0.086796 * np.exp(-np.power(pos_z - 0.2245, 2.) / (np.power(0.0132, 2.))) +
         0.036283 * np.exp(-np.power(pos_z - 0.19091, 2.) / (np.power(0.035445, 2.))))
 
+(total_area_z, err_z) = quad(z_dist, BOUNDS[4], BOUNDS[5])
+
 def z_prob(pos_z):
-    (total_area_z, err_z) = quad(z_dist, BOUNDS[4], BOUNDS[5])
     prob_pos_z = quad(z_dist, pos_z-INT_DIST, pos_z+INT_DIST)[0] / total_area_z
     return prob_pos_z
 
 def z_weight_fxn(pos_z):
-    return 1. - z_prob(pos_z)
+    return 1. - SCALING * z_prob(pos_z)
 
 def solve_direction(function, pos):
     """
@@ -80,9 +84,9 @@ def solve_direction(function, pos):
     :return: which direction to apply the repulsion force.
     """
     slope = deriv(function, pos, dx=DX)
-    if function.__name__ in ["y_prob", "y_dist"]:
-        # hack to fix slope calculation issues with our y dimension, which has a flipped sign convention
-        slope *= -1
+    # if function.__name__ in ["y_prob", "y_dist"]:
+    #     # hack to fix slope calculation issues with our y dimension, which has a flipped sign convention
+    #     slope *= -1
     if slope < 0:
         direction = -1.
     elif slope > 0:
@@ -102,9 +106,9 @@ def xyz_to_weights(xyz):
     """
     x, y, z = xyz
     x_weight, y_weight, z_weight = x_weight_fxn(x), y_weight_fxn(y), z_weight_fxn(z)
-    dir_x, dir_y, dir_z = solve_direction(x_prob(x)), solve_direction(y_prob(y)), solve_direction(z_prob(z))
+    dir_x, dir_y, dir_z = solve_direction(x_prob, x), solve_direction(y_prob, y), solve_direction(z_prob, z)
 
-    return [(x_weight, dir_x), (y_weight, dir_y), (z_weight, dir_z)]
+    return np.array([x_weight * dir_x, y_weight* dir_y, z_weight * dir_z])
 
 
 
@@ -139,12 +143,13 @@ def plot_landscape(BOUNDS):
         axarr[0].plot(coords, position_dist)
         axarr[0].set_xlim(*bounds)
         axarr[0].set_title("{} position distribution (model)".format(dim), fontsize = 14)
+        axarr[0].set_ylabel("Fit")
 
         # probability distributions
         axarr[1].plot(coords, probability_dist)
         axarr[1].set_title("{} probability distr landscape".format(dim), fontsize = 14)
         axarr[1].set_xlim(*bounds)
-        axarr[1].set_xlabel("Agent {} position (meters)".format(dim))
+        axarr[1].set_ylabel("P({} position)".format(dim))
 
         # weighting function
         axarr[2].plot(coords, scariness)
@@ -156,13 +161,13 @@ def plot_landscape(BOUNDS):
         
         # plot directions
         axarr[3].plot(coords, directions, lw=3, c='g')
-        axarr[3].set_title("{} direction (-slope of landscape)".format(dim), fontsize = 14)
+        axarr[3].set_title("Force direction (relative to +{})".format(dim), fontsize = 14)
         axarr[3].set_xlim(*bounds)
         axarr[3].set_ylim([-1,1])
         axarr[3].set_ylabel("Direction of the force".format(dim))
         axarr[3].xaxis.grid(True)
-        print "coords", coords
-        print directions
+
+        axarr[3].set_xlabel("Agent {} position (meters)".format(dim))# bottom lable of shared axis
         
         plt.tight_layout()
         
