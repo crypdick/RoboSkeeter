@@ -175,10 +175,10 @@ def stateHistograms(
         titleappend='',
         upw_ensemble="none",
         downw_ensemble="none"):
-    fig = plt.figure(5)  # , figsize=(9, 8))
+    statefig = plt.figure()  # , figsize=(9, 8))
     gs1 = gridspec.GridSpec(2, 3)
-    axs = [fig.add_subplot(ss) for ss in gs1]
-    fig.suptitle("Agent Model Flight Distributions" + titleappend, fontsize=14)
+    axs = [statefig.add_subplot(ss) for ss in gs1]
+    statefig.suptitle("Agent Model Flight Distributions" + titleappend, fontsize=14)
     # position distributions
     #    pos_all = np.concatenate(pos, axis=0)
     pos_binwidth = .01
@@ -299,10 +299,12 @@ def stateHistograms(
     axs[3].plot(vz_bins[:-1], vz_counts_n, label="$\dot{z}$")
     axs[3].fill_between(vz_bins[:-1], 0, vz_counts_n, facecolor='red', alpha=0.1)
     # |v|
-    abs_velo_vectors = np.array([ensemble.velocity_x.values, ensemble.velocity_y.values, ensemble.velocity_z.values]).T
-    velo_all_magn = []
-    for vector in abs_velo_vectors:
-        velo_all_magn.append(np.linalg.norm(vector))
+    velo_stack = np.vstack((ensemble.velocity_x.values, ensemble.velocity_y.values, ensemble.velocity_z.values))
+    velo_all_magn = np.linalg.norm(velo_stack, axis=0)
+    # abs_velo_vectors = np.array([ensemble.velocity_x.values, ensemble.velocity_y.values, ensemble.velocity_z.values]).T
+    # velo_all_magn = []
+    # for vector in abs_velo_vectors:
+    #     velo_all_magn.append(np.linalg.norm(vector))
     vabs_counts, vabs_bins = np.histogram(velo_all_magn, bins=np.linspace(vmin, vmax, (vmax - vmin) / velo_bindwidth))
     vabs_counts = vabs_counts.astype(float)
     vabs_counts_n = vabs_counts / vabs_counts.sum()
@@ -342,11 +344,13 @@ def stateHistograms(
     axs[4].plot(az_bins[:-1], az_counts_n, label="$\ddot{z}$", lw=2)
     axs[4].fill_between(az_bins[:-1], 0, az_counts_n, facecolor='red', alpha=0.1)
     # |a|
-    abs_accel_vectors = np.array(
-        [ensemble.acceleration_x.values, ensemble.acceleration_y.values, ensemble.acceleration_z.values]).T
-    accel_all_magn = []
-    for vector in abs_accel_vectors:
-        accel_all_magn.append(np.linalg.norm(vector))
+    accel_stack = np.vstack((ensemble.acceleration_x.values, ensemble.acceleration_y.values, ensemble.acceleration_z.values))
+    accel_all_magn = np.linalg.norm(accel_stack, axis=0)
+    # abs_accel_vectors = np.array(
+    #     [ensemble.acceleration_x.values, ensemble.acceleration_y.values, ensemble.acceleration_z.values]).T
+    # accel_all_magn = []
+    # for vector in abs_accel_vectors:
+    #     accel_all_magn.append(np.linalg.norm(vector))
     aabs_counts, aabs_bins = np.histogram(accel_all_magn, bins=np.linspace(amin, amax, (amax - amin) / accel_binwidth))
     aabs_counts = aabs_counts.astype(float)
     aabs_counts_n = aabs_counts / aabs_counts.sum()
@@ -357,7 +361,7 @@ def stateHistograms(
     axs[4].set_ylabel("Probability")
     axs[4].legend(fontsize=14)
 
-    gs1.tight_layout(fig, rect=[0, 0.03, 1, 0.95])  # overlapping text hack
+    gs1.tight_layout(statefig, rect=[0, 0.03, 1, 0.95])  # overlapping text hack
     plt.savefig(
         "./figs/Agent Distributions b {beta},f {rf},wf {wtf},,N {total_trajectories}.svg".format(beta=metadata['beta'],
                                                                                                  rf=metadata[
@@ -376,16 +380,17 @@ def stateHistograms(
 def force_violin(ensemble, metadata):
     ensembleF = ensemble.loc[
         (ensemble['position_x'] > 0.25) & (ensemble['position_x'] < 0.95), ['totalF_x', 'totalF_y', 'totalF_z',
-                                                                            'randF_x', 'randF_y', 'randF_z',
-                                                                            'upwindF_x', 'wallRepulsiveF_x',
-                                                                            'wallRepulsiveF_y',
-                                                                            'wallRepulsiveF_z']]  # TODO 'stimF_x', 'stimF_y'
+                                                                            'biasF_x', 'biasF_y', 'biasF_z',
+                                                                            'upwindF_x',
+                                                                            'wallRepulsiveF_x', 'wallRepulsiveF_y',
+                                                                            'wallRepulsiveF_z',
+                                                                            'stimF_x', 'stimF_y']] #, 'stimF_z']]== Nans
     # plot Forces
     #    f, axes = plt.subplots(2, 2, figsize=(9, 9), sharex=True, sharey=True)
     ##    forcefig = plt.figure(5, figsize=(9, 8))
     ##    gs2 = gridspec.GridSpec(2, 2)
     ##    Faxs = [fig.add_subplot(ss) for ss in gs2]
-    forcefig = plt.figure(5)
+    forcefig = plt.figure()
     #    Faxs1 = forcefig.add_subplot(211)
     #    Faxs2 = forcefig.add_subplot(212)
     sns.violinplot(ensembleF, color="Paired", lw=2, alpha=0.7)
