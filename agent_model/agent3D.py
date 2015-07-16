@@ -163,11 +163,22 @@ class Agent():
         Agent object
 
     """
-    def __init__(self, Trajectory_object, Plume_object, agent_pos='door', v0_stdev=0.01, Tmax=15, dt=0.01,\
-        heater='left', beta=1e-5, biasF_scale=4e-06, wtf=7e-07, stimF_str=1e-4, \
-        detect_thresh=0.023175, bounded=True, \
-        wallF_params=(4e-1, 1e-6, 1e-7, 250, "walls_only"), k=0.):
-        """ Initialize object with instant variables, and trigger other funcs. 
+    def __init__(self,
+                 Trajectory_object,
+                 Plume_object,
+                 agent_pos='door',
+                 v0_stdev=0.01,
+                 Tmax=15,
+                 dt=0.01,
+                 heater='left',
+                 beta=1e-5,
+                 biasF_scale=4e-06,
+                 wtf=7e-07,
+                 stimF_str=1e-4,
+                 detect_thresh=0.023175, bounded=True, \
+                 wallF_params=(4e-1, 1e-6, 1e-7, 250, "walls_only"),
+                 k=0.):
+        """ Initialize object with instant variables, and trigger other funcs.
         """
         
         self.boundary = [0.0, 1.0, 0.127, -0.127, 0., 0.254]  # these are real dims of our wind tunnel
@@ -221,8 +232,8 @@ class Agent():
         self.trajectory_obj = Trajectory_object
         self.Plume_object = Plume_object
         
-        # create repulsion landscape
-        self._repulsion_funcs = repulsion_landscape3D.landscape(normed=True)
+        # # create repulsion landscape
+        # self._repulsion_funcs = repulsion_landscape3D.landscape(boundary=self.boundary)
 
 
     def fly(self, total_trajectories=1):
@@ -310,7 +321,8 @@ class Agent():
 #            _temperature[tsi] = self.Plume_object.temp_lookup([_position_x[tsi], _position_y[tsi]]) # depreciated
             
             # are we in the plume?
-            V.inPlume[tsi] = self.Plume_object.check_for_plume([V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]])
+            V.inPlume[tsi] = self.Plume_object.check_for_plume(
+                [V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]])
             
             # what is our behavior given our plume interactions thus far?
             if tsi == 0:
@@ -318,8 +330,8 @@ class Agent():
             else:
                 if V.plume_experience[tsi] is None: # need to find state
                     V.plume_experience[tsi] = self._check_crossing_state(tsi, V.inPlume, V.velocity_y[tsi-1])
-                    if V.plume_experience[tsi] in 'Left_plume, exit leftLeft_plume, exit right'\
-           'Right_plume, exit leftRight_plume, exit right':
+                    if V.plume_experience[tsi] in (
+                            'Left_plume, exit leftLeft_plume, exit rightRight_plume, exit leftRight_plume, exit right'):
                        try:
                             for i in range(PLUME_TRIGGER_TIME):
                                 V.plume_experience[tsi+i] = str(V.plume_experience[tsi])
@@ -341,10 +353,10 @@ class Agent():
             upwindF = baseline_driving_forces3D.upwindBiasForce(self.wtf)
             V.upwindF_x[tsi], V.upwindF_y[tsi], V.upwindF_z[tsi] = upwindF
 
-            
-            wallRepulsiveF = baseline_driving_forces3D.repulsionF(\
-                np.array([V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]]),\
-                self._repulsion_funcs, self.wallF_params)
+            wallRepulsiveF = self.wallF_params[0] * repulsion_landscape3D.xyz_to_weights([V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]])
+            # wallRepulsiveF = baseline_driving_forces3D.repulsionF(\
+            #     np.array([V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]]),\
+            #     self._repulsion_funcs, self.wallF_params)
             V.wallRepulsiveF_x[tsi], V.wallRepulsiveF_y[tsi], V.wallRepulsiveF_z[tsi] = wallRepulsiveF
             
 #            else:
@@ -448,7 +460,7 @@ class Agent():
                 # save screened candidate_pos to future position
             V.position_x[tsi+1], V.position_y[tsi+1], V.position_z[tsi+1] = candidate_pos
             
-            # solve final heading
+            # solve final heading #TODO: also solve zy?
             V.heading_angle[tsi] = solve_heading(V.velocity_y[tsi], V.velocity_x[tsi])
             # ... and angular velo
             if tsi == 0:
@@ -541,6 +553,7 @@ class Agent():
             
             
     def _calc_polar_kinematics(self, V):
+        # TODO: also solve for yz
 #        # linalg norm basically does sqrt( sum(x**2) )
 #        self.ensemble['magnitude'] = [np.linalg.norm(x) for x in self.ensemble.values]
 #        self.ensemble['angle'] = np.tan(self.ensemble['velocity_y'] / self.ensemble['velocity_x']) % (2*np.pi)
@@ -575,12 +588,24 @@ if __name__ == '__main__':
     # temperature plume
     myplume = plume3D.Plume()
     trajectories = trajectory3D.Trajectory() # instantiate empty trajectories object
-    myagent = Agent(trajectories, myplume, agent_pos="door", heater="left", v0_stdev=0.01, wtf=7e-07,\
-        biasF_scale=4e-05, stimF_str=1e-4, beta=1e-5, Tmax=15., dt=0.01, detect_thresh=0.023175, \
-        bounded=True, wallF_params=wallF_params)
-    myagent.fly(total_trajectories=30)
+    myagent = Agent(
+        trajectories,
+        myplume,
+        agent_pos="door",
+        heater="left",
+        v0_stdev=0.01,
+        wtf=7e-07,
+        biasF_scale=4e-05,
+        stimF_str=1e-4,
+        beta=1e-5,
+        Tmax=15.,
+        dt=0.01,
+        detect_thresh=0.023175,
+        bounded=True,
+        wallF_params=wallF_params)
+    myagent.fly(total_trajectories=1)
     
    
 #    trajectories.describe(plot_kwargs = {'trajectories':False, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_scatter':True, 'force_violin':True})
-#    trajectories.plot_single_3Dtrajectory()
+    trajectories.plot_single_3Dtrajectory()
     
