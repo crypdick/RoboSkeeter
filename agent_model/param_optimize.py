@@ -21,6 +21,9 @@ observed = csv[4][:-1] # throw out last datum
 # wrapper func for agent 3D
 def wrapper(bias_scale_prime):
     bias_scale_prime = bias_scale_prime[0]
+    bias_scale_prime *= 1e-8
+    print bias_scale_prime
+
 #    beta_prime, bias_scale_prime = param_vect
     # when we run this, agent3D is run and we return a score
     scalar = 1e-7
@@ -72,7 +75,7 @@ def error_fxn(ensemble):
     if np.isnan(np.sum(aabs_counts)) is True:
         print "NANANAN"
     aabs_counts = aabs_counts.astype(float)
-    aabs_counts_n = aabs_counts / float(len(accel_all_magn))
+    aabs_counts_n = aabs_counts / aabs_counts.sum()
     
     #plt.plot(aabs_bins[:-1], aabs_counts_n)
     #plt.plot(aabs_bins[:-1], observed, c='r')
@@ -91,7 +94,7 @@ def error_fxn(ensemble):
 Nfeval = 1
 def callbackF(Xi, score, accept):
     global Nfeval
-    print '{0:4d}  |  Guess: {1}  | Score: {2: 3.10f}  | Accepted: {3}'.format(Nfeval, Xi, score, accept)
+    print '{0:4d}  |  Basin found at: {1}  | Score: {2: 3.10f}  | Accepted: {3}'.format(Nfeval, Xi, score, accept)
     Nfeval += 1
 
 
@@ -104,22 +107,22 @@ def main():
 #        options={'xtol': 1e-7, 'disp':True},
 #        callback=callbackF)
 
-    # result = fminbound(
-    #     wrapper,
-    #     1,
-    #     1500000,
-    #     xtol=1,
-    #     full_output=True,
-    #     disp=3)
-
-    result = basinhopping(
+    result = fminbound(
         wrapper,
-        [6e-6],
-        stepsize=1e-7,
-        T=1e-6,
-        minimizer_kwargs={"bounds": ((1e-8, 1e-4),)},
-        callback=callbackF,
-        disp=True)
+        [100],
+        [1000],
+        xtol=50,
+        full_output=True,
+        disp=3)
+
+    # result = basinhopping(
+    #     wrapper,
+    #     [640],
+    #     stepsize=1000,
+    #     T=4000,
+    #     minimizer_kwargs={"bounds": ((1, 10000),)},
+    #     callback=callbackF,
+    #     disp=True)
 
     print result
     # fminbound(wrapper, )

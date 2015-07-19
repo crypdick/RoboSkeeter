@@ -72,25 +72,6 @@ import trajectory3D
 import repulsion_landscape3D
 
 
-def place_heater(heater):
-    ''' puts a heater in the correct position in the wind tunnel
-    
-    returns [x,y, zmin, zmax, diam]
-    '''
-    zmin = 0.03800
-    zmax = 0.11340
-    diam = 0.01905
-    if heater is None:
-            return None
-    elif heater in "leftLeftLEFT":
-        return [0.8651, -0.0507, zmin, zmax, diam, 'left']
-    elif heater in "rightRightRIGHT":
-        return [0.8651, 0.0507, zmin, zmax, diam, 'right']
-    elif type(heater) is list:
-        return heater
-    else:
-        raise Exception('invalid heater type specified')
-
 
 def place_agent(agent_pos):
     ''' puts the agent in an initial position, usually within the bounds of the
@@ -111,13 +92,6 @@ def place_agent(agent_pos):
         return [0.1, np.random.uniform(-0.0381, 0.0381), np.random.uniform(0., 0.1016)]
     else:
         raise Exception('invalid agent position specified')
-
-
-
-
-def solve_heading(velo_x, velo_y):
-    theta = atan2(velo_y, velo_x)
-    return theta*180/np.pi
 
 
 class Agent():
@@ -191,20 +165,12 @@ class Agent():
         self.detect_thresh = detect_thresh     
         self.wallF_params = wallF_params
         self.stimF_str = stimF_str
-        
-        
-        # place heater
-        self.heater = place_heater(heater)
-        
-#        self.target_found = False
-#        self.t_targfound = np.nan
-        
+
         self.metadata = dict()
         # population weight data: 2.88 +- 0.35mg
         self.metadata['mass'] = 3.0e-6 # 2.88e-6  # mass (kg) =2.88 mg
         self.metadata['time_max'] = Tmax
         self.metadata['boundary'] = self.boundary
-        self.metadata['heater_position'] = self.heater
         self.metadata['detection_threshold'] = detect_thresh
         self.metadata['initial_position'] = agent_pos
         self.metadata['initial_velo_stdev'] = v0_stdev
@@ -319,32 +285,11 @@ class Agent():
             # sense the temperature
 #            _temperature[tsi] = self.Plume_object.temp_lookup([_position_x[tsi], _position_y[tsi]]) # depreciated
             
-            # are we in the plume?
-            V.inPlume[tsi] = self.Plume_object.check_for_plume(
-                [V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]])
-            
-            # what is our behavior given our plume interactions thus far?
-            if tsi == 0:
-                V.plume_experience[tsi] = 'searching'
-            else:
-                if V.plume_experience[tsi] is None: # need to find state
-                    V.plume_experience[tsi] = self._check_crossing_state(tsi, V.inPlume, V.velocity_y[tsi-1])
-                    if V.plume_experience[tsi] in (
-                            'Left_plume, exit leftLeft_plume, exit rightRight_plume, exit leftRight_plume, exit right'):
-                       try:
-                            for i in range(PLUME_TRIGGER_TIME):
-                                V.plume_experience[tsi+i] = str(V.plume_experience[tsi])
-                       except IndexError: # can't store whole snapshot, so save 'truncated' label instead
-                           print "plume trigger turn lasted less than threshold of {} timesteps "\
-                           "before trajectory ended, so adding _truncated suffix".format(tsi_max)
-                           for i in range(tsi_max - tsi):
-                                V.plume_experience[tsi+i] = (str(V.plume_experience[tsi])+'_truncated')
-                else: # if we're already orienting
-                    pass
-            
-            # calculate driving forces
-            stimF = stim_biasF3D.stimF(V.plume_experience[tsi], self.stimF_str)
-            V.stimF_x[tsi], V.stimF_y[tsi], V.stimF_y[tsi] = stimF
+            #
+            #
+            # # calculate driving forces
+            # stimF = stim_biasF3D.stimF(V.plume_experience[tsi], self.stimF_str)
+            # V.stimF_x[tsi], V.stimF_y[tsi], V.stimF_y[tsi] = stimF
             
             biasF = baseline_driving_forces3D.bias_force(self.biasF_scale)
             V.biasF_x[tsi], V.biasF_y[tsi], V.biasF_z[tsi] = biasF
@@ -458,25 +403,12 @@ class Agent():
                 # save screened candidate_pos to future position
             V.position_x[tsi+1], V.position_y[tsi+1], V.position_z[tsi+1] = candidate_pos
 
-            # solve final heading #TODO: also solve zy?
-            V.heading_angle[tsi] = solve_heading(V.velocity_y[tsi], V.velocity_x[tsi])
-            # ... and angular velo
-            if tsi == 0:
-                V.velocity_angular[tsi] = 0
-            else:
-                V.velocity_angular[tsi] = (V.heading_angle[tsi] - V.heading_angle[tsi-1]) / dt
+            # absolute magnitude of velocity, accel vectors in 3D
+            velo_mag_stack = np.vstack((V.velocity_x, V.velocity_y, V.velocity_z))
+            V.velocity_3Dmagn = np.linalg.norm(velo_mag_stack, axis=0)
 
-            # turning state
-            if tsi in [0, 1]:
-                V.turning[tsi] = 0
-            else:
-                turn_min = 3
-                if abs(V.velocity_angular[tsi-turn_min:tsi]).sum() > self.metadata['turn_threshold']*turn_min:
-                    V.turning[tsi] = 1
-                else:
-                    V.turning[tsi] = 0
-
-
+            accel_mag_stack = np.vstack((V.acceleration_x, V.acceleration_y, V.acceleration_z))
+            V.acceleration_3Dmagn = np.linalg.norm(accel_mag_stack, axis=0)
             
             
 ##            # test the kinematics ex-post facto
@@ -507,15 +439,8 @@ class Agent():
         '''
         for key, array in vars(V).items():
             value = setattr(V, key, array[:tsi+1])
-
+            
         V = self._calc_polar_kinematics(V)
-
-        # absolute magnitude of velocity, accel vectors in 3D
-        velo_mag_stack = np.vstack((V.velocity_x, V.velocity_y, V.velocity_z))
-        V.velocity_3Dmagn = np.linalg.norm(velo_mag_stack, axis=0)
-
-        accel_mag_stack = np.vstack((V.acceleration_x, V.acceleration_y, V.acceleration_z))
-        V.acceleration_3Dmagn = np.linalg.norm(accel_mag_stack, axis=0)
         
         return V
         
@@ -600,7 +525,7 @@ if __name__ == '__main__':
         heater="left",
         v0_stdev=0.01,
         wtf=7e-07,
-        biasF_scale=4.12e-6,  # resulting biasF are on the order of e-6
+        biasF_scale=6e-6,  # resulting biasF are on the order of e-6
         stimF_str=1e-4,
         beta=1e-5,
         Tmax=15.,
@@ -608,7 +533,7 @@ if __name__ == '__main__':
         detect_thresh=0.023175,
         bounded=True,
         wallF_params=wallF_params)
-    myagent.fly(total_trajectories=1)
+    myagent.fly(total_trajectories=2)
     
    
 #    trajectories.describe(plot_kwargs = {'trajectories':False, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_scatter':True, 'force_violin':True})

@@ -320,7 +320,7 @@ def stateHistograms(
     #    accel_all = np.concatenate(accels, axis=0)
 
     amin, amax = -4., 4.
-    accel_binwidth = 0.2
+    accel_binwidth = 0.101
 
     # ax component
     ax_counts, ax_bins = np.histogram(ensemble['acceleration_x'],
