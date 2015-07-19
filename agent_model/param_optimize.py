@@ -20,8 +20,7 @@ observed = csv[4][:-1] # throw out last datum
 
 # wrapper func for agent 3D
 def wrapper(bias_scale_prime):
-
-    bias_scale_prime *= 1e-10
+    bias_scale_prime = bias_scale_prime[0]
 #    beta_prime, bias_scale_prime = param_vect
     # when we run this, agent3D is run and we return a score
     scalar = 1e-7
@@ -115,7 +114,7 @@ def main():
 
     result = basinhopping(
         wrapper,
-        6e-6,
+        [6e-6],
         stepsize=1e-7,
         T=1e-6,
         minimizer_kwargs={"bounds": ((1e-8, 1e-4),)},
