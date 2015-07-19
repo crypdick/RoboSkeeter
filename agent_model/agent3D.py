@@ -107,14 +107,12 @@ def place_agent(agent_pos):
     if agent_pos == "door":  # start trajectories when they exit the front door
         return [0.1909, np.random.uniform(-0.0381, 0.0381), np.random.uniform(0., 0.1016)]
         # FIXME cage height
+    if agent_pos == 'downwind_plane':
+        return [0.1, np.random.uniform(-0.0381, 0.0381), np.random.uniform(0., 0.1016)]
     else:
         raise Exception('invalid agent position specified')
 
-    
-def score_output(desired_output, output):
-    """take the root mean square error of two kinematic distributions    
-    """
-    pass
+
 
 
 def solve_heading(velo_x, velo_y):
@@ -392,7 +390,6 @@ class Agent():
                 np.array([V.velocity_x[tsi-1], V.velocity_y[tsi-1], V.velocity_z[tsi-1]]) + accel*dt
 
 
-            
             # if time is out, end loop before we solve for future position
             if tsi == tsi_max-1:
 #                self.metadata['target_found'][0]  = False
@@ -460,7 +457,7 @@ class Agent():
                         
                 # save screened candidate_pos to future position
             V.position_x[tsi+1], V.position_y[tsi+1], V.position_z[tsi+1] = candidate_pos
-            
+
             # solve final heading #TODO: also solve zy?
             V.heading_angle[tsi] = solve_heading(V.velocity_y[tsi], V.velocity_x[tsi])
             # ... and angular velo
@@ -468,7 +465,7 @@ class Agent():
                 V.velocity_angular[tsi] = 0
             else:
                 V.velocity_angular[tsi] = (V.heading_angle[tsi] - V.heading_angle[tsi-1]) / dt
-                
+
             # turning state
             if tsi in [0, 1]:
                 V.turning[tsi] = 0
@@ -478,6 +475,8 @@ class Agent():
                     V.turning[tsi] = 1
                 else:
                     V.turning[tsi] = 0
+
+
             
             
 ##            # test the kinematics ex-post facto
@@ -508,8 +507,15 @@ class Agent():
         '''
         for key, array in vars(V).items():
             value = setattr(V, key, array[:tsi+1])
-            
+
         V = self._calc_polar_kinematics(V)
+
+        # absolute magnitude of velocity, accel vectors in 3D
+        velo_mag_stack = np.vstack((V.velocity_x, V.velocity_y, V.velocity_z))
+        V.velocity_3Dmagn = np.linalg.norm(velo_mag_stack, axis=0)
+
+        accel_mag_stack = np.vstack((V.acceleration_x, V.acceleration_y, V.acceleration_z))
+        V.acceleration_3Dmagn = np.linalg.norm(accel_mag_stack, axis=0)
         
         return V
         
@@ -563,10 +569,10 @@ class Agent():
             # adds attribute to V
             x_component, y_component = getattr(V, name+'_x'), getattr(V, name+'_y')
             angle = np.arctan2(y_component, x_component)
-            angle[angle<0] += 2*np.pi # get vals b/w [0,2pi]
+            angle[angle < 0] += 2*np.pi  # get vals b/w [0,2pi]
 #            print angle
             setattr(V, name+'_xy_theta', angle)
-            setattr(V, name+'_xy_mag', np.sqrt((y_component)**2 + (x_component)**2))
+            setattr(V, name+'_xy_mag', np.sqrt(y_component**2 + x_component**2))
         
         return V
 #                for ext in ['_x', '_y', '_z', '_xy_theta', '_xy_mag']:
@@ -577,14 +583,12 @@ class Agent():
 class Object(object):
         pass
     
-        
-
 
 if __name__ == '__main__':
     # wallF params
-    scalar = 1e-8
+    scalar = 6e-8
     
-    wallF_params = [scalar]  #(4e-1, 1e-6, 1e-7, 250)
+    wallF_params = [scalar]  # (4e-1, 1e-6, 1e-7, 250)
 
     # temperature plume
     myplume = plume3D.Plume()
@@ -596,7 +600,7 @@ if __name__ == '__main__':
         heater="left",
         v0_stdev=0.01,
         wtf=7e-07,
-        biasF_scale=4e-05,
+        biasF_scale=6e-6,  # resulting biasF are on the order of e-6
         stimF_str=1e-4,
         beta=1e-5,
         Tmax=15.,
@@ -604,9 +608,10 @@ if __name__ == '__main__':
         detect_thresh=0.023175,
         bounded=True,
         wallF_params=wallF_params)
-    myagent.fly(total_trajectories=1)
+    myagent.fly(total_trajectories=2)
     
    
 #    trajectories.describe(plot_kwargs = {'trajectories':False, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_scatter':True, 'force_violin':True})
-    trajectories.plot_single_3Dtrajectory()
+    #trajectories.plot_single_3Dtrajectory()
+    # trajectories.plot_kinematic_hists()
     
