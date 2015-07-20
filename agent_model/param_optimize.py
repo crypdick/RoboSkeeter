@@ -10,17 +10,18 @@ import pdb
 import time
 
 
-myplume = plume3D.Plume()
+myplume = plume3D.Plume(None)
 
 # load csv values
-csv = np.genfromtxt ('experimental_data/accelerationmag_raw.csv', delimiter=",")
+csv = np.genfromtxt ('experimental_data/accelerationmag_raw.csv')
 csv = csv.T
 
 observed = csv[4][:-1] # throw out last datum
 
 # wrapper func for agent 3D
 def wrapper(bias_scale_prime):
-    bias_scale_prime = bias_scale_prime[0]
+    if type(bias_scale_prime) == 'list':
+        bias_scale_prime = bias_scale_prime[0]
     bias_scale_prime *= 1e-8
     print bias_scale_prime
 
@@ -109,9 +110,9 @@ def main():
 
     result = fminbound(
         wrapper,
-        [100],
-        [1000],
-        xtol=50,
+        100,
+        1000,
+        xtol=1,
         full_output=True,
         disp=3)
 
