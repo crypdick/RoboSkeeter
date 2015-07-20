@@ -70,6 +70,7 @@ import stim_biasF3D
 import plume3D
 import trajectory3D
 import repulsion_landscape3D
+import sys
 
 
 def place_heater(heater):
@@ -108,7 +109,7 @@ def place_agent(agent_pos):
         return [0.1909, np.random.uniform(-0.0381, 0.0381), np.random.uniform(0., 0.1016)]
         # FIXME cage height
     if agent_pos == 'downwind_plane':
-        return [0.1, np.random.uniform(-0.0381, 0.0381), np.random.uniform(0., 0.1016)]
+        return [0.1, np.random.uniform(-0.127, 0.127), np.random.uniform(0., 0.254)]
     else:
         raise Exception('invalid agent position specified')
 
@@ -240,6 +241,8 @@ class Agent():
         '''
         traj_count = 0
         while traj_count < total_trajectories:
+            sys.stdout.write("\rTrajectory {}/{}".format(traj_count+1, total_trajectories))
+            sys.stdout.flush()
             vectors_object = self._fly_single(self.dt, self.metadata['mass'], self.detect_thresh, self.boundary)
             # extract trajectory object attribs, append to our lists.
             setattr(vectors_object, 'trajectory_num', traj_count)
@@ -259,6 +262,9 @@ class Agent():
 #                print vectors_object.plume_experience
             
             traj_count += 1
+            if traj_count == total_trajectories:
+                sys.stdout.write("\rSimulations finished. Performing deep magic.")
+                sys.stdout.flush()
         
         
         self.metadata['total_trajectories'] = total_trajectories
@@ -320,27 +326,33 @@ class Agent():
 #            _temperature[tsi] = self.Plume_object.temp_lookup([_position_x[tsi], _position_y[tsi]]) # depreciated
             
             # are we in the plume?
-            V.inPlume[tsi] = self.Plume_object.check_for_plume(
-                [V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]])
+            if self.Plume_object.condition is None:  # skip if no plume
+                V.inPlume[tsi] = False
+            else:
+                V.inPlume[tsi] = self.Plume_object.check_for_plume(
+                    [V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]])
             
             # what is our behavior given our plume interactions thus far?
             if tsi == 0:
                 V.plume_experience[tsi] = 'searching'
             else:
-                if V.plume_experience[tsi] is None: # need to find state
-                    V.plume_experience[tsi] = self._check_crossing_state(tsi, V.inPlume, V.velocity_y[tsi-1])
-                    if V.plume_experience[tsi] in (
-                            'Left_plume, exit leftLeft_plume, exit rightRight_plume, exit leftRight_plume, exit right'):
-                       try:
-                            for i in range(PLUME_TRIGGER_TIME):
-                                V.plume_experience[tsi+i] = str(V.plume_experience[tsi])
-                       except IndexError: # can't store whole snapshot, so save 'truncated' label instead
-                           print "plume trigger turn lasted less than threshold of {} timesteps "\
-                           "before trajectory ended, so adding _truncated suffix".format(tsi_max)
-                           for i in range(tsi_max - tsi):
-                                V.plume_experience[tsi+i] = (str(V.plume_experience[tsi])+'_truncated')
-                else: # if we're already orienting
-                    pass
+                if self.Plume_object.condition is None:  # hack for no plume condition
+                    V.plume_experience[tsi] = 'searching'
+                else:
+                    if V.plume_experience[tsi] is None: # need to find state
+                        V.plume_experience[tsi] = self._check_crossing_state(tsi, V.inPlume, V.velocity_y[tsi-1])
+                        if V.plume_experience[tsi] in (
+                                'Left_plume, exit leftLeft_plume, exit rightRight_plume, exit leftRight_plume, exit right'):
+                           try:
+                                for i in range(PLUME_TRIGGER_TIME):
+                                    V.plume_experience[tsi+i] = str(V.plume_experience[tsi])
+                           except IndexError: # can't store whole snapshot, so save 'truncated' label instead
+                               print "plume trigger turn lasted less than threshold of {} timesteps "\
+                               "before trajectory ended, so adding _truncated suffix".format(tsi_max)
+                               for i in range(tsi_max - tsi):
+                                    V.plume_experience[tsi+i] = (str(V.plume_experience[tsi])+'_truncated')
+                    else: # if we're already orienting
+                        pass
             
             # calculate driving forces
             stimF = stim_biasF3D.stimF(V.plume_experience[tsi], self.stimF_str)
@@ -582,36 +594,50 @@ class Agent():
     
 class Object(object):
         pass
-    
 
-if __name__ == '__main__':
+
+def main():
+    """
+    Params fitted using scipy.optimize
+    
+    biasF_scale => 4.076e-6 using fminbound
+    """
     # wallF params
     scalar = 6e-8
     
     wallF_params = [scalar]  # (4e-1, 1e-6, 1e-7, 250)
 
     # temperature plume
-    myplume = plume3D.Plume()
+    myplume = plume3D.Plume(None)
     trajectories = trajectory3D.Trajectory() # instantiate empty trajectories object
     myagent = Agent(
         trajectories,
         myplume,
-        agent_pos="door",
-        heater="left",
+        agent_pos="downwind_plane",
+        heater=None,
         v0_stdev=0.01,
         wtf=7e-07,
-        biasF_scale=4.12e-6,  # resulting biasF are on the order of e-6
+        biasF_scale=4.076e-6,  # resulting biasF are on the order of e-6
         stimF_str=1e-4,
-        beta=1e-5,
+        beta=1e-6,  # 1e-5
         Tmax=15.,
         dt=0.01,
         detect_thresh=0.023175,
         bounded=True,
         wallF_params=wallF_params)
-    myagent.fly(total_trajectories=1)
+    sys.stdout.write("\rAgent born")
+    myagent.fly(total_trajectories=100)
+    
+    trajectories.plot_kinematic_hists()
+    
+    return myplume, trajectories, myagent
     
    
 #    trajectories.describe(plot_kwargs = {'trajectories':False, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_scatter':True, 'force_violin':True})
     #trajectories.plot_single_3Dtrajectory()
-    trajectories.plot_kinematic_hists()
+#    
+    
+
+if __name__ == '__main__':
+    myplume, trajectories, myagent = main()
     
