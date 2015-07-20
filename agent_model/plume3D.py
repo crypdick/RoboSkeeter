@@ -37,10 +37,13 @@ import numpy as np
 #    return plume
 #    
 def load_simulated_plume(condition='left'):
-    if condition in 'lLleftLeft':
-        plume = pd.read_csv('plume_sim/left_plume_bounds.csv')
-    if condition in 'rightRight':
-        plume = pd.read_csv('plume_sim/right_plume_bounds.csv')
+    try:
+        if condition in 'lLleftLeft':
+            plume = pd.read_csv('plume_sim/left_plume_bounds.csv')
+        elif condition in 'rightRight':
+            plume = pd.read_csv('plume_sim/right_plume_bounds.csv')
+    except TypeError:
+      return pd.DataFrame.empty  # TODO: make plume that's 0 everywhere
         
     return plume
 
@@ -52,10 +55,17 @@ def load_simulated_plume(condition='left'):
 
 class Plume():
     ''' Instantiates a plume object.
+    
+    Args:
+    condition: {left|right|None}
     '''
-    def __init__(self):
-        self.plume = load_simulated_plume(condition='left')
-        self.x_vals = self.plume.x.values
+    def __init__(self, condition):
+        self.condition = condition
+        self.plume = load_simulated_plume(condition=condition)
+        try:
+            self.x_vals = self.plume.x.values
+        except AttributeError:  # empty df
+            pass
 #        self.plume_kdTree = mk_tree(self.plume) # depreciated      
 
     def find_nearest_plume_plane(self, x_val):
@@ -110,7 +120,7 @@ class Plume():
 
 
 def main():
-    return Plume()
+    return Plume(None)
       
 
 if __name__ == '__main__':
