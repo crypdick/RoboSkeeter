@@ -36,16 +36,16 @@ import numpy as np
 #    
 #    return plume
 #    
-def load_simulated_plume(condition='left'):
+def load_simulated_plume(condition):
     try:
         if condition in 'lLleftLeft':
-            plume = pd.read_csv('plume_sim/left_plume_bounds.csv')
+            df = pd.read_csv('plume_sim/left_plume_bounds.csv')
+            return df
         elif condition in 'rightRight':
-            plume = pd.read_csv('plume_sim/right_plume_bounds.csv')
-    except TypeError:
-      return pd.DataFrame.empty  # TODO: make plume that's 0 everywhere
-        
-    return plume
+            df = pd.read_csv('plume_sim/right_plume_bounds.csv')
+            return df
+    except TypeError: # throwing None at in <str> freaks Python out
+        return pd.DataFrame.empty  # TODO: make plume that's 0 everywhere
 
 # depreciated
 #def mk_tree(plume):
@@ -61,29 +61,32 @@ class Plume():
     '''
     def __init__(self, condition):
         self.condition = condition
-        self.plume = load_simulated_plume(condition=condition)
+        self.data = load_simulated_plume(condition=condition)
         try:
-            self.x_vals = self.plume.x.values
-        except AttributeError:  # empty df
+            self.x_vals = self.data.x.values
+        except AttributeError:  # don't store non-existent vector if empty df
             pass
 #        self.plume_kdTree = mk_tree(self.plume) # depreciated      
 
     def find_nearest_plume_plane(self, x_val):
         closest_plume_index = (np.abs(self.x_vals - x_val)).argmin()
-        plume_plane = self.plume.loc[closest_plume_index]
+        plume_plane = self.data.loc[closest_plume_index]
         
         return plume_plane
 
 
     def check_for_plume(self, position):
-        x, y, z = position
-        plume_plane = self.find_nearest_plume_plane(x)
-        # divide by 3 to transform the ellipsoid space to a circle
-        distance_from_center = ( (y - plume_plane.y)**2 + (1/3*(z - plume_plane.z)) ** 2) ** 0.5
-        if distance_from_center < plume_plane.small_radius:
-            return True
+        if self.condition is None:
+            return 0
         else:
-            return False
+            x, y, z = position
+            plume_plane = self.find_nearest_plume_plane(x)
+            # divide by 3 to transform the ellipsoid space to a circle
+            distance_from_center = ( (y - plume_plane.y) ** 2 + (1/3*(z - plume_plane.z)) ** 2) ** 0.5
+            if distance_from_center <= plume_plane.small_radius:
+                return 1
+            else:
+                return 0
         
         
 
@@ -105,7 +108,7 @@ class Plume():
 #        
 #        distance, index = self.plume_kdTree.query(position) 
 #        
-#        return self.plume.loc[index, 'temp']
+#        return self.data.loc[index, 'temp']
 #        
 #
 #    def show(self):
@@ -113,16 +116,16 @@ class Plume():
 #        '''
 #        from matplotlib import pyplot as plt
 #        
-#        ax = self.plume.plot(kind='hexbin', x='x', y='y', C='temp', reduce_C_function=np.max,
+#        ax = self.data.plot(kind='hexbin', x='x', y='y', C='temp', reduce_C_function=np.max,
 #                        gridsize=(20,60), vmax=297, title ="Temperature inside wind tunnel (K)", ylim=[-0.127, 0.127])
 #        ax.set_aspect('equal')
 #        ax.invert_yaxis()
 
 
-def main():
-    return Plume(None)
+def main(condition=None):
+    return Plume(condition)
       
 
 if __name__ == '__main__':
-    plume = main()
+    test_plume = main(condition='l')
     
