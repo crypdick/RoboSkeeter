@@ -73,24 +73,28 @@ import repulsion_landscape3D
 import sys
 
 
-def place_heater(heater):
-    ''' puts a heater in the correct position in the wind tunnel
-    
+def place_heater(location):
+    ''' given {left, right, none, custom location} place heater in the coordinates in our convention, as well as height
+    and diameter location
+
+    Args:
+    location
+
     returns [x,y, zmin, zmax, diam]
     '''
     zmin = 0.03800
     zmax = 0.11340
     diam = 0.01905
-    if heater is None:
+    if location is None:
             return None
-    elif heater in "leftLeftLEFT":
+    elif location in "leftLeftLEFT":
         return [0.8651, -0.0507, zmin, zmax, diam, 'left']
-    elif heater in "rightRightRIGHT":
+    elif location in "rightRightRIGHT":
         return [0.8651, 0.0507, zmin, zmax, diam, 'right']
-    elif type(heater) is list:
-        return heater
+    elif type(location) is list:
+        return location
     else:
-        raise Exception('invalid heater type specified')
+        raise Exception('invalid location type specified')
 
 
 def place_agent(agent_pos):
@@ -163,21 +167,23 @@ class Agent():
         Agent object
 
     """
-    def __init__(self,
-                 Trajectory_object,
-                 Plume_object,
-                 agent_pos='door',
-                 v0_stdev=0.01,
-                 Tmax=15,
-                 dt=0.01,
-                 heater='left',
-                 beta=1e-5,
-                 biasF_scale=4e-06,
-                 wtf=7e-07,
-                 stimF_str=1e-4,
-                 detect_thresh=0.023175, bounded=True, \
-                 wallF_params=(4e-1, 1e-6, 1e-7, 250, "walls_only"),
-                 k=0.):
+    def __init__(
+        self,
+        Trajectory_object,
+        Plume_object,
+        agent_pos='door',
+        v0_stdev=0.01,
+        Tmax=15,
+        dt=0.01,
+        heater='left',
+        beta=1e-5,
+        biasF_scale=4e-06,
+        wtf=7e-07,
+        stimF_str=1e-4,
+        detect_thresh=0.023175,
+        bounded=True,
+        wallF_params=(4e-1, 1e-6, 1e-7, 250, "walls_only"),
+        k=0.):
         """ Initialize object with instant variables, and trigger other funcs.
         """
         
@@ -197,9 +203,6 @@ class Agent():
         # place heater
         self.heater = place_heater(heater)
         
-#        self.target_found = False
-#        self.t_targfound = np.nan
-        
         self.metadata = dict()
         # population weight data: 2.88 +- 0.35mg
         self.metadata['mass'] = 3.0e-6 # 2.88e-6  # mass (kg) =2.88 mg
@@ -217,8 +220,8 @@ class Agent():
         # for stats, later
         self.metadata['time_target_find_avg'] = []
         self.metadata['total_finds'] = 0
-#        self.metadata['target_found'] = [False]
-#        self.metadata['time_to_target_find'] = [np.nan] # TODO: make sure these lists are concating correctly
+        self.metadata['target_found'] = [False]  # TODO: shouldn't this be attached to Trajectories() instead?
+        self.metadata['time_to_target_find'] = [np.nan] # TODO: make sure these lists are concating correctly
         
         self.metadata['kinematic_vals'] = ['velocity', 'acceleration']
         self.metadata['forces'] = ['totalF', 'biasF', 'wallRepulsiveF', 'upwindF', 'stimF']
@@ -230,7 +233,7 @@ class Agent():
         self.metadata['turn_threshold'] = 433.5         
         
         self.trajectory_obj = Trajectory_object
-        self.Plume_object = Plume_object
+        self.plume_obj = Plume_object
         
         # # create repulsion landscape
         # self._repulsion_funcs = repulsion_landscape3D.landscape(boundary=self.boundary)
@@ -306,7 +309,7 @@ class Agent():
         V.position_z = np.full(tsi_max, np.nan)
 #        _post_velocity_x = np.full(tsi_max, np.nan)
 #        _temperature = np.full(tsi_max, np.nan) # depreciated
-        V.inPlume = np.full(tsi_max, np.nan)
+        V.inPlume = np.full(tsi_max, -1, dtype=np.uint8)
         V.plume_experience = [None]*tsi_max
         V.turning = [None]*tsi_max
         V.heading_angle = np.full(tsi_max, np.nan)
@@ -322,41 +325,48 @@ class Agent():
 
         # generate a flight!
         for tsi in xrange(tsi_max):
+            # import pdb; pdb.set_trace()
             # sense the temperature
-#            _temperature[tsi] = self.Plume_object.temp_lookup([_position_x[tsi], _position_y[tsi]]) # depreciated
+#            _temperature[tsi] = self.plume_obj.temp_lookup([_position_x[tsi], _position_y[tsi]]) # depreciated
             
             # are we in the plume?
-            if self.Plume_object.condition is None:  # skip if no plume
-                V.inPlume[tsi] = False
+            if self.plume_obj.condition is None:  # skip if no plume
+                V.inPlume[tsi] = 0
             else:
-                V.inPlume[tsi] = self.Plume_object.check_for_plume(
+                V.inPlume[tsi] = self.plume_obj.check_for_plume(
                     [V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]])
             
             # what is our behavior given our plume interactions thus far?
             if tsi == 0:
                 V.plume_experience[tsi] = 'searching'
             else:
-                if self.Plume_object.condition is None:  # hack for no plume condition
+                if self.plume_obj.condition is None:  # hack for no plume condition
                     V.plume_experience[tsi] = 'searching'
                 else:
                     if V.plume_experience[tsi] is None: # need to find state
                         V.plume_experience[tsi] = self._check_crossing_state(tsi, V.inPlume, V.velocity_y[tsi-1])
+                        # import pdb; pdb.set_trace()
                         if V.plume_experience[tsi] in (
-                                'Left_plume, exit leftLeft_plume, exit rightRight_plume, exit leftRight_plume, exit right'):
-                           try:
-                                for i in range(PLUME_TRIGGER_TIME):
+                                'Left_plume Exit leftLeft_plume Exit rightRight_plume Exit leftRight_plume Exit right'):
+                            try:
+                                for i in range(PLUME_TRIGGER_TIME): # store experience for the following timeperiod
                                     V.plume_experience[tsi+i] = str(V.plume_experience[tsi])
-                           except IndexError: # can't store whole snapshot, so save 'truncated' label instead
-                               print "plume trigger turn lasted less than threshold of {} timesteps "\
-                               "before trajectory ended, so adding _truncated suffix".format(tsi_max)
+                            except IndexError: # can't store whole snapshot, so save 'truncated' label instead
+                               # print "plume trigger turn lasted less than threshold of {} timesteps "\
+                               # "before trajectory ended, so adding _truncated suffix".format(tsi_max)
                                for i in range(tsi_max - tsi):
                                     V.plume_experience[tsi+i] = (str(V.plume_experience[tsi])+'_truncated')
-                    else: # if we're already orienting
-                        pass
+
+                    else: # if we're already orienting from past memory
+                        if V.inPlume is False:  # we haven't re-entered the plume
+                            pass
+                        else:  # found the plume again!
+                            V.plume_experience[tsi:]
+
             
             # calculate driving forces
             stimF = stim_biasF3D.stimF(V.plume_experience[tsi], self.stimF_str)
-            V.stimF_x[tsi], V.stimF_y[tsi], V.stimF_y[tsi] = stimF
+            V.stimF_x[tsi], V.stimF_y[tsi], V.stimF_z[tsi] = stimF
             
             biasF = baseline_driving_forces3D.bias_force(self.biasF_scale)
             V.biasF_x[tsi], V.biasF_y[tsi], V.biasF_z[tsi] = biasF
@@ -383,10 +393,10 @@ class Agent():
             
             # calculate current force
             if tsi == 0:
-                totalF = -self.beta*v0 + biasF + upwindF + wallRepulsiveF# + stimF # FIXME
+                totalF = -self.beta*v0 + biasF + upwindF + wallRepulsiveF# + stimF
             else:
                 totalF = -self.beta*np.array([V.velocity_x[tsi-1], V.velocity_y[tsi-1], V.velocity_z[tsi-1]])\
-                  + biasF + upwindF + wallRepulsiveF# + stimF # FIXME
+                  + biasF + upwindF + wallRepulsiveF + stimF
             V.totalF_x[tsi], V.totalF_y[tsi], V.totalF_z[tsi] = totalF
             
             # calculate current acceleration
@@ -502,14 +512,14 @@ class Agent():
 #                real_accel = (real_velo - np.array([V.velocity_x[tsi-1], V.velocity_y[tsi-1], V.velocity_z[tsi-1]])) / dt
 #            V.acceleration_x[tsi], V.acceleration_y[tsi], V.acceleration_z[tsi] = real_accel
             
-            # if there is a target, check if we are finding it                
-#            if norm(candidate_pos - self.heater[0:3]) < self.detect_thresh:
-#                    self.metadata['target_found'][0]  = True
-#                    self.metadata['total_finds'] += 1
-#                    self.metadata['time_to_target_find'][0] = V.times[tsi]  # should this be timeList[i+1]?
-#                    V = self.land(tsi, V)  # stop flying at source
-#                    print "source found"
-#                    break
+           # if there is a target, check if we are finding it
+            if self.heater is not None and np.linalg.norm(candidate_pos - self.heater[0:3]) < self.detect_thresh:
+                   self.metadata['target_found'][0]  = True
+                   self.metadata['total_finds'] += 1
+                   self.metadata['time_to_target_find'][0] = V.times[tsi]  # should this be timeList[i+1]?
+                   V = self.land(tsi, V)  # stop flying at source
+                   print "source found"
+                   break
         
         return V
 
@@ -544,31 +554,31 @@ class Agent():
         out2in - entering plume
         in2in - staying
         in2out - exiting
-            {Left_plume, exit left, Left_plume, exit right
-#           Right_plume, exit left, Right_plume, exit right}
+            {Left_plume Exit left, Left_plume Exit right
+#           Right_plume Exit left, Right_plume Exit right}
         """
         current_state, past_state = inPlume[tsi], inPlume[tsi-1]
-        if current_state == False and past_state == False:
+        if current_state == 0 and past_state == 0:
             # we are not in plume and weren't in last ts
             return 'searching'
-        if current_state == True and past_state == False:
+        if current_state == 1 and past_state == 0:
             # entering plume
             return 'entering'
-        if current_state == True and past_state == True:
+        if current_state == 1 and past_state == 1:
             # we stayed in the plume
             return 'staying'
-        if current_state == False and past_state == True:
+        if current_state == 0 and past_state == 1:
             # exiting the plume
             if self.heater[5] == 'left':
-                if vy < 0:
-                    return 'Left_plume, exit left'
+                if vy <= 0:
+                    return 'Left_plume Exit left'
                 else:
-                    return 'Left_plume, exit right'
+                    return 'Left_plume Exit right'
             else:
-                if vy < 0:
-                    return "Right_plume, exit left"
+                if vy <= 0:
+                    return "Right_plume Exit left"
                 else:
-                    return "Right_plume, exit right"
+                    return "Right_plume Exit right"
             
             
     def _calc_polar_kinematics(self, V):
@@ -596,41 +606,42 @@ class Object(object):
         pass
 
 
-def main():
+def main(heater):
     """
     Params fitted using scipy.optimize
     
-    biasF_scale => 4.076e-6 using fminbound
+    biasF_scale => 4.12405e-6 using fminbound
     """
     # wallF params
-    scalar = 6e-8
-    
+    scalar = 3e-8 #6e-8
+
     wallF_params = [scalar]  # (4e-1, 1e-6, 1e-7, 250)
 
     # temperature plume
-    myplume = plume3D.Plume(None)
+    myplume = plume3D.Plume(heater)
+    # import pdb; pdb.set_trace()
     trajectories = trajectory3D.Trajectory() # instantiate empty trajectories object
-    myagent = Agent(
+    skeeter = Agent(
         trajectories,
         myplume,
-        agent_pos="downwind_plane",
-        heater=None,
+        agent_pos="downwind_plane",  # [0.250180, -0.050700, 0.144400],
+        heater=heater,
         v0_stdev=0.01,
-        wtf=7e-07,
-        biasF_scale=4.076e-6,  # resulting biasF are on the order of e-6
-        stimF_str=1e-4,
-        beta=1e-6,  # 1e-5
+        wtf=3.5e-7, #7e-07,
+        biasF_scale=4.12405e-6,
+        stimF_str=3.5e-7, #7e-7,
+        beta=5e-6,#1e-6,  # 1e-5
         Tmax=15.,
         dt=0.01,
         detect_thresh=0.023175,
         bounded=True,
         wallF_params=wallF_params)
     sys.stdout.write("\rAgent born")
-    myagent.fly(total_trajectories=100)
+    skeeter.fly(total_trajectories=200)
     
-    trajectories.plot_kinematic_hists()
+    # trajectories.plot_kinematic_hists()
     
-    return myplume, trajectories, myagent
+    return myplume, trajectories, skeeter
     
    
 #    trajectories.describe(plot_kwargs = {'trajectories':False, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_scatter':True, 'force_violin':True})
@@ -639,5 +650,22 @@ def main():
     
 
 if __name__ == '__main__':
-    myplume, trajectories, myagent = main()
-    
+    HEATER = 'r'#None # 'l', 'r'
+    myplume, trajectories, skeeter = main(HEATER)
+    print "\nDone."
+    # trajectories.plot_single_3Dtrajectory()
+
+    # csv dump for Sharri
+    e = trajectories.ensemble
+    r = e.trajectory_num.iloc[-1]
+
+    for i in range(r+1):
+        e1 = e.loc[e['trajectory_num'] == i, ['position_x', 'position_y', 'position_z', 'inPlume']]
+        e1.to_csv(str(i)+'.csv', index=False)
+
+    trajectories.plot_kinematic_hists()
+    trajectories.plot_posheatmap()
+    trajectories.plot_force_violin()
+
+    # # for plume stats
+    # g = e.loc[e['plume_experience'].isin(['Left_plume Exit left', 'Left_plume Exit right', 'Right_plume Exit left', 'Right_plume Exit right'])]
