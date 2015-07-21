@@ -101,10 +101,22 @@ class Agent():
         Agent object
 
     """
-    def __init__(self, Trajectory_object, Plume_object, agent_pos='door', v0_stdev=0.01, Tmax=15, dt=0.01,\
-        target_pos='left', beta=1e-5, rf=4e-06, wtf=7e-07, stimF_str=1e-4, \
-        detect_thresh=0.023175, bounded=True, \
-        wallF_params=(4e-1, 1e-6, 1e-7, 250, "walls_only"), k=0.):
+    def __init__(self,
+                 Trajectory_object,
+                 Plume_object,
+                 agent_pos='door',
+                 v0_stdev=0.01,
+                 Tmax=15,
+                 dt=0.01,
+                 target_pos='left',
+                 beta=1e-5,
+                 rf=4e-06,
+                 wtf=7e-07,
+                 stimF_str=1e-4,
+                 detect_thresh=0.023175,
+                 bounded=True,
+                 wallF_params=(4e-1, 1e-6, 1e-7, 250, "walls_only"),
+                 k=0.):
         """ Initialize object with instant variables, and trigger other funcs. 
         """
         
@@ -221,9 +233,12 @@ class Agent():
         _velocity_y[0] = v0[1]
         
         # make dictionary for creating Pandas df, later
-        arraydict = {'times': _times, 'position_x': _position_x, 'position_y': _position_y,\
-        'velocity_x': _velocity_x, 'velocity_y': _velocity_y, 'acceleration_x': _acceleration_x,\
-        'acceleration_y': _acceleration_y, 'totalF_x': _totalF_x, 'totalF_y': _totalF_y,\
+        arraydict = {
+            'times': _times,
+            'position_x': _position_x, 'position_y': _position_y,
+            'velocity_x': _velocity_x, 'velocity_y': _velocity_y,
+            'acceleration_x': _acceleration_x, 'acceleration_y': _acceleration_y,
+            'totalF_x': _totalF_x, 'totalF_y': _totalF_y,
         'randF_x': _randF_x, 'randF_y': _randF_y, 'wallRepulsiveF_x': _wallRepulsiveF_x,\
         'wallRepulsiveF_y': _wallRepulsiveF_y, 'upwindF_x': _upwindF_x, 'upwindF_y': _upwindF_y,\
         'stimF_x': _stimF_x, 'stimF_y': _stimF_y, 'temperature': _temperature,\
