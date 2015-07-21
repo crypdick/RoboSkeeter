@@ -28,8 +28,8 @@ def plot_single_trajectory(dynamics, metadata, plot_kwargs=None):
     cage = draw_cage()
     currentAxis.add_patch(cage)
     currentAxis.axis(metadata['boundary'][0:4])
-    if metadata['target_position'] is not None:
-        heaterCircle, detectCircle = draw_heaters(metadata['target_position'], metadata['detection_threshold'])
+    if metadata['heater_position'] is not None:
+        heaterCircle, detectCircle = draw_heaters(metadata['heater_position'], metadata['detection_threshold'])
         currentAxis.add_artist(heaterCircle)
         currentAxis.add_artist(detectCircle)
     plt.gca().set_aspect('equal')
@@ -51,12 +51,12 @@ def draw_cage():
                          facecolor='none')  # FIXME get rid of hardcoded number
 
 
-def draw_heaters(target_pos, detect_thresh):
+def draw_heaters(heater_position, detect_thresh):
     """ draws a circle where the heater is
-    target_pos vector is [x,y, zmin, zmax, diam]
+    heater_position vector is [x,y, zmin, zmax, diam]
     """
-    heaterCircle = plt.Circle((target_pos[0], target_pos[1],), target_pos[4] / 2, color='r')
-    detectCircle = plt.Circle((target_pos[0], target_pos[1],), detect_thresh, color='gray', fill=False,
+    heaterCircle = plt.Circle((heater_position[0], heater_position[1],), heater_position[4] / 2, color='r')
+    detectCircle = plt.Circle((heater_position[0], heater_position[1],), detect_thresh, color='gray', fill=False,
                               linestyle='dashed')
 
     return heaterCircle, detectCircle
@@ -106,8 +106,8 @@ def draw_heaters(target_pos, detect_thresh):
 #            cax = hextraj.fig.add_axes([1, .25, .04, .5])
 #            plt.colorbar(cax=cax)
 #            
-#            if metadata['target_position'] is not None:
-#                heaterCircle, detectCircle = draw_heaters(metadata['target_position'], metadata['detection_threshold'])
+#            if metadata['heater_position'] is not None:
+#                heaterCircle, detectCircle = draw_heaters(metadata['heater_position'], metadata['detection_threshold'])
 #                hextraj.ax_joint.add_artist(heaterCircle)
 #                hextraj.ax_joint.add_artist(detectCircle)
 #        #    
@@ -379,12 +379,12 @@ def stateHistograms(
 
 def force_violin(ensemble, metadata):
     ensembleF = ensemble.loc[
-        (ensemble['position_x'] > 0.25) & (ensemble['position_x'] < 0.95), ['totalF_x', 'totalF_y', 'totalF_z',
-                                                                            'biasF_x', 'biasF_y', 'biasF_z',
-                                                                            'upwindF_x',
-                                                                            'wallRepulsiveF_x', 'wallRepulsiveF_y',
-                                                                            'wallRepulsiveF_z',
-                                                                            'stimF_x', 'stimF_y']] #, 'stimF_z']]== Nans
+        (ensemble['position_x'] > 0.25) & (ensemble['position_x'] < 0.95),
+            ['totalF_x', 'totalF_y', 'totalF_z',
+            'biasF_x', 'biasF_y', 'biasF_z',
+            'upwindF_x',
+            'wallRepulsiveF_x', 'wallRepulsiveF_y', 'wallRepulsiveF_z',
+            'stimF_x', 'stimF_y']] #, 'stimF_z']]== Nans
     # plot Forces
     #    f, axes = plt.subplots(2, 2, figsize=(9, 9), sharex=True, sharey=True)
     ##    forcefig = plt.figure(5, figsize=(9, 8))
