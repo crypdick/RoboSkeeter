@@ -60,7 +60,7 @@ def bias_force(rf, bias='uniform'):
 #         scale = 1.82216219069
 #         mag = np.random.lognormal(mean=mu, sigma=sigma, size=1)
 #         return mag * ends * rf
-#     if dim == 3: # FIXME: 3d symmetric
+#     if dim == 3:
 #         ends = gen_symm_vecs(3)
 #         # following params were fitted from the Dickinson fligt data
 #         mu = 0.600023812816

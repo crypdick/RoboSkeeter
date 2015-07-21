@@ -13,9 +13,8 @@ import time
 myplume = plume3D.Plume(None)
 
 # load csv values
-csv = np.genfromtxt ('experimental_data/accelerationmag_raw.csv')
+csv = np.genfromtxt('experimental_data/accelerationmag_raw.csv',delimiter=',')
 csv = csv.T
-
 observed = csv[4][:-1] # throw out last datum
 
 # wrapper func for agent 3D
@@ -37,19 +36,19 @@ def wrapper(bias_scale_prime):
     myagent = agent3D.Agent(
         trajectories,
         myplume,
-        agent_pos="door",
-        heater="left",
+        agent_pos="downwind_plane",
+        heater="l",
         v0_stdev=0.01,
         wtf=7e-07,
         biasF_scale=bias_scale_prime, #4e-05,
-        stimF_str=1e-4,
-        beta=1e-5,
+        stimF_str=7e-7,
+        beta=5e-6,
         Tmax=15.,
         dt=0.01,
         detect_thresh=0.023175,
         bounded=True,
         wallF_params=wallF_params)
-    myagent.fly(total_trajectories=1)
+    myagent.fly(total_trajectories=10)
 
     ensemble = trajectories.ensemble
     trimmed_ensemble = ensemble.loc[
