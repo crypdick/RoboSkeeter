@@ -39,7 +39,8 @@ def x_prob(pos_x):
     return prob_pos_x
 
 def x_weight_fxn(pos_x):
-    return 1. - x_dist(pos_x)
+    return 0. # disable x repulsion
+    # return 1. - x_dist(pos_x)
 
 def y_dist(pos_y):
     # Crosswind (y) repulsion
