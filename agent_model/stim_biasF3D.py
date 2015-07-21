@@ -2,38 +2,9 @@
 """
 make our agents fly towards the plume.
 
-in_Plume = True/False state-abs temp thresh
-if in_Plume switches from True->False,
-	check sign of vy and take the opposite (head back to plume)
-	F = Bv +rf + wtf + repulsion_landscape + plume_bias(direction, strength, _decay_)
-	direction = {left, right, None}	
-	loose casting behavior
-check how this biases heatmap
-
-Created on Thu Apr 23 13:04:37 2015
-
-@author: richard
-
-in_Plume = True/False state-abs temp thresh
-if in_Plume switches from True->False,
-	check sign of vy and take the opposite (head back to plume)
-         if vy > 0...
-	F = Bv +rf + wtf + repulsion_landscape + plume_bias(direction, strength, _decay_)
-	direction = {left, right, None}	
-	loose casting behavior
-check how this biases heatmap
-
-STEP 2
-whene xit plume again, come back.
-
-plume policy:
-inPlume = True/False
-mozzie.temp() ==>  plume class
-plumeDirection = [left, right, none]
-= .... + stimBias(plumeDir, strength)
-
 
 """
+import numpy as np
 
 # depreciated
 #def absoluteT_threshold_check(temperature, threshold):#, strength, inplume_past):
@@ -45,21 +16,26 @@ plumeDirection = [left, right, none]
 #        return False
 
 
-def stimF_direction(cross_status, veloy):
-    """Given the crossing state and current crosswind velocity, return which
-    direction we should be flying in.
-    
-    TODO: solve for direction lookkup given cross status (searching, entering, staying, exiting)
-    """
-    return None
 
 
 def stimF(experience, stimF_strength):
     """given force direction and strength, return a force vector
-    
-    TODO: add forces for other directions
+    Args:
+    experience: {searching, entering, Left_plume, exit left, Left_plume, exit right, Right_plume, exit left, Right_plume, exit right}
     """
-    return [0., 0., 0.]
+    if experience in 'searchingentering':
+        return np.array([0., 0., 0.])
+    elif experience in 'staying':
+        return np.array([stimF_strength, 0., 0.])  # surge while in plume
+    elif "Exit left" in experience:
+        return np.array([0., stimF_strength, 0.])
+    elif "Exit right" in experience:
+        return np.array([0., -stimF_strength, 0.])
+    else:
+        print "error", experience
+        return np.array([0., 0., 0.])
+
+#([0., self.stimF_str, 0.]),
    
 #def main velocity_y, stimF_strength, past_state=False, detection_type='absolute'):
 #    veloy = None
