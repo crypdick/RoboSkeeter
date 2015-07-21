@@ -88,8 +88,9 @@ class Trajectory():
     
 
     def plot_kinematic_compass(self, kind='avg_mag_per_bin', data=None, flags=''):
-        if data is None:
+        if data is None: # TODO: wtf?
             data = self.ensemble
+        # TODO: add heading angle plot
         for vector_name in self.agent_info['forces']+self.agent_info['kinematic_vals']:
             # from enemble, selec mag and theta
             df = eval("data[['"+vector_name+"_xy_mag', '"+vector_name+"_xy_theta']]")
@@ -120,6 +121,9 @@ class Trajectory():
             else:
 #                print ensemble
                 self.plot_kinematic_compass(data=ensemble, flags='Plume Triggered {}'.format(behavior))
+
+    def plot_heading_compass(self):
+        pass # TODO
         
         
     def plot_single_3Dtrajectory(self, trajectory_i=0):
@@ -183,7 +187,14 @@ class Trajectory():
             "{ratio}".format(size=in_out.size, vecsum=in_out.sum(), ratio=in_out.sum()/in_out.size)
             
             
-    def describe(self, plot_kwargs={'trajectories':False, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_violin':True}):
+    def describe(
+            self,
+            plot_kwargs={
+                'trajectories':False,
+                'heatmap':True,
+                'states':True,
+                'singletrajectories':False,
+                'force_violin':True}):
         print self.ensemble.describe()
         if plot_kwargs['heatmap'] is True:
             self.plot_posheatmap()
