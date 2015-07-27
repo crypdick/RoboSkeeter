@@ -184,6 +184,7 @@ class Agent():
         detect_thresh=0.023175,
         bounded=True,
         wallF_params=(4e-1, 1e-6, 1e-7, 250, "walls_only"),
+        mass = 3e-7, #3.0e-6 # 2.88e-6  # mass (kg) =2.88 mg,
         k=0.):
         """ Initialize object with instant variables, and trigger other funcs.
         """
@@ -211,7 +212,7 @@ class Agent():
         
         self.metadata = dict()
         # population weight data: 2.88 +- 0.35mg
-        self.metadata['mass'] = 3e-7 #3.0e-6 # 2.88e-6  # mass (kg) =2.88 mg
+        self.metadata['mass'] = mass
         self.metadata['time_max'] = Tmax
         self.metadata['boundary'] = self.boundary
         self.metadata['heater_position'] = self.heater
@@ -245,13 +246,14 @@ class Agent():
         # self._repulsion_funcs = repulsion_landscape3D.landscape(boundary=self.boundary)
 
 
-    def fly(self, total_trajectories=1):
+    def fly(self, total_trajectories=1, verbose=True):
         ''' iterates _fly_single total_trajectories times
         '''
         traj_count = 0
         while traj_count < total_trajectories:
-            sys.stdout.write("\rTrajectory {}/{}".format(traj_count+1, total_trajectories))
-            sys.stdout.flush()
+            if verbose is True:
+                sys.stdout.write("\rTrajectory {}/{}".format(traj_count+1, total_trajectories))
+                sys.stdout.flush()
             vectors_object = self._fly_single(self.dt, self.metadata['mass'], self.detect_thresh, self.boundary)
             # extract trajectory object attribs, append to our lists.
             setattr(vectors_object, 'trajectory_num', traj_count)
@@ -272,8 +274,9 @@ class Agent():
             
             traj_count += 1
             if traj_count == total_trajectories:
-                sys.stdout.write("\rSimulations finished. Performing deep magic.")
-                sys.stdout.flush()
+                if verbose is True:
+                    sys.stdout.write("\rSimulations finished. Performing deep magic.")
+                    sys.stdout.flush()
         
         
         self.metadata['total_trajectories'] = total_trajectories
@@ -644,7 +647,7 @@ def main(heater):
         bounded=True,
         wallF_params=wallF_params)
     sys.stdout.write("\rAgent born")
-    skeeter.fly(total_trajectories=1)
+    skeeter.fly(total_trajectories=10)
     
     # trajectories.plot_kinematic_hists()
     
