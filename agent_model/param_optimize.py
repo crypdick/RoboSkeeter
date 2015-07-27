@@ -3,7 +3,7 @@ __author__ = 'richard'
 import agent3D
 import plume3D
 import trajectory3D
-from scipy.optimize import minimize, fminbound, basinhopping
+from scipy.optimize import minimize, fminbound, basinhopping, fmin
 import numpy as np
 # from matplotlib import pyplot as plt
 import pdb
@@ -18,13 +18,21 @@ csv = csv.T
 observed = csv[4][:-1] # throw out last datum
 
 # wrapper func for agent 3D
-def wrapper(bias_scale_prime):
-    if type(bias_scale_prime) == 'list':
-        bias_scale_prime = bias_scale_prime[0]
-    bias_scale_prime *= 1e-8
-    print bias_scale_prime
+def wrapper(GUESS):
+    """
+    :param bias_scale_GUESS:
+    :param mass_GUESS:
+        mean mosquito mass is 2.88e-6
+    :param damping_GUESS:
+        estimated damping was 5e-6, # cranked up to get more noise #5e-6,#1e-6,  # 1e-5
+    :return:
+    """
+    rescaling = 1e-8
+    bias_scale_GUESS = GUESS[0] * rescaling
+    mass_GUESS = GUESS[1] * rescaling
+    damping_GUESS = GUESS[2] * rescaling
 
-#    beta_prime, bias_scale_prime = param_vect
+#    beta_prime, bias_scale_GUESS = param_vect
     # when we run this, agent3D is run and we return a score
     scalar = 1e-7
 
@@ -40,15 +48,17 @@ def wrapper(bias_scale_prime):
         heater="l",
         v0_stdev=0.01,
         wtf=7e-07,
-        biasF_scale=bias_scale_prime, #4e-05,
+        wtf_scalar=.05,
+        biasF_scale=bias_scale_GUESS, #4e-05,
         stimF_str=7e-7,
-        beta=5e-6,
+        beta=damping_GUESS, # 5e-6,
         Tmax=15.,
+        mass=mass_GUESS,
         dt=0.01,
         detect_thresh=0.023175,
         bounded=True,
         wallF_params=wallF_params)
-    myagent.fly(total_trajectories=10)
+    myagent.fly(total_trajectories=10, verbose=False)
 
     ensemble = trajectories.ensemble
     trimmed_ensemble = ensemble.loc[
@@ -107,13 +117,23 @@ def main():
 #        options={'xtol': 1e-7, 'disp':True},
 #        callback=callbackF)
 
-    result = fminbound(
+    # result = fminbound(
+    #     wrapper, # bias_scale_GUESS, mass_GUESS, damping_GUESS)
+    #     np.array([100, 200, 100]),
+    #     np.array([1000, 1000, 1000]),
+    #     xtol=100,
+    #     full_output=True,
+    #     disp=3)
+
+    result = fmin(
         wrapper,
-        100,
-        1000,
-        xtol=1,
-        full_output=True,
-        disp=3)
+        [1020, 288, 500], # [1.0239e-5, 2.88e-6,  5e-6]
+        xtol=20,
+        full_output=1,
+        disp=1,
+        retall=1
+        # ftol=0.0001
+    )
 
     # result = basinhopping(
     #     wrapper,
