@@ -179,10 +179,12 @@ class Agent():
         beta=1e-5,
         biasF_scale=4e-06,
         wtf=7e-07,
+        wtf_scalar=0.,
         stimF_str=1e-4,
         detect_thresh=0.023175,
         bounded=True,
         wallF_params=(4e-1, 1e-6, 1e-7, 250, "walls_only"),
+        mass = 3e-7, #3.0e-6 # 2.88e-6  # mass (kg) =2.88 mg,
         k=0.):
         """ Initialize object with instant variables, and trigger other funcs.
         """
@@ -194,7 +196,12 @@ class Agent():
         self.k = k
         self.beta = beta
         self.biasF_scale = biasF_scale
-        self.wtf = wtf
+        # self.wtf = wtf
+        # the mean of a lognorm dist is E[X] = e ** (mu + 1/2 omega **2)
+        # in our case, mu = -0.405632480939 and sigma = 0.932352661694 * 0.5
+        # which is then scaled by biasF_scale
+        self.wtf = np.exp(-0.405632480939 + 0.5 * 0.932352661694 * 0.5 ** 2) * biasF_scale * wtf_scalar
+        # print wtf, self.wtf_scalar, biasF_scale
         self.detect_thresh = detect_thresh     
         self.wallF_params = wallF_params
         self.stimF_str = stimF_str
@@ -205,7 +212,7 @@ class Agent():
         
         self.metadata = dict()
         # population weight data: 2.88 +- 0.35mg
-        self.metadata['mass'] = 3.0e-6 # 2.88e-6  # mass (kg) =2.88 mg
+        self.metadata['mass'] = mass
         self.metadata['time_max'] = Tmax
         self.metadata['boundary'] = self.boundary
         self.metadata['heater_position'] = self.heater
@@ -215,7 +222,7 @@ class Agent():
         self.metadata['k'] = k
         self.metadata['beta'] = beta
         self.metadata['biasF_scale'] = biasF_scale
-        self.metadata['wtf'] = wtf
+        self.metadata['wtf'] = self.wtf
         self.metadata['wallF_params'] = wallF_params
         # for stats, later
         self.metadata['time_target_find_avg'] = []
@@ -239,13 +246,14 @@ class Agent():
         # self._repulsion_funcs = repulsion_landscape3D.landscape(boundary=self.boundary)
 
 
-    def fly(self, total_trajectories=1):
+    def fly(self, total_trajectories=1, verbose=True):
         ''' iterates _fly_single total_trajectories times
         '''
         traj_count = 0
         while traj_count < total_trajectories:
-            sys.stdout.write("\rTrajectory {}/{}".format(traj_count+1, total_trajectories))
-            sys.stdout.flush()
+            if verbose is True:
+                sys.stdout.write("\rTrajectory {}/{}".format(traj_count+1, total_trajectories))
+                sys.stdout.flush()
             vectors_object = self._fly_single(self.dt, self.metadata['mass'], self.detect_thresh, self.boundary)
             # extract trajectory object attribs, append to our lists.
             setattr(vectors_object, 'trajectory_num', traj_count)
@@ -266,8 +274,9 @@ class Agent():
             
             traj_count += 1
             if traj_count == total_trajectories:
-                sys.stdout.write("\rSimulations finished. Performing deep magic.")
-                sys.stdout.flush()
+                if verbose is True:
+                    sys.stdout.write("\rSimulations finished. Performing deep magic.")
+                    sys.stdout.flush()
         
         
         self.metadata['total_trajectories'] = total_trajectories
@@ -627,17 +636,18 @@ def main(heater):
         agent_pos="downwind_plane",  # [0.250180, -0.050700, 0.144400],
         heater=heater,
         v0_stdev=0.01,
-        wtf=3.5e-7, #7e-07,
-        biasF_scale=4.12405e-6,
-        stimF_str=3.5e-7, #7e-7,
-        beta=5e-6,#1e-6,  # 1e-5
+        wtf=3.5e-7,
+        wtf_scalar=.05,
+        biasF_scale= 1.0239e-5, #4.12405e-6,
+        stimF_str=1e-7, #7e-7,
+        beta=5e-6, # cranked up to get more noise #5e-6,#1e-6,  # 1e-5
         Tmax=15.,
         dt=0.01,
         detect_thresh=0.023175,
         bounded=True,
         wallF_params=wallF_params)
     sys.stdout.write("\rAgent born")
-    skeeter.fly(total_trajectories=200)
+    skeeter.fly(total_trajectories=10)
     
     # trajectories.plot_kinematic_hists()
     
@@ -650,22 +660,22 @@ def main(heater):
     
 
 if __name__ == '__main__':
-    HEATER = 'r'#None # 'l', 'r'
+    HEATER = 'l'#None # 'l', 'r'
     myplume, trajectories, skeeter = main(HEATER)
     print "\nDone."
     # trajectories.plot_single_3Dtrajectory()
 
-    # csv dump for Sharri
-    e = trajectories.ensemble
-    r = e.trajectory_num.iloc[-1]
+    # # csv dump for Sharri
+    # e = trajectories.ensemble
+    # r = e.trajectory_num.iloc[-1]
+    #
+    # for i in range(r+1):
+    #     e1 = e.loc[e['trajectory_num'] == i, ['position_x', 'position_y', 'position_z', 'inPlume']]
+    #     e1.to_csv("l"+str(i)+'.csv', index=False)
 
-    for i in range(r+1):
-        e1 = e.loc[e['trajectory_num'] == i, ['position_x', 'position_y', 'position_z', 'inPlume']]
-        e1.to_csv(str(i)+'.csv', index=False)
-
-    trajectories.plot_kinematic_hists()
-    trajectories.plot_posheatmap()
-    trajectories.plot_force_violin()
+    # trajectories.plot_kinematic_hists()
+    # trajectories.plot_posheatmap()
+    # trajectories.plot_force_violin()
 
     # # for plume stats
     # g = e.loc[e['plume_experience'].isin(['Left_plume Exit left', 'Left_plume Exit right', 'Right_plume Exit left', 'Right_plume Exit right'])]
