@@ -5,7 +5,7 @@ import plume3D
 import trajectory3D
 from scipy.optimize import minimize, fminbound, basinhopping, fmin
 import numpy as np
-# from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt
 import pdb
 import time
 
@@ -49,7 +49,7 @@ def wrapper(GUESS):
         trajectories,
         myplume,
         agent_pos="downwind_plane",
-        heater="l",
+        heater=None,
         v0_stdev=0.01,
         wtf=7e-07,
         wtf_scalar=.05,
@@ -62,7 +62,7 @@ def wrapper(GUESS):
         detect_thresh=0.023175,
         bounded=True,
         wallF_params=wallF_params)
-    myagent.fly(total_trajectories=1, verbose=False)
+    myagent.fly(total_trajectories=20, verbose=False)
 
     ensemble = trajectories.ensemble
     trimmed_ensemble = ensemble.loc[
@@ -98,27 +98,33 @@ def error_fxn(ensemble):
     vabs_counts = vabs_counts.astype(float)
     vabs_counts_n = vabs_counts / vabs_counts.sum()
 
-
-    from matplotlib import pyplot as plt
-    plt.figure()
-    plt.plot(aabs_bins[:-1], aabs_counts_n)
-    plt.plot(aabs_bins[:-1], a_observed, c='r')
-    plt.show()
-    _ = raw_input("Press [enter] to continue.") # wait for input from the user
-    plt.close()    # close the figure to show the next one.
-
-    plt.plot(vabs_bins[:-1], vabs_counts_n)
-    plt.plot(vabs_bins[:-1], v_observed, c='r')
-    plt.show()
-    _ = raw_input("Press [enter] to continue.") # wait for input from the user
-    plt.close()    # close the figure to show the next one.
-
     # print csv
     # print aabs_counts_n, 'counts',
-    accel_error = np.sqrt(np.mean((aabs_counts_n - a_observed)**2)) * 100000  # multiply score to get better granularity
-    velocity_error = np.sqrt(np.mean((vabs_counts_n - v_observed)**2)) * 100000
+    accel_error = np.sum(abs(aabs_counts_n - a_observed)) * 100000  # multiply score to get better granularity
+    velocity_error = np.sum(abs(vabs_counts_n - v_observed)) * 400000 # there are fewer residuals for velo, so we multiply it more
 
-    return accel_error + velocity_error
+    final_score = accel_error + velocity_error
+    global HIGH_SCORE
+    if final_score < HIGH_SCORE:
+        HIGH_SCORE = final_score
+
+        plt.ioff()
+        plt.figure()
+        plt.plot(aabs_bins[:-1], aabs_counts_n, label='RoboSkeeter')
+        plt.plot(aabs_bins[:-1], a_observed, c='r', label='experiment')
+        plt.title('accel score=> {}'.format(HIGH_SCORE))
+        plt.legend()
+        plt.show()
+        plt.close()
+
+        plt.plot(vabs_bins[:-1], vabs_counts_n, label='RoboSkeeter')
+        plt.plot(vabs_bins[:-1], v_observed, c='r', label='experiment')
+        plt.title('velocity score=> {}'.format(HIGH_SCORE))
+        plt.legend()
+        plt.show()
+        plt.close()
+
+    return final_score
 
 # # for nelder mead
 # Nfeval = 1
@@ -136,6 +142,8 @@ def error_fxn(ensemble):
 
 
 def main():
+    global HIGH_SCORE
+    HIGH_SCORE = 1e10
 #    result = minimize(
 #        wrapper,
 #        [1e-5, 4e-5],
@@ -155,7 +163,7 @@ def main():
     print "Starting optimizer."
     result = fmin(
         wrapper,
-        [1020, 288, 500], # [1.0239e-5, 2.88e-6,  5e-6]
+        [412, 288, 500], # [1.0239e-5, 2.88e-6,  5e-6]
         xtol=20,
         full_output=1,
         disp=1,
