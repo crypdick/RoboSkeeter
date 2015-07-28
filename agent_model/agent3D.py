@@ -179,7 +179,7 @@ class Agent():
         beta=1e-5,
         biasF_scale=4e-06,
         wtf=7e-07,
-        wtf_scalar=0.,
+        wtf_scalar=0.05,
         stimF_str=1e-4,
         detect_thresh=0.023175,
         bounded=True,
@@ -636,18 +636,17 @@ def main(heater):
         agent_pos="downwind_plane",  # [0.250180, -0.050700, 0.144400],
         heater=heater,
         v0_stdev=0.01,
-        wtf=3.5e-7,
-        wtf_scalar=.05,
-        biasF_scale= 1.0239e-5, #4.12405e-6,
-        stimF_str=1e-7, #7e-7,
-        beta=5e-6, # cranked up to get more noise #5e-6,#1e-6,  # 1e-5
+        wtf=3.5e-7, #7e-07,
+        biasF_scale=4.12405e-6,
+        stimF_str=3.5e-7, #7e-7,
+        beta=5e-6,#1e-6,  # 1e-5
         Tmax=15.,
         dt=0.01,
         detect_thresh=0.023175,
         bounded=True,
         wallF_params=wallF_params)
     sys.stdout.write("\rAgent born")
-    skeeter.fly(total_trajectories=10)
+    skeeter.fly(total_trajectories=5)
     
     # trajectories.plot_kinematic_hists()
     
@@ -679,23 +678,3 @@ if __name__ == '__main__':
 
     # # for plume stats
     # g = e.loc[e['plume_experience'].isin(['Left_plume Exit left', 'Left_plume Exit right', 'Right_plume Exit left', 'Right_plume Exit right'])]
-
-    from matplotlib import pyplot as plt
-    dist = 0.1
-    ensemble = trajectories.ensemble.loc[
-            (trajectories.ensemble['position_x'] >0.25) & (trajectories.ensemble['position_x'] <0.95)]
-    # |a|
-    amin, amax = -4., 6.+dist  # arange drops last number, so pad range by dist
-    # pdb.set
-    accel_all_magn = ensemble['acceleration_3Dmagn'].values
-    aabs_counts, aabs_bins = np.histogram(accel_all_magn, bins=np.arange(amin, amax, dist))
-    if np.isnan(np.sum(aabs_counts)) is True:
-        print "NANANAN"
-    aabs_counts = aabs_counts.astype(float)
-    aabs_counts_n = aabs_counts / aabs_counts.sum()
-
-    plt.figure()
-    plt.plot(aabs_bins[:-1], aabs_counts_n, label='RoboSkeeter')
-    plt.title('accel')
-    plt.legend()
-    plt.show()
