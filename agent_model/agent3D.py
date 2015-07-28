@@ -173,7 +173,7 @@ class Agent():
         Plume_object,
         agent_pos='door',
         v0_stdev=0.01,
-        Tmax=15,
+        Tmax=15.,
         dt=0.01,
         heater='left',
         beta=1e-5,
@@ -184,7 +184,7 @@ class Agent():
         detect_thresh=0.023175,
         bounded=True,
         wallF_params=(4e-1, 1e-6, 1e-7, 250, "walls_only"),
-        mass = 3e-7, #3.0e-6 # 2.88e-6  # mass (kg) =2.88 mg,
+        mass = 3e-6, #3.0e-6 # 2.88e-6  # mass (kg) =2.88 mg,
         k=0.):
         """ Initialize object with instant variables, and trigger other funcs.
         """
@@ -660,7 +660,7 @@ def main(heater):
     
 
 if __name__ == '__main__':
-    HEATER = 'l'#None # 'l', 'r'
+    HEATER = None #None # 'l', 'r'
     myplume, trajectories, skeeter = main(HEATER)
     print "\nDone."
     # trajectories.plot_single_3Dtrajectory()
@@ -679,3 +679,22 @@ if __name__ == '__main__':
 
     # # for plume stats
     # g = e.loc[e['plume_experience'].isin(['Left_plume Exit left', 'Left_plume Exit right', 'Right_plume Exit left', 'Right_plume Exit right'])]
+
+    dist = 0.1
+    ensemble = trajectories.ensemble.loc[
+            (trajectories.ensemble['position_x'] >0.25) & (trajectories.ensemble['position_x'] <0.95)]
+    # |a|
+    amin, amax = -4., 6.+dist  # arange drops last number, so pad range by dist
+    # pdb.set
+    accel_all_magn = ensemble['acceleration_3Dmagn'].values
+    aabs_counts, aabs_bins = np.histogram(accel_all_magn, bins=np.arange(amin, amax, dist))
+    if np.isnan(np.sum(aabs_counts)) is True:
+        print "NANANAN"
+    aabs_counts = aabs_counts.astype(float)
+    aabs_counts_n = aabs_counts / aabs_counts.sum()
+
+    plt.figure()
+    plt.plot(aabs_bins[:-1], aabs_counts_n, label='RoboSkeeter')
+    plt.title('accel')
+    plt.legend()
+    plt.show()
