@@ -680,6 +680,7 @@ if __name__ == '__main__':
     # # for plume stats
     # g = e.loc[e['plume_experience'].isin(['Left_plume Exit left', 'Left_plume Exit right', 'Right_plume Exit left', 'Right_plume Exit right'])]
 
+    from matplotlib import pyplot as plt
     dist = 0.1
     ensemble = trajectories.ensemble.loc[
             (trajectories.ensemble['position_x'] >0.25) & (trajectories.ensemble['position_x'] <0.95)]
