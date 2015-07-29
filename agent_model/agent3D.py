@@ -125,6 +125,15 @@ def solve_heading(velo_x, velo_y):
     return theta*180/np.pi
 
 
+def fly_wrapper(agent_obj, args, traj_count):
+    """wrapper fxn for fly_single to use for multithreading
+    """
+    vectors_object = agent_obj._fly_single(*args)
+    setattr(vectors_object, 'trajectory_num', traj_count)
+    
+    return vectors_object
+
+
 class Agent():
     """Generate agent
 
@@ -250,27 +259,20 @@ class Agent():
         ''' iterates _fly_single total_trajectories times
         '''
         traj_count = 0
+        args = (self.dt, self.metadata['mass'], self.detect_thresh, self.boundary)
+        
+#        pool = Client()[:]
         while traj_count < total_trajectories:
             if verbose is True:
                 sys.stdout.write("\rTrajectory {}/{}".format(traj_count+1, total_trajectories))
                 sys.stdout.flush()
-            vectors_object = self._fly_single(self.dt, self.metadata['mass'], self.detect_thresh, self.boundary)
-            # extract trajectory object attribs, append to our lists.
-            setattr(vectors_object, 'trajectory_num', traj_count)
-#            trajectory.dynamics.set_index('trajectory', append=True, inplace=True)
-##            self._calc_polar_kinematics(vectors_object)
-#            print traj_count
-#            for k, v in vars(vectors_object).items():
-#                try:
-#                    print k, len(v)
-#                except TypeError:
-#                    print k, v, "TYPE ERROR"
-#                
-#            try:
+            vectors_object = fly_wrapper(self, args, traj_count)
+#            vectors_object = self._fly_single(self.dt, self.metadata['mass'], self.detect_thresh, self.boundary)
+#            # extract trajectory object attribs, append to our lists.
+#            setattr(vectors_object, 'trajectory_num', traj_count)
+
+            
             self.trajectory_obj.append_ensemble(vars(vectors_object))
-#            except ValueError:
-#                print "VALUE ERROR:"
-#                print vectors_object.plume_experience
             
             traj_count += 1
             if traj_count == total_trajectories:
@@ -646,7 +648,7 @@ def main(heater):
         bounded=True,
         wallF_params=wallF_params)
     sys.stdout.write("\rAgent born")
-    skeeter.fly(total_trajectories=5)
+    skeeter.fly(total_trajectories=2)
     
     # trajectories.plot_kinematic_hists()
     
