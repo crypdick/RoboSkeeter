@@ -71,6 +71,7 @@ import plume3D
 import trajectory3D
 import repulsion_landscape3D
 import sys
+import pandas as pd
 
 
 def place_heater(location):
@@ -130,8 +131,10 @@ def fly_wrapper(agent_obj, args, traj_count):
     """
     vectors_object = agent_obj._fly_single(*args)
     setattr(vectors_object, 'trajectory_num', traj_count)
+    df = pd.DataFrame(vars(vectors_object))
     
-    return vectors_object
+    
+    return df
 
 
 class Agent():
@@ -260,19 +263,21 @@ class Agent():
         '''
         traj_count = 0
         args = (self.dt, self.metadata['mass'], self.detect_thresh, self.boundary)
-        
-#        pool = Client()[:]
+        df_list = []
+        pool = Client()[:]
         while traj_count < total_trajectories:
             if verbose is True:
                 sys.stdout.write("\rTrajectory {}/{}".format(traj_count+1, total_trajectories))
                 sys.stdout.flush()
-            vectors_object = fly_wrapper(self, args, traj_count)
+            df = fly_wrapper(self, args, traj_count)
+            df_list.append(df)
 #            vectors_object = self._fly_single(self.dt, self.metadata['mass'], self.detect_thresh, self.boundary)
 #            # extract trajectory object attribs, append to our lists.
 #            setattr(vectors_object, 'trajectory_num', traj_count)
 
+            trajectories.ensemble = pd.concat(df_list)
             
-            self.trajectory_obj.append_ensemble(vars(vectors_object))
+#            self.trajectory_obj.append_ensemble(vars(vectors_object))
             
             traj_count += 1
             if traj_count == total_trajectories:
