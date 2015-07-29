@@ -90,14 +90,20 @@ def error_fxn(ensemble):
     if np.isnan(np.sum(aabs_counts)) is True:
         print "NANANAN"
     aabs_counts = aabs_counts.astype(float)
-    aabs_counts_n = aabs_counts / aabs_counts.sum()
+    if aabs_counts.sum() <0.01: # nothing in bins
+        return 1e9
+    else:
+        aabs_counts_n = aabs_counts / aabs_counts.sum()
 
     vdist =  0.015
     vmin, vmax = -0.7, 0.7
     velo_all_magn = ensemble['velocity_3Dmagn'].values
     vabs_counts, vabs_bins = np.histogram(velo_all_magn, bins=np.arange(vmin, vmax, vdist))
     vabs_counts = vabs_counts.astype(float)
-    vabs_counts_n = vabs_counts / vabs_counts.sum()
+    if vabs_counts.sum() <0.01: # nothing in bins
+        return 1e9
+    else:
+        vabs_counts_n = vabs_counts / vabs_counts.sum()
 
     # print csv
     # print aabs_counts_n, 'counts',
@@ -181,7 +187,7 @@ def main():
          [412, 288, 500],
          stepsize=500,
          T=4000,
-         minimizer_kwargs={"bounds": ((200, 1000),(255,1000),(200,1000))},
+         minimizer_kwargs={"bounds": ((200, 1000),(255,1000),(200,1000)), 'method': 'Nelder-Mead'},
          callback=callbackF,
          disp=True
          )
