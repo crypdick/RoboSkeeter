@@ -329,14 +329,14 @@ class Agent():
         V.turning = [None]*tsi_max
         V.heading_angle = np.full(tsi_max, np.nan)
         V.velocity_angular = np.full(tsi_max, np.nan)
-        
+
+        ######## INITIAL CONDITIONS
         # place agent
-        r0 = place_agent(self.metadata['initial_position'])
-        self.dim = len(r0)  # get dimension
-        V.position_x[0], V.position_y[0], V.position_z[0] = r0 # store initial position
+        V.position_x[0], V.position_y[0], V.position_z[0] = place_agent(self.metadata['initial_position'])
+        self.dim = 3
         
         # generate random intial velocity condition
-        v0 = np.random.normal(0, self.v0_stdev, self.dim)       
+        V.velocity_x[0], V.velocity_y[0], V.velocity_z[0] = np.random.normal(0, self.v0_stdev, self.dim)
 
         # generate a flight!
         for tsi in xrange(tsi_max):
@@ -351,7 +351,7 @@ class Agent():
                 V.inPlume[tsi] = self.plume_obj.check_for_plume(
                     [V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]])
             
-            # what is our behavior given our plume interactions thus far?
+            ############ what is our behavior given our plume interactions thus far?
             if tsi == 0:
                 V.plume_experience[tsi] = 'searching'
             else:
@@ -377,6 +377,7 @@ class Agent():
                             pass
                         else:  # found the plume again!
                             V.plume_experience[tsi:]
+            ######################################################################
 
             
             # calculate driving forces
@@ -406,37 +407,31 @@ class Agent():
 #                    print 
 #            _stimF_x[tsi], _stimF_y[tsi], _stimF_z[tsi] = stimF
             
-            # calculate current force
-            if tsi == 0:
-                totalF = -self.beta*v0 + biasF + upwindF + wallRepulsiveF# + stimF
-            else:
-                totalF = -self.beta*np.array([V.velocity_x[tsi-1], V.velocity_y[tsi-1], V.velocity_z[tsi-1]])\
-                  + biasF + upwindF + wallRepulsiveF + stimF
+            ########################### calculate current force
+            totalF = -self.beta*np.array([V.velocity_x[tsi], V.velocity_y[tsi], V.velocity_z[tsi]])\
+              + biasF + upwindF + wallRepulsiveF + stimF
             V.totalF_x[tsi], V.totalF_y[tsi], V.totalF_z[tsi] = totalF
+            ###############################
             
             # calculate current acceleration
-            accel = totalF / m
-            V.acceleration_x[tsi], V.acceleration_y[tsi], V.acceleration_z[tsi] = accel
-            
-            # calculate velocity
-            if tsi == 0:
-                V.velocity_x[tsi], V.velocity_y[tsi], V.velocity_z[tsi] =\
-                v0 + accel*dt
-            else:
-                V.velocity_x[tsi], V.velocity_y[tsi], V.velocity_z[tsi] =\
-                np.array([V.velocity_x[tsi-1], V.velocity_y[tsi-1], V.velocity_z[tsi-1]]) + accel*dt
+            V.acceleration_x[tsi], V.acceleration_y[tsi], V.acceleration_z[tsi] = totalF / m
 
-
-            # if time is out, end loop before we solve for future position
-            if tsi == tsi_max-1:
+            # if time is out, end loop before we solve for future velo, position
+            if tsi == tsi_max-1: # -1 because of how range() works
 #                self.metadata['target_found'][0]  = False
 #                self.metadata['time_to_target_find'][0] = np.nan
                 V = self.land(tsi, V)
-                break            
+                break
+
+            # calculate future velocity given the forces we just got
+            V.velocity_x[tsi+1], V.velocity_y[tsi+1], V.velocity_z[tsi+1] = \
+                np.array([V.velocity_x[tsi], V.velocity_y[tsi], V.velocity_z[tsi]]) \
+                + np.array([V.acceleration_x[tsi], V.acceleration_y[tsi], V.acceleration_z[tsi]]) * dt
+
             
             # solve candidate position for next timestep
             candidate_pos = np.array([V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]]) \
-                + np.array([V.velocity_x[tsi], V.velocity_y[tsi], V.velocity_z[tsi]])*dt
+                + np.array([V.velocity_x[tsi], V.velocity_y[tsi], V.velocity_z[tsi]])*dt # shouldnt position in future be affected by the forces in this timestep? aka use velo[i+1]
 #            
             # if walls are enabled, forbid mosquito from going out of bounds
             if bounded is True:  
@@ -448,9 +443,9 @@ class Agent():
                     break
                 if candidate_pos[0] < boundary[0]:  # too far left
 #                    print "too far left"
-                    candidate_pos[0] = boundary[0] + 1e-4
+                    candidate_pos[0] = boundary[0] + 1e-4 # teleport back inside
                     if BOUNCE == 'elastic':
-                        V.velocity_x[tsi+1] = V.velocity_x[tsi+1] * -1
+                        V.velocity_x[tsi+1] *= -1
 #                        print "boom! left"
                     elif BOUNCE == 'crash':
                         V.velocity_x[tsi+1] = 0.
@@ -460,7 +455,7 @@ class Agent():
 #                    print "too left"
                     candidate_pos[1] = boundary[2] + 1e-4 # note, left is going more negative in our convention
                     if BOUNCE == 'elastic':
-                        V.velocity_y[tsi+1] = V.velocity_y[tsi+1] * -1
+                        V.velocity_y[tsi+1] *= -1
                     elif BOUNCE == "crash":
 #                        print "teleport!"
                         V.velocity_y[tsi+1] = 0.
@@ -469,7 +464,7 @@ class Agent():
 #                    print "too far right"
                     candidate_pos[1] = boundary[3] - 1e-4
                     if BOUNCE == 'elastic':
-                        V.velocity_y[tsi+1] = V.velocity_y[tsi+1] * -1
+                        V.velocity_y[tsi+1] *= -1
                     elif BOUNCE == 'crash':
                         V.velocity_y[tsi+1] = 0.
                 
@@ -478,7 +473,7 @@ class Agent():
 #                    print "too far above"
                     candidate_pos[2] = boundary[5] - 1e-4
                     if BOUNCE == 'elastic':
-                        V.velocity_z[tsi+1] = V.velocity_z[tsi+1] * -1
+                        V.velocity_z[tsi+1] *= -1
 #                        print "boom! top"
                     elif BOUNCE == "crash":
 #                        print "teleport!"
@@ -488,7 +483,7 @@ class Agent():
 #                    print "too far below"
                     candidate_pos[2] = boundary[4] + 1e-4
                     if BOUNCE == 'elastic':
-                        V.velocity_z[tsi+1] = V.velocity_z[tsi+1] * -1
+                        V.velocity_z[tsi+1] *= -1
                     elif BOUNCE == 'crash':
                         V.velocity_z[tsi+1] = 0.
                         
@@ -498,7 +493,7 @@ class Agent():
             # solve final heading #TODO: also solve zy?
             V.heading_angle[tsi] = solve_heading(V.velocity_y[tsi], V.velocity_x[tsi])
             # ... and angular velo
-            if tsi == 0:
+            if tsi == 0: # hack to prevent index error
                 V.velocity_angular[tsi] = 0
             else:
                 V.velocity_angular[tsi] = (V.heading_angle[tsi] - V.heading_angle[tsi-1]) / dt
