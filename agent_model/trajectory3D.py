@@ -41,13 +41,13 @@ import numpy as np
 
 class Trajectory():
     def __init__(self):
-        self.ensemble = pd.DataFrame()
+#        self.ensemble = pd.DataFrame()
         self.agent_info = {}
 
         
-    def append_ensemble(self, arraydict):
-        trajectory = pd.DataFrame(arraydict)
-        self.ensemble = self.ensemble.append(trajectory)
+#    def append_ensemble(self, arraydict):
+#        trajectory = pd.DataFrame(arraydict)
+#        self.ensemble = self.ensemble.append(trajectory)
         
         
     def plot_single_trajectory(self, trajectory_i=0):

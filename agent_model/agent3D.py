@@ -67,13 +67,17 @@ import numpy as np
 from math import atan2
 import baseline_driving_forces3D
 import stim_biasF3D
-import plume3D
+from plume3D import *
 import trajectory3D
 import repulsion_landscape3D
 import sys
 import pandas as pd
+from IPython.parallel import Client, interactive
+import os
+import time
 
-
+os.system('ipcluster start')
+time.sleep(35)
 def place_heater(location):
     ''' given {left, right, none, custom location} place heater in the coordinates in our convention, as well as height
     and diameter location
@@ -99,41 +103,40 @@ def place_heater(location):
 
 
 def place_agent(agent_pos):
-    ''' puts the agent in an initial position, usually within the bounds of the
-    cage
-    '''
-    if type(agent_pos) is list:
-        return agent_pos
-    if agent_pos == "center":
-        return [0.1524, 0., 0.]  # center of box
-        # FIXME cage height
-    if agent_pos == "cage":  # bounds of cage
-        return [np.random.uniform(0.1143, 0.1909), np.random.uniform(-0.0381, 0.0381), np.random.uniform(0., 0.1016)]
-        # FIXME cage height
-    if agent_pos == "door":  # start trajectories when they exit the front door
-        return [0.1909, np.random.uniform(-0.0381, 0.0381), np.random.uniform(0., 0.1016)]
-        # FIXME cage height
-    if agent_pos == 'downwind_plane':
-        return [0.1, np.random.uniform(-0.127, 0.127), np.random.uniform(0., 0.254)]
-    else:
-        raise Exception('invalid agent position specified')
-
-
+            ''' puts the agent in an initial position, usually within the bounds of the
+            cage
+            '''
+            if type(agent_pos) is list:
+                return agent_pos
+            if agent_pos == "center":
+                return [0.1524, 0., 0.]  # center of box
+                # FIXME cage height
+            if agent_pos == "cage":  # bounds of cage
+                return [np.random.uniform(0.1143, 0.1909), np.random.uniform(-0.0381, 0.0381), np.random.uniform(0., 0.1016)]
+                # FIXME cage height
+            if agent_pos == "door":  # start trajectories when they exit the front door
+                return [0.1909, np.random.uniform(-0.0381, 0.0381), np.random.uniform(0., 0.1016)]
+                # FIXME cage height
+            if agent_pos == 'downwind_plane':
+                return [0.1, np.random.uniform(-0.127, 0.127), np.random.uniform(0., 0.254)]
+            else:
+                raise Exception('invalid agent position specified')
 
 
 def solve_heading(velo_x, velo_y):
     theta = atan2(velo_y, velo_x)
     return theta*180/np.pi
 
-
-def fly_wrapper(agent_obj, args, traj_count):
+@interactive
+def fly_wrapper(args, skeeter, i):
     """wrapper fxn for fly_single to use for multithreading
     """
-    vectors_object = agent_obj._fly_single(*args)
-    setattr(vectors_object, 'trajectory_num', traj_count)
+
+    vectors_object = skeeter._fly_single(*args)
+    setattr(vectors_object, 'trajectory_num', i)
     df = pd.DataFrame(vars(vectors_object))
-    
-    
+#    
+#    
     return df
 
 
@@ -182,7 +185,6 @@ class Agent():
     def __init__(
         self,
         Trajectory_object,
-        Plume_object,
         agent_pos='door',
         v0_stdev=0.01,
         Tmax=15.,
@@ -227,7 +229,7 @@ class Agent():
         self.metadata['mass'] = mass
         self.metadata['time_max'] = Tmax
         self.metadata['boundary'] = self.boundary
-        self.metadata['heater_position'] = self.heater
+        self.metadata['heater_position'] = place_heater(heater)
         self.metadata['detection_threshold'] = detect_thresh
         self.metadata['initial_position'] = agent_pos
         self.metadata['initial_velo_stdev'] = v0_stdev
@@ -251,8 +253,8 @@ class Agent():
         # it is the stdevof the broader of two Gaussians that fit the distribution of angular velocity
         self.metadata['turn_threshold'] = 433.5         
         
-        self.trajectory_obj = Trajectory_object
-        self.plume_obj = Plume_object
+#        self.trajectory_obj = Trajectory_object
+#        self.plume_obj = Plume_object
         
         # # create repulsion landscape
         # self._repulsion_funcs = repulsion_landscape3D.landscape(boundary=self.boundary)
@@ -261,29 +263,44 @@ class Agent():
     def fly(self, total_trajectories=1, verbose=True):
         ''' iterates _fly_single total_trajectories times
         '''
-        traj_count = 0
-        args = (self.dt, self.metadata['mass'], self.detect_thresh, self.boundary)
-        df_list = []
+#        traj_count = 0
+#        args = [self.dt, self.metadata['mass'], self.detect_thresh, self.boundary]
+
         pool = Client()[:]
-        while traj_count < total_trajectories:
-            if verbose is True:
-                sys.stdout.write("\rTrajectory {}/{}".format(traj_count+1, total_trajectories))
-                sys.stdout.flush()
-            df = fly_wrapper(self, args, traj_count)
-            df_list.append(df)
+        pool.use_dill()
+        pool.execute('import numpy as np')
+        pool.execute('import plume3D')
+        pool.push({'place_agent': place_agent, })
+        
+        f = interactive(fly_wrapper)
+
+        self.myplume = plume3D.Plume(self.heater)
+
+#        if verbose is True:
+#            sys.stdout.write("\rTrajectory {}/{}".format(traj_count+1, total_trajectories))
+#            sys.stdout.flush()
+
+        results = [pool.apply(f, args=(self.dt, self.metadata['mass'], self.detect_thresh, self.boundary, self.myplume), i=i, skeeter=self)
+                        for i in range(total_trajectories)]
+        output = [p.get() for p in results]
+
+
+
+
+#            df_list.append(df)
 #            vectors_object = self._fly_single(self.dt, self.metadata['mass'], self.detect_thresh, self.boundary)
 #            # extract trajectory object attribs, append to our lists.
 #            setattr(vectors_object, 'trajectory_num', traj_count)
 
-            trajectories.ensemble = pd.concat(df_list)
+        trajectories.ensemble = pd.concat(ouput)
             
 #            self.trajectory_obj.append_ensemble(vars(vectors_object))
             
-            traj_count += 1
-            if traj_count == total_trajectories:
-                if verbose is True:
-                    sys.stdout.write("\rSimulations finished. Performing deep magic.")
-                    sys.stdout.flush()
+#            traj_count += 1
+#            if traj_count == total_trajectories:
+#                if verbose is True:
+#                    sys.stdout.write("\rSimulations finished. Performing deep magic.")
+#                    sys.stdout.flush()
         
         
         self.metadata['total_trajectories'] = total_trajectories
@@ -295,8 +312,8 @@ class Agent():
 #        if __name__ == '__main__' and total_trajectories == 1:
 #            self.trajectory_obj.plot_single_trajectory()
 
-    
-    def _fly_single(self, dt, m, detect_thresh, boundary, bounded=True):
+    @interactive
+    def _fly_single(self, dt, m, detect_thresh, boundary, plume_obj, bounded=True):
         """Run the simulation using Euler's method
     
         First put everything into np arrays, then at end put it into a Pandas DF
@@ -308,33 +325,33 @@ class Agent():
         
         # V for vector
         # retrieve dict w/ vars(V)
-        V = Object()
+        V = {}
         
-        for name in self.metadata['kinematic_vals']+self.metadata['forces']:
-            # adds attribute to V
-            for ext in ['_x', '_y', '_z', '_xy_theta', '_xy_mag']:
-                setattr(V, name+ext, np.full(tsi_max, np.nan))
+        # for name in self.metadata['kinematic_vals']+self.metadata['forces']:
+        #     # adds attribute to V
+        #     for ext in ['_x', '_y', '_z', '_xy_theta', '_xy_mag']:
+        #         exec('V[{}] = np.full(tsi_max, np.nan)'.format(name+ext))
         
         
         
         # initialize np arrays
         
-        V.times = np.linspace(0, self.metadata['time_max'], tsi_max)
-        V.position_x = np.full(tsi_max, np.nan)
-        V.position_y = np.full(tsi_max, np.nan)
-        V.position_z = np.full(tsi_max, np.nan)
+        V['times'] = np.linspace(0, self.metadata['time_max'], tsi_max)
+        V['position_x'] = np.full(tsi_max, np.nan)
+        V['position_y'] = np.full(tsi_max, np.nan)
+        V['position_z'] = np.full(tsi_max, np.nan)
 #        _post_velocity_x = np.full(tsi_max, np.nan)
 #        _temperature = np.full(tsi_max, np.nan) # depreciated
-        V.inPlume = np.full(tsi_max, -1, dtype=np.uint8)
-        V.plume_experience = [None]*tsi_max
-        V.turning = [None]*tsi_max
-        V.heading_angle = np.full(tsi_max, np.nan)
-        V.velocity_angular = np.full(tsi_max, np.nan)
+        V['inPlume'] = np.full(tsi_max, -1, dtype=np.uint8)
+        V['plume_experience'] = [None]*tsi_max
+        V['turning'] = [None]*tsi_max
+        V['heading_angle'] = np.full(tsi_max, np.nan)
+        V['velocity_angular'] = np.full(tsi_max, np.nan)
         
         # place agent
         r0 = place_agent(self.metadata['initial_position'])
         self.dim = len(r0)  # get dimension
-        V.position_x[0], V.position_y[0], V.position_z[0] = r0 # store initial position
+        V['position_x'][0], V['position_y'][0], V['position_z'][0] = r0 # store initial position
         
         # generate random intial velocity condition
         v0 = np.random.normal(0, self.v0_stdev, self.dim)       
@@ -343,89 +360,79 @@ class Agent():
         for tsi in xrange(tsi_max):
             # import pdb; pdb.set_trace()
             # sense the temperature
-#            _temperature[tsi] = self.plume_obj.temp_lookup([_position_x[tsi], _position_y[tsi]]) # depreciated
+#            _temperature[tsi] = plume_objj.temp_lookup([_position_x'][tsi], _position_y'][tsi]]) # depreciated
             
             # are we in the plume?
-            if self.plume_obj.condition is None:  # skip if no plume
-                V.inPlume[tsi] = 0
+            if plume_objj.condition is None:  # skip if no plume
+                V['inPlume'][tsi] = 0
             else:
-                V.inPlume[tsi] = self.plume_obj.check_for_plume(
-                    [V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]])
+                V['inPlume'][tsi] = plume_obj.check_for_plume(
+                    [V['position_x'][tsi], V['position_y'][tsi], V['position_z'][tsi]])
             
             # what is our behavior given our plume interactions thus far?
             if tsi == 0:
-                V.plume_experience[tsi] = 'searching'
+                V['plume_experience'][tsi] = 'searching'
             else:
-                if self.plume_obj.condition is None:  # hack for no plume condition
-                    V.plume_experience[tsi] = 'searching'
+                if plume_objj.condition is None:  # hack for no plume condition
+                    V['plume_experience'][tsi] = 'searching'
                 else:
-                    if V.plume_experience[tsi] is None: # need to find state
-                        V.plume_experience[tsi] = self._check_crossing_state(tsi, V.inPlume, V.velocity_y[tsi-1])
+                    if V['plume_experience'][tsi] is None: # need to find state
+                        V['plume_experience'][tsi] = self._check_crossing_state(tsi, V['inPlume'], V['velocity_y'][tsi-1])
                         # import pdb; pdb.set_trace()
-                        if V.plume_experience[tsi] in (
+                        if V['plume_experience'][tsi] in (
                                 'Left_plume Exit leftLeft_plume Exit rightRight_plume Exit leftRight_plume Exit right'):
                             try:
                                 for i in range(PLUME_TRIGGER_TIME): # store experience for the following timeperiod
-                                    V.plume_experience[tsi+i] = str(V.plume_experience[tsi])
+                                    V['plume_experience'][tsi+i] = str(V['plume_experience'][tsi])
                             except IndexError: # can't store whole snapshot, so save 'truncated' label instead
                                # print "plume trigger turn lasted less than threshold of {} timesteps "\
                                # "before trajectory ended, so adding _truncated suffix".format(tsi_max)
                                for i in range(tsi_max - tsi):
-                                    V.plume_experience[tsi+i] = (str(V.plume_experience[tsi])+'_truncated')
+                                    V['plume_experience'][tsi+i] = (str(V['plume_experience'][tsi])+'_truncated')
 
                     else: # if we're already orienting from past memory
-                        if V.inPlume is False:  # we haven't re-entered the plume
+                        if V['inPlume'] is False:  # we haven't re-entered the plume
                             pass
                         else:  # found the plume again!
-                            V.plume_experience[tsi:]
+                            V['plume_experience'][tsi:]
 
             
             # calculate driving forces
-            stimF = stim_biasF3D.stimF(V.plume_experience[tsi], self.stimF_str)
-            V.stimF_x[tsi], V.stimF_y[tsi], V.stimF_z[tsi] = stimF
+            stimF = stim_biasF3D.stimF(V['plume_experience'][tsi], self.stimF_str)
+            V['stimF_x'][tsi], V['stimF_y'][tsi], V['stimF_z'][tsi] = stimF
             
             biasF = baseline_driving_forces3D.bias_force(self.biasF_scale)
-            V.biasF_x[tsi], V.biasF_y[tsi], V.biasF_z[tsi] = biasF
+            V['biasF_x'][tsi], V['biasF_y'][tsi], V['biasF_z'][tsi] = biasF
             
             upwindF = baseline_driving_forces3D.upwindBiasForce(self.wtf)
-            V.upwindF_x[tsi], V.upwindF_y[tsi], V.upwindF_z[tsi] = upwindF
+            V['upwindF_x'][tsi], V['upwindF_y'][tsi], V['upwindF_z'][tsi] = upwindF
 
-            wallRepulsiveF = self.wallF_params[0] * repulsion_landscape3D.xyz_to_weights([V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]])
+            wallRepulsiveF = self.wallF_params[0] * repulsion_landscape3D.xyz_to_weights([V['position_x'][tsi], V['position_y'][tsi], V['position_z'][tsi]])
             # wallRepulsiveF = baseline_driving_forces3D.repulsionF(\
-            #     np.array([V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]]),\
+            #     np.array([V['position_x'][tsi], V['position_y'][tsi], V['position_z'][tsi]]),\
             #     self._repulsion_funcs, self.wallF_params)
-            V.wallRepulsiveF_x[tsi], V.wallRepulsiveF_y[tsi], V.wallRepulsiveF_z[tsi] = wallRepulsiveF
-            
-#            else:
-#                try:
-            
-#                except UnboundLocalError: # TODO: wtf?
-#                    stimF, inPlume = stim_biasF3D.main(_temperature[tsi], V.velocity_y[tsi],\
-#                        False, self.stimF_str)
-#                    print "erorr"
-#                else:
-#                    print 
-#            _stimF_x[tsi], _stimF_y[tsi], _stimF_z[tsi] = stimF
+            V['wallRepulsiveF_x'][tsi], V['wallRepulsiveF_y'][tsi], V['wallRepulsiveF_z'][tsi] = wallRepulsiveF
+
             
             # calculate current force
             if tsi == 0:
                 totalF = -self.beta*v0 + biasF + upwindF + wallRepulsiveF# + stimF
             else:
-                totalF = -self.beta*np.array([V.velocity_x[tsi-1], V.velocity_y[tsi-1], V.velocity_z[tsi-1]])\
+                totalF = -self.beta*np.array([V['velocity_x'][tsi-1], V['velocity_y'][tsi-1], V['velocity_z'][tsi-1]])\
                   + biasF + upwindF + wallRepulsiveF + stimF
-            V.totalF_x[tsi], V.totalF_y[tsi], V.totalF_z[tsi] = totalF
+            V['totalF_x'][tsi], V['totalF_y'][tsi], V['totalF_z'][tsi] = totalF
             
             # calculate current acceleration
             accel = totalF / m
-            V.acceleration_x[tsi], V.acceleration_y[tsi], V.acceleration_z[tsi] = accel
+            V['acceleration_x'][tsi], V['acceleration_y'][tsi], V['acceleration_z'][tsi] = accel
             
             # calculate velocity
             if tsi == 0:
-                V.velocity_x[tsi], V.velocity_y[tsi], V.velocity_z[tsi] =\
+                V['velocity_x'][tsi], V['velocity_y'][tsi], V['velocity_z'][tsi] =\
                 v0 + accel*dt
             else:
-                V.velocity_x[tsi], V.velocity_y[tsi], V.velocity_z[tsi] =\
-                np.array([V.velocity_x[tsi-1], V.velocity_y[tsi-1], V.velocity_z[tsi-1]]) + accel*dt
+                V['velocity_x'][tsi], V['velocity_y'][tsi], V['velocity_z'][tsi] =\
+                np.array([V['velocity_x'][tsi-1], V['velocity_y'][tsi-1], V['velocity_z'][tsi-1]]) + accel*dt
 
 
             # if time is out, end loop before we solve for future position
@@ -436,8 +443,8 @@ class Agent():
                 break            
             
             # solve candidate position for next timestep
-            candidate_pos = np.array([V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]]) \
-                + np.array([V.velocity_x[tsi], V.velocity_y[tsi], V.velocity_z[tsi]])*dt
+            candidate_pos = np.array([V['position_x'][tsi], V['position_y'][tsi], V['position_z'][tsi]]) \
+                + np.array([V['velocity_x'][tsi], V['velocity_y'][tsi], V['velocity_z'][tsi]])*dt
 #            
             # if walls are enabled, forbid mosquito from going out of bounds
             if bounded is True:  
@@ -451,88 +458,88 @@ class Agent():
 #                    print "too far left"
                     candidate_pos[0] = boundary[0] + 1e-4
                     if BOUNCE == 'elastic':
-                        V.velocity_x[tsi+1] = V.velocity_x[tsi+1] * -1
+                        V['velocity_x'][tsi+1] = V['velocity_x'][tsi+1] * -1
 #                        print "boom! left"
                     elif BOUNCE == 'crash':
-                        V.velocity_x[tsi+1] = 0.
+                        V['velocity_x'][tsi+1] = 0.
             
                 #y dim
                 if candidate_pos[1] > boundary[2]:  # too left
 #                    print "too left"
                     candidate_pos[1] = boundary[2] + 1e-4 # note, left is going more negative in our convention
                     if BOUNCE == 'elastic':
-                        V.velocity_y[tsi+1] = V.velocity_y[tsi+1] * -1
+                        V['velocity_y'][tsi+1] = V['velocity_y'][tsi+1] * -1
                     elif BOUNCE == "crash":
 #                        print "teleport!"
-                        V.velocity_y[tsi+1] = 0.
+                        V['velocity_y'][tsi+1] = 0.
 #                        print "crash! top wall"
                 if candidate_pos[1] < boundary[3]:  # too far right
 #                    print "too far right"
                     candidate_pos[1] = boundary[3] - 1e-4
                     if BOUNCE == 'elastic':
-                        V.velocity_y[tsi+1] = V.velocity_y[tsi+1] * -1
+                        V['velocity_y'][tsi+1] = V['velocity_y'][tsi+1] * -1
                     elif BOUNCE == 'crash':
-                        V.velocity_y[tsi+1] = 0.
+                        V['velocity_y'][tsi+1] = 0.
                 
                 # z dim
                 if candidate_pos[2] > boundary[5]:  # too far above
 #                    print "too far above"
                     candidate_pos[2] = boundary[5] - 1e-4
                     if BOUNCE == 'elastic':
-                        V.velocity_z[tsi+1] = V.velocity_z[tsi+1] * -1
+                        V['velocity_z'][tsi+1] = V['velocity_z'][tsi+1] * -1
 #                        print "boom! top"
                     elif BOUNCE == "crash":
 #                        print "teleport!"
-                        V.velocity_z[tsi+1] = 0.
+                        V['velocity_z'][tsi+1] = 0.
 #                        print "crash! top wall"
                 if candidate_pos[2] < boundary[4]:  # too far below
 #                    print "too far below"
                     candidate_pos[2] = boundary[4] + 1e-4
                     if BOUNCE == 'elastic':
-                        V.velocity_z[tsi+1] = V.velocity_z[tsi+1] * -1
+                        V['velocity_z'][tsi+1] = V['velocity_z'][tsi+1] * -1
                     elif BOUNCE == 'crash':
-                        V.velocity_z[tsi+1] = 0.
+                        V['velocity_z'][tsi+1] = 0.
                         
                 # save screened candidate_pos to future position
-            V.position_x[tsi+1], V.position_y[tsi+1], V.position_z[tsi+1] = candidate_pos
+            V['position_x'][tsi+1], V['position_y'][tsi+1], V['position_z'][tsi+1] = candidate_pos
 
             # solve final heading #TODO: also solve zy?
-            V.heading_angle[tsi] = solve_heading(V.velocity_y[tsi], V.velocity_x[tsi])
+            V['heading_angle'][tsi] = solve_heading(V['velocity_y'][tsi], V['velocity_x'][tsi])
             # ... and angular velo
             if tsi == 0:
-                V.velocity_angular[tsi] = 0
+                V['velocity_angular'][tsi] = 0
             else:
-                V.velocity_angular[tsi] = (V.heading_angle[tsi] - V.heading_angle[tsi-1]) / dt
+                V['velocity_angular'][tsi] = (V['heading_angle'][tsi] - V['heading_angle'][tsi-1]) / dt
 
             # turning state
             if tsi in [0, 1]:
-                V.turning[tsi] = 0
+                V['turning'][tsi] = 0
             else:
                 turn_min = 3
-                if abs(V.velocity_angular[tsi-turn_min:tsi]).sum() > self.metadata['turn_threshold']*turn_min:
-                    V.turning[tsi] = 1
+                if abs(V['velocity_angular'][tsi-turn_min:tsi]).sum() > self.metadata['turn_threshold']*turn_min:
+                    V['turning'][tsi] = 1
                 else:
-                    V.turning[tsi] = 0
+                    V['turning'][tsi] = 0
 
 
             
             
 ##            # test the kinematics ex-post facto
-#            real_velo = (candidate_pos - np.array([V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]])) / dt
-#            _postV.velocity_x[tsi] = real_velo[0]
-#            V.velocity_x[tsi], V.velocity_y[tsi], V.velocity_z[tsi] = real_velo
+#            real_velo = (candidate_pos - np.array([V['position_x'][tsi], V['position_y'][tsi], V['position_z'][tsi]])) / dt
+#            _postV['velocity_x'][tsi] = real_velo[0]
+#            V['velocity_x'][tsi], V['velocity_y'][tsi], V['velocity_z'][tsi] = real_velo
 #            
 #            if tsi == 0:
 #                real_accel = (real_velo - v0) / dt
 #            else:
-#                real_accel = (real_velo - np.array([V.velocity_x[tsi-1], V.velocity_y[tsi-1], V.velocity_z[tsi-1]])) / dt
-#            V.acceleration_x[tsi], V.acceleration_y[tsi], V.acceleration_z[tsi] = real_accel
+#                real_accel = (real_velo - np.array([V['velocity_x'][tsi-1], V['velocity_y'][tsi-1], V['velocity_z'][tsi-1]])) / dt
+#            V['acceleration_x'][tsi], V['acceleration_y'][tsi], V['acceleration_z'][tsi] = real_accel
             
            # if there is a target, check if we are finding it
-            if self.heater is not None and np.linalg.norm(candidate_pos - self.heater[0:3]) < self.detect_thresh:
+            if self.metadata['heater_position'] is not None and np.linalg.norm(candidate_pos - self.metadata['heater_position'][0:3]) < self.detect_thresh:
                    self.metadata['target_found'][0]  = True
                    self.metadata['total_finds'] += 1
-                   self.metadata['time_to_target_find'][0] = V.times[tsi]  # should this be timeList[i+1]?
+                   self.metadata['time_to_target_find'][0] = V['times'][tsi]  # should this be timeList[i+1]?
                    V = self.land(tsi, V)  # stop flying at source
                    print "source found"
                    break
@@ -549,11 +556,11 @@ class Agent():
         V = self._calc_polar_kinematics(V)
 
         # absolute magnitude of velocity, accel vectors in 3D
-        velo_mag_stack = np.vstack((V.velocity_x, V.velocity_y, V.velocity_z))
-        V.velocity_3Dmagn = np.linalg.norm(velo_mag_stack, axis=0)
+        velo_mag_stack = np.vstack((V['velocity_x'], V['velocity_y'], V['velocity_z']))
+        V['velocity_3Dmagn'] = np.linalg.norm(velo_mag_stack, axis=0)
 
-        accel_mag_stack = np.vstack((V.acceleration_x, V.acceleration_y, V.acceleration_z))
-        V.acceleration_3Dmagn = np.linalg.norm(accel_mag_stack, axis=0)
+        accel_mag_stack = np.vstack((V['acceleration_x'], V['acceleration_y'], V['acceleration_z']))
+        V['acceleration_3Dmagn'] = np.linalg.norm(accel_mag_stack, axis=0)
         
         return V
         
@@ -622,6 +629,8 @@ class Object(object):
         pass
 
 
+trajectories = trajectory3D.Trajectory() # instantiate empty trajectories object
+
 def main(heater):
     """
     Params fitted using scipy.optimize
@@ -632,14 +641,9 @@ def main(heater):
     scalar = 3e-8 #6e-8
 
     wallF_params = [scalar]  # (4e-1, 1e-6, 1e-7, 250)
-
-    # temperature plume
-    myplume = plume3D.Plume(heater)
-    # import pdb; pdb.set_trace()
-    trajectories = trajectory3D.Trajectory() # instantiate empty trajectories object
+    
     skeeter = Agent(
         trajectories,
-        myplume,
         agent_pos="downwind_plane",  # [0.250180, -0.050700, 0.144400],
         heater=heater,
         v0_stdev=0.01,
@@ -657,7 +661,7 @@ def main(heater):
     
     # trajectories.plot_kinematic_hists()
     
-    return myplume, trajectories, skeeter
+    return skeeter.myplume, trajectories, skeeter
     
    
 #    trajectories.describe(plot_kwargs = {'trajectories':False, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_scatter':True, 'force_violin':True})
