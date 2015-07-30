@@ -264,7 +264,6 @@ class Agent():
         traj_count = 0
         args = (self.dt, self.metadata['mass'], self.detect_thresh, self.boundary)
         df_list = []
-        pool = Client()[:]
         while traj_count < total_trajectories:
             if verbose is True:
                 sys.stdout.write("\rTrajectory {}/{}".format(traj_count+1, total_trajectories))
@@ -275,7 +274,7 @@ class Agent():
 #            # extract trajectory object attribs, append to our lists.
 #            setattr(vectors_object, 'trajectory_num', traj_count)
 
-            trajectories.ensemble = pd.concat(df_list)
+            self.trajectory_obj.ensemble = pd.concat(df_list)
             
 #            self.trajectory_obj.append_ensemble(vars(vectors_object))
             
@@ -657,7 +656,7 @@ def main(heater):
     
     # trajectories.plot_kinematic_hists()
     
-    return myplume, trajectories, skeeter
+    return myplume, skeeter.trajectory_obj, skeeter
     
    
 #    trajectories.describe(plot_kwargs = {'trajectories':False, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_scatter':True, 'force_violin':True})
@@ -669,7 +668,7 @@ if __name__ == '__main__':
     HEATER = None #None # 'l', 'r'
     myplume, trajectories, skeeter = main(HEATER)
     print "\nDone."
-    # trajectories.plot_single_3Dtrajectory()
+    trajectories.plot_single_3Dtrajectory()
 
     # # csv dump for Sharri
     # e = trajectories.ensemble
