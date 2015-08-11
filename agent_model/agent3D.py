@@ -189,7 +189,7 @@ class Agent():
         dt=0.01,
         heater='left',
         beta=1e-5,
-        biasF_scale=4e-06,
+        F_baseline_scale=4e-06,
         wtf=7e-07,
         wtf_scalar=0.05,
         stimF_str=1e-4,
@@ -207,13 +207,13 @@ class Agent():
         self.v0_stdev = v0_stdev
         self.k = k
         self.beta = beta
-        self.biasF_scale = biasF_scale
+        self.biasF_scale = F_baseline_scale
         # self.wtf = wtf
         # the mean of a lognorm dist is E[X] = e ** (mu + 1/2 omega **2)
         # in our case, mu = -0.405632480939 and sigma = 0.932352661694 * 0.5
-        # which is then scaled by biasF_scale
-        self.wtf = np.exp(-0.405632480939 + 0.5 * 0.932352661694 * 0.5 ** 2) * biasF_scale * wtf_scalar
-        # print wtf, self.wtf_scalar, biasF_scale
+        # which is then scaled by F_baseline_scale
+        self.wtf = np.exp(-0.405632480939 + 0.5 * 0.932352661694 * 0.5 ** 2) * F_baseline_scale * wtf_scalar
+        # print wtf, self.wtf_scalar, F_baseline_scale
         self.detect_thresh = detect_thresh     
         self.wallF_params = wallF_params
         self.stimF_str = stimF_str
@@ -233,7 +233,7 @@ class Agent():
         self.metadata['initial_velo_stdev'] = v0_stdev
         self.metadata['k'] = k
         self.metadata['beta'] = beta
-        self.metadata['biasF_scale'] = biasF_scale
+        self.metadata['F_baseline_scale'] = F_baseline_scale
         self.metadata['wtf'] = self.wtf
         self.metadata['wallF_params'] = wallF_params
         # for stats, later
@@ -273,8 +273,6 @@ class Agent():
 #            vectors_object = self._fly_single(self.dt, self.metadata['mass'], self.detect_thresh, self.boundary)
 #            # extract trajectory object attribs, append to our lists.
 #            setattr(vectors_object, 'trajectory_num', traj_count)
-
-            self.trajectory_obj.ensemble = pd.concat(df_list)
             
 #            self.trajectory_obj.append_ensemble(vars(vectors_object))
             
@@ -284,9 +282,11 @@ class Agent():
                     sys.stdout.write("\rSimulations finished. Performing deep magic.")
                     sys.stdout.flush()
         
+
         
         self.metadata['total_trajectories'] = total_trajectories
         self.trajectory_obj.add_agent_info(self.metadata)
+        self.trajectory_obj.ensemble = pd.concat(df_list)
         # concluding stats
 #        self.trajectory_obj.add_agent_info({'time_target_find_avg': trajectory3D.T_find_stats(self.trajectory_obj.agent_info['time_to_target_find'])})
     
@@ -381,40 +381,40 @@ class Agent():
 
             
             # calculate driving forces
-            stimF = stim_biasF3D.stimF(V.plume_experience[tsi], self.stimF_str)
-            V.stimF_x[tsi], V.stimF_y[tsi], V.stimF_z[tsi] = stimF
+            F_stim = stim_biasF3D.stimF(V.plume_experience[tsi], self.stimF_str)
+            V.stimF_x[tsi], V.stimF_y[tsi], V.stimF_z[tsi] = F_stim
             
-            biasF = baseline_driving_forces3D.bias_force(self.biasF_scale)
-            V.biasF_x[tsi], V.biasF_y[tsi], V.biasF_z[tsi] = biasF
+            F_base = baseline_driving_forces3D.bias_force(self.biasF_scale)
+            V.biasF_x[tsi], V.biasF_y[tsi], V.biasF_z[tsi] = F_base
             
-            upwindF = baseline_driving_forces3D.upwindBiasForce(self.wtf)
-            V.upwindF_x[tsi], V.upwindF_y[tsi], V.upwindF_z[tsi] = upwindF
+            F_upwind = baseline_driving_forces3D.upwindBiasForce(self.wtf)
+            V.upwindF_x[tsi], V.upwindF_y[tsi], V.upwindF_z[tsi] = F_upwind
 
-            wallRepulsiveF = self.wallF_params[0] * repulsion_landscape3D.xyz_to_weights([V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]])
-            # wallRepulsiveF = baseline_driving_forces3D.repulsionF(\
+            F_wall_repulsion = self.wallF_params[0] * repulsion_landscape3D.xyz_to_weights([V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]])
+            # F_wall_repulsion = baseline_driving_forces3D.repulsionF(\
             #     np.array([V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]]),\
             #     self._repulsion_funcs, self.wallF_params)
-            V.wallRepulsiveF_x[tsi], V.wallRepulsiveF_y[tsi], V.wallRepulsiveF_z[tsi] = wallRepulsiveF
+            V.wallRepulsiveF_x[tsi], V.wallRepulsiveF_y[tsi], V.wallRepulsiveF_z[tsi] = F_wall_repulsion
             
 #            else:
 #                try:
             
 #                except UnboundLocalError: # TODO: wtf?
-#                    stimF, inPlume = stim_biasF3D.main(_temperature[tsi], V.velocity_y[tsi],\
+#                    F_stim, inPlume = stim_biasF3D.main(_temperature[tsi], V.velocity_y[tsi],\
 #                        False, self.stimF_str)
 #                    print "erorr"
 #                else:
 #                    print 
-#            _stimF_x[tsi], _stimF_y[tsi], _stimF_z[tsi] = stimF
+#            _stimF_x[tsi], _stimF_y[tsi], _stimF_z[tsi] = F_stim
             
             ########################### calculate current force
-            totalF = -self.beta*np.array([V.velocity_x[tsi], V.velocity_y[tsi], V.velocity_z[tsi]])\
-              + biasF + upwindF + wallRepulsiveF + stimF
-            V.totalF_x[tsi], V.totalF_y[tsi], V.totalF_z[tsi] = totalF
+            F_total = -self.beta*np.array([V.velocity_x[tsi], V.velocity_y[tsi], V.velocity_z[tsi]])\
+              + F_base + F_upwind + F_wall_repulsion + F_stim
+            V.totalF_x[tsi], V.totalF_y[tsi], V.totalF_z[tsi] = F_total
             ###############################
             
             # calculate current acceleration
-            V.acceleration_x[tsi], V.acceleration_y[tsi], V.acceleration_z[tsi] = totalF / m
+            V.acceleration_x[tsi], V.acceleration_y[tsi], V.acceleration_z[tsi] = F_total / m
 
             # if time is out, end loop before we solve for future velo, position
             if tsi == tsi_max-1: # -1 because of how range() works
@@ -628,17 +628,17 @@ def main(heater):
     wallF_params = [scalar]  # (4e-1, 1e-6, 1e-7, 250)
 
     # temperature plume
-    myplume = plume3D.Plume(heater)
+    plume_object = plume3D.Plume(heater)
     # import pdb; pdb.set_trace()
     trajectories = trajectory3D.Trajectory() # instantiate empty trajectories object
     skeeter = Agent(
         trajectories,
-        myplume,
+        plume_object,
         agent_pos="downwind_plane",  # [0.250180, -0.050700, 0.144400],
         heater=heater,
         v0_stdev=0.01,
         wtf=3.5e-7, #7e-07,
-        biasF_scale=4.12405e-6,
+        F_baseline_scale=4.12405e-6,
         stimF_str=3.5e-7, #7e-7,
         beta=5e-6,#1e-6,  # 1e-5
         Tmax=15.,
@@ -647,11 +647,11 @@ def main(heater):
         bounded=True,
         wallF_params=wallF_params)
     sys.stdout.write("\rAgent born")
-    skeeter.fly(total_trajectories=2)
+    skeeter.fly(total_trajectories=200)
     
     # trajectories.plot_kinematic_hists()
     
-    return myplume, skeeter.trajectory_obj, skeeter
+    return plume_object, skeeter.trajectory_obj, skeeter
     
    
 #    trajectories.describe(plot_kwargs = {'trajectories':False, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_scatter':True, 'force_violin':True})
@@ -660,22 +660,23 @@ def main(heater):
     
 
 if __name__ == '__main__':
-    HEATER = None #None # 'l', 'r'
+    HEATER = 'r' #None # 'l', 'r'
     myplume, trajectories, skeeter = main(HEATER)
     print "\nDone."
-    trajectories.plot_single_3Dtrajectory()
-
-    # # csv dump for Sharri
+    # trajectories.plot_single_3Dtrajectory()
+    #
+    # # # csv dump for Sharri
+    # print "dumping to csvs"
     # e = trajectories.ensemble
     # r = e.trajectory_num.iloc[-1]
     #
     # for i in range(r+1):
     #     e1 = e.loc[e['trajectory_num'] == i, ['position_x', 'position_y', 'position_z', 'inPlume']]
     #     e1.to_csv("l"+str(i)+'.csv', index=False)
-
-    # trajectories.plot_kinematic_hists()
-    # trajectories.plot_posheatmap()
-    # trajectories.plot_force_violin()
-
-    # # for plume stats
-    # g = e.loc[e['plume_experience'].isin(['Left_plume Exit left', 'Left_plume Exit right', 'Right_plume Exit left', 'Right_plume Exit right'])]
+    #
+    # # trajectories.plot_kinematic_hists()
+    # # trajectories.plot_posheatmap()
+    # # trajectories.plot_force_violin()
+    #
+    # # # for plume stats
+    # # g = e.loc[e['plume_experience'].isin(['Left_plume Exit left', 'Left_plume Exit right', 'Right_plume Exit left', 'Right_plume Exit right'])]
