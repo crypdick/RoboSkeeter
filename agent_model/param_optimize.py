@@ -53,7 +53,7 @@ def wrapper(GUESS):
         v0_stdev=0.01,
         wtf=7e-07,
         wtf_scalar=.05,
-        biasF_scale=bias_scale_GUESS, #4e-05,
+        F_baseline_scale=bias_scale_GUESS, #4e-05,
         stimF_str=7e-7,
         beta=damping_GUESS, # 5e-6,
         Tmax=15.,
@@ -174,7 +174,7 @@ def main():
     print "Starting optimizer."
 #    result = fmin(
 #        wrapper, # (bias, mass, damping)
-#        [412, 288, 500], # [1.0239e-5, 2.88e-6,  5e-6]
+#        [412, 288, 500], # [1.0239e-5, 2.88e-6,  5e-6] 4.47e-6
 #        xtol=20,
 #        full_output=1,
 #        disp=1,
