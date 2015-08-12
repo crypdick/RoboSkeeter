@@ -22,22 +22,9 @@ def bias_force(rf, bias='uniform'):
     Returns:
         random force x and y components (array)
     """
-    mag_thresh = 1e-5
     ends = gen_symm_vecs(3)
-    # the following params were fitted from Sharri's flight data
-    mu = -0.405632480939  # FIXME this should be 0. maybe the fit was done with bad bins.
-    sigma = 0.932352661694 * 0.5
-    # scale = 0.666555094117
-    # # following params were fitted from the Dickinson flight data
-    # mu = 0.600023812816
-    # sigma = 0.719736466122
-    # scale = 1.82216219069
-    mag = np.random.lognormal(mean=mu, sigma=sigma, size=1)
-    if mag * rf > mag_thresh: # filter out huge magnitudes
-        return ends * 0. * rf
 
-#    print mag*rf  # check the order of the biasF
-    return mag * rf * ends
+    return ends
         
 #==============================================================================
 ### depreciated
