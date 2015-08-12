@@ -40,7 +40,7 @@ def plot_single_trajectory(dynamics, metadata, plot_kwargs=None):
     plt.xlabel("Upwind/$x$ (meters)", fontsize=14)
     plt.ylabel("Crosswind/$y$ (meters)", fontsize=14)
     plt.savefig(
-        "./figs/indiv_traj beta{beta}_f{rf}_wf{wtf}.svg".format(beta=metadata['beta'], rf=metadata['biasF_scale'],
+        "./figs/indiv_traj beta{beta}_f{rf}_wf{wtf}.svg".format(beta=metadata['beta'], rf=metadata['F_amplitude'],
                                                                 wtf=metadata['wtf']), format="svg")
 
 
@@ -77,7 +77,7 @@ def draw_heaters(heater_position, detect_thresh):
 #            ax.plot(posx, posy, lw=2, alpha=1)
 #        ax.axis([0,1,0.127, -0.127])  # slight y padding for graphs
 #    title_append = r""" $T_max$ = {0} secs, $\beta = {2}$, $f = {3}$, $wtf = {4}$.
-##                """.format(metadata['time_max'], metadata['total_trajectories'], metadata['beta'], metadata['biasF_scale'], metadata['wtf'])
+##                """.format(metadata['time_max'], metadata['total_trajectories'], metadata['beta'], metadata['F_amplitude'], metadata['wtf'])
 #                
 
 #
@@ -92,7 +92,7 @@ def draw_heaters(heater_position, detect_thresh):
 ##    
 #    # save before overlaying heatmap
 #    plt.savefig("./figs/Trajectories b{beta} f{rf} wf{wtf} N{total_trajectories}.png"\
-#        .format(beta=metadata['beta'], rf=metadata['biasF_scale'], wtf=metadata['wtf'], total_trajectories=metadata['total_trajectories']))
+#        .format(beta=metadata['beta'], rf=metadata['F_amplitude'], wtf=metadata['wtf'], total_trajectories=metadata['total_trajectories']))
 #    
 ############################################## NEW HEATMAP #######################
 #    ## Position heatmap
@@ -114,7 +114,7 @@ def draw_heaters(heater_position, detect_thresh):
 #            # draw cage
 #            cage = draw_cage()
 #            hextraj.ax_joint.add_patch(cage)
-#        plt.savefig("./figs/Trajectories sns heatmap beta{beta}_f{rf}_wf{wtf}_N{total_trajectories}.png".format(beta=metadata['beta'], rf=metadata['biasF_scale'], wtf=metadata['wtf'], total_trajectories=metadata['total_trajectories']))
+#        plt.savefig("./figs/Trajectories sns heatmap beta{beta}_f{rf}_wf{wtf}_N{total_trajectories}.png".format(beta=metadata['beta'], rf=metadata['F_amplitude'], wtf=metadata['wtf'], total_trajectories=metadata['total_trajectories']))
 #            
 ########## OLD HEATMAP ##############################################
 # crunch the data
@@ -158,8 +158,7 @@ def heatmaps(ensemble, metadata):
     plt.ylabel("Crosswind/$y$ (meters)")
     plt.savefig(
         "./figs/Trajectories heatmap beta{beta}_f{rf}_wf{wtf}_N{total_trajectories}.svg".format(beta=metadata['beta'],
-                                                                                                rf=metadata[
-                                                                                                    'biasF_scale'],
+                                                                                                rf=metadata['F_amplitude'],
                                                                                                 wtf=metadata['wtf'],
                                                                                                 total_trajectories=
                                                                                                 metadata[
@@ -363,13 +362,12 @@ def stateHistograms(
 
     gs1.tight_layout(statefig, rect=[0, 0.03, 1, 0.95])  # overlapping text hack
     plt.savefig(
-        "./figs/Agent Distributions b {beta},f {rf},wf {wtf},,N {total_trajectories}.svg".format(beta=metadata['beta'],
-                                                                                                 rf=metadata[
-                                                                                                     'biasF_scale'],
-                                                                                                 wtf=metadata['wtf'],
-                                                                                                 total_trajectories=
-                                                                                                 metadata[
-                                                                                                     'total_trajectories']),
+        "./figs/Agent Distributions b {beta},f {rf},wf {wtf},,N {total_trajectories}.svg".format(
+            beta=metadata['beta'],
+            rf=metadata['F_amplitude'],
+            wtf=metadata['wtf'],
+            total_trajectories=metadata['total_trajectories']
+        ),
         format='svg')
     plt.show()
 
@@ -404,7 +402,7 @@ def force_violin(ensemble, metadata):
 
     plt.ylabel("Force magnitude distribution (newtons)")
     plt.savefig("./figs/Force Distributions b {beta},f {rf},wf {wtf},N {total_trajectories}.svg".format( \
-        beta=metadata['beta'], rf=metadata['biasF_scale'], wtf=metadata['wtf'],
+        beta=metadata['beta'], rf=metadata['F_amplitude'], wtf=metadata['wtf'],
         total_trajectories=metadata['total_trajectories']), format='svg')
 
 
@@ -439,7 +437,7 @@ def velo_compass_histogram(ensemble, metadata, kind):
             y=1.1)
         plt.savefig(
             "./figs/Velocity compass, center repulsion on_ beta{beta}_rf{biasF_scale}_wf{wtf}_N{total_trajectories}.svg".format( \
-                beta=metadata['beta'], biasF_scale=metadata['biasF_scale'], wtf=metadata['wtf'],
+                beta=metadata['beta'], biasF_scale=metadata['F_amplitude'], wtf=metadata['wtf'],
                 total_trajectories=metadata['total_trajectories']), format="svg")
 
     if kind == 'bin_average':
@@ -489,7 +487,7 @@ def compass_histogram(vector_name, ensemble, metadata, kind='avg_mag_per_bin', t
     #        plt.xticks(xT, xL, size = 20)
     #        plt.title("Agent velocities 0.25 < x < 0.5, center repulsion on (n = {})".format(metadata['total_trajectories']), y=1.1)
     #        plt.savefig("./figs/Compass plot , center repulsion on_ beta{beta}_rf{biasF_scale}_wf{wtf}_N{total_trajectories}.svg".format(\
-    #            beta=metadata['beta'], biasF_scale=metadata['biasF_scale'], wtf=metadata['wtf'], total_trajectories=metadata['total_trajectories']), format="svg")
+    #            beta=metadata['beta'], biasF_scale=metadata['F_amplitude'], wtf=metadata['wtf'], total_trajectories=metadata['total_trajectories']), format="svg")
 
     if kind == 'avg_mag_per_bin':
         """for each bin, we want the average magnitude
