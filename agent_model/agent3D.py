@@ -137,6 +137,27 @@ def fly_wrapper(agent_obj, args, traj_count):
     return df
 
 
+def attraction_basin(k, pos, y_spring_center=0.12, z_spring_center=0.2):
+    """given y position, determine if on left side or right side
+    dependng on side, determine distance to spring center.
+    return force
+
+    TODO: solve for correct spring centers
+    TODO: make separate k for y, z?
+    """
+    x_pos, y_pos, z_pos = pos
+    if y_pos >= 0:
+        y_sign = 1
+    else:
+        y_sign = -1
+    return np.array([
+        0.,
+        k * ((y_sign * y_spring_center) -  y_pos),
+        k * (z_spring_center -  z_pos)
+        ])
+
+
+
 class Agent():
     """Generate agent
 
@@ -390,10 +411,7 @@ class Agent():
             F_upwind = baseline_driving_forces3D.upwindBiasForce(self.wtf)
             V.upwindF_x[tsi], V.upwindF_y[tsi], V.upwindF_z[tsi] = F_upwind
 
-            F_wall_repulsion = self.wallF_params[0] * repulsion_landscape3D.xyz_to_weights([V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]])
-            # F_wall_repulsion = baseline_driving_forces3D.repulsionF(\
-            #     np.array([V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]]),\
-            #     self._repulsion_funcs, self.wallF_params)
+            F_wall_repulsion = attraction_basin(self.k, [V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]])
             V.wallRepulsiveF_x[tsi], V.wallRepulsiveF_y[tsi], V.wallRepulsiveF_z[tsi] = F_wall_repulsion
             
 #            else:
@@ -641,13 +659,14 @@ def main(heater):
         F_baseline_scale=4.12405e-6,
         stimF_str=3.5e-7, #7e-7,
         beta=5e-6,#1e-6,  # 1e-5
+        k=1e-6,
         Tmax=15.,
         dt=0.01,
         detect_thresh=0.023175,
         bounded=True,
         wallF_params=wallF_params)
     sys.stdout.write("\rAgent born")
-    skeeter.fly(total_trajectories=200)
+    skeeter.fly(total_trajectories=2)
     
     # trajectories.plot_kinematic_hists()
     
@@ -660,10 +679,10 @@ def main(heater):
     
 
 if __name__ == '__main__':
-    HEATER = 'r' #None # 'l', 'r'
+    HEATER = None #None # 'l', 'r'
     myplume, trajectories, skeeter = main(HEATER)
     print "\nDone."
-    # trajectories.plot_single_3Dtrajectory()
+    trajectories.plot_single_3Dtrajectory()
     #
     # # # csv dump for Sharri
     # print "dumping to csvs"
