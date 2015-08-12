@@ -101,7 +101,7 @@ class Trajectory():
             N = self.agent_info['total_trajectories'], name=vector_name,\
             flag=flags)
             fname = "{flag} Avg mag distribution of {name}_xy compass _beta{beta}_bF{biasF_scale}_wf{wtf}_N{total_trajectories}".format(\
-            beta=self.agent_info['beta'], biasF_scale=self.agent_info['biasF_scale'],
+            beta=self.agent_info['beta'], biasF_scale=self.agent_info['F_amplitude'],
             wtf=self.agent_info['wtf'], total_trajectories=self.agent_info['total_trajectories'],
             name=vector_name, flag=flags)
   
