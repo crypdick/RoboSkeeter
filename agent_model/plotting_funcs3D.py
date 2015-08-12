@@ -393,7 +393,7 @@ def force_violin(ensemble, metadata):
     forcefig = plt.figure()
     #    Faxs1 = forcefig.add_subplot(211)
     #    Faxs2 = forcefig.add_subplot(212)
-    sns.violinplot(ensembleF, color="Paired", lw=2, alpha=0.7)
+    sns.violinplot(ensembleF, lw=2, alpha=0.7, palette="Set2")
     #    tF = sns.jointplot('totalF_x', 'totalF_y', ensemble, kind="hex", size=10)
     plt.suptitle("Force distributions")
     #    plt.xticks(range(4,((len(alignments.keys())+1)*4),4), [i[1] for i in medians_sgc], rotation=90, fontsize = 4)
