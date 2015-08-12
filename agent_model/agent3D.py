@@ -87,7 +87,7 @@ def place_heater(location):
     zmax = 0.11340
     diam = 0.01905
     if location is None:
-            return None
+        return None
     elif location in "leftLeftLEFT":
         return [0.8651, -0.0507, zmin, zmax, diam, 'left']
     elif location in "rightRightRIGHT":
@@ -189,10 +189,10 @@ class Agent():
         dt=0.01,
         heater='left',
         beta=1e-5,
-        F_baseline_scale=4e-06,
+        F_amplitude=4e-06,
         wtf=7e-07,
         wtf_scalar=0.05,
-        stimF_str=1e-4,
+        stimF_str=1e-4, 
         detect_thresh=0.023175,
         bounded=True,
         wallF_params=(4e-1, 1e-6, 1e-7, 250, "walls_only"),
@@ -207,13 +207,13 @@ class Agent():
         self.v0_stdev = v0_stdev
         self.k = k
         self.beta = beta
-        self.biasF_scale = F_baseline_scale
+        self.F_amplitude = F_amplitude
         # self.wtf = wtf
         # the mean of a lognorm dist is E[X] = e ** (mu + 1/2 omega **2)
         # in our case, mu = -0.405632480939 and sigma = 0.932352661694 * 0.5
-        # which is then scaled by F_baseline_scale
-        self.wtf = np.exp(-0.405632480939 + 0.5 * 0.932352661694 * 0.5 ** 2) * F_baseline_scale * wtf_scalar
-        # print wtf, self.wtf_scalar, F_baseline_scale
+        # which is then scaled by F_amplitude
+        self.wtf = np.exp(-0.405632480939 + 0.5 * 0.932352661694 * 0.5 ** 2) * F_amplitude * wtf_scalar
+        # print wtf, self.wtf_scalar, F_amplitude
         self.detect_thresh = detect_thresh     
         self.wallF_params = wallF_params
         self.stimF_str = stimF_str
@@ -233,7 +233,7 @@ class Agent():
         self.metadata['initial_velo_stdev'] = v0_stdev
         self.metadata['k'] = k
         self.metadata['beta'] = beta
-        self.metadata['F_baseline_scale'] = F_baseline_scale
+        self.metadata['F_amplitude'] = F_amplitude
         self.metadata['wtf'] = self.wtf
         self.metadata['wallF_params'] = wallF_params
         # for stats, later
@@ -334,7 +334,7 @@ class Agent():
         # place agent
         V.position_x[0], V.position_y[0], V.position_z[0] = place_agent(self.metadata['initial_position'])
         self.dim = 3
-        
+
         # generate random intial velocity condition
         V.velocity_x[0], V.velocity_y[0], V.velocity_z[0] = np.random.normal(0, self.v0_stdev, self.dim)
 
@@ -343,14 +343,14 @@ class Agent():
             # import pdb; pdb.set_trace()
             # sense the temperature
 #            _temperature[tsi] = self.plume_obj.temp_lookup([_position_x[tsi], _position_y[tsi]]) # depreciated
-            
+
             # are we in the plume?
             if self.plume_obj.condition is None:  # skip if no plume
                 V.inPlume[tsi] = 0
             else:
                 V.inPlume[tsi] = self.plume_obj.check_for_plume(
                     [V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]])
-            
+
             ############ what is our behavior given our plume interactions thus far?
             if tsi == 0:
                 V.plume_experience[tsi] = 'searching'
@@ -379,40 +379,42 @@ class Agent():
                             V.plume_experience[tsi:]
             ######################################################################
 
-            
-            # calculate driving forces
+
+            # calculate driving forces' direction
             F_stim = stim_biasF3D.stimF(V.plume_experience[tsi], self.stimF_str)
             V.stimF_x[tsi], V.stimF_y[tsi], V.stimF_z[tsi] = F_stim
-            
-            F_base = baseline_driving_forces3D.bias_force(self.biasF_scale)
+
+            F_base = baseline_driving_forces3D.bias_force(self.F_amplitude)
             V.biasF_x[tsi], V.biasF_y[tsi], V.biasF_z[tsi] = F_base
-            
+
             F_upwind = baseline_driving_forces3D.upwindBiasForce(self.wtf)
             V.upwindF_x[tsi], V.upwindF_y[tsi], V.upwindF_z[tsi] = F_upwind
 
-            F_wall_repulsion = self.wallF_params[0] * repulsion_landscape3D.xyz_to_weights([V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]])
+            F_wall_repulsion = 0. * repulsion_landscape3D.xyz_to_weights([V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]])
             # F_wall_repulsion = baseline_driving_forces3D.repulsionF(\
             #     np.array([V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]]),\
             #     self._repulsion_funcs, self.wallF_params)
             V.wallRepulsiveF_x[tsi], V.wallRepulsiveF_y[tsi], V.wallRepulsiveF_z[tsi] = F_wall_repulsion
+
+            direction_vector =  np.linalg.norm(F_base + F_upwind + F_wall_repulsion + F_stim)
             
-#            else:
-#                try:
-            
-#                except UnboundLocalError: # TODO: wtf?
-#                    F_stim, inPlume = stim_biasF3D.main(_temperature[tsi], V.velocity_y[tsi],\
-#                        False, self.stimF_str)
-#                    print "erorr"
-#                else:
-#                    print 
-#            _stimF_x[tsi], _stimF_y[tsi], _stimF_z[tsi] = F_stim
-            
+            ############### calculate magnitude
+            mag_thresh = 1e-5
+            # the following params were fitted from Sharri's flight data
+            mu, sigma = -0.405632480939, 0.466176331  # FIXME mu should be 0. maybe the fit was done with bad bins.
+            mag = self.F_amplitude * np.random.lognormal(mean=mu, sigma=sigma, size=1)
+            if mag > mag_thresh: # filter out huge magnitudes
+                mag = 0.
+            ###################################
+
+            F_driving = mag * direction_vector
+
+
             ########################### calculate current force
-            F_total = -self.beta*np.array([V.velocity_x[tsi], V.velocity_y[tsi], V.velocity_z[tsi]])\
-              + F_base + F_upwind + F_wall_repulsion + F_stim
+            F_total = -self.beta*np.array([V.velocity_x[tsi], V.velocity_y[tsi], V.velocity_z[tsi]]) + F_driving
             V.totalF_x[tsi], V.totalF_y[tsi], V.totalF_z[tsi] = F_total
             ###############################
-            
+
             # calculate current acceleration
             V.acceleration_x[tsi], V.acceleration_y[tsi], V.acceleration_z[tsi] = F_total / m
 
@@ -428,13 +430,13 @@ class Agent():
                 np.array([V.velocity_x[tsi], V.velocity_y[tsi], V.velocity_z[tsi]]) \
                 + np.array([V.acceleration_x[tsi], V.acceleration_y[tsi], V.acceleration_z[tsi]]) * dt
 
-            
+
             # solve candidate position for next timestep
             candidate_pos = np.array([V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]]) \
                 + np.array([V.velocity_x[tsi], V.velocity_y[tsi], V.velocity_z[tsi]])*dt # shouldnt position in future be affected by the forces in this timestep? aka use velo[i+1]
-#            
+#
             # if walls are enabled, forbid mosquito from going out of bounds
-            if bounded is True:  
+            if bounded is True:
                 # x dim
                 if candidate_pos[0] > boundary[1]:  # reached far (upwind) wall (end)
 #                    self.metadata['target_found'][0]  = False
@@ -449,7 +451,7 @@ class Agent():
 #                        print "boom! left"
                     elif BOUNCE == 'crash':
                         V.velocity_x[tsi+1] = 0.
-            
+
                 #y dim
                 if candidate_pos[1] > boundary[2]:  # too left
 #                    print "too left"
@@ -467,7 +469,7 @@ class Agent():
                         V.velocity_y[tsi+1] *= -1
                     elif BOUNCE == 'crash':
                         V.velocity_y[tsi+1] = 0.
-                
+
                 # z dim
                 if candidate_pos[2] > boundary[5]:  # too far above
 #                    print "too far above"
@@ -486,7 +488,7 @@ class Agent():
                         V.velocity_z[tsi+1] *= -1
                     elif BOUNCE == 'crash':
                         V.velocity_z[tsi+1] = 0.
-                        
+
                 # save screened candidate_pos to future position
             V.position_x[tsi+1], V.position_y[tsi+1], V.position_z[tsi+1] = candidate_pos
 
@@ -508,20 +510,6 @@ class Agent():
                 else:
                     V.turning[tsi] = 0
 
-
-            
-            
-##            # test the kinematics ex-post facto
-#            real_velo = (candidate_pos - np.array([V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]])) / dt
-#            _postV.velocity_x[tsi] = real_velo[0]
-#            V.velocity_x[tsi], V.velocity_y[tsi], V.velocity_z[tsi] = real_velo
-#            
-#            if tsi == 0:
-#                real_accel = (real_velo - v0) / dt
-#            else:
-#                real_accel = (real_velo - np.array([V.velocity_x[tsi-1], V.velocity_y[tsi-1], V.velocity_z[tsi-1]])) / dt
-#            V.acceleration_x[tsi], V.acceleration_y[tsi], V.acceleration_z[tsi] = real_accel
-            
            # if there is a target, check if we are finding it
             if self.heater is not None and np.linalg.norm(candidate_pos - self.heater[0:3]) < self.detect_thresh:
                    self.metadata['target_found'][0]  = True
@@ -553,8 +541,8 @@ class Agent():
         
         
     def show_landscape(self):
-        import repulsion_landscape
-        repulsion_landscape.main(self.wallF_params, None, plotting=True)
+        import repulsion_landscape3D
+        repulsion_landscape3D.main(self.wallF_params, None, plotting=True)
         
         
     def _check_crossing_state(self, tsi, inPlume, vy):
@@ -616,38 +604,61 @@ class Object(object):
         pass
 
 
-def main(heater):
+def main():
     """
     Params fitted using scipy.optimize
     
     biasF_scale => 4.12405e-6 using fminbound
     """
-    # wallF params
-    scalar = 3e-8 #6e-8
+        #     Trajectory_object,
+        # Plume_object,
+        # agent_pos='door',
+        # v0_stdev=0.01,
+        # Tmax=15.,
+        # dt=0.01,
+        # heater='left',
+        # beta=1e-5,
+        # F_amplitude=4e-06,
+        # wtf=7e-07,
+        # wtf_scalar=0.05,
+        # stimF_str=1e-4,
+        # detect_thresh=0.023175,
+        # bounded=True,
+        # wallF_params=(4e-1, 1e-6, 1e-7, 250, "walls_only"),
+        # mass = 3e-6, #3.0e-6 # 2.88e-6  # mass (kg) =2.88 mg,
+        # k=0.):
 
-    wallF_params = [scalar]  # (4e-1, 1e-6, 1e-7, 250)
+    # PARAMS
+    HEATER = None  #None # 'l', 'r'
+
+    MASS = 4.12e-6
+    BETA = 5e-5  #1e-6,  # 1e-5
+    FORCES_AMPLITUDE = 4.12405e-6
+    F_WIND_SCALE = 5e-7  #7e-07,
+    F_STIM_SCALE = 0.  #7e-7,
+    F_WALL_SCALE = 0.  #6e-8
 
     # temperature plume
-    plume_object = plume3D.Plume(heater)
+    plume_object = plume3D.Plume(HEATER)
     # import pdb; pdb.set_trace()
     trajectories = trajectory3D.Trajectory() # instantiate empty trajectories object
     skeeter = Agent(
         trajectories,
         plume_object,
-        agent_pos="downwind_plane",  # [0.250180, -0.050700, 0.144400],
-        heater=heater,
-        v0_stdev=0.01,
-        wtf=3.5e-7, #7e-07,
-        F_baseline_scale=4.12405e-6,
-        stimF_str=3.5e-7, #7e-7,
-        beta=5e-6,#1e-6,  # 1e-5
+        mass=MASS,
+        agent_pos="downwind_plane",
+        heater=HEATER,
+        wtf=F_WIND_SCALE,
+        F_amplitude=FORCES_AMPLITUDE,
+        stimF_str=F_STIM_SCALE,
+        beta=BETA,
         Tmax=15.,
         dt=0.01,
         detect_thresh=0.023175,
         bounded=True,
-        wallF_params=wallF_params)
+        wallF_params=F_WALL_SCALE)
     sys.stdout.write("\rAgent born")
-    skeeter.fly(total_trajectories=200)
+    skeeter.fly(total_trajectories=5)
     
     # trajectories.plot_kinematic_hists()
     
@@ -660,10 +671,9 @@ def main(heater):
     
 
 if __name__ == '__main__':
-    HEATER = 'r' #None # 'l', 'r'
-    myplume, trajectories, skeeter = main(HEATER)
+    myplume, trajectories, skeeter = main()
     print "\nDone."
-    # trajectories.plot_single_3Dtrajectory()
+    trajectories.plot_single_3Dtrajectory()
     #
     # # # csv dump for Sharri
     # print "dumping to csvs"
