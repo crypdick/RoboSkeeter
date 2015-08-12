@@ -391,9 +391,6 @@ class Agent():
             V.upwindF_x[tsi], V.upwindF_y[tsi], V.upwindF_z[tsi] = F_upwind
 
             F_wall_repulsion = self.wallF_params[0] * repulsion_landscape3D.xyz_to_weights([V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]])
-            # F_wall_repulsion = baseline_driving_forces3D.repulsionF(\
-            #     np.array([V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]]),\
-            #     self._repulsion_funcs, self.wallF_params)
             V.wallRepulsiveF_x[tsi], V.wallRepulsiveF_y[tsi], V.wallRepulsiveF_z[tsi] = F_wall_repulsion
             
 #            else:
