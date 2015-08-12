@@ -69,7 +69,6 @@ import baseline_driving_forces3D
 import stim_biasF3D
 import plume3D
 import trajectory3D
-import repulsion_landscape3D
 import sys
 import pandas as pd
 
