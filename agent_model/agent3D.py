@@ -649,7 +649,7 @@ def main():
     HEATER = None  #None # 'l', 'r'
 
     MASS = 4.12e-6
-    BETA = 5e-5  #1e-6,  # 1e-5
+    BETA = 5e-6  #1e-6,  # 1e-5
     FORCES_AMPLITUDE = 4.12405e-6
     F_WIND_SCALE = 5e-7  #7e-07,
     F_STIM_SCALE = 0.  #7e-7,
@@ -668,6 +668,7 @@ def main():
         wtf=F_WIND_SCALE,
         F_amplitude=FORCES_AMPLITUDE,
         stimF_str=F_STIM_SCALE,
+        k=1e-7,
         beta=BETA,
         Tmax=15.,
         dt=0.01,
@@ -675,7 +676,7 @@ def main():
         bounded=True,
         wallF_params=F_WALL_SCALE)
     sys.stdout.write("\rAgent born")
-    skeeter.fly(total_trajectories=5)
+    skeeter.fly(total_trajectories=1)
     
     # trajectories.plot_kinematic_hists()
     
