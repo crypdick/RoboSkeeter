@@ -31,38 +31,33 @@ def wrapper(GUESS):
         estimated damping was 5e-6, # cranked up to get more noise #5e-6,#1e-6,  # 1e-5
     :return:
     """
-    rescaling = 1e-8
-    bias_scale_GUESS = GUESS[0] * rescaling
-    mass_GUESS = GUESS[1] * rescaling
-    damping_GUESS = GUESS[2] * rescaling
+    MASS, BETA, FORCES_AMPLITUDE, F_WIND_SCALE, K = GUESS
+    HEATER = None
+    # F_WALL_SCALE aka k
 
 #    beta_prime, bias_scale_GUESS = param_vect
     # when we run this, agent3D is run and we return a score
-    scalar = 1e-7
 
-    wallF_params = [scalar]  #(4e-1, 1e-6, 1e-7, 250)
-
+    plume_object = plume3D.Plume(HEATER)  # we are fitting for the control condition
     # temperature plume
-
     trajectories = trajectory3D.Trajectory() # instantiate empty trajectories object
-    myagent = agent3D.Agent(
+    skeeter = agent3D.Agent(
         trajectories,
-        myplume,
+        plume_object,
+        mass=MASS,
         agent_pos="downwind_plane",
-        heater=None,
-        v0_stdev=0.01,
-        wtf=7e-07,
-        wtf_scalar=.05,
-        F_baseline_scale=bias_scale_GUESS, #4e-05,
-        stimF_str=7e-7,
-        beta=damping_GUESS, # 5e-6,
+        heater=HEATER,
+        wtf=F_WIND_SCALE,
+        F_amplitude=FORCES_AMPLITUDE,
+        stimF_str=0., # F_STIM_SCALE,
+        beta=BETA,
+        k=K, #
         Tmax=15.,
-        mass=mass_GUESS,
         dt=0.01,
         detect_thresh=0.023175,
-        bounded=True,
-        wallF_params=wallF_params)
-    myagent.fly(total_trajectories=1, verbose=False)
+        bounded=True,)
+
+    skeeter.fly(total_trajectories=12, verbose=False)
 
     ensemble = trajectories.ensemble
     trimmed_ensemble = ensemble.loc[
@@ -88,7 +83,7 @@ def error_fxn(ensemble):
     accel_all_magn = ensemble['acceleration_3Dmagn'].values
     aabs_counts, aabs_bins = np.histogram(accel_all_magn, bins=np.arange(amin, amax, adist))
     if np.isnan(np.sum(aabs_counts)) is True:
-        print "NANANAN"
+        print "NAN PROBLEM"
     aabs_counts = aabs_counts.astype(float)
     if aabs_counts.sum() <0.01: # nothing in bins
         return 1e9
@@ -107,8 +102,8 @@ def error_fxn(ensemble):
 
     # print csv
     # print aabs_counts_n, 'counts',
-    accel_error = np.sum(abs(aabs_counts_n - a_observed)) * 100000  # multiply score to get better granularity
-    velocity_error = np.sum(abs(vabs_counts_n - v_observed)) * 100000
+    accel_error = np.sum(abs(aabs_counts_n - a_observed)) * 100  # multiply score to get better granularity
+    velocity_error = np.sum(abs(vabs_counts_n - v_observed)) * 100
     if np.isnan(accel_error) or np.isnan(velocity_error):
         print "a counts", aabs_counts, "\n \n"
         print "a n", aabs_counts_n
@@ -119,21 +114,23 @@ def error_fxn(ensemble):
         HIGH_SCORE = final_score
         print "Bingo! New high score: {}".format(HIGH_SCORE)
 
-        plt.ioff()
-        plt.figure()
-        plt.plot(aabs_bins[:-1], aabs_counts_n, label='RoboSkeeter')
-        plt.plot(aabs_bins[:-1], a_observed, c='r', label='experiment')
-        plt.title('accel score=> {}'.format(HIGH_SCORE))
-        plt.legend()
-        plt.show()
-        plt.close()
+        global PLOTTER
+        if PLOTTER is True:
+            plt.ioff()
+            plt.figure()
+            plt.plot(aabs_bins[:-1], aabs_counts_n, label='RoboSkeeter')
+            plt.plot(aabs_bins[:-1], a_observed, c='r', label='experiment')
+            plt.title('accel score=> {}'.format(HIGH_SCORE))
+            plt.legend()
+            plt.show()
+            plt.close()
 
-        plt.plot(vabs_bins[:-1], vabs_counts_n, label='RoboSkeeter')
-        plt.plot(vabs_bins[:-1], v_observed, c='r', label='experiment')
-        plt.title('velocity score=> {}'.format(HIGH_SCORE))
-        plt.legend()
-        plt.show()
-        plt.close()
+            plt.plot(vabs_bins[:-1], vabs_counts_n, label='RoboSkeeter')
+            plt.plot(vabs_bins[:-1], v_observed, c='r', label='experiment')
+            plt.title('velocity score=> {}'.format(HIGH_SCORE))
+            plt.legend()
+            plt.show()
+            plt.close()
 
     return final_score
 
@@ -155,6 +152,9 @@ def callbackF(Xi):
 def main():
     global HIGH_SCORE
     HIGH_SCORE = 1e10
+
+    global PLOTTER
+    PLOTTER = True
 #    result = minimize(
 #        wrapper,
 #        [1e-5, 4e-5],
@@ -172,22 +172,14 @@ def main():
     #     disp=3)
 
     print "Starting optimizer."
-#    result = fmin(
-#        wrapper, # (bias, mass, damping)
-#        [412, 288, 500], # [1.0239e-5, 2.88e-6,  5e-6] 4.47e-6
-#        xtol=20,
-#        full_output=1,
-#        disp=1,
-#        retall=1
-#        # ftol=0.0001
-#    )
 
     result = basinhopping(
          wrapper,
-         [412, 288, 500],
-         stepsize=500,
-         T=4000,
-         minimizer_kwargs={"bounds": ((200, 1000),(255,1000),(200,1000)), 'method': 'Nelder-Mead'},
+        # Guess = [MASS, BETA, FORCES_AMPLITUDE, F_WIND_SCALE, K]
+         [4.12e-6, 5e-5, 4.12405e-6, 5e-7, 1e-7],
+         # stepsize=1e-5,
+         T=1e-4,
+         minimizer_kwargs={"bounds": ((200, 1000),(255,1000),(200,1000)), 'method': 'Nelder-Mead'},  # I don't these bounds are doing anything
          callback=callbackF,
          disp=True
          )
