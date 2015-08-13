@@ -31,15 +31,12 @@ def wrapper(GUESS):
         estimated damping was 5e-6, # cranked up to get more noise #5e-6,#1e-6,  # 1e-5
     :return:
     """
-    MASS, BETA, FORCES_AMPLITUDE, F_WIND_SCALE = GUESS
+    MASS, BETA, FORCES_AMPLITUDE, F_WIND_SCALE, K = GUESS
     HEATER = None
     # F_WALL_SCALE aka k
 
 #    beta_prime, bias_scale_GUESS = param_vect
     # when we run this, agent3D is run and we return a score
-    scalar = 1e-7
-
-    wallF_params = [scalar]  #(4e-1, 1e-6, 1e-7, 250)
 
     plume_object = plume3D.Plume(HEATER)  # we are fitting for the control condition
     # temperature plume
@@ -52,14 +49,15 @@ def wrapper(GUESS):
         heater=HEATER,
         wtf=F_WIND_SCALE,
         F_amplitude=FORCES_AMPLITUDE,
-        stimF_str=0.,
+        stimF_str=0., # F_STIM_SCALE,
         beta=BETA,
+        k=K, #
         Tmax=15.,
         dt=0.01,
         detect_thresh=0.023175,
-        bounded=True,
-        wallF_params=0.)
-    skeeter.fly(total_trajectories=1, verbose=False)
+        bounded=True,)
+
+    skeeter.fly(total_trajectories=12, verbose=False)
 
     ensemble = trajectories.ensemble
     trimmed_ensemble = ensemble.loc[
@@ -104,8 +102,8 @@ def error_fxn(ensemble):
 
     # print csv
     # print aabs_counts_n, 'counts',
-    accel_error = np.sum(abs(aabs_counts_n - a_observed)) * 10  # multiply score to get better granularity
-    velocity_error = np.sum(abs(vabs_counts_n - v_observed)) * 10
+    accel_error = np.sum(abs(aabs_counts_n - a_observed)) * 100  # multiply score to get better granularity
+    velocity_error = np.sum(abs(vabs_counts_n - v_observed)) * 100
     if np.isnan(accel_error) or np.isnan(velocity_error):
         print "a counts", aabs_counts, "\n \n"
         print "a n", aabs_counts_n
@@ -156,7 +154,7 @@ def main():
     HIGH_SCORE = 1e10
 
     global PLOTTER
-    PLOTTER = False
+    PLOTTER = True
 #    result = minimize(
 #        wrapper,
 #        [1e-5, 4e-5],
@@ -177,8 +175,8 @@ def main():
 
     result = basinhopping(
          wrapper,
-        # Guess = [MASS, BETA, FORCES_AMPLITUDE, F_WIND_SCALE]
-         [4.12e-6, 5e-5, 4.12405e-6, 5e-7],
+        # Guess = [MASS, BETA, FORCES_AMPLITUDE, F_WIND_SCALE, K]
+         [4.12e-6, 5e-5, 4.12405e-6, 5e-7, 1e-7],
          # stepsize=1e-5,
          T=1e-4,
          minimizer_kwargs={"bounds": ((200, 1000),(255,1000),(200,1000)), 'method': 'Nelder-Mead'},  # I don't these bounds are doing anything
