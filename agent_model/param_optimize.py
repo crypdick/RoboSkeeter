@@ -57,7 +57,7 @@ def wrapper(GUESS):
         detect_thresh=0.023175,
         bounded=True,)
 
-    skeeter.fly(total_trajectories=12, verbose=False)
+    skeeter.fly(total_trajectories=50, verbose=False)
 
     ensemble = trajectories.ensemble
     trimmed_ensemble = ensemble.loc[
@@ -154,7 +154,7 @@ def main():
     HIGH_SCORE = 1e10
 
     global PLOTTER
-    PLOTTER = True
+    PLOTTER = False
 #    result = minimize(
 #        wrapper,
 #        [1e-5, 4e-5],
