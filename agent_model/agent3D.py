@@ -69,7 +69,6 @@ import baseline_driving_forces3D
 import stim_biasF3D
 import plume3D
 import trajectory3D
-import repulsion_landscape3D
 import sys
 import pandas as pd
 
@@ -137,6 +136,27 @@ def fly_wrapper(agent_obj, args, traj_count):
     return df
 
 
+def attraction_basin(k, pos, y_spring_center=0.12, z_spring_center=0.2):
+    """given y position, determine if on left side or right side
+    dependng on side, determine distance to spring center.
+    return force
+
+    TODO: solve for correct spring centers
+    TODO: make separate k for y, z?
+    """
+    x_pos, y_pos, z_pos = pos
+    if y_pos >= 0:
+        y_sign = 1
+    else:
+        y_sign = -1
+    return np.array([
+        0.,
+        k * ((y_sign * y_spring_center) -  y_pos),
+        k * (z_spring_center -  z_pos)
+        ])
+
+
+
 class Agent():
     """Generate agent
 
@@ -192,7 +212,7 @@ class Agent():
         F_amplitude=4e-06,
         wtf=7e-07,
         wtf_scalar=0.05,
-        stimF_str=1e-4, 
+        stimF_str=1e-4,
         detect_thresh=0.023175,
         bounded=True,
         wallF_params=(4e-1, 1e-6, 1e-7, 250, "walls_only"),
@@ -390,10 +410,7 @@ class Agent():
             F_upwind = baseline_driving_forces3D.upwindBiasForce(self.wtf)
             V.upwindF_x[tsi], V.upwindF_y[tsi], V.upwindF_z[tsi] = F_upwind
 
-            F_wall_repulsion = 0. * repulsion_landscape3D.xyz_to_weights([V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]])
-            # F_wall_repulsion = baseline_driving_forces3D.repulsionF(\
-            #     np.array([V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]]),\
-            #     self._repulsion_funcs, self.wallF_params)
+            F_wall_repulsion = attraction_basin(self.k, [V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]])
             V.wallRepulsiveF_x[tsi], V.wallRepulsiveF_y[tsi], V.wallRepulsiveF_z[tsi] = F_wall_repulsion
 
             direction_vector =  np.linalg.norm(F_base + F_upwind + F_wall_repulsion + F_stim)
