@@ -66,13 +66,15 @@ def gen_symm_vecs(dims):
     can then be scaled by a force to make radially symmetric distributions.
     
     making a scatter plot of many draws from this function makes a unit circle.
+
+    credit: http://codereview.stackexchange.com/a/77945/76407
     """
     vecs = np.random.normal(size=dims)
     mags = linalg.norm(vecs, axis=-1)
 
-    ends = vecs / mags[..., newaxis]
+    ends = vecs / mags[..., newaxis]  # divide by length to get unit vector
     
-    return ends  # vector
+    return ends
 
 
 def upwindBiasForce(wtf, upwind_direction=0.):
