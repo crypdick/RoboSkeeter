@@ -215,7 +215,6 @@ class Agent():
         stimF_str=1e-4,
         detect_thresh=0.023175,
         bounded=True,
-        wallF_params=(4e-1, 1e-6, 1e-7, 250, "walls_only"),
         mass = 3e-6, #3.0e-6 # 2.88e-6  # mass (kg) =2.88 mg,
         k=0.):
         """ Initialize object with instant variables, and trigger other funcs.
@@ -234,8 +233,7 @@ class Agent():
         # which is then scaled by F_amplitude
         self.wtf = np.exp(-0.405632480939 + 0.5 * 0.932352661694 * 0.5 ** 2) * F_amplitude * wtf_scalar
         # print wtf, self.wtf_scalar, F_amplitude
-        self.detect_thresh = detect_thresh     
-        self.wallF_params = wallF_params
+        self.detect_thresh = detect_thresh
         self.stimF_str = stimF_str
         
         
@@ -255,7 +253,6 @@ class Agent():
         self.metadata['beta'] = beta
         self.metadata['F_amplitude'] = F_amplitude
         self.metadata['wtf'] = self.wtf
-        self.metadata['wallF_params'] = wallF_params
         # for stats, later
         self.metadata['time_target_find_avg'] = []
         self.metadata['total_finds'] = 0
@@ -557,11 +554,6 @@ class Agent():
         return V
         
         
-    def show_landscape(self):
-        import repulsion_landscape3D
-        repulsion_landscape3D.main(self.wallF_params, None, plotting=True)
-        
-        
     def _check_crossing_state(self, tsi, inPlume, vy):
         """
         out2out - searching
@@ -627,24 +619,6 @@ def main():
     
     biasF_scale => 4.12405e-6 using fminbound
     """
-        #     Trajectory_object,
-        # Plume_object,
-        # agent_pos='door',
-        # v0_stdev=0.01,
-        # Tmax=15.,
-        # dt=0.01,
-        # heater='left',
-        # beta=1e-5,
-        # F_amplitude=4e-06,
-        # wtf=7e-07,
-        # wtf_scalar=0.05,
-        # stimF_str=1e-4,
-        # detect_thresh=0.023175,
-        # bounded=True,
-        # wallF_params=(4e-1, 1e-6, 1e-7, 250, "walls_only"),
-        # mass = 3e-6, #3.0e-6 # 2.88e-6  # mass (kg) =2.88 mg,
-        # k=0.):
-
     # PARAMS
     HEATER = None  #None # 'l', 'r'
 
@@ -673,8 +647,7 @@ def main():
         Tmax=15.,
         dt=0.01,
         detect_thresh=0.023175,
-        bounded=True,
-        wallF_params=F_WALL_SCALE)
+        bounded=True)
     sys.stdout.write("\rAgent born")
     skeeter.fly(total_trajectories=1)
     
