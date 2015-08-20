@@ -401,7 +401,7 @@ class Agent():
             F_stim = stim_biasF3D.stimF(V.plume_experience[tsi], self.stimF_str)
             V.stimF_x[tsi], V.stimF_y[tsi], V.stimF_z[tsi] = F_stim
 
-            F_base = baseline_driving_forces3D.bias_force(self.F_amplitude)
+            F_base = baseline_driving_forces3D.random_force(self.F_amplitude)
             V.biasF_x[tsi], V.biasF_y[tsi], V.biasF_z[tsi] = F_base
 
             F_upwind = baseline_driving_forces3D.upwindBiasForce(self.wtf)
@@ -619,6 +619,8 @@ def main():
     
     biasF_scale => 4.12405e-6 using fminbound
     """
+
+    HEATER = None
     # wallF params
     scalar = 3e-8 #6e-8
 
@@ -649,7 +651,7 @@ def main():
         detect_thresh=0.023175,
         bounded=True)
     sys.stdout.write("\rAgent born")
-    skeeter.fly(total_trajectories=200)
+    skeeter.fly(total_trajectories=20)
     
     # trajectories.plot_kinematic_hists()
     
