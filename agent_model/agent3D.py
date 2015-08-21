@@ -410,22 +410,11 @@ class Agent():
             F_wall_repulsion = attraction_basin(self.k, [V.position_x[tsi], V.position_y[tsi], V.position_z[tsi]])
             V.wallRepulsiveF_x[tsi], V.wallRepulsiveF_y[tsi], V.wallRepulsiveF_z[tsi] = F_wall_repulsion
 
-            direction_vector =  np.linalg.norm(F_base + F_upwind + F_wall_repulsion + F_stim)
-            
-            ############### calculate magnitude
-            mag_thresh = 1e-5
-            # the following params were fitted from Sharri's flight data
-            mu, sigma = -0.405632480939, 0.466176331  # FIXME mu should be 0. maybe the fit was done with bad bins.
-            mag = self.F_amplitude * np.random.lognormal(mean=mu, sigma=sigma, size=1)
-            if mag > mag_thresh: # filter out huge magnitudes
-                mag = 0.
-            ###################################
-
-            F_driving = mag * direction_vector
-
 
             ########################### calculate current force
-            F_total = -self.beta*np.array([V.velocity_x[tsi], V.velocity_y[tsi], V.velocity_z[tsi]]) + F_driving
+            F_driving =  F_base + F_upwind + F_wall_repulsion + F_stim
+            F_damping = -self.beta*np.array([V.velocity_x[tsi], V.velocity_y[tsi], V.velocity_z[tsi]])
+            F_total = F_damping + F_driving
             V.totalF_x[tsi], V.totalF_y[tsi], V.totalF_z[tsi] = F_total
             ###############################
 
@@ -651,7 +640,7 @@ def main():
         detect_thresh=0.023175,
         bounded=True)
     sys.stdout.write("\rAgent born")
-    skeeter.fly(total_trajectories=20)
+    skeeter.fly(total_trajectories=1)
     
     # trajectories.plot_kinematic_hists()
     
