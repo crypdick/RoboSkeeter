@@ -7,6 +7,7 @@ from scipy.optimize import basinhopping
 import numpy as np
 from matplotlib import pyplot as plt
 import logging
+from scipy.stats import entropy
 
 logging.basicConfig(filename='basin_hopping.log',level=logging.DEBUG)
 
@@ -73,18 +74,13 @@ def wrapper(GUESS, N_trajectories):
     return score
 
 
-def DKL(Q,P):
-    """for bin_i in bins, integral over dx Q(x) * log Q(x)/P(x) """
-    return np.dot(Q, np.log10(Q/P))
-
-
 def error_fxn(ensemble, guess):
     # compare ensemble to experiments, return score to wrapper
 
     # get histogram vals for agent ensemble
     adist = 0.1
     # |a|
-    amin, amax = 0., 6.+adist  # arange drops last number, so pad range by dist
+    amin, amax = 0., 4.9+adist  # arange drops last number, so pad range by dist
     # pdb.set
     accel_all_magn = ensemble['acceleration_3Dmagn'].values
     a_counts, aabs_bins = np.histogram(accel_all_magn, bins=np.arange(amin, amax, adist))
@@ -98,10 +94,10 @@ def error_fxn(ensemble, guess):
     # print a_counts_n
 
     # solve DKL
-    dkl_a = DKL(a_counts_n, a_observed)
+    dkl_a = entropy(a_counts_n, qk=a_observed)
 
     vdist =  0.015
-    vmin, vmax = 0., 0.7
+    vmin, vmax = 0., 0.605+vdist
     velo_all_magn = ensemble['velocity_3Dmagn'].values
     v_counts, vabs_bins = np.histogram(velo_all_magn, bins=np.arange(vmin, vmax, vdist))
     v_counts[v_counts == 0] += 1
@@ -111,11 +107,13 @@ def error_fxn(ensemble, guess):
     v_counts_n = v_counts / v_total_counts
 
     # solve DKL
-    dkl_v = DKL(v_counts_n, v_observed)
+    dkl_v = entropy(v_counts_n, qk=v_observed)
     # print 'dkl_v' , dkl_v
 
 
     final_score = dkl_a + dkl_v
+    # final_score = dkl_v
+
     if np.isnan(final_score):
         final_score = 0
     global HIGH_SCORE
@@ -181,8 +179,8 @@ def main():
 
     print "Starting optimizer."
 
-    guess_params = "[BETA, FORCES_AMPLITUDE, F_WIND_SCALE]"
-    INITIAL_GUESS = [5e-5, 4.12405e-6, 5e-7]
+    guess_params = "[BETA, FORCES_AMPLITUDE, F_WIND_SCALE]"  # [5e-6, 4.12405e-6, 5e-7]
+    INITIAL_GUESS = [  1.37213380e-06 ,  1.39026239e-06 ,  2.06854777e-06]
     N_TRAJECTORIES = 10
 
     logging.info("""############################################################
