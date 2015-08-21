@@ -3,12 +3,12 @@ __author__ = 'richard'
 import agent3D
 import plume3D
 import trajectory3D
-from scipy.optimize import minimize, fminbound, basinhopping, fmin
+from scipy.optimize import basinhopping
 import numpy as np
 from matplotlib import pyplot as plt
-import pdb
-import time
+import logging
 
+logging.basicConfig(filename='basin_hopping.log',level=logging.DEBUG)
 
 myplume = plume3D.Plume(None)
 
@@ -22,7 +22,7 @@ v_csv = v_csv.T
 v_observed = v_csv[4][:-1]  # throw out last datum
 
 # wrapper func for agent 3D
-def wrapper(GUESS):
+def wrapper(GUESS, N_trajectories):
     """
     :param bias_scale_GUESS:
     :param mass_GUESS:
@@ -56,16 +56,16 @@ def wrapper(GUESS):
         Tmax=15.,
         dt=0.01,
         detect_thresh=0.023175,
-        bounded=True,)
+        bounded=True)
 
-    skeeter.fly(total_trajectories=1, verbose=False)
+    skeeter.fly(total_trajectories=N_trajectories, verbose=False)  # fix N trajectories in main
 
-    ensemble = trajectories.ensemble
-    trimmed_ensemble = ensemble.loc[
-        (ensemble['position_x'] >0.25) & (ensemble['position_x'] <0.95)]
+    # ensemble = trajectories.ensemble
+    # # trimmed_ensemble = ensemble.loc[
+    # #     (ensemble['position_x'] >0.25) & (ensemble['position_x'] <0.95)]
 
     # we want to fit beta and rF
-    score = error_fxn(trimmed_ensemble)
+    score = error_fxn(trajectories.ensemble, GUESS)
 
     # end = time.time()
     # print end - start
@@ -78,7 +78,7 @@ def DKL(Q,P):
     return np.dot(Q, np.log10(Q/P))
 
 
-def error_fxn(ensemble):
+def error_fxn(ensemble, guess):
     # compare ensemble to experiments, return score to wrapper
 
     # get histogram vals for agent ensemble
@@ -99,7 +99,6 @@ def error_fxn(ensemble):
 
     # solve DKL
     dkl_a = DKL(a_counts_n, a_observed)
-    # print 'dkl_a' , dkl_a
 
     vdist =  0.015
     vmin, vmax = 0., 0.7
@@ -117,26 +116,27 @@ def error_fxn(ensemble):
 
 
     final_score = dkl_a + dkl_v
+    if np.isnan(final_score):
+        final_score = 0
     global HIGH_SCORE
     if final_score < HIGH_SCORE:
         HIGH_SCORE = final_score
-        print "Bingo! New high score: {}".format(HIGH_SCORE)
+        print "Bingo! New high score: {}. Guess: {}".format(HIGH_SCORE, guess)
+        logging.info("Bingo! New high score: {}. Guess: {}".format(HIGH_SCORE, guess))
 
         global PLOTTER
         if PLOTTER is True:
             plt.ioff()
-            plt.figure()
-            plt.plot(aabs_bins[:-1], aabs_counts_n, label='RoboSkeeter')
-            plt.plot(aabs_bins[:-1], a_observed, c='r', label='experiment')
-            plt.title('accel score=> {}'.format(HIGH_SCORE))
-            plt.legend()
-            plt.show()
-            plt.close()
+            f, axarr = plt.subplots(2, sharex=False)
+            axarr[0].plot(aabs_bins[:-1], a_counts_n, label='RoboSkeeter')
+            axarr[0].plot(aabs_bins[:-1], a_observed, c='r', label='experiment')
+            axarr[0].set_title('accel score=> {}'.format(HIGH_SCORE))
+            axarr[0].legend()
 
-            plt.plot(vabs_bins[:-1], vabs_counts_n, label='RoboSkeeter')
-            plt.plot(vabs_bins[:-1], v_observed, c='r', label='experiment')
-            plt.title('velocity score=> {}'.format(HIGH_SCORE))
-            plt.legend()
+            axarr[1].plot(vabs_bins[:-1], v_counts_n, label='RoboSkeeter')
+            axarr[1].plot(vabs_bins[:-1], v_observed, c='r', label='experiment')
+            axarr[1].set_title('velocity score=> {}'.format(HIGH_SCORE))
+            axarr[1].legend()
             plt.show()
             plt.close()
 
@@ -181,16 +181,25 @@ def main():
 
     print "Starting optimizer."
 
+    guess_params = "[BETA, FORCES_AMPLITUDE, F_WIND_SCALE]"
+    INITIAL_GUESS = [5e-5, 4.12405e-6, 5e-7]
+    N_TRAJECTORIES = 10
+
+    logging.info("""############################################################
+    Trial start!
+    # trajectories: {}. Params: {}. Initial Guess: {}
+    ############################################################""".format(
+        N_TRAJECTORIES, guess_params, INITIAL_GUESS))
+
     result = basinhopping(
-         wrapper,
-        # Guess = [BETA, FORCES_AMPLITUDE, F_WIND_SCALE]
-         [5e-5, 4.12405e-6, 5e-7],
-         # stepsize=1e-5,
-         T=1e-4,
-         minimizer_kwargs={"bounds": ((200, 1000),(255,1000),(200,1000)), 'method': 'Nelder-Mead'},  # I don't these bounds are doing anything
-         # callback=callbackF,
-         disp=True
-         )
+        wrapper,
+        INITIAL_GUESS,
+        # stepsize=1e-5,
+        T=1e-4,
+        minimizer_kwargs={"args": (N_TRAJECTORIES,), "bounds": ((200, 1000),(255,1000),(200,1000)), 'method': 'Nelder-Mead'},  # I don't these bounds are doing anything
+        # callback=callbackF,
+        disp=True
+        )
 
     return result
     # fminbound(wrapper, )
@@ -199,4 +208,10 @@ def main():
 
 if __name__ == '__main__':
     result = main()
+
+
+    logging.info("""############################################################
+    Trial end. FINAL RESULT: {}
+    ############################################################""".format(result))
+
     print result
