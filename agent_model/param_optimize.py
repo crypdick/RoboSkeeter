@@ -31,8 +31,9 @@ def wrapper(GUESS):
         estimated damping was 5e-6, # cranked up to get more noise #5e-6,#1e-6,  # 1e-5
     :return:
     """
-    MASS, BETA, FORCES_AMPLITUDE, F_WIND_SCALE, K = GUESS
+    BETA, FORCES_AMPLITUDE, F_WIND_SCALE = GUESS
     HEATER = None
+    K = 0  # no wall force for optimization
     # F_WALL_SCALE aka k
 
 #    beta_prime, bias_scale_GUESS = param_vect
@@ -44,7 +45,7 @@ def wrapper(GUESS):
     skeeter = agent3D.Agent(
         trajectories,
         plume_object,
-        mass=MASS,
+        mass=2.88e-6,
         agent_pos="downwind_plane",
         heater=HEATER,
         wtf=F_WIND_SCALE,
@@ -57,7 +58,7 @@ def wrapper(GUESS):
         detect_thresh=0.023175,
         bounded=True,)
 
-    skeeter.fly(total_trajectories=50, verbose=False)
+    skeeter.fly(total_trajectories=1, verbose=False)
 
     ensemble = trajectories.ensemble
     trimmed_ensemble = ensemble.loc[
@@ -68,47 +69,54 @@ def wrapper(GUESS):
 
     # end = time.time()
     # print end - start
-    print "Guess: ", GUESS, "Score: ", score
+    # print "Guess: ", GUESS, "Score: ", score
     return score
+
+
+def DKL(Q,P):
+    """for bin_i in bins, integral over dx Q(x) * log Q(x)/P(x) """
+    return np.dot(Q, np.log10(Q/P))
 
 
 def error_fxn(ensemble):
     # compare ensemble to experiments, return score to wrapper
 
-    # get histogram vals for ensemble
+    # get histogram vals for agent ensemble
     adist = 0.1
     # |a|
-    amin, amax = -4., 6.+adist  # arange drops last number, so pad range by dist
+    amin, amax = 0., 6.+adist  # arange drops last number, so pad range by dist
     # pdb.set
     accel_all_magn = ensemble['acceleration_3Dmagn'].values
-    aabs_counts, aabs_bins = np.histogram(accel_all_magn, bins=np.arange(amin, amax, adist))
-    if np.isnan(np.sum(aabs_counts)) is True:
+    a_counts, aabs_bins = np.histogram(accel_all_magn, bins=np.arange(amin, amax, adist))
+    if np.isnan(np.sum(a_counts)) is True:
         print "NAN PROBLEM"
-    aabs_counts = aabs_counts.astype(float)
-    if aabs_counts.sum() <0.01: # nothing in bins
-        return 1e9
-    else:
-        aabs_counts_n = aabs_counts / aabs_counts.sum()
+    # turn into prob dist
+    a_counts[a_counts == 0] += 1
+    a_counts = a_counts.astype(float)
+    a_total_counts = a_counts.sum()
+    a_counts_n = a_counts / a_total_counts
+    # print a_counts_n
+
+    # solve DKL
+    dkl_a = DKL(a_counts_n, a_observed)
+    # print 'dkl_a' , dkl_a
 
     vdist =  0.015
-    vmin, vmax = -0.7, 0.7
+    vmin, vmax = 0., 0.7
     velo_all_magn = ensemble['velocity_3Dmagn'].values
-    vabs_counts, vabs_bins = np.histogram(velo_all_magn, bins=np.arange(vmin, vmax, vdist))
-    vabs_counts = vabs_counts.astype(float)
-    if vabs_counts.sum() <0.01: # nothing in bins
-        return 1e9
-    else:
-        vabs_counts_n = vabs_counts / vabs_counts.sum()
+    v_counts, vabs_bins = np.histogram(velo_all_magn, bins=np.arange(vmin, vmax, vdist))
+    v_counts[v_counts == 0] += 1
+    v_counts = v_counts.astype(float)
+    v_total_counts = v_counts.sum()
+    # turn into prob dist
+    v_counts_n = v_counts / v_total_counts
 
-    # print csv
-    # print aabs_counts_n, 'counts',
-    accel_error = np.sum(abs(aabs_counts_n - a_observed)) * 100  # multiply score to get better granularity
-    velocity_error = np.sum(abs(vabs_counts_n - v_observed)) * 100
-    if np.isnan(accel_error) or np.isnan(velocity_error):
-        print "a counts", aabs_counts, "\n \n"
-        print "a n", aabs_counts_n
+    # solve DKL
+    dkl_v = DKL(v_counts_n, v_observed)
+    # print 'dkl_v' , dkl_v
 
-    final_score = accel_error + velocity_error
+
+    final_score = dkl_a + dkl_v
     global HIGH_SCORE
     if final_score < HIGH_SCORE:
         HIGH_SCORE = final_score
@@ -136,10 +144,10 @@ def error_fxn(ensemble):
 
 # # for nelder mead
 # Nfeval = 1
-def callbackF(Xi):
-     global Nfeval
-     print '{0:4d}   {1: 3.25f}   {2: 3.25f}   {3: 3.8f}'.format(Nfeval, Xi[0], Xi[1], wrapper(Xi))
-     Nfeval += 1
+# def callbackF(guess1, guess2, guess3):
+#      global Nfeval
+#      print '{0:4d}   {1: 3.25f}   {2: 3.25f}   {3: 3.8f}'.format(Nfeval, Xi[0], Xi[1], wrapper(Xi))
+#      Nfeval += 1
 
 # # for basin hopping
 # Nfeval = 1
@@ -175,12 +183,12 @@ def main():
 
     result = basinhopping(
          wrapper,
-        # Guess = [MASS, BETA, FORCES_AMPLITUDE, F_WIND_SCALE, K]
-         [4.12e-6, 5e-5, 4.12405e-6, 5e-7, 1e-7],
+        # Guess = [BETA, FORCES_AMPLITUDE, F_WIND_SCALE]
+         [5e-5, 4.12405e-6, 5e-7],
          # stepsize=1e-5,
          T=1e-4,
          minimizer_kwargs={"bounds": ((200, 1000),(255,1000),(200,1000)), 'method': 'Nelder-Mead'},  # I don't these bounds are doing anything
-         callback=callbackF,
+         # callback=callbackF,
          disp=True
          )
 
