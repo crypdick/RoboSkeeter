@@ -610,15 +610,15 @@ def main():
     """
 
     HEATER = None
-    # wallF params
-    scalar = 3e-8 #6e-8
-
-    MASS = 4.12e-6
-    BETA = 5e-6  #1e-6,  # 1e-5
-    FORCES_AMPLITUDE = 4.12405e-6
-    F_WIND_SCALE = 5e-7  #7e-07,
+    # old beta- 5e-5, forces 4.12405e-6, fwind = 5e-7
+    BETA, FORCES_AMPLITUDE, F_WIND_SCALE =  [  1.30583450e-06 ,  1.42736188e-06,   2.16882833e-06]
+    MASS = 2.88e-6
+    # BETA = 2.89442709e-06 # vonly 6.41637772e-06 # both 5.94544196e-06 # before optimiz 5e-6  #1e-6,  # 1e-5
+    # FORCES_AMPLITUDE = 2.19205644e-06 #vonly3.18757964e-06   # both 1.53286249e-06  # before optim 4.12405e-6
+    # F_WIND_SCALE = 1.31901348e-06# vonly 5.53505979e-07 # both 8.67325872e-07 # before optim 5e-7  #7e-07,
     F_STIM_SCALE = 0.  #7e-7,
-    F_WALL_SCALE = 0.  #6e-8
+    K = 0.  #1e-7
+
 
     # temperature plume
     plume_object = plume3D.Plume(HEATER)
@@ -633,7 +633,7 @@ def main():
         wtf=F_WIND_SCALE,
         F_amplitude=FORCES_AMPLITUDE,
         stimF_str=F_STIM_SCALE,
-        k=1e-7,
+        k=K,
         beta=BETA,
         Tmax=15.,
         dt=0.01,
