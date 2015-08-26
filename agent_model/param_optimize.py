@@ -8,6 +8,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import logging
 from scipy.stats import entropy
+from datetime import datetime
 
 logging.basicConfig(filename='basin_hopping.log',level=logging.DEBUG)
 
@@ -87,7 +88,6 @@ def error_fxn(ensemble, guess):
     if np.isnan(np.sum(a_counts)) is True:
         print "NAN PROBLEM"
     # turn into prob dist
-    a_counts[a_counts == 0] += 1
     a_counts = a_counts.astype(float)
     a_total_counts = a_counts.sum()
     a_counts_n = a_counts / a_total_counts
@@ -97,10 +97,9 @@ def error_fxn(ensemble, guess):
     dkl_a = entropy(a_counts_n, qk=a_observed)
 
     vdist =  0.015
-    vmin, vmax = 0., 0.605+vdist
+    vmin, vmax = 0., 0.605
     velo_all_magn = ensemble['velocity_3Dmagn'].values
     v_counts, vabs_bins = np.histogram(velo_all_magn, bins=np.arange(vmin, vmax, vdist))
-    v_counts[v_counts == 0] += 1
     v_counts = v_counts.astype(float)
     v_total_counts = v_counts.sum()
     # turn into prob dist
@@ -108,7 +107,7 @@ def error_fxn(ensemble, guess):
 
     # solve DKL
     dkl_v = entropy(v_counts_n, qk=v_observed)
-    # print 'dkl_v' , dkl_v
+    print 'dkl_v' , dkl_v
 
 
     final_score = dkl_a + dkl_v
@@ -119,7 +118,7 @@ def error_fxn(ensemble, guess):
     global HIGH_SCORE
     if final_score < HIGH_SCORE:
         HIGH_SCORE = final_score
-        print "Bingo! New high score: {}. Guess: {}".format(HIGH_SCORE, guess)
+        print "{} New high score: {}. Guess: {}".format(datetime.now(), HIGH_SCORE, guess)
         logging.info("Bingo! New high score: {}. Guess: {}".format(HIGH_SCORE, guess))
 
         global PLOTTER
@@ -184,10 +183,10 @@ def main():
     N_TRAJECTORIES = 10
 
     logging.info("""############################################################
-    Trial start!
+    Trial start! {}
     # trajectories: {}. Params: {}. Initial Guess: {}
     ############################################################""".format(
-        N_TRAJECTORIES, guess_params, INITIAL_GUESS))
+        datetime.now(), N_TRAJECTORIES, guess_params, INITIAL_GUESS))
 
     result = basinhopping(
         wrapper,
