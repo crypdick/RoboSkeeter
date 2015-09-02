@@ -85,8 +85,6 @@ def error_fxn(ensemble, guess):
     # pdb.set
     accel_all_magn = ensemble['acceleration_3Dmagn'].values
     a_counts, aabs_bins = np.histogram(accel_all_magn, bins=np.arange(amin, amax, adist))
-    if np.isnan(np.sum(a_counts)) is True:
-        print "NAN PROBLEM"
     # turn into prob dist
     a_counts = a_counts.astype(float)
     a_total_counts = a_counts.sum()
@@ -107,7 +105,7 @@ def error_fxn(ensemble, guess):
 
     # solve DKL
     dkl_v = entropy(v_counts_n, qk=v_observed)
-    print 'dkl_v' , dkl_v
+    # print 'dkl_v' , dkl_v
 
 
     final_score = dkl_a + dkl_v
@@ -127,13 +125,14 @@ def error_fxn(ensemble, guess):
             f, axarr = plt.subplots(2, sharex=False)
             axarr[0].plot(aabs_bins[:-1], a_counts_n, label='RoboSkeeter')
             axarr[0].plot(aabs_bins[:-1], a_observed, c='r', label='experiment')
-            axarr[0].set_title('accel score=> {}'.format(HIGH_SCORE))
+            axarr[0].set_title('accel score=> {}. High score = DKL(a)+DKL(v) = {}'.format(dkl_a, HIGH_SCORE))
             axarr[0].legend()
 
             axarr[1].plot(vabs_bins[:-1], v_counts_n, label='RoboSkeeter')
             axarr[1].plot(vabs_bins[:-1], v_observed, c='r', label='experiment')
-            axarr[1].set_title('velocity score=> {}'.format(HIGH_SCORE))
+            axarr[1].set_title('velocity score=> {}. High score = DKL(a)+DKL(v) = {}'.format(dkl_v, HIGH_SCORE))
             axarr[1].legend()
+            plt.suptitle('Parameter Guess: {}'.format(guess))
             plt.show()
             plt.close()
 
@@ -157,9 +156,10 @@ def error_fxn(ensemble, guess):
 def main():
     global HIGH_SCORE
     HIGH_SCORE = 1e10
+    OPTIM_ALGORITHM = 'SLSQP'
 
     global PLOTTER
-    PLOTTER = False
+    PLOTTER = True
 #    result = minimize(
 #        wrapper,
 #        [1e-5, 4e-5],
@@ -180,20 +180,23 @@ def main():
 
     guess_params = "[BETA, FORCES_AMPLITUDE, F_WIND_SCALE]"  # [5e-6, 4.12405e-6, 5e-7]
     INITIAL_GUESS = [  1.37213380e-06 ,  1.39026239e-06 ,  2.06854777e-06]
-    N_TRAJECTORIES = 10
+    N_TRAJECTORIES = 20
 
-    logging.info("""############################################################
-    Trial start! {}
-    # trajectories: {}. Params: {}. Initial Guess: {}
+    logging.info("""\n ############################################################
+    ############################################################
+    {} Start optimization with {} algorithm
+    # trajectories = {}
+    Params = {}
+    Initial Guess = {}
     ############################################################""".format(
-        datetime.now(), N_TRAJECTORIES, guess_params, INITIAL_GUESS))
+        datetime.now(), OPTIM_ALGORITHM, N_TRAJECTORIES, guess_params, INITIAL_GUESS))
 
     result = basinhopping(
         wrapper,
         INITIAL_GUESS,
         # stepsize=1e-5,
         T=1e-4,
-        minimizer_kwargs={"args": (N_TRAJECTORIES,), "bounds": ((200, 1000),(255,1000),(200,1000)), 'method': 'Nelder-Mead'},  # I don't these bounds are doing anything
+        minimizer_kwargs={"args": (N_TRAJECTORIES,), 'method': OPTIM_ALGORITHM},  # bounds were  "bounds": ((200, 1000),(255,1000),(200,1000))
         # callback=callbackF,
         disp=True
         )
