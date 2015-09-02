@@ -16,11 +16,14 @@ import os
 plt.style.use('ggplot')
 
 def make_csv_name_list():
-    from glob import glob
-    
-    dyn_traj_reldir = "data/dynamical_trajectories/"
-    os.chdir(dyn_traj_reldir)
-    return [os.path.splitext(file)[0] for file in glob("*.csv")]
+    # TODO export this to io
+
+    print "Loading + filtering CSV files from ", TRAJECTORY_DATA_DIR
+    os.chdir(TRAJECTORY_DATA_DIR)
+    csv_list = sorted([os.path.splitext(file)[0] for file in glob("*.csv")])
+    os.chdir(os.path.dirname(__file__))  # go back to old dir
+
+    return csv_list
 
 csv_list = make_csv_name_list()
 

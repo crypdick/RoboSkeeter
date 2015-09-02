@@ -59,7 +59,7 @@ def plot3D_trajectory(xyz, csv_name, WINDOW_LEN):
 
 def make_csv_name_list():
     # TODO export this to io
-    dyn_traj_reldir = "data/dynamical_trajectories/"
+    dyn_traj_reldir = "data/processed_trajectories/"
     print "Loading + filtering CSV files from ", dyn_traj_reldir
     os.chdir(dyn_traj_reldir)
     csv_list = sorted([os.path.splitext(file)[0] for file in glob("*.csv")])
