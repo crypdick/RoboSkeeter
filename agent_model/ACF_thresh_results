@@ -1,0 +1,44 @@
+control_1 size/timesteps =  7228
+velo_x 17
+velo_y 13
+velo_z 8
+control_10 size/timesteps =  7852
+velo_x 24
+velo_y 21
+velo_z 10
+control_11 size/timesteps =  7189
+velo_x 19
+velo_y 24
+velo_z 12
+control_19 size/timesteps =  15015
+velo_x 21
+velo_y 18
+velo_z 13
+control_27 size/timesteps =  9126
+velo_x 44
+velo_y 10
+velo_z 12
+control_28 size/timesteps =  6487
+velo_x 14
+velo_y 13
+velo_z 10
+control_3 size/timesteps =  6942 
+velo_x 16
+velo_y 54
+velo_z 7
+control_34 size/timesteps =  12493 *********
+velo_x 24
+velo_y 18
+velo_z 9
+control_47 size/timesteps =  11908
+velo_x 16
+velo_y 12
+velo_z 10
+control_6 size/timesteps =  11726
+velo_x 23
+velo_y 15
+velo_z 14
+control_7 size/timesteps =  5655
+velo_x 31
+velo_y 19
+velo_z 13
