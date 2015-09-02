@@ -611,7 +611,7 @@ def main():
 
     HEATER = None
     # old beta- 5e-5, forces 4.12405e-6, fwind = 5e-7
-    BETA, FORCES_AMPLITUDE, F_WIND_SCALE =  [  1.30583450e-06 ,  1.42736188e-06,   2.16882833e-06]
+    BETA, FORCES_AMPLITUDE, F_WIND_SCALE =  [  1.37213380e-06,   1.39026239e-06  , 2.08344893e-06] #1.30583450e-06
     MASS = 2.88e-6
     # BETA = 2.89442709e-06 # vonly 6.41637772e-06 # both 5.94544196e-06 # before optimiz 5e-6  #1e-6,  # 1e-5
     # FORCES_AMPLITUDE = 2.19205644e-06 #vonly3.18757964e-06   # both 1.53286249e-06  # before optim 4.12405e-6
@@ -640,7 +640,7 @@ def main():
         detect_thresh=0.023175,
         bounded=True)
     sys.stdout.write("\rAgent born")
-    skeeter.fly(total_trajectories=1)
+    skeeter.fly(total_trajectories=10)
     
     # trajectories.plot_kinematic_hists()
     
