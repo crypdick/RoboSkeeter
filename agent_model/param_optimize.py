@@ -109,23 +109,37 @@ def error_fxn(ensemble, guess):
     # print 'dkl_v' , dkl_v
 
 
-    final_score = dkl_a + dkl_v
+    dkl_score = dkl_a + dkl_v
     # final_score = dkl_v
 
     ################ ACF metrics############
-    trajectory0 = ensemble.loc[ensemble['trajectory_num']==0]
-
     global ACF_THRESH
+    global N_TRAJECTORIES
 
-    acf_threshcross_index = acfanalyze.index_drop(trajectory0, thresh=ACF_THRESH, verbose=False)
-    print acf_threshcross_index
+    acf_distances = []
+    for i in range(N_TRAJECTORIES):
+        df = ensemble.loc[ensemble['trajectory_num']==i]
+        acf_threshcross_index = acfanalyze.index_drop(df, thresh=ACF_THRESH, verbose=False)
+        if acf_threshcross_index is 'explosion':  # bad trajectory!
+            acf_distances.append(300)
+        else:
+            distance = sum(abs( acf_threshcross_index - np.array([16., 16., 10.]) ))
+            acf_distances.append(distance)
+
+    acf_mean = np.mean(acf_distances)
+    # print "mean", acf_mean
+    acf_score = np.log(acf_mean+1)
+    # print "score", acf_score
+
+    final_score = dkl_score + acf_score
+
 
     if np.isnan(final_score):
         final_score = 0
     global HIGH_SCORE
     if final_score < HIGH_SCORE:
         HIGH_SCORE = final_score
-        print "{} New high score: {}. Guess: {}".format(datetime.now(), HIGH_SCORE, guess)
+        print "{} New high score: {}. Guess: {}. DKL score = {}. ACF score = {}".format(datetime.now(), HIGH_SCORE, guess, dkl_score, acf_score)
         logging.info("Bingo! New high score: {}. Guess: {}".format(HIGH_SCORE, guess))
 
         global PLOTTER
@@ -168,7 +182,7 @@ def main():
     OPTIM_ALGORITHM = 'SLSQP'
 
     global PLOTTER
-    PLOTTER = True
+    PLOTTER = False
 
     global ACF_THRESH
     ACF_THRESH = 0.5
@@ -192,6 +206,7 @@ def main():
 
     guess_params = "[BETA, FORCES_AMPLITUDE, F_WIND_SCALE]"  # [5e-6, 4.12405e-6, 5e-7]
     INITIAL_GUESS = [  1.37213380e-06 ,  1.39026239e-06 ,  2.06854777e-06]
+    global  N_TRAJECTORIES
     N_TRAJECTORIES = 20
 
     logging.info("""\n ############################################################
