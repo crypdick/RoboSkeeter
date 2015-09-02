@@ -9,6 +9,7 @@ from matplotlib import pyplot as plt
 import logging
 from scipy.stats import entropy
 from datetime import datetime
+import acfanalyze
 
 logging.basicConfig(filename='basin_hopping.log',level=logging.DEBUG)
 
@@ -111,6 +112,14 @@ def error_fxn(ensemble, guess):
     final_score = dkl_a + dkl_v
     # final_score = dkl_v
 
+    ################ ACF metrics############
+    trajectory0 = ensemble.loc[ensemble['trajectory_num']==0]
+
+    global ACF_THRESH
+
+    acf_threshcross_index = acfanalyze.index_drop(trajectory0, thresh=ACF_THRESH, verbose=False)
+    print acf_threshcross_index
+
     if np.isnan(final_score):
         final_score = 0
     global HIGH_SCORE
@@ -160,6 +169,9 @@ def main():
 
     global PLOTTER
     PLOTTER = True
+
+    global ACF_THRESH
+    ACF_THRESH = 0.5
 #    result = minimize(
 #        wrapper,
 #        [1e-5, 4e-5],
