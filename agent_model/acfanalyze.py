@@ -4,12 +4,13 @@ import os
 import numpy as np
 import pandas as pd
 from glob import glob
-import statsmodels.tsa
-import statsmodels.graphics.tsaplots
+from statsmodels.tsa.stattools import acf
+# import statsmodels.graphics.tsaplots
 import matplotlib.pyplot as plt
 
 plt.style.use('ggplot')
 
+ACF_THRESH = 0.5
 TRAJECTORY_DATA_DIR = "experimental_data/control_trajectories/"
 
 def make_csv_name_list():
@@ -26,15 +27,15 @@ def load_trajectory_dynamics_csv(data_fname):
     file_path = os.path.join(os.getcwd(), TRAJECTORY_DATA_DIR, data_fname + ".csv")
 
     col_labels = [
-        'pos_x',
-        'pos_y',
-        'pos_z',
-        'velo_x',
-        'velo_y',
-        'velo_z',
-        'accel_x',
-        'accel_y',
-        'accel_z',
+        'position_x',
+        'position_y',
+        'position_z',
+        'velocity_x',
+        'velocity_y',
+        'velocity_z',
+        'acceleration_x',
+        'acceleration_y',
+        'acceleration_z',
         'heading_angle',
         'angular_velo_xy',
         'angular_velo_yz',
@@ -53,16 +54,26 @@ def arg_less(inarray,threshold):
     return np.nonzero(inarray<threshold)[0][0]  # return index of first item that is under thresh
 
 
-csv_list = make_csv_name_list()
+def index_drop(df, thresh=ACF_THRESH, verbose=True):
+    """given df, thresh, return at what index the acf dipped below thresh"""
+    if verbose is True:
+        print 'size/timesteps = ', df.size
 
-for csv_name in csv_list:
-    df = load_trajectory_dynamics_csv(csv_name)
-    print csv_name, 'size/timesteps = ', df.size
-
-    if not os.path.exists('./correlation_figs/{data_name}'.format(data_name = csv_name)):
-        os.makedirs('./correlation_figs/{data_name}'.format(data_name = csv_name))
-
+    indices = []
     for label, col in df.iteritems():
-        if label in ['velo_x', 'velo_y', 'velo_z']:
-            acf = statsmodels.tsa.stattools.acf(col, nlags = 70)
-            print label, arg_less(acf, .5)
+        if label in ['velocity_x', 'velocity_y', 'velocity_z']:
+            ACF = acf(col, nlags = 70)
+            if verbose is True:
+                print label, arg_less(ACF, ACF_THRESH)
+            indices.append(arg_less(ACF, ACF_THRESH))
+
+    return indices
+
+if __name__ == '__main__':
+    csv_list = make_csv_name_list()
+
+    for csv_name in csv_list:
+        print csv_name
+        df = load_trajectory_dynamics_csv(csv_name)
+        scores = index_drop(df, ACF_THRESH, verbose=False)
+        print scores
