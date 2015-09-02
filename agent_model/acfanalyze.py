@@ -50,8 +50,11 @@ def load_trajectory_dynamics_csv(data_fname):
 
 
 def arg_less(inarray,threshold):
-    filtered = np.nonzero(inarray<threshold)
-    return np.nonzero(inarray<threshold)[0][0]  # return index of first item that is under thresh
+    filtered = np.nonzero(inarray<threshold)  # False is interpreted as 0
+    try:
+        return filtered[0][0]  # return index of first item that is under thresh
+    except IndexError:  # occurs when never goes under thresh
+        return inarray.size
 
 
 def index_drop(df, thresh=ACF_THRESH, verbose=True):
@@ -62,7 +65,10 @@ def index_drop(df, thresh=ACF_THRESH, verbose=True):
     indices = []
     for label, col in df.iteritems():
         if label in ['velocity_x', 'velocity_y', 'velocity_z']:
-            ACF = acf(col, nlags = 70)
+            try:
+                ACF = acf(col, nlags = 70)
+            except TypeError:  # happens when ACF can't be done b/c there are fewer than nlags lags
+                return 'explosion'
             if verbose is True:
                 print label, arg_less(ACF, ACF_THRESH)
             indices.append(arg_less(ACF, ACF_THRESH))
@@ -73,7 +79,7 @@ if __name__ == '__main__':
     csv_list = make_csv_name_list()
 
     for csv_name in csv_list:
-        print csv_name
+        # print csv_name
         df = load_trajectory_dynamics_csv(csv_name)
         scores = index_drop(df, ACF_THRESH, verbose=False)
-        print scores
+        # print scores
