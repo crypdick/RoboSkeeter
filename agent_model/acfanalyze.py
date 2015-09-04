@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 plt.style.use('ggplot')
 
 ACF_THRESH = 0.5
+NLAGS = 70
 TRAJECTORY_DATA_DIR = "experimental_data/control_trajectories/"
 
 def make_csv_name_list():
@@ -54,7 +55,7 @@ def arg_less(inarray,threshold):
     try:
         return filtered[0][0]  # return index of first item that is under thresh
     except IndexError:  # occurs when never goes under thresh
-        return inarray.size
+        return NLAGS
 
 
 def index_drop(df, thresh=ACF_THRESH, verbose=True):
@@ -66,7 +67,7 @@ def index_drop(df, thresh=ACF_THRESH, verbose=True):
     for label, col in df.iteritems():
         if label in ['velocity_x', 'velocity_y', 'velocity_z']:
             try:
-                ACF = acf(col, nlags = 70)
+                ACF = acf(col, nlags = NLAGS)
             except TypeError:  # happens when ACF can't be done b/c there are fewer than nlags lags
                 return 'explosion'
             if verbose is True:
