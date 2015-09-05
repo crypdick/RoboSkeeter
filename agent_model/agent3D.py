@@ -231,9 +231,9 @@ class Agent():
                 sys.stdout.flush()
 
 
-            vectors_object = agent_obj._fly_single(*args)  # TODO: switch to dictionary
-            setattr(vectors_object, 'trajectory_num', traj_count)  # enumerate the trajectories
-            df = pd.DataFrame(vars(vectors_object))
+            kinematics_dict = self._fly_single(*args)  # TODO: switch to dictionary
+            kinematics_dict['trajectory_num'] = traj_count  # enumerate the trajectories
+            df = pd.DataFrame(kinematics_dict.keys())
 
             df_list.append(df)
             
@@ -280,11 +280,9 @@ class Agent():
         V['position_x'] = np.full(tsi_max, np.nan)
         V['position_y'] = np.full(tsi_max, np.nan)
         V['position_z'] = np.full(tsi_max, np.nan)
-#        _post_velocity_x = np.full(tsi_max, np.nan)
-#        _temperature = np.full(tsi_max, np.nan) # depreciated
-        V.inPlume = np.full(tsi_max, -1, dtype=np.uint8)
-        V.plume_experience = [None]*tsi_max
-        V.turning = [None]*tsi_max
+        V['inPlume'] = np.full(tsi_max, -1, dtype=np.uint8)
+        V['plume_experience'] = [None]*tsi_max
+        V['turning'] = [None]*tsi_max
         V['heading_angle'] = np.full(tsi_max, np.nan)
         V['velocity_angular'] = np.full(tsi_max, np.nan)
 
@@ -304,42 +302,42 @@ class Agent():
 
             # are we in the plume?
             if self.plume_obj.condition is None:  # skip if no plume
-                V.inPlume[tsi] = 0
+                V['inPlume'][tsi] = 0
             else:
-                V.inPlume[tsi] = self.plume_obj.check_for_plume(
+                V['inPlume'][tsi] = self.plume_obj.check_for_plume(
                     [V['position_x'][tsi], V['position_y'][tsi], V['position_z'][tsi]])
 
             ############ what is our behavior given our plume interactions thus far?
             if tsi == 0:
-                V.plume_experience[tsi] = 'searching'
+                V['plume_experience'][tsi] = 'searching'
             else:
                 if self.plume_obj.condition is None:  # hack for no plume condition
-                    V.plume_experience[tsi] = 'searching'
+                    V['plume_experience'][tsi] = 'searching'
                 else:
-                    if V.plume_experience[tsi] is None: # need to find state
-                        V.plume_experience[tsi] = self._check_crossing_state(tsi, V.inPlume, V['velocity_y'][tsi-1])
+                    if V['plume_experience'][tsi] is None: # need to find state
+                        V['plume_experience'][tsi] = self._check_crossing_state(tsi, V['inPlume'], V['velocity_y'][tsi-1])
                         # import pdb; pdb.set_trace()
-                        if V.plume_experience[tsi] in (
+                        if V['plume_experience'][tsi] in (
                                 'Left_plume Exit leftLeft_plume Exit rightRight_plume Exit leftRight_plume Exit right'):
                             try:
                                 for i in range(PLUME_TRIGGER_TIME): # store experience for the following timeperiod
-                                    V.plume_experience[tsi+i] = str(V.plume_experience[tsi])
+                                    V['plume_experience'][tsi+i] = str(V['plume_experience'][tsi])
                             except IndexError: # can't store whole snapshot, so save 'truncated' label instead
                                # print "plume trigger turn lasted less than threshold of {} timesteps "\
                                # "before trajectory ended, so adding _truncated suffix".format(tsi_max)
                                for i in range(tsi_max - tsi):
-                                    V.plume_experience[tsi+i] = (str(V.plume_experience[tsi])+'_truncated')
+                                    V['plume_experience'][tsi+i] = (str(V['plume_experience'][tsi])+'_truncated')
 
                     else: # if we're already orienting from past memory
-                        if V.inPlume is False:  # we haven't re-entered the plume
+                        if V['inPlume'] is False:  # we haven't re-entered the plume
                             pass
                         else:  # found the plume again!
-                            V.plume_experience[tsi:]
+                            V['plume_experience'][tsi:]
             ######################################################################
 
 
             # calculate driving forces' direction
-            F_stim = stim_biasF3D.stimF(V.plume_experience[tsi], self.stimF_str)
+            F_stim = stim_biasF3D.stimF(V['plume_experience'][tsi], self.stimF_str)
             V['stimF_x'][tsi], V['stimF_y'][tsi], V['stimF_z'][tsi] = F_stim
 
             F_bias = baseline_driving_forces3D.random_force(self.F_amplitude)
@@ -446,19 +444,19 @@ class Agent():
 
             # turning state
             if tsi in [0, 1]:
-                V.turning[tsi] = 0
+                V['turning'][tsi] = 0
             else:
                 turn_min = 3
                 if abs(V['velocity_angular'][tsi-turn_min:tsi]).sum() > self.metadata['turn_threshold']*turn_min:
-                    V.turning[tsi] = 1
+                    V['turning'][tsi] = 1
                 else:
-                    V.turning[tsi] = 0
+                    V['turning'][tsi] = 0
 
            # if there is a target, check if we are finding it
             if self.heater is not None and np.linalg.norm(candidate_pos - self.heater[0:3]) < self.detect_thresh:
                    self.metadata['target_found'][0]  = True
                    self.metadata['total_finds'] += 1
-                   self.metadata['time_to_target_find'][0] = V[[tsi]  # TODO: check-- should this be timeList[i+1]?
+                   self.metadata['time_to_target_find'][0] = V['times'][tsi]  # TODO: check-- should this be timeList[i+1]?
                    V = self.land(tsi, V)  # stop flying at source
                    print "source found"
                    break
@@ -469,17 +467,17 @@ class Agent():
     def land(self, tsi, V):
         ''' trim excess timebins in arrays
         '''
-        for key, array in vars(V).items():
-            value = setattr(V, key, array[:tsi+1])
+        for array in V.itervalues():
+            array = array[:tsi+1]
 
         V = self._calc_polar_kinematics(V)
 
         # absolute magnitude of velocity, accel vectors in 3D
         velo_mag_stack = np.vstack((V['velocity_x'], V['velocity_y'], V['velocity_z']))
-        V.velocity_3Dmagn = np.linalg.norm(velo_mag_stack, axis=0)
+        V['velocity_3Dmagn'] = np.linalg.norm(velo_mag_stack, axis=0)
 
         accel_mag_stack = np.vstack((V['acceleration_x'], V['acceleration_y'], V['acceleration_z']))
-        V.acceleration_3Dmagn = np.linalg.norm(accel_mag_stack, axis=0)
+        V['acceleration_3Dmagn'] = np.linalg.norm(accel_mag_stack, axis=0)
         
         return V
         
@@ -524,14 +522,14 @@ class Agent():
 #        self.ensemble['magnitude'] = [np.linalg.norm(x) for x in self.ensemble.values]
 #        self.ensemble['angle'] = np.tan(self.ensemble['velocity_y'] / self.ensemble['velocity_x']) % (2*np.pi)
 #        
-        for name in self.metadata['kinematic_vals']+self.metadata['forces']: #['velocity', 'acceleration', 'biasF', 'wallRepulsiveF', 'upwindF', 'stimF']
+        for name in self.metadata['kinematic_vals']+self.metadata['forces']:  # ['velocity', 'acceleration', 'biasF', 'wallRepulsiveF', 'upwindF', 'stimF']
             # adds attribute to V
-            x_component, y_component = getattr(V, name+'_x'), getattr(V, name+'_y')
+            x_component, y_component = V[name+'_x'], V[name+'_y']
             angle = np.arctan2(y_component, x_component)
             angle[angle < 0] += 2*np.pi  # get vals b/w [0,2pi]
 #            print angle
-            setattr(V, name+'_xy_theta', angle)
-            setattr(V, name+'_xy_mag', np.sqrt(y_component**2 + x_component**2))
+            V[name+'_xy_theta'] = angle
+            V[name+'_xy_mag'] = np.sqrt(y_component**2 + x_component**2)
         
         return V
 #                for ext in ['_x', '_y', '_z', '_xy_theta', '_xy_mag']:
@@ -596,7 +594,7 @@ def main():
 if __name__ == '__main__':
     myplume, trajectories, skeeter = main()
     print "\nDone."
-    trajectories.plot_single_3Dtrajectory()
+    # trajectories.plot_single_3Dtrajectory()
     #
     # # # csv dump for Sharri
     # print "dumping to csvs"
