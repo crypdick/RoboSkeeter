@@ -11,31 +11,9 @@ import baseline_driving_forces3D
 import stim_biasF3D
 import plume3D
 import trajectory3D
+import windtunnel
 import sys
 import pandas as pd
-
-
-def place_heater(location):
-    ''' given {left, right, none, custom coords} place heater in the windtunnel
-
-    Args:
-    location
-
-    returns [x,y, zmin, zmax, diam]
-    '''
-    zmin = 0.03800
-    zmax = 0.11340
-    diam = 0.01905
-    if location is None:
-        return None
-    elif location in "leftLeftLEFT":
-        return [0.8651, -0.0507, zmin, zmax, diam, 'left']
-    elif location in "rightRightRIGHT":
-        return [0.8651, 0.0507, zmin, zmax, diam, 'right']
-    elif type(location) is list:
-        return location
-    else:
-        raise Exception('invalid location type specified')
 
 
 def place_agent(agent_pos='downwind_plane'):
@@ -110,6 +88,8 @@ class Agent():
             pandas dataframe which we store all our simulated trajectories and their kinematics
         Plume_object: (plume object)
             the temperature data for our thermal, convective plume
+        windtunnel_object: (windtunnel object)
+            our virtual wind tunnel
         agent_position: (list/array, "cage", "center")
             how to pick the initial position coordinates of a flight
         v0_stdev: (float)
@@ -133,8 +113,6 @@ class Agent():
         detect_thresh: (float)
             distance agent can detect heater and land (in m),
             default: 2 cm + radius of heaters (0.00635m/2= 0.003175)
-        boundary: (array)
-            specify where walls are  (minx, maxx, miny, maxy)
         
 
     All args are in SI units and based on behavioral data:
@@ -149,6 +127,7 @@ class Agent():
         self,
         Trajectory_object,
         Plume_object,
+        Windtunnel_object,
         agent_pos='door',
         v0_stdev=0.01,
         Tmax=15.,
@@ -164,7 +143,7 @@ class Agent():
         mass = 3e-6, #3.0e-6 # 2.88e-6  # mass (kg) =2.88 mg,
         k=0.):
         
-        self.boundary = [0.0, 1.0, 0.127, -0.127, 0., 0.254]  # these are real dims of our wind tunnel
+
         self.Tmax = Tmax
         self.dt = dt
         self.v0_stdev = v0_stdev
@@ -180,16 +159,12 @@ class Agent():
         self.detect_thresh = detect_thresh
         self.stimF_str = stimF_str
         
-        
-        # place heater
-        self.heater = place_heater(heater)
-        
         self.metadata = dict()
         # population weight data: 2.88 +- 0.35mg
         self.metadata['mass'] = mass
         self.metadata['time_max'] = Tmax
-        self.metadata['boundary'] = self.boundary
-        self.metadata['heater_position'] = self.heater
+        self.metadata['boundary'] = Windtunnel_object.boundary
+        self.metadata['heater_position'] = Windtunnel_object.test_condition
         self.metadata['detection_threshold'] = detect_thresh
         self.metadata['initial_position'] = agent_pos
         self.metadata['initial_velo_stdev'] = v0_stdev
@@ -216,14 +191,14 @@ class Agent():
         self.plume_obj = Plume_object
         
         # # create repulsion landscape
-        # self._repulsion_funcs = repulsion_landscape3D.landscape(boundary=self.boundary)
+        # self._repulsion_funcs = repulsion_landscape3D.landscape(boundary=self.metadata['boundary'])
 
 
     def fly(self, total_trajectories=1, verbose=True):
         ''' iterates self._fly_single() total_trajectories times
         '''
         traj_count = 0
-        args = (self.dt, self.metadata['mass'], self.detect_thresh, self.boundary)
+        args = (self.dt, self.metadata['mass'], self.detect_thresh, self.metadata['boundary'])
         df_list = []
         while traj_count < total_trajectories:
             if verbose is True:
@@ -233,7 +208,7 @@ class Agent():
 
             kinematics_dict = self._fly_single(*args)  # TODO: switch to dictionary
             kinematics_dict['trajectory_num'] = traj_count  # enumerate the trajectories
-            df = pd.DataFrame(kinematics_dict.keys())
+            df = pd.DataFrame(kinematics_dict)
 
             df_list.append(df)
             
@@ -453,7 +428,7 @@ class Agent():
                     V['turning'][tsi] = 0
 
            # if there is a target, check if we are finding it
-            if self.heater is not None and np.linalg.norm(candidate_pos - self.heater[0:3]) < self.detect_thresh:
+            if self.metadata['heater_position'] is not None and np.linalg.norm(candidate_pos - self.metadata['heater_position'][0:3]) < self.detect_thresh:
                    self.metadata['target_found'][0]  = True
                    self.metadata['total_finds'] += 1
                    self.metadata['time_to_target_find'][0] = V['times'][tsi]  # TODO: check-- should this be timeList[i+1]?
@@ -464,25 +439,25 @@ class Agent():
         return V
 
 
-    def land(self, tsi, V):
+    def land(self, tsi, array_dict):
         ''' trim excess timebins in arrays
         '''
-        for array in V.itervalues():
+        for array in array_dict.itervalues():
             array = array[:tsi+1]
 
-        V = self._calc_polar_kinematics(V)
+        array_dict = self._calc_polar_kinematics(array_dict)
 
         # absolute magnitude of velocity, accel vectors in 3D
-        velo_mag_stack = np.vstack((V['velocity_x'], V['velocity_y'], V['velocity_z']))
-        V['velocity_3Dmagn'] = np.linalg.norm(velo_mag_stack, axis=0)
+        velo_mag_stack = np.vstack((array_dict['velocity_x'], array_dict['velocity_y'], array_dict['velocity_z']))
+        array_dict['velocity_3Dmagn'] = np.linalg.norm(velo_mag_stack, axis=0)
 
-        accel_mag_stack = np.vstack((V['acceleration_x'], V['acceleration_y'], V['acceleration_z']))
-        V['acceleration_3Dmagn'] = np.linalg.norm(accel_mag_stack, axis=0)
+        accel_mag_stack = np.vstack((array_dict['acceleration_x'], array_dict['acceleration_y'], array_dict['acceleration_z']))
+        array_dict['acceleration_3Dmagn'] = np.linalg.norm(accel_mag_stack, axis=0)
         
-        return V
+        return array_dict
         
         
-    def _check_crossing_state(self, tsi, inPlume, vy):
+    def _check_crossing_state(self, tsi, inPlume, velocity_y):
         """
         out2out - searching
          (or orienting, but then this func shouldn't be called)
@@ -504,41 +479,29 @@ class Agent():
             return 'staying'
         if current_state == 0 and past_state == 1:
             # exiting the plume
-            if self.heater[5] == 'left':
-                if vy <= 0:
+            if self.metadata['heater_position'][5] == 'left':
+                if velocity_y <= 0:
                     return 'Left_plume Exit left'
                 else:
                     return 'Left_plume Exit right'
             else:
-                if vy <= 0:
+                if velocity_y <= 0:
                     return "Right_plume Exit left"
                 else:
                     return "Right_plume Exit right"
             
             
-    def _calc_polar_kinematics(self, V):
-        # TODO: also solve for yz
-#        # linalg norm basically does sqrt( sum(x**2) )
-#        self.ensemble['magnitude'] = [np.linalg.norm(x) for x in self.ensemble.values]
-#        self.ensemble['angle'] = np.tan(self.ensemble['velocity_y'] / self.ensemble['velocity_x']) % (2*np.pi)
-#        
+    def _calc_polar_kinematics(self, array_dict):
+        """append polar kinematics to vectors dictionary"""
         for name in self.metadata['kinematic_vals']+self.metadata['forces']:  # ['velocity', 'acceleration', 'biasF', 'wallRepulsiveF', 'upwindF', 'stimF']
-            # adds attribute to V
-            x_component, y_component = V[name+'_x'], V[name+'_y']
+            x_component, y_component = array_dict[name+'_x'], array_dict[name+'_y']
             angle = np.arctan2(y_component, x_component)
             angle[angle < 0] += 2*np.pi  # get vals b/w [0,2pi]
-#            print angle
-            V[name+'_xy_theta'] = angle
-            V[name+'_xy_mag'] = np.sqrt(y_component**2 + x_component**2)
+            array_dict[name+'_xy_theta'] = angle
+            array_dict[name+'_xy_mag'] = np.sqrt(y_component**2 + x_component**2)
         
-        return V
-#                for ext in ['_x', '_y', '_z', '_xy_theta', '_xy_mag']:
-#                    value = setattr(V, name+ext, np.full(tsi_max, np.nan))
-                
-        
-    
-class Object(object):
-        pass
+        return array_dict
+
 
 
 def main():
@@ -548,7 +511,7 @@ def main():
     biasF_scale => 4.12405e-6 using fminbound
     """
 
-    HEATER = None
+    TEST_CONDITION = None
     # old beta- 5e-5, forces 4.12405e-6, fwind = 5e-7
     BETA, FORCES_AMPLITUDE, F_WIND_SCALE =  [  1.37213380e-06  , 1.39026239e-06 ,  2.06854777e-06]
     MASS = 2.88e-6
@@ -558,17 +521,18 @@ def main():
     F_STIM_SCALE = 0.  #7e-7,
     K = 0.  #1e-7
 
-
+    # generate environment
+    windtunnel_object = windtunnel.Windtunnel(TEST_CONDITION)
     # temperature plume
-    plume_object = plume3D.Plume(HEATER)
+    plume_object = plume3D.Plume(TEST_CONDITION)
     # import pdb; pdb.set_trace()
     trajectories = trajectory3D.Trajectory() # instantiate empty trajectories object
     skeeter = Agent(
         trajectories,
         plume_object,
+        windtunnel_object,
         mass=MASS,
         agent_pos="downwind_plane",
-        heater=HEATER,
         wtf=F_WIND_SCALE,
         F_amplitude=FORCES_AMPLITUDE,
         stimF_str=F_STIM_SCALE,
@@ -594,7 +558,7 @@ def main():
 if __name__ == '__main__':
     myplume, trajectories, skeeter = main()
     print "\nDone."
-    # trajectories.plot_single_3Dtrajectory()
+    trajectories.plot_single_3Dtrajectory()
     #
     # # # csv dump for Sharri
     # print "dumping to csvs"
