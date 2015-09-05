@@ -1,66 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-creates agent object, with metadata, and methods such as fly, land.
-when you use agent attribute fly, it generates trajectories
-
 Created on Tue May  5 21:08:51 2015
 
 @author: richard
-
-agent:
--describe() [metadata]
--traj_gen iter(N=1)
-    load_plume
-    load trajectory object
-    -fly()
-        -temp sensing <--> plume.get_temp()
-        -land --> mytrajectory.append(vectors)
--store agent as pickle
-    http://www.rafekettler.com/magicmethods.html#callable
-   
-   
-GOALS
-#
-Plotting
-#
-#####GOAL: Have same figures for both agent/ model
-
-#
-model building
-#
-!implement repulsion functions for x, y, z dimensions
-    polyfit each distribution? -- waiting for sharri
-Kalman filter
-upwind downwind decision policy?
-
-plume triggered stats:
-if in-> out, grab 1s
-check velocity_y component. sort left, right.
-plot compass plots
-
-
-#
-monte carlo fitting
-#
-!fit "prior" kinematics-- waiting for sharri
-!make cost function
-!run monte carlo for each kinematic to fit params of model to the kinematic fit
-
-#
-EVERYTHING PLUME
-#
-! add plume interaction forces (decision policies)
-
-
-#
-Analysis
-#
---lowest--
-autocorrelation, PACF of the heading angle
-make color coding 3D trajectories
-do plume trigger analysis 
-turn ratio
-downwind bouts --
 """
 
 import numpy as np
@@ -74,8 +16,7 @@ import pandas as pd
 
 
 def place_heater(location):
-    ''' given {left, right, none, custom location} place heater in the coordinates in our convention, as well as height
-    and diameter location
+    ''' given {left, right, none, custom coords} place heater in the windtunnel
 
     Args:
     location
@@ -97,9 +38,11 @@ def place_heater(location):
         raise Exception('invalid location type specified')
 
 
-def place_agent(agent_pos):
+def place_agent(agent_pos='downwind_plane'):
     ''' puts the agent in an initial position, usually within the bounds of the
     cage
+
+    Options: center [of the cage], [anywhere in the] cage, [the cage] door, or anywhere in the plane at x=.1 meters
     '''
     if type(agent_pos) is list:
         return agent_pos
@@ -125,21 +68,21 @@ def solve_heading(velo_x, velo_y):
     return theta*180/np.pi
 
 
-def fly_wrapper(agent_obj, args, traj_count):
-    """wrapper fxn for fly_single to use for multithreading
-    """
-    vectors_object = agent_obj._fly_single(*args)
-    setattr(vectors_object, 'trajectory_num', traj_count)
-    df = pd.DataFrame(vars(vectors_object))
-    
-    
-    return df
+# def fly_wrapper(agent_obj, args, traj_count):
+#     """wrapper fxn for fly_single to use for multithreading
+#     """
+#     vectors_object = agent_obj._fly_single(*args)
+#     setattr(vectors_object, 'trajectory_num', traj_count)
+#     df = pd.DataFrame(vars(vectors_object))
+#
+#
+#     return df
 
 
 def attraction_basin(k, pos, y_spring_center=0.12, z_spring_center=0.2):
-    """given y position, determine if on left side or right side
-    dependng on side, determine distance to spring center.
-    return force
+    """given y position, determine if the agent is currently flighing in the left or right half of the windtunnel.
+    then, figures out which spring center to use,
+     and returns the spring force.
 
     TODO: solve for correct spring centers
     TODO: make separate k for y, z?
@@ -158,41 +101,44 @@ def attraction_basin(k, pos, y_spring_center=0.12, z_spring_center=0.2):
 
 
 class Agent():
-    """Generate agent
+    """Generate agent (our simulated mosquito) and its environment (the windtunnel)
+
+    TODO: separate windtunnel environment into its own class
 
     Args:
         Trajectory_object: (trajectory object)
-            
+            pandas dataframe which we store all our simulated trajectories and their kinematics
         Plume_object: (plume object)
-            
+            the temperature data for our thermal, convective plume
         agent_position: (list/array, "cage", "center")
-            sets initial position r0 (meters)
+            how to pick the initial position coordinates of a flight
         v0_stdev: (float)
-            stdev of initial velocity distribution 
+            stdev of initial velocity distribution (default: experimentally observed v0, fit to a normal distribution)
         heater: (list/array, "left", "right", or "None")
-            heater position  (set to None if no source)
+            the heater condition: left/right heater turned on (set to None if no heater is on)
         Tmax: (float)
-            max length of accelList trajectory 
+            max time an agent is allowed to fly
+            (data: <control flight duration> = 4.4131 +- 4.4096)  # TODO: recheck when Sharri's new data comes in
         dt: (float)
-            length of timebins to divide Tmax by 
+            width of our time steps
         k: (float)
-            spring constant, disabled 
+            spring constant for our wall attraction flow
         beta: (float)
-            damping force (kg/s). Undamped = 0, Critical damping = 1,
-            normal range ~1e-5. NOTE: if beta is too big, things blow up
+            damping force (kg/s). Undamped = 0, Critical damping = 1,t
+            NOTE: if beta is too big, the agent accelerates to infinity!
         biasF_scale: (float)
-            random driving force exp term for exp distribution 
+            parameter to scale the main driving force
         wtf: (float)
-            upwind bias force magnitude  # TODO units
+            magnitude of upwind bias force   # TODO units
         detect_thresh: (float)
-            distance mozzie can detect target in (m), 2 cm + radius of heaters,
-            (0.00635m/2= 0.003175)
+            distance agent can detect heater and land (in m),
+            default: 2 cm + radius of heaters (0.00635m/2= 0.003175)
         boundary: (array)
             specify where walls are  (minx, maxx, miny, maxy)
         
 
     All args are in SI units and based on behavioral data:
-    Tmax, dt: seconds (data: <control flight duration> = 4.4131 +- 4.4096
+
     
 
     Returns:
@@ -217,8 +163,6 @@ class Agent():
         bounded=True,
         mass = 3e-6, #3.0e-6 # 2.88e-6  # mass (kg) =2.88 mg,
         k=0.):
-        """ Initialize object with instant variables, and trigger other funcs.
-        """
         
         self.boundary = [0.0, 1.0, 0.127, -0.127, 0., 0.254]  # these are real dims of our wind tunnel
         self.Tmax = Tmax
@@ -276,7 +220,7 @@ class Agent():
 
 
     def fly(self, total_trajectories=1, verbose=True):
-        ''' iterates _fly_single total_trajectories times
+        ''' iterates self._fly_single() total_trajectories times
         '''
         traj_count = 0
         args = (self.dt, self.metadata['mass'], self.detect_thresh, self.boundary)
@@ -285,13 +229,13 @@ class Agent():
             if verbose is True:
                 sys.stdout.write("\rTrajectory {}/{}".format(traj_count+1, total_trajectories))
                 sys.stdout.flush()
-            df = fly_wrapper(self, args, traj_count)
+
+
+            vectors_object = agent_obj._fly_single(*args)  # TODO: switch to dictionary
+            setattr(vectors_object, 'trajectory_num', traj_count)  # enumerate the trajectories
+            df = pd.DataFrame(vars(vectors_object))
+
             df_list.append(df)
-#            vectors_object = self._fly_single(self.dt, self.metadata['mass'], self.detect_thresh, self.boundary)
-#            # extract trajectory object attribs, append to our lists.
-#            setattr(vectors_object, 'trajectory_num', traj_count)
-            
-#            self.trajectory_obj.append_ensemble(vars(vectors_object))
             
             traj_count += 1
             if traj_count == total_trajectories:
@@ -303,20 +247,15 @@ class Agent():
         
         self.metadata['total_trajectories'] = total_trajectories
         self.trajectory_obj.add_agent_info(self.metadata)
-        self.trajectory_obj.ensemble = pd.concat(df_list)
+        self.trajectory_obj.ensemble = pd.concat(df_list  # concatinate all the dataframes at once instead of one at a
+                                                          # time for performance boost.
         # concluding stats
 #        self.trajectory_obj.add_agent_info({'time_target_find_avg': trajectory3D.T_find_stats(self.trajectory_obj.agent_info['time_to_target_find'])})
     
-        
-#        if __name__ == '__main__' and total_trajectories == 1:
-#            self.trajectory_obj.plot_single_trajectory()
-
-    
     def _fly_single(self, dt, m, detect_thresh, boundary, bounded=True):
-        """Run the simulation using Euler's method
+        """Generate a single trajectory using our model.
     
-        First put everything into np arrays, then at end put it into a Pandas DF
-        this speeds up the code thousands of times
+        First put everything into np arrays stored inside of a dictionary
         """
         BOUNCE = "elastic"
         PLUME_TRIGGER_TIME = int(1.0/dt)
@@ -324,12 +263,14 @@ class Agent():
         
         # V for vector
         # retrieve dict w/ vars(V)
-        V = Object()
+        # V = Object()
+        V = {}
         
         for name in self.metadata['kinematic_vals']+self.metadata['forces']:
             # adds attribute to V
             for ext in ['_x', '_y', '_z', '_xy_theta', '_xy_mag']:
-                setattr(V, name+ext, np.full(tsi_max, np.nan))
+                # setattr(V, name+ext, np.full(tsi_max, np.nan))
+                V[name+ext] = np.full(tsi_max, np.nan)
         
         
         
@@ -611,7 +552,7 @@ def main():
 
     HEATER = None
     # old beta- 5e-5, forces 4.12405e-6, fwind = 5e-7
-    BETA, FORCES_AMPLITUDE, F_WIND_SCALE =  [  1.37213380e-06,   1.39026239e-06  , 2.08344893e-06] #1.30583450e-06
+    BETA, FORCES_AMPLITUDE, F_WIND_SCALE =  [  1.37213380e-06  , 1.39026239e-06 ,  2.06854777e-06]
     MASS = 2.88e-6
     # BETA = 2.89442709e-06 # vonly 6.41637772e-06 # both 5.94544196e-06 # before optimiz 5e-6  #1e-6,  # 1e-5
     # FORCES_AMPLITUDE = 2.19205644e-06 #vonly3.18757964e-06   # both 1.53286249e-06  # before optim 4.12405e-6
