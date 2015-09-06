@@ -79,7 +79,7 @@ def attraction_basin(k, pos, y_spring_center=0.12, z_spring_center=0.2):
 
 
 class Agent():
-    """Generate agent (our simulated mosquito) and its environment (the windtunnel)
+    """Generate agent (our simulated mosquito) which can fly.
 
     TODO: separate windtunnel environment into its own class
 
@@ -134,7 +134,7 @@ class Agent():
         dt=0.01,
         heater='left',
         beta=1e-5,
-        F_amplitude=4e-06,
+        randomF_strength=4e-06,
         wtf=7e-07,
         wtf_scalar=0.05,
         stimF_str=1e-4,
@@ -143,26 +143,14 @@ class Agent():
         mass = 3e-6, #3.0e-6 # 2.88e-6  # mass (kg) =2.88 mg,
         k=0.):
         
+        self.metadata = {}
 
-        self.Tmax = Tmax
-        self.dt = dt
-        self.v0_stdev = v0_stdev
-        self.k = k
-        self.beta = beta
-        self.F_amplitude = F_amplitude
-        # self.wtf = wtf
-        # the mean of a lognorm dist is E[X] = e ** (mu + 1/2 omega **2)
-        # in our case, mu = -0.405632480939 and sigma = 0.932352661694 * 0.5
-        # which is then scaled by F_amplitude
-        self.wtf = np.exp(-0.405632480939 + 0.5 * 0.932352661694 * 0.5 ** 2) * F_amplitude * wtf_scalar
-        # print wtf, self.wtf_scalar, F_amplitude
-        self.detect_thresh = detect_thresh
-        self.stimF_str = stimF_str
-        
-        self.metadata = dict()
         # population weight data: 2.88 +- 0.35mg
         self.metadata['mass'] = mass
         self.metadata['time_max'] = Tmax
+        self.metadata['time bindwidth'] = dt
+        self.metadata['stimF_strength'] = stimF_str
+
         self.metadata['boundary'] = Windtunnel_object.boundary
         self.metadata['heater_position'] = Windtunnel_object.test_condition
         self.metadata['detection_threshold'] = detect_thresh
@@ -170,8 +158,8 @@ class Agent():
         self.metadata['initial_velo_stdev'] = v0_stdev
         self.metadata['k'] = k
         self.metadata['beta'] = beta
-        self.metadata['F_amplitude'] = F_amplitude
-        self.metadata['wtf'] = self.wtf
+        self.metadata['randomF_strength'] = randomF_strength
+        self.metadata['wtF'] = np.exp(-0.405632480939 + 0.5 * 0.932352661694 * 0.5 ** 2) * randomF_strength * wtf_scalar  # TODO: document
         # for stats, later
         self.metadata['time_target_find_avg'] = []
         self.metadata['total_finds'] = 0
@@ -198,7 +186,7 @@ class Agent():
         ''' iterates self._fly_single() total_trajectories times
         '''
         traj_count = 0
-        args = (self.dt, self.metadata['mass'], self.detect_thresh, self.metadata['boundary'])
+        args = (self.metadata['time bindwidth'], self.metadata['mass'], self.metadata['detection_threshold'], self.metadata['boundary'])
         df_list = []
         while traj_count < total_trajectories:
             if verbose is True:
@@ -264,10 +252,9 @@ class Agent():
         ######## INITIAL CONDITIONS
         # place agent
         V['position_x'][0], V['position_y'][0], V['position_z'][0] = place_agent(self.metadata['initial_position'])
-        self.dim = 3
 
-        # generate random intial velocity condition
-        V['velocity_x'][0], V['velocity_y'][0], V['velocity_z'][0] = np.random.normal(0, self.v0_stdev, self.dim)
+        # generate random intial velocity condition using normal distribution fitted to experimental data
+        V['velocity_x'][0], V['velocity_y'][0], V['velocity_z'][0] = np.random.normal(0, self.metadata['initial_velo_stdev'], 3)
 
         # generate a flight!
         for tsi in xrange(tsi_max):
@@ -312,22 +299,22 @@ class Agent():
 
 
             # calculate driving forces' direction
-            F_stim = stim_biasF3D.stimF(V['plume_experience'][tsi], self.stimF_str)
+            F_stim = stim_biasF3D.stimF(V['plume_experience'][tsi], self.metadata['stimF_strength'])
             V['stimF_x'][tsi], V['stimF_y'][tsi], V['stimF_z'][tsi] = F_stim
 
-            F_bias = baseline_driving_forces3D.random_force(self.F_amplitude)
+            F_bias = baseline_driving_forces3D.random_force(self.metadata['randomF_strength'])
             V['biasF_x'][tsi], V['biasF_y'][tsi], V['biasF_z'][tsi] = F_bias
 
-            F_upwind = baseline_driving_forces3D.upwindBiasForce(self.wtf)
+            F_upwind = baseline_driving_forces3D.upwindBiasForce(self.metadata['wtF'])
             V['upwindF_x'][tsi], V['upwindF_y'][tsi], V['upwindF_z'][tsi] = F_upwind
 
-            F_wall_repulsion = attraction_basin(self.k, [V['position_x'][tsi], V['position_y'][tsi], V['position_z'][tsi]])
+            F_wall_repulsion = attraction_basin(self.metadata['k'], [V['position_x'][tsi], V['position_y'][tsi], V['position_z'][tsi]])
             V['wallRepulsiveF_x'][tsi], V['wallRepulsiveF_y'][tsi], V['wallRepulsiveF_z'][tsi] = F_wall_repulsion
 
 
             ########################### calculate current force
             F_driving =  F_bias + F_upwind + F_wall_repulsion + F_stim
-            F_damping = -self.beta*np.array([V['velocity_x'][tsi], V['velocity_y'][tsi], V['velocity_z'][tsi]])
+            F_damping = -self.metadata['beta']*np.array([V['velocity_x'][tsi], V['velocity_y'][tsi], V['velocity_z'][tsi]])
             F_total = F_damping + F_driving
             V['totalF_x'][tsi], V['totalF_y'][tsi], V['totalF_z'][tsi] = F_total
             ###############################
@@ -507,34 +494,32 @@ class Agent():
 def main():
     """
     Params fitted using scipy.optimize
-    
-    biasF_scale => 4.12405e-6 using fminbound
+
     """
 
-    TEST_CONDITION = None
+    N_TRAJECTORIES = 10
+    TEST_CONDITION = None  # {'Left', 'Right', None}
     # old beta- 5e-5, forces 4.12405e-6, fwind = 5e-7
     BETA, FORCES_AMPLITUDE, F_WIND_SCALE =  [  1.37213380e-06  , 1.39026239e-06 ,  2.06854777e-06]
     MASS = 2.88e-6
-    # BETA = 2.89442709e-06 # vonly 6.41637772e-06 # both 5.94544196e-06 # before optimiz 5e-6  #1e-6,  # 1e-5
-    # FORCES_AMPLITUDE = 2.19205644e-06 #vonly3.18757964e-06   # both 1.53286249e-06  # before optim 4.12405e-6
-    # F_WIND_SCALE = 1.31901348e-06# vonly 5.53505979e-07 # both 8.67325872e-07 # before optim 5e-7  #7e-07,
-    F_STIM_SCALE = 0.  #7e-7,
-    K = 0.  #1e-7
+    F_STIM_SCALE = 0.  #7e-7,   # set to zero to disable tracking hot air
+    K = 0.  #1e-7               # set to zero to disable wall attraction
 
     # generate environment
     windtunnel_object = windtunnel.Windtunnel(TEST_CONDITION)
-    # temperature plume
+    # generate temperature plume
     plume_object = plume3D.Plume(TEST_CONDITION)
-    # import pdb; pdb.set_trace()
-    trajectories = trajectory3D.Trajectory() # instantiate empty trajectories object
+    # instantiate empty trajectories class
+    trajectories_object = trajectory3D.Trajectory()
+    # instantiate a Roboskeeter
     skeeter = Agent(
-        trajectories,
+        trajectories_object,
         plume_object,
         windtunnel_object,
         mass=MASS,
         agent_pos="downwind_plane",
         wtf=F_WIND_SCALE,
-        F_amplitude=FORCES_AMPLITUDE,
+        randomF_strength=FORCES_AMPLITUDE,
         stimF_str=F_STIM_SCALE,
         k=K,
         beta=BETA,
@@ -543,9 +528,9 @@ def main():
         detect_thresh=0.023175,
         bounded=True)
     sys.stdout.write("\rAgent born")
-    skeeter.fly(total_trajectories=10)
-    
-    # trajectories.plot_kinematic_hists()
+
+    # make the skeeter fly. this updates the trajectories_object
+    skeeter.fly(total_trajectories=N_TRAJECTORIES)
     
     return plume_object, skeeter.trajectory_obj, skeeter
     
@@ -557,10 +542,19 @@ def main():
 
 if __name__ == '__main__':
     myplume, trajectories, skeeter = main()
+
     print "\nDone."
-    trajectories.plot_single_3Dtrajectory()
-    #
-    # # # csv dump for Sharri
+
+    ######################### plotting methods
+    # trajectories.plot_single_3Dtrajectory(0)  # plot ith trajectory in the ensemble of trajectories
+
+    # trajectories.plot_force_violin()
+    # trajectories.plot_kinematic_hists()
+    # trajectories.plot_posheatmap()
+    # trajectories.plot_kinematic_compass()
+    # trajectories.plot_sliced_hists()
+
+    ######################### dump data for csv for Sharri
     # print "dumping to csvs"
     # e = trajectories.ensemble
     # r = e.trajectory_num.iloc[-1]
