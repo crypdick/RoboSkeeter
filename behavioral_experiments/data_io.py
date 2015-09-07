@@ -17,7 +17,7 @@ def load_experiment_csv(file_path):
 #    file_path = os.path.join(script_dir, rel_data_path, filename)
     return pd.read_csv(file_path, header=None, na_values="NaN")
     
-    
+
 def load_histogram_csv(filepath):
     pass
 
@@ -36,9 +36,7 @@ def save_processed_csv(trajectory_list, filepath):
         trajectory.to_csv(file_path, index=False)
         
         
-def load_csv2DF(data_fname):
-    dyn_traj_reldir = "data/processed_trajectories/"
-    # print os.path.dirname(__file__)
+def load_csv2DF(data_fname, rel_dir = "data/processed_trajectories/"):
     file_path = os.path.join(os.getcwd(), dyn_traj_reldir, data_fname + ".csv")
 
     col_labels = [
@@ -62,6 +60,18 @@ def load_csv2DF(data_fname):
 
     return dataframe
 
+
+def load_csv2np(filedir='experimental_data/'):
+    v_csv = np.genfromtxt(filedir+'velocity_distributions_uw.csv',delimiter=',')
+    v_csv = v_csv.T
+    v_observed = v_csv[4][:-1]  # throw out last datum
+
+    # load csv values
+    a_csv = np.genfromtxt(filedir+'/acceleration_distributions_uw.csv',delimiter=',')
+    a_csv = a_csv.T
+    a_observed = a_csv[4][:-1]  # throw out last datum
+
+    return  v_observed, a_observed
 
 if __name__ == '__main__':
     a = load_csv2DF('Control-27')
