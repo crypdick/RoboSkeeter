@@ -16,34 +16,6 @@ import seaborn as sns
 sns.set_palette("muted", 8)
 
 
-def plot_single_trajectory(dynamics, metadata, plot_kwargs=None):
-    # plot an individual trajectory
-    # TODO: make 3D
-    try:
-        plt.plot(dynamics['position_x'], dynamics['position_y'], lw=2, alpha=0.5)
-    except KeyError:
-        print dynamics.keys()
-        pass
-    currentAxis = plt.gca()
-    cage = draw_cage()
-    currentAxis.add_patch(cage)
-    currentAxis.axis(metadata['boundary'][0:4])
-    if metadata['heater_position'] is not None:
-        heaterCircle, detectCircle = draw_heaters(metadata['heater_position'], metadata['detection_threshold'])
-        currentAxis.add_artist(heaterCircle)
-        currentAxis.add_artist(detectCircle)
-    plt.gca().set_aspect('equal')
-    fig = plt.gcf()
-    fig.set_size_inches(15, 4.5)
-
-    plt.title(plot_kwargs['title'] + plot_kwargs['titleappend'], fontsize=20)
-    plt.xlabel("Upwind/$x$ (meters)", fontsize=14)
-    plt.ylabel("Crosswind/$y$ (meters)", fontsize=14)
-    plt.savefig(
-        "./figs/indiv_traj beta{beta}_f{rf}_wf{wtf}.svg".format(beta=metadata['beta'], rf=metadata['randomF_strength'],
-                                                                wtf=metadata['wtF']), format="svg")
-
-
 def draw_cage():
     # makes a little box where the cage is
     cage_midX, cage_midY = 0.1524, 0.  # TODO: turn to absolute boundaries and put in metadata
