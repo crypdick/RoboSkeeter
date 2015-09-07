@@ -1,31 +1,23 @@
 __author__ = 'richard'
 
+import score
 import agent3D
 import plume3D
+import windtunnel
 import trajectory3D
 from scipy.optimize import basinhopping
 import numpy as np
 from matplotlib import pyplot as plt
 import logging
-from scipy.stats import entropy
 from datetime import datetime
-import acfanalyze
 
 logging.basicConfig(filename='basin_hopping.log',level=logging.DEBUG)
 
 myplume = plume3D.Plume(None)
 
-# load csv values
-a_csv = np.genfromtxt('experimental_data/acceleration_distributions_uw.csv',delimiter=',')
-a_csv = a_csv.T
-a_observed = a_csv[4][:-1]  # throw out last datum
-
-v_csv = np.genfromtxt('experimental_data/velocity_distributions_uw.csv',delimiter=',')
-v_csv = v_csv.T
-v_observed = v_csv[4][:-1]  # throw out last datum
 
 # wrapper func for agent 3D
-def wrapper(GUESS, N_trajectories):
+def wrapper(GUESS):
     """
     :param bias_scale_GUESS:
     :param mass_GUESS:
@@ -42,26 +34,27 @@ def wrapper(GUESS, N_trajectories):
 #    beta_prime, bias_scale_GUESS = param_vect
     # when we run this, agent3D is run and we return a score
 
-    plume_object = plume3D.Plume(HEATER)  # we are fitting for the control condition
+    windtunnel_object = windtunnel.Windtunnel(None) # we are fitting for the control condition
+    plume_object = plume3D.Plume(HEATER)
     # temperature plume
     trajectories = trajectory3D.Trajectory() # instantiate empty trajectories object
     skeeter = agent3D.Agent(
         trajectories,
         plume_object,
+        windtunnel_object,
         mass=2.88e-6,
         agent_pos="downwind_plane",
         heater=HEATER,
         wtf=F_WIND_SCALE,
-        F_amplitude=FORCES_AMPLITUDE,
+        randomF_strength=FORCES_AMPLITUDE,
         stimF_str=0., # F_STIM_SCALE,
         beta=BETA,
         k=K, #
         Tmax=15.,
         dt=0.01,
-        detect_thresh=0.023175,
         bounded=True)
 
-    skeeter.fly(total_trajectories=N_trajectories, verbose=False)  # fix N trajectories in main
+    skeeter.fly(total_trajectories=N_TRAJECTORIES, verbose=False)  # fix N trajectories in main
 
     # ensemble = trajectories.ensemble
     # # trimmed_ensemble = ensemble.loc[
@@ -77,73 +70,15 @@ def wrapper(GUESS, N_trajectories):
 
 
 def error_fxn(ensemble, guess):
-    # compare ensemble to experiments, return score to wrapper
 
-    # get histogram vals for agent ensemble
-    adist = 0.1
-    # |a|
-    amin, amax = 0., 4.9+adist  # arange drops last number, so pad range by dist
-    # pdb.set
-    accel_all_magn = ensemble['acceleration_3Dmagn'].values
-    a_counts, aabs_bins = np.histogram(accel_all_magn, bins=np.arange(amin, amax, adist))
-    # turn into prob dist
-    a_counts = a_counts.astype(float)
-    a_total_counts = a_counts.sum()
-    a_counts_n = a_counts / a_total_counts
-    # print a_counts_n
-
-    # solve DKL
-    dkl_a = entropy(a_counts_n, qk=a_observed)
-
-    vdist =  0.015
-    vmin, vmax = 0., 0.605
-    velo_all_magn = ensemble['velocity_3Dmagn'].values
-    v_counts, vabs_bins = np.histogram(velo_all_magn, bins=np.arange(vmin, vmax, vdist))
-    v_counts = v_counts.astype(float)
-    v_total_counts = v_counts.sum()
-    # turn into prob dist
-    v_counts_n = v_counts / v_total_counts
-
-    # solve DKL
-    dkl_v = entropy(v_counts_n, qk=v_observed)
-    # print 'dkl_v' , dkl_v
-
-
-    dkl_score = dkl_a + dkl_v
-    # final_score = dkl_v
-
-    ################ ACF metrics############
-    global ACF_THRESH
-    global N_TRAJECTORIES
-
-    acf_distances = []
-    for i in range(N_TRAJECTORIES):
-        df = ensemble.loc[ensemble['trajectory_num']==i]
-        acf_threshcross_index = acfanalyze.index_drop(df, thresh=ACF_THRESH, verbose=False)
-        if acf_threshcross_index is 'explosion':  # bad trajectory!
-            acf_distances.append(300)
-        else:
-            distance = sum(abs( acf_threshcross_index - np.array([16., 16., 10.]) ))
-            acf_distances.append(distance)
-
-    acf_mean = np.mean(acf_distances)
-    # print "mean", acf_mean
-    acf_score = np.log(acf_mean+1)
-    # print "score", acf_score
-
-    final_score = dkl_score + acf_score
-
-
-    if np.isnan(final_score):
-        final_score = 0
-    global HIGH_SCORE
-    if final_score < HIGH_SCORE:
-        HIGH_SCORE = final_score
+    combined_score, dkl_scores, dkl_a, dkl_v, acf_score = score.score(ensemble)
+    if combined_score < HIGH_SCORE:
+        HIGH_SCORE = combined_score
         print "{} New high score: {}. Guess: {}. DKL score = {}. ACF score = {}".format(datetime.now(), HIGH_SCORE, guess, dkl_score, acf_score)
-        logging.info("Bingo! New high score: {}. Guess: {}".format(HIGH_SCORE, guess))
+        logging.info("{} New high score: {}. Guess: {}. DKL score = {}. ACF score = {}".format(datetime.now(), HIGH_SCORE, guess, dkl_score, acf_score))
 
         global PLOTTER
-        if PLOTTER is True:
+        if (PLOTTER is True) or (np.isinf(dkl_score)):
             plt.ioff()
             f, axarr = plt.subplots(2, sharex=False)
             axarr[0].plot(aabs_bins[:-1], a_counts_n, label='RoboSkeeter')
@@ -159,7 +94,7 @@ def error_fxn(ensemble, guess):
             plt.show()
             plt.close()
 
-    return final_score
+    return combined_score
 
 # # for nelder mead
 # Nfeval = 1
@@ -223,7 +158,7 @@ def main():
         INITIAL_GUESS,
         # stepsize=1e-5,
         T=1e-4,
-        minimizer_kwargs={"args": (N_TRAJECTORIES,), 'method': OPTIM_ALGORITHM},  # bounds were  "bounds": ((200, 1000),(255,1000),(200,1000))
+        minimizer_kwargs={"args": (N_TRAJECTORIES,), 'method': OPTIM_ALGORITHM,  "bounds": ((0, None),(0,None),(0,None))},
         # callback=callbackF,
         disp=True
         )
