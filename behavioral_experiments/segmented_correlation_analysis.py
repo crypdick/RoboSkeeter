@@ -12,7 +12,7 @@ fix data matrix
 """
 
 
-import trajectory_data_io
+import data_io
 from statsmodels.tsa.stattools import acf
 from statsmodels.tsa.stattools import pacf
 import matplotlib.pyplot as plt
@@ -72,7 +72,7 @@ def csvList2df(csv_list):
     print "Extracting csv data."
     df_list = []
     for csv_fname in csv_list:
-        df = trajectory_data_io.load_trajectory_dynamics_csv(csv_fname)
+        df = data_io.load_csv2DF(csv_fname)
         df_vars = df[INTERESTED_VALS] # slice only cols we want
         df_vars['log_curve'] = np.log(df_vars.loc[:,'curve'])
         df_list.append(df_vars)

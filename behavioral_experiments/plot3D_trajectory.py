@@ -8,7 +8,7 @@ Created on Wed May 27 17:03:55 2015
 
 print """for interactive plots, type this into your iPython console: \n
         """
-import trajectory_data_io
+import data_io
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import os
@@ -77,7 +77,7 @@ if __name__ == '__main__':
     csv_i = int(raw_input("Trajectory of your desires: "))
     csv_name = csv_list[csv_i]
     
-    df = trajectory_data_io.load_trajectory_dynamics_csv(csv_name)
+    df = data_io.load_csv2DF(csv_name)
     xyz = df[['pos_x', 'pos_y', 'pos_z']]
     
     plot3D_trajectory(xyz, csv_name, WINDOW_LEN = 100)

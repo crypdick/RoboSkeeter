@@ -7,7 +7,7 @@ Created on Thu May 14 13:12:15 2015
 @author: richard
 """
 
-import trajectory_data_io
+import data_io
 import statsmodels.tsa
 import statsmodels.graphics.tsaplots
 import matplotlib.pyplot as plt
@@ -32,7 +32,7 @@ csv_list = make_csv_name_list()
 for csv_fname in csv_list:
     print csv_fname
     os.chdir(os.path.dirname(__file__))
-    df = trajectory_data_io.load_trajectory_dynamics_csv(csv_fname)
+    df = data_io.load_csv2DF(csv_fname)
 
     if not os.path.exists('./correlation_figs/{data_name}'.format(data_name = csv_fname)):
         os.makedirs('./correlation_figs/{data_name}'.format(data_name = csv_fname))

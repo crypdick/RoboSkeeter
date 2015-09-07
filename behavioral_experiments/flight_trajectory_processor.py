@@ -33,7 +33,7 @@ raw - 3D position of the trajectory. (n x 3, where n is the number of timesteps)
 import os
 import pandas as pd
 import numpy as np
-import trajectory_data_io
+import data_io
 
 
 #def sanitychecks(full_trajectory):
@@ -228,7 +228,7 @@ def main(filepath):
     if type(filepath) == unicode or type(filepath) == str:
         # load the csv
         debug = False
-        Data = trajectory_data_io.load_csv(filepath)
+        Data = data_io.load_experiment_csv(filepath)
     else: # if script is fed a dataframe instead of a path, for debugging
         debug = True        
         Data = filepath
@@ -240,7 +240,7 @@ def main(filepath):
     
     # save
     if debug is False:    
-        trajectory_data_io.write_csv(trajectory_list, filepath)
+        data_io.save_processed_csv(trajectory_list, filepath)
 
 
     return trajectory_list
