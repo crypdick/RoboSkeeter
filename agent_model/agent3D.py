@@ -110,9 +110,6 @@ class Agent():
             parameter to scale the main driving force
         wtf: (float)
             magnitude of upwind bias force   # TODO units
-        detect_thresh: (float)
-            distance agent can detect heater and land (in m),
-            default: 2 cm + radius of heaters (0.00635m/2= 0.003175)
         
 
     All args are in SI units and based on behavioral data:
@@ -138,7 +135,6 @@ class Agent():
         wtf=7e-07,
         wtf_scalar=0.05,
         stimF_str=1e-4,
-        detect_thresh=0.023175,
         bounded=True,
         mass = 3e-6, #3.0e-6 # 2.88e-6  # mass (kg) =2.88 mg,
         k=0.):
@@ -153,7 +149,6 @@ class Agent():
 
         self.metadata['boundary'] = Windtunnel_object.boundary
         self.metadata['heater_position'] = Windtunnel_object.test_condition
-        self.metadata['detection_threshold'] = detect_thresh
         self.metadata['initial_position'] = agent_pos
         self.metadata['initial_velo_stdev'] = v0_stdev
         self.metadata['k'] = k
@@ -186,7 +181,7 @@ class Agent():
         ''' iterates self._fly_single() total_trajectories times
         '''
         traj_count = 0
-        args = (self.metadata['time bindwidth'], self.metadata['mass'], self.metadata['detection_threshold'], self.metadata['boundary'])
+        args = (self.metadata['time bindwidth'], self.metadata['mass'], self.metadata['boundary'])
         df_list = []
         while traj_count < total_trajectories:
             if verbose is True:
@@ -194,7 +189,7 @@ class Agent():
                 sys.stdout.flush()
 
 
-            kinematics_dict = self._fly_single(*args)  # TODO: switch to dictionary
+            kinematics_dict = self._fly_single(*args)
             kinematics_dict['trajectory_num'] = traj_count  # enumerate the trajectories
             df = pd.DataFrame(kinematics_dict)
 
@@ -215,7 +210,7 @@ class Agent():
         # concluding stats
 #        self.trajectory_obj.add_agent_info({'time_target_find_avg': trajectory3D.T_find_stats(self.trajectory_obj.agent_info['time_to_target_find'])})
     
-    def _fly_single(self, dt, m, detect_thresh, boundary, bounded=True):
+    def _fly_single(self, dt, m, boundary, bounded=True):
         """Generate a single trajectory using our model.
     
         First put everything into np arrays stored inside of a dictionary
@@ -414,15 +409,6 @@ class Agent():
                 else:
                     V['turning'][tsi] = 0
 
-           # if there is a target, check if we are finding it
-            if self.metadata['heater_position'] is not None and np.linalg.norm(candidate_pos - self.metadata['heater_position'][0:3]) < self.detect_thresh:
-                   self.metadata['target_found'][0]  = True
-                   self.metadata['total_finds'] += 1
-                   self.metadata['time_to_target_find'][0] = V['times'][tsi]  # TODO: check-- should this be timeList[i+1]?
-                   V = self.land(tsi, V)  # stop flying at source
-                   print "source found"
-                   break
-        
         return V
 
 
@@ -525,7 +511,6 @@ def main():
         beta=BETA,
         Tmax=15.,
         dt=0.01,
-        detect_thresh=0.023175,
         bounded=True)
     sys.stdout.write("\rAgent born")
 
