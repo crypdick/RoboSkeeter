@@ -3,15 +3,9 @@ __author__ = 'richard'
 import numpy as np
 from scipy.stats import entropy
 import acfanalyze
+import behavioral_experiments.data_io as data_io
 
-# load csv values
-a_csv = np.genfromtxt('experimental_data/acceleration_distributions_uw.csv',delimiter=',')
-a_csv = a_csv.T
-a_observed = a_csv[4][:-1]  # throw out last datum
-
-v_csv = np.genfromtxt('experimental_data/velocity_distributions_uw.csv',delimiter=',')
-v_csv = v_csv.T
-v_observed = v_csv[4][:-1]  # throw out last datum
+v_observed, a_observed = data_io.load_csv2np()
 
 def score(ensemble, ACF_THRESH):
     # get histogram vals for agent ensemble
@@ -44,13 +38,14 @@ def score(ensemble, ACF_THRESH):
     # print 'dkl_v' , dkl_v
 
 
-    dkl_scores = [dkl_a, dkl_v]
+    dkl_scores = [dkl_v, dkl_a]
     dkl_score = sum(dkl_scores)
     # final_score = dkl_v
     # if np.isinf(dkl_score):
     #     dkl_score = 100000
 
     ################ ACF metrics############
+    # TODO: switch to RMSE of ACFs
     N_TRAJECTORIES = ensemble.trajectory_num.max()
 
     acf_distances = []
@@ -63,17 +58,17 @@ def score(ensemble, ACF_THRESH):
             acf_distances.append(np.mean(acf_threshcross_index))
 
     acf_mean = np.mean(acf_distances)
-    acf_score = abs(acf_mean-16.)
+    rmse_ACF = abs(acf_mean-16.)
     # print "mean", acf_mean
     # acf_score = np.log(acf_score+1)/20.
-    acf_score /= 20.  #shrink influence
-    print "acf score", acf_score
+    rmse_ACF /= 20.  #shrink influence
+    print "acf score", rmse_ACF
     print "dkl_score", dkl_score
-    combined_score = dkl_score + acf_score
-
-    print "final_score", combined_score
+    combined_score = dkl_score + rmse_ACF
 
     if np.isnan(combined_score):
         combined_score = 1e10
 
-    return combined_score, dkl_scores, dkl_a, dkl_v, acf_score, aabs_bins, a_counts_n, vabs_bins, v_counts_n
+    print "final_score", combined_score
+
+    return combined_score, dkl_scores, dkl_a, dkl_v, rmse_ACF, aabs_bins, a_counts_n, vabs_bins, v_counts_n
