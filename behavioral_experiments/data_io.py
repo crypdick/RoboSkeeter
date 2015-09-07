@@ -12,7 +12,8 @@ import csv
 script_dir = os.path.dirname(__file__) #<-- absolute dir the script is in
 
     
-def load_csv(file_path):
+def load_experiment_csv(file_path):
+    """loads csv as-is"""
 #    file_path = os.path.join(script_dir, rel_data_path, filename)
     return pd.read_csv(file_path, header=None, na_values="NaN")
     
@@ -21,7 +22,7 @@ def load_histogram_csv(filepath):
     pass
 
 
-def write_csv(trajectory_list, filepath):
+def save_processed_csv(trajectory_list, filepath):
     """Outputs x,y,z coords at each timestep to a csv file. These trajectories
     will still contain short NaN repeats, but Sharri will fix that downstream
     using her interpolating code. She will also Kalman filter.
@@ -35,7 +36,7 @@ def write_csv(trajectory_list, filepath):
         trajectory.to_csv(file_path, index=False)
         
         
-def load_trajectory_dynamics_csv(data_fname):
+def load_csv2DF(data_fname):
     dyn_traj_reldir = "data/processed_trajectories/"
     # print os.path.dirname(__file__)
     file_path = os.path.join(os.getcwd(), dyn_traj_reldir, data_fname + ".csv")
@@ -56,34 +57,11 @@ def load_trajectory_dynamics_csv(data_fname):
         'curvature'
     ]
 
-    dyn_trajectory_DF = pd.read_csv(file_path, na_values="NaN", names=col_labels)  # recognize string as NaN
-    dyn_trajectory_DF.fillna(value=0, inplace=True)
+    dataframe = pd.read_csv(file_path, na_values="NaN", names=col_labels)  # recognize string as NaN
+    dataframe.fillna(value=0, inplace=True)
 
-    
+    return dataframe
 
 
-    # numrows = szum(1 for row in csv.reader(open(file_path)))
-#    arrays = [np.tile(np.array([data_fname]), numrows)
-#          np.arange(numrows)]
-    # dflen = len(dyn_trajectory_DF.index)
-#    arrays=[np.array([data_fname]*numrows), np.arange(numrows)]
-#    tuples = list(zip(*arrays))
-#    index = MultiIndex.from_tuples(tuples, names=['first', 'second'])
-    # add trajectory name to index
-#    dyn_trajectory_DF['Trajectory'] = data_fname
-#    dyn_trajectory_DF.set_index(index, append=True, inplac)
-#    dyn_trajectory_DF.set_index('Trajectory', append=True)
-    #'_x', '_y', '_z',
-#    dyn_trajectory_DF.index.names[0] = 'Trajectory_ID'
-#    dyn_trajectory_DF.index.names = ['timestep']
-    
-    # new = pd.concat([dyn_trajectory_DF], keys=[data_fname])
-    # new.index.names = ['Trajectory', 'timestep']
-    
-    # return new
-    return dyn_trajectory_DF
-    
-    
-#    return dyn_trajectory_DF
 if __name__ == '__main__':
-    a = load_trajectory_dynamics_csv('Control-27')
+    a = load_csv2DF('Control-27')
