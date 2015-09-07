@@ -8,6 +8,8 @@ import os
 import pandas as pd
 import numpy as np
 import csv
+from glob import glob
+
 
 script_dir = os.path.dirname(__file__) #<-- absolute dir the script is in
 
@@ -37,7 +39,7 @@ def save_processed_csv(trajectory_list, filepath):
         
         
 def load_csv2DF(data_fname, rel_dir = "data/processed_trajectories/"):
-    file_path = os.path.join(os.getcwd(), dyn_traj_reldir, data_fname + ".csv")
+    file_path = os.path.join(os.getcwd(), rel_dir, data_fname + ".csv")
 
     col_labels = [
         'pos_x',
@@ -55,7 +57,7 @@ def load_csv2DF(data_fname, rel_dir = "data/processed_trajectories/"):
         'curvature'
     ]
 
-    dataframe = pd.read_csv(file_path, na_values="NaN", names=col_labels)  # recognize string as NaN
+    dataframe = pd.read_csv(file_path, na_values="NaN", names=col_labels)  # recognize str(NaN) as NaN
     dataframe.fillna(value=0, inplace=True)
 
     return dataframe
@@ -72,6 +74,16 @@ def load_csv2np(filedir='experimental_data/'):
     a_observed = a_csv[4][:-1]  # throw out last datum
 
     return  v_observed, a_observed
+
+
+def make_csv_name_list(TRAJECTORY_DATA_DIR):
+    print "Loading + filtering CSV files from ", TRAJECTORY_DATA_DIR
+    os.chdir(TRAJECTORY_DATA_DIR)
+    csv_list = sorted([os.path.splitext(file)[0] for file in glob("*.csv")])
+    os.chdir(os.path.dirname(__file__))  # go back to old dir
+
+    return csv_list
+
 
 if __name__ == '__main__':
     a = load_csv2DF('Control-27')
