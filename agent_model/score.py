@@ -13,9 +13,7 @@ v_csv = np.genfromtxt('experimental_data/velocity_distributions_uw.csv',delimite
 v_csv = v_csv.T
 v_observed = v_csv[4][:-1]  # throw out last datum
 
-def score(ensemble):
-        # compare ensemble to experiments, return score to wrapper
-
+def score(ensemble, ACF_THRESH):
     # get histogram vals for agent ensemble
     adist = 0.1
     # |a|
@@ -53,7 +51,6 @@ def score(ensemble):
     #     dkl_score = 100000
 
     ################ ACF metrics############
-    global ACF_THRESH
     N_TRAJECTORIES = ensemble.trajectory_num.max()
 
     acf_distances = []
@@ -79,4 +76,4 @@ def score(ensemble):
     if np.isnan(combined_score):
         combined_score = 1e10
 
-    return combined_score, dkl_scores, dkl_a, dkl_v, acf_score
+    return combined_score, dkl_scores, dkl_a, dkl_v, acf_score, aabs_bins, a_counts_n, vabs_bins, v_counts_n
