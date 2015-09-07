@@ -211,4 +211,7 @@ class Trajectory():
             temp_array = temp_traj[['position_x', 'position_y']].values
             np.savetxt(str(trajectory_i) + ".csv", temp_array, delimiter=",")
     
-#    def 
+   def score(self):
+       import score
+
+       return score.score(self.ensemble)
