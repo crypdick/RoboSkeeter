@@ -19,6 +19,7 @@ trajectory.save
 import pandas as pd
 import plotting_funcs3D
 import numpy as np
+import score
 
 
 #def T_find_stats(t_targfinds):
@@ -44,18 +45,33 @@ class Trajectory():
         self.ensemble = pd.DataFrame()
 
         
-    def append_ensemble(self, arraydict):
-        trajectory = pd.DataFrame(arraydict)
-        self.ensemble = self.ensemble.append(trajectory)
-        
-        
-    def plot_single_trajectory(self, trajectory_i=0):
-        plot_kwargs = {'title':"Individual agent trajectory", 'titleappend':' (id = {})'.format(trajectory_i)}
-        plotting_funcs3D.plot_single_trajectory(self.ensemble.loc[self.ensemble['trajectory_num']==trajectory_i], self.metadata, plot_kwargs)
-    
+    def load_ensemble(self, data):
+        print type(data)
+        if type(data) is dict:
+            trajectory = pd.DataFrame(data)
+            self.ensemble.append(trajectory)
+        elif type(data) is list:
+            self.ensemble = pd.concat(data)
+        else:
+            print type(data), "TYPE"
 
     def add_agent_info(self, metadata_dict):
         self.metadata = metadata_dict
+
+    def calculate_curvature(self):
+        v_x, v_y, v_z = self.ensemble.velocity_x, self.ensemble.velocity_y, self.ensemble.velocity_z
+        velo_vector = np.array([v_x, v_y, v_z]).T
+        a_x, a_y, a_z = self.ensemble.acceleration_x, self.ensemble.acceleration_y, self.ensemble.acceleration_z
+        accel_vector = np.array([a_x, a_y, a_z]).T
+        # using formula from https://en.wikipedia.org/wiki/Curvature#Local_expressions_2
+        for i in range(len(v_x)):
+            k_i = np.abs( np.cross(velo_vector, accel_vector) ) /                           \
+                (np.linalg.norm([a_x[i], a_y[i], a_z[i]]) ** 3)
+
+    def plot_single_trajectory(self, trajectory_i=0):
+        plot_kwargs = {'title':"Individual agent trajectory", 'titleappend':' (id = {})'.format(trajectory_i)}
+        plotting_funcs3D.plot_single_trajectory(self.ensemble.loc[self.ensemble['trajectory_num']==trajectory_i], self.metadata, plot_kwargs)
+
             
             
     def plot_force_violin(self):
@@ -174,8 +190,12 @@ class Trajectory():
 #        
         print "full- + up- + down-wind"
         plotting_funcs3D.stateHistograms(full_ensemble, self.metadata, titleappend = '', upw_ensemble = upwind_ensemble, downw_ensemble = downwind_ensemble)
-    
-    
+
+
+    def plot_3D_kinematic_vecs(self, kinematic='acceleration'):
+        plotting_funcs3D.plot_3D_kinematic_vecs(self.ensemble, kinematic)
+
+
     def plume_stats(self):
         """ 
         in plume == 1, out == 0. therefore sum/n is % in plume
@@ -211,7 +231,5 @@ class Trajectory():
             temp_array = temp_traj[['position_x', 'position_y']].values
             np.savetxt(str(trajectory_i) + ".csv", temp_array, delimiter=",")
     
-    def score(self):
-       import score
-
+    def calc_score(self):
        return score.score(self.ensemble)
