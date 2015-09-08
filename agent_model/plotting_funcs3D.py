@@ -12,6 +12,9 @@ import matplotlib.gridspec as gridspec
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 import seaborn as sns
+from matplotlib.patches import Circle
+from mpl_toolkits.mplot3d.art3d import juggle_axes
+import temp_3d_scatter
 
 sns.set_palette("muted", 8)
 
@@ -32,6 +35,43 @@ def draw_heaters(heater_position, detect_thresh):
                               linestyle='dashed')
 
     return heaterCircle, detectCircle
+
+
+def plot_3D_kinematic_vecs(ensemble, kinematic):
+    labels = []
+    for dim in ['x', 'y', 'z']:
+        labels.append(kinematic+'_'+dim)
+
+    # grab labels
+    vecs = []
+    selection = ensemble.loc[:,labels]
+    arrays = selection.values
+    transpose = arrays.T  # 3 x timesteps matrix
+    xs, ys, zs = transpose[0], transpose[1], transpose[2]
+
+    # it = np.nditer(arrays, flags=['f_index'])
+    # while not it.finished:
+    #     print "%d <%d>" % (it[0], it.index),
+    #     it.iternext()
+
+    # temp_3d_scatter(it)
+
+    # Attaching 3D axis to the figure
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    ax.set_title('3D acceleration vector distribution')
+
+    cm = plt.get_cmap('Set2')
+    colors = np.linspace(0, 1, len(xs))
+    my_colors = cm(colors)
+
+    ax.scatter(0, 0, 0, c='r')
+    ax.scatter(xs, ys, zs, 'o', alpha=1, c=colors, edgecolors='None',
+                cmap=cm)
+
 
 
 # def trajectory_plots(ensemble, metadata, plot_kwargs=None):
