@@ -132,8 +132,7 @@ class Agent():
         heater='left',
         beta=1e-5,
         randomF_strength=4e-06,
-        wtf=7e-07,
-        wtf_scalar=0.05,
+        windF_strength=5e-06,
         stimF_str=1e-4,
         bounded=True,
         mass = 3e-6, #3.0e-6 # 2.88e-6  # mass (kg) =2.88 mg,
@@ -154,7 +153,7 @@ class Agent():
         self.metadata['k'] = k
         self.metadata['beta'] = beta
         self.metadata['randomF_strength'] = randomF_strength
-        self.metadata['wtF'] = np.exp(-0.405632480939 + 0.5 * 0.932352661694 * 0.5 ** 2) * randomF_strength * wtf_scalar  # TODO: document
+        self.metadata['wtF'] = windF_strength
         # for stats, later
         self.metadata['time_target_find_avg'] = []
         self.metadata['total_finds'] = 0
@@ -205,7 +204,7 @@ class Agent():
         
         self.metadata['total_trajectories'] = total_trajectories
         self.trajectory_obj.add_agent_info(self.metadata)
-        self.trajectory_obj.ensemble = pd.concat(df_list)  # concatinate all the dataframes at once instead of one at a
+        self.trajectory_obj.load_ensemble(df_list)  # concatinate all the dataframes at once instead of one at a
                                                           # time for performance boost.
         # concluding stats
 #        self.trajectory_obj.add_agent_info({'time_target_find_avg': trajectory3D.T_find_stats(self.trajectory_obj.agent_info['time_to_target_find'])})
@@ -483,10 +482,10 @@ def main():
 
     """
 
-    N_TRAJECTORIES = 10
+    N_TRAJECTORIES = 1
     TEST_CONDITION = None  # {'Left', 'Right', None}
     # old beta- 5e-5, forces 4.12405e-6, fwind = 5e-7
-    BETA, FORCES_AMPLITUDE, F_WIND_SCALE =  [  1.37213380e-06  , 1.39026239e-06 ,  2.06854777e-06]
+    BETA, FORCES_AMPLITUDE, F_WIND_SCALE =  [  1.37213380e-06  , 1.39026239e-06 ,  2.06854777e-08]
     MASS = 2.88e-6
     F_STIM_SCALE = 0.  #7e-7,   # set to zero to disable tracking hot air
     K = 0.  #1e-7               # set to zero to disable wall attraction
@@ -504,7 +503,7 @@ def main():
         windtunnel_object,
         mass=MASS,
         agent_pos="downwind_plane",
-        wtf=F_WIND_SCALE,
+        windF_strength=F_WIND_SCALE,
         randomF_strength=FORCES_AMPLITUDE,
         stimF_str=F_STIM_SCALE,
         k=K,
