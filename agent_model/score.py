@@ -5,16 +5,17 @@ from scipy.stats import entropy
 import acfanalyze
 import behavioral_experiments.data_io as data_io
 
+# load experimentally observed velo + accel distributions
 v_observed, a_observed = data_io.load_csv2np()
 
-def score(ensemble, ACF_THRESH):
+def score(ensemble, ACF_THRESH=0.5):
     # get histogram vals for agent ensemble
-    adist = 0.1
+    a_binwidth = 0.1
     # |a|
-    amin, amax = 0., 4.9+adist  # arange drops last number, so pad range by dist
-    # pdb.set
-    accel_all_magn = ensemble['acceleration_3Dmagn'].values
-    a_counts, aabs_bins = np.histogram(accel_all_magn, bins=np.arange(amin, amax, adist))
+    amin, amax = 0., 4.9+a_binwidth  # arange drops last number, so pad range by dist
+
+    accel_3Dvect_magnitude = ensemble['acceleration_3Dmagn'].values
+    a_counts, a_bins = np.histogram(accel_3Dvect_magnitude, bins=np.arange(amin, amax, a_binwidth))
     # turn into prob dist
     a_counts = a_counts.astype(float)
     a_total_counts = a_counts.sum()
@@ -24,14 +25,14 @@ def score(ensemble, ACF_THRESH):
     # solve DKL
     dkl_a = entropy(a_counts_n, qk=a_observed)
 
-    vdist =  0.015
+    v_binwidth =  0.015
     vmin, vmax = 0., 0.605
-    velo_all_magn = ensemble['velocity_3Dmagn'].values
-    v_counts, vabs_bins = np.histogram(velo_all_magn, bins=np.arange(vmin, vmax, vdist))
+    v_3Dvect_magnitude = ensemble['velocity_3Dmagn'].values
+    v_counts, v_bins = np.histogram(v_3Dvect_magnitude, bins=np.arange(vmin, vmax, v_binwidth))
     v_counts = v_counts.astype(float)
     v_total_counts = v_counts.sum()
     # turn into prob dist
-    v_counts_n = v_counts / v_total_counts
+    v_counts_n = v_counts / v_total_counts  # todo make sure this is true
 
     # solve DKL
     dkl_v = entropy(v_counts_n, qk=v_observed)
@@ -59,7 +60,6 @@ def score(ensemble, ACF_THRESH):
 
     acf_mean = np.mean(acf_distances)
     rmse_ACF = abs(acf_mean-16.)
-    # print "mean", acf_mean
     # acf_score = np.log(acf_score+1)/20.
     rmse_ACF /= 20.  #shrink influence
     print "acf score", rmse_ACF
@@ -69,6 +69,4 @@ def score(ensemble, ACF_THRESH):
     if np.isnan(combined_score):
         combined_score = 1e10
 
-    print "final_score", combined_score
-
-    return combined_score, dkl_scores, dkl_a, dkl_v, rmse_ACF, aabs_bins, a_counts_n, vabs_bins, v_counts_n
+    return combined_score, dkl_scores, dkl_a, dkl_v, rmse_ACF, a_bins, a_counts_n, v_bins, v_counts_n
