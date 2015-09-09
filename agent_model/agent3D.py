@@ -3,10 +3,11 @@
 Created on Tue May  5 21:08:51 2015
 
 @author: richard
+
+TODO: implemement unit tests with nose
 """
 
 import numpy as np
-from math import atan2
 import baseline_driving_forces3D
 import stim_biasF3D
 import plume3D
@@ -16,33 +17,11 @@ import sys
 import pandas as pd
 
 
-def place_agent(agent_pos='downwind_plane'):
-    ''' puts the agent in an initial position, usually within the bounds of the
-    cage
+def solve_heading(vector_x, vector_y):  # TODO: export to trajectory
+    from math import atan2
 
-    Options: center [of the cage], [anywhere in the] cage, [the cage] door, or anywhere in the plane at x=.1 meters
-    '''
-    if type(agent_pos) is list:
-        return agent_pos
-    if agent_pos == "center":
-        return [0.1524, 0., 0.]  # center of box
-        # FIXME cage height
-    if agent_pos == "cage":  # bounds of cage
-        return [np.random.uniform(0.1143, 0.1909), np.random.uniform(-0.0381, 0.0381), np.random.uniform(0., 0.1016)]
-        # FIXME cage height
-    if agent_pos == "door":  # start trajectories when they exit the front door
-        return [0.1909, np.random.uniform(-0.0381, 0.0381), np.random.uniform(0., 0.1016)]
-        # FIXME cage height
-    if agent_pos == 'downwind_plane':
-        return [0.1, np.random.uniform(-0.127, 0.127), np.random.uniform(0., 0.254)]
-    else:
-        raise Exception('invalid agent position specified')
+    theta = atan2(vector_y, vector_x)
 
-
-
-
-def solve_heading(velo_x, velo_y):
-    theta = atan2(velo_y, velo_x)
     return theta*180/np.pi
 
 
@@ -144,10 +123,14 @@ class Agent():
         self.metadata['mass'] = mass
         self.metadata['time_max'] = Tmax
         self.metadata['time bindwidth'] = dt
+        self.max_bins = int(np.ceil(self.metadata['time_max'] / dt))  # N bins
         self.metadata['stimF_strength'] = stimF_str
 
+        # windtunnel
         self.metadata['boundary'] = Windtunnel_object.boundary
         self.metadata['heater_position'] = Windtunnel_object.test_condition
+        self.collision = "elastic"
+
         self.metadata['initial_position'] = agent_pos
         self.metadata['initial_velo_stdev'] = v0_stdev
         self.metadata['k'] = k
@@ -189,9 +172,9 @@ class Agent():
                 sys.stdout.write("\rTrajectory {}/{}".format(traj_count+1, total_trajectories))
                 # sys.stdout.flush()
 
-            kinematics_dict = self._generate_flight(*args)
-            kinematics_dict['trajectory_num'] = traj_count  # enumerate the trajectories
-            df = pd.DataFrame(kinematics_dict)
+            array_dict = self._generate_flight(*args)
+            array_dict['trajectory_num'] = traj_count  # enumerate the trajectories
+            df = pd.DataFrame(array_dict)
 
             df_list.append(df)
             
@@ -210,117 +193,29 @@ class Agent():
         # concluding stats
 #        self.trajectory_obj.add_agent_info({'time_target_find_avg': trajectory3D.T_find_stats(self.trajectory_obj.agent_info['time_to_target_find'])})
     
-    def _generate_flight(self, dt, m, boundary, collision = "elastic", bounded=True):
+    def _generate_flight(self, dt, m, boundary, bounded=True):
         """Generate a single trajectory using our model.
     
         First put everything into np arrays stored inside of a dictionary
         """
-        PLUME_TRIGGER_TIME = int(1.0/dt)
-        max_bins = int(np.ceil(self.metadata['time_max'] / dt))  # N bins
+        V = self._initialize_vectors()
+        V['position_x'][0], V['position_y'][0], V['position_z'][0], V['velocity_x'][0], V['velocity_y'][0], V['velocity_z'][0] = \
+                self._set_init_pos_and_velo()
 
-        ################################################
-        # initialize np arrays, store in dictionary
-        ################################################
-        V = {}
-        
-        for name in self.metadata['kinematic_vals']+self.metadata['forces']:
-            for ext in ['_x', '_y', '_z', '_xy_theta', '_xy_mag']:
-                V[name+ext] = np.full(max_bins, np.nan)
+        for tsi in xrange(self.max_bins):
+            V['inPlume'][tsi] = self._check_in_plume(V)
+            V = self._calc_current_behavioral_state(tsi, V)
+            V = self._calc_forces(V, tsi)
 
-        V['times'] = np.linspace(0, self.metadata['time_max'], max_bins)
-        V['position_x'] = np.full(max_bins, np.nan)
-        V['position_y'] = np.full(max_bins, np.nan)
-        V['position_z'] = np.full(max_bins, np.nan)
-        V['inPlume'] = np.full(max_bins, -1, dtype=np.uint8)
-        V['behavior_state'] = [None]*max_bins
-        V['turning'] = [None]*max_bins
-        V['heading_angle'] = np.full(max_bins, np.nan)
-        V['velocity_angular'] = np.full(max_bins, np.nan)
-
-        ################################################
-        # Set INITIAL CONDITIONS
-        ################################################
-        # place agent
-        V['position_x'][0], V['position_y'][0], V['position_z'][0] = place_agent(self.metadata['initial_position'])
-
-        # generate random intial velocity condition using normal distribution fitted to experimental data
-        V['velocity_x'][0], V['velocity_y'][0], V['velocity_z'][0] = np.random.normal(0, self.metadata['initial_velo_stdev'], 3)
-
-        ################################################
-        # Generate flight
-        ################################################
-        for tsi in xrange(max_bins):
-            # are we in the plume?
-            if self.plume_obj.condition is None:  # skip if no plume
-                V['inPlume'][tsi] = 0
-            else:
-                V['inPlume'][tsi] = self.plume_obj.check_for_plume(
-                    [V['position_x'][tsi], V['position_y'][tsi], V['position_z'][tsi]])
-
-            ################################################
-            # Figure out behavioral state
-            ################################################
-            if tsi == 0:
-                V['behavior_state'][tsi] = 'searching'
-            else:
-                if self.plume_obj.condition is None:  # hack for no plume condition
-                    V['behavior_state'][tsi] = 'searching'
-                else:
-                    if V['behavior_state'][tsi] is None: # need to find state
-                        V['behavior_state'][tsi] = self._check_crossing_state(tsi, V['inPlume'], V['velocity_y'][tsi-1])
-                        if V['behavior_state'][tsi] in (
-                                'Left_plume Exit leftLeft_plume Exit rightRight_plume Exit leftRight_plume Exit right'):
-                            try:
-                                for i in range(PLUME_TRIGGER_TIME): # store experience for the following timeperiod
-                                    V['behavior_state'][tsi+i] = str(V['behavior_state'][tsi])
-                            except IndexError: # can't store whole snapshot, so save 'truncated' label instead
-                               # print "plume trigger turn lasted less than threshold of {} timesteps "\
-                               # "before trajectory ended, so adding _truncated suffix".format(max_bins)  # TODO: DOCUMENT
-                               for i in range(max_bins - tsi):
-                                    V['behavior_state'][tsi+i] = (str(V['behavior_state'][tsi])+'_truncated')
-
-                    else: # our state is already set from past experience
-                        if V['inPlume'] is False:  # we haven't re-entered the plume
-                            pass
-                        else:  # found the plume again!
-                            V['behavior_state'][tsi:] = None  # reset memory
-                            V['behavior_state'][tsi] = 'entering'
-            ######################################################################
-
-
-            ################################################
-            # Calculate driving forces at this timestep
-            ################################################
-            F_stim = stim_biasF3D.stimF(V['behavior_state'][tsi], self.metadata['stimF_strength'])
-            V['stimF_x'][tsi], V['stimF_y'][tsi], V['stimF_z'][tsi] = F_stim
-
-            F_bias = baseline_driving_forces3D.random_force(self.metadata['randomF_strength'])
-            V['biasF_x'][tsi], V['biasF_y'][tsi], V['biasF_z'][tsi] = F_bias
-
-            F_upwind = baseline_driving_forces3D.upwindBiasForce(self.metadata['wtF'])
-            V['upwindF_x'][tsi], V['upwindF_y'][tsi], V['upwindF_z'][tsi] = F_upwind
-
-            F_wall_repulsion = attraction_basin(self.metadata['k'], [V['position_x'][tsi], V['position_y'][tsi], V['position_z'][tsi]])
-            V['wallRepulsiveF_x'][tsi], V['wallRepulsiveF_y'][tsi], V['wallRepulsiveF_z'][tsi] = F_wall_repulsion
-
-
-            ################################################
-            # calculate total force
-            ################################################
-            F_driving =  F_bias + F_upwind + F_wall_repulsion + F_stim
-            F_damping = -self.metadata['beta']*np.array([V['velocity_x'][tsi], V['velocity_y'][tsi], V['velocity_z'][tsi]])
-            F_total = F_damping + F_driving
-            V['totalF_x'][tsi], V['totalF_y'][tsi], V['totalF_z'][tsi] = F_total
-            ###############################
 
             # calculate current acceleration
-            V['acceleration_x'][tsi], V['acceleration_y'][tsi], V['acceleration_z'][tsi] = F_total / m
+            V['acceleration_x'][tsi], V['acceleration_y'][tsi], V['acceleration_z'][tsi] = V['totalF_x'][tsi], V['totalF_y'][tsi], V['totalF_z'][tsi] / m
 
             # if time is out, end loop before we solve for future velo, position
-            if tsi == max_bins-1: # -1 because of how range() works
+            if tsi == self.max_bins-1: # -1 because of how range() works
 #                self.metadata['target_found'][0]  = False
 #                self.metadata['time_to_target_find'][0] = np.nan
-                V = self.land(tsi, V)
+                V = self._land(tsi, V)
                 break
 
             ################################################
@@ -337,60 +232,12 @@ class Agent():
             # if walls are enabled, check if candidate velocity and position is illegal
             ################################################
             if bounded is True:
-                # x dim
-                if candidate_pos[0] > boundary[1]:  # reached far (upwind) wall (end)
-#                    self.metadata['target_found'][0]  = False
-#                    self.metadata['time_to_target_find'][0] = np.nan
-                    V = self.land(tsi-1, V)  # stop flying at end, throw out last row
+                answer = self._check_candidate_position(V, tsi, candidate_pos, boundary)
+                if type(answer) is str:
+                    V = self._land(tsi-1, V)  # stop flying at end, throw out last row
                     break
-                if candidate_pos[0] < boundary[0]:  # too far left
-#                    print "too far left"
-                    candidate_pos[0] = boundary[0] + 1e-4 # teleport back inside
-                    if collision == 'elastic':
-                        V['velocity_x'][tsi+1] *= -1
-#                        print "boom! left"
-                    elif collision == 'crash':
-                        V['velocity_x'][tsi+1] = 0.
-
-                #y dim
-                if candidate_pos[1] > boundary[2]:  # too left
-#                    print "too left"
-                    candidate_pos[1] = boundary[2] + 1e-4 # note, left is going more negative in our convention
-                    if collision == 'elastic':
-                        V['velocity_y'][tsi+1] *= -1
-                    elif collision == "crash":
-#                        print "teleport!"
-                        V['velocity_y'][tsi+1] = 0.
-#                        print "crash! top wall"
-                if candidate_pos[1] < boundary[3]:  # too far right
-#                    print "too far right"
-                    candidate_pos[1] = boundary[3] - 1e-4
-                    if collision == 'elastic':
-                        V['velocity_y'][tsi+1] *= -1
-                    elif collision == 'crash':
-                        V['velocity_y'][tsi+1] = 0.
-
-                # z dim
-                if candidate_pos[2] > boundary[5]:  # too far above
-#                    print "too far above"
-                    candidate_pos[2] = boundary[5] - 1e-4
-                    if collision == 'elastic':
-                        V['velocity_z'][tsi+1] *= -1
-#                        print "boom! top"
-                    elif collision == "crash":
-#                        print "teleport!"
-                        V['velocity_z'][tsi+1] = 0.
-#                        print "crash! top wall"
-                if candidate_pos[2] < boundary[4]:  # too far below
-#                    print "too far below"
-                    candidate_pos[2] = boundary[4] + 1e-4
-                    if collision == 'elastic':
-                        V['velocity_z'][tsi+1] *= -1
-                    elif collision == 'crash':
-                        V['velocity_z'][tsi+1] = 0.
-
-            V['position_x'][tsi+1], V['position_y'][tsi+1], V['position_z'][tsi+1] = candidate_pos
-            ###########################################################################################################
+                else:
+                    V = answer
 
             ################################################
             # solve for heading angle, turning state, etc. TODO: export to trajectories class
@@ -416,7 +263,127 @@ class Agent():
         return V
 
 
-    def land(self, tsi, array_dict):
+    def _initialize_vectors(self):
+        """
+        # initialize np arrays, store in dictionary
+        """
+        V = {}
+
+        for name in self.metadata['kinematic_vals']+self.metadata['forces']:
+            for ext in ['_x', '_y', '_z', '_xy_theta', '_xy_mag']:
+                V[name+ext] = np.full(self.max_bins, np.nan)
+
+        V['times'] = np.linspace(0, self.metadata['time_max'], self.max_bins)
+        V['position_x'] = np.full(self.max_bins, np.nan)
+        V['position_y'] = np.full(self.max_bins, np.nan)
+        V['position_z'] = np.full(self.max_bins, np.nan)
+        V['inPlume'] = np.full(self.max_bins, -1, dtype=np.uint8)
+        V['behavior_state'] = [None]*self.max_bins
+        V['turning'] = [None]*self.max_bins
+        V['heading_angle'] = np.full(self.max_bins, np.nan)
+        V['velocity_angular'] = np.full(self.max_bins, np.nan)
+
+        return V
+
+
+    def _set_init_pos_and_velo(self, agent_pos='downwind_plane'):
+        ''' puts the agent in an initial position, usually within the bounds of the
+        cage
+
+        Options: [the cage] door, or anywhere in the plane at x=.1 meters
+
+        set initial velocity from fitted distribution
+        '''
+
+        # generate random intial velocity condition using normal distribution fitted to experimental data
+        initial_velocity = np.random.normal(0, self.metadata['initial_velo_stdev'], 3)
+        velo_x, velo_y, velo_z = initial_velocity  # fixme
+
+
+        if type(agent_pos) is list:
+            initial_position = agent_pos
+        if agent_pos == "door":  # start trajectories as they exit the front door
+            initial_position = [0.1909, np.random.uniform(-0.0381, 0.0381), np.random.uniform(0., 0.1016)]
+            # FIXME cage is actually suspending above floor
+        if agent_pos == 'downwind_plane':
+            initial_position =  [0.1, np.random.uniform(-0.127, 0.127), np.random.uniform(0., 0.254)]
+        else:
+            raise Exception('invalid agent position specified')
+
+
+        pos_x, pos_y, pos_z = initial_position
+
+        return pos_x, pos_y, pos_z, velo_x, velo_y, velo_z
+
+    def _check_in_plume(self, V):
+        if self.plume_obj.condition is None:  # skip if no plume  # TODO: always check for plume
+            inPlume = 0
+        else:
+            inPlume = self.plume_obj.check_for_plume(
+                [V['position_x'][tsi], V['position_y'][tsi], V['position_z'][tsi]])
+
+        return inPlume
+
+
+    def _calc_current_behavioral_state(self, tsi, V):
+        if tsi == 0:  # always start searching
+            V['behavior_state'][tsi] = 'searching'
+        else:
+            if self.plume_obj.condition is None:  # hack for no plume condition
+                V['behavior_state'][tsi] = 'searching'
+            else:
+                if V['behavior_state'][tsi] is None: # need to find state
+                    V['behavior_state'][tsi] = self._check_crossing_state(tsi, V['inPlume'], V['velocity_y'][tsi-1])
+                    if V['behavior_state'][tsi] in (
+                            'Left_plume Exit leftLeft_plume Exit rightRight_plume Exit leftRight_plume Exit right'):
+                        try:
+                            for i in range(PLUME_TRIGGER_TIME): # store experience for the following timeperiod
+                                V['behavior_state'][tsi+i] = str(V['behavior_state'][tsi])
+                        except IndexError: # can't store whole snapshot, so save 'truncated' label instead
+                           # print "plume trigger turn lasted less than threshold of {} timesteps "\
+                           # "before trajectory ended, so adding _truncated suffix".format(self.max_bins)  # TODO: DOCUMENT
+                           for i in range(self.max_bins - tsi):
+                                V['behavior_state'][tsi+i] = (str(V['behavior_state'][tsi])+'_truncated')
+
+                else: # state is still "plume exit" because we haven't re-entered the plume
+                    if V['inPlume'] is False:  # plume not found :'( better luck next time, Roboskeeter.
+                        pass
+                    else:  # found the plume again!
+                        V['behavior_state'][tsi:] = None  # reset memory
+                        V['behavior_state'][tsi] = 'entering'
+
+        return V
+
+    def _calc_forces(self, V, tsi):
+        ################################################
+        # Calculate driving forces at this timestep
+        ################################################
+        F_stim = stim_biasF3D.stimF(V['behavior_state'][tsi], self.metadata['stimF_strength'])
+        V['stimF_x'][tsi], V['stimF_y'][tsi], V['stimF_z'][tsi] = F_stim
+
+        F_bias = baseline_driving_forces3D.random_force(self.metadata['randomF_strength'])
+        V['biasF_x'][tsi], V['biasF_y'][tsi], V['biasF_z'][tsi] = F_bias
+
+        F_upwind = baseline_driving_forces3D.upwindBiasForce(self.metadata['wtF'])
+        V['upwindF_x'][tsi], V['upwindF_y'][tsi], V['upwindF_z'][tsi] = F_upwind
+
+        F_wall_repulsion = attraction_basin(self.metadata['k'], [V['position_x'][tsi], V['position_y'][tsi], V['position_z'][tsi]])
+        V['wallRepulsiveF_x'][tsi], V['wallRepulsiveF_y'][tsi], V['wallRepulsiveF_z'][tsi] = F_wall_repulsion
+
+
+        ################################################
+        # calculate total force
+        ################################################
+        F_driving =  F_bias + F_upwind + F_wall_repulsion + F_stim
+        F_damping = -self.metadata['beta']*np.array([V['velocity_x'][tsi], V['velocity_y'][tsi], V['velocity_z'][tsi]])
+        F_total = F_damping + F_driving
+        V['totalF_x'][tsi], V['totalF_y'][tsi], V['totalF_z'][tsi] = F_total
+        ###############################
+
+        return V
+
+
+    def _land(self, tsi, array_dict):
         ''' trim excess timebins in arrays
         '''
         for array in array_dict.itervalues():
@@ -467,7 +434,62 @@ class Agent():
                     return "Right_plume Exit left"
                 else:
                     return "Right_plume Exit right"
-            
+
+    def _check_candidate_position(self, V, tsi, candidate_pos, boundary):   # TODO: find out how to look up class attribute from within this class
+        # x dim
+        if candidate_pos[0] > boundary[1]:  # reached far (upwind) wall (end)
+#                    self.metadata['target_found'][0]  = False
+#                    self.metadata['time_to_target_find'][0] = np.nan
+            return 'land'
+        if candidate_pos[0] < boundary[0]:  # too far left
+#                    print "too far left"
+            candidate_pos[0] = boundary[0] + 1e-4 # teleport back inside
+            if self.collision == 'elastic':
+                V['velocity_x'][tsi+1] *= -1
+#                        print "boom! left"
+            elif self.collision == 'crash':
+                V['velocity_x'][tsi+1] = 0.
+
+        #y dim
+        if candidate_pos[1] > boundary[2]:  # too left
+#                    print "too left"
+            candidate_pos[1] = boundary[2] + 1e-4 # note, left is going more negative in our convention
+            if self.collision == 'elastic':
+                V['velocity_y'][tsi+1] *= -1
+            elif self.collision == "crash":
+#                        print "teleport!"
+                V['velocity_y'][tsi+1] = 0.
+#                        print "crash! top wall"
+        if candidate_pos[1] < boundary[3]:  # too far right
+#                    print "too far right"
+            candidate_pos[1] = boundary[3] - 1e-4
+            if self.collision == 'elastic':
+                V['velocity_y'][tsi+1] *= -1
+            elif self.collision == 'crash':
+                V['velocity_y'][tsi+1] = 0.
+
+        # z dim
+        if candidate_pos[2] > boundary[5]:  # too far above
+#                    print "too far above"
+            candidate_pos[2] = boundary[5] - 1e-4
+            if self.collision == 'elastic':
+                V['velocity_z'][tsi+1] *= -1
+#                        print "boom! top"
+            elif self.collision == "crash":
+#                        print "teleport!"
+                V['velocity_z'][tsi+1] = 0.
+#                        print "crash! top wall"
+        if candidate_pos[2] < boundary[4]:  # too far below
+#                    print "too far below"
+            candidate_pos[2] = boundary[4] + 1e-4
+            if self.collision == 'elastic':
+                V['velocity_z'][tsi+1] *= -1
+            elif self.collision == 'crash':
+                V['velocity_z'][tsi+1] = 0.
+
+        V['position_x'][tsi+1], V['position_y'][tsi+1], V['position_z'][tsi+1] = candidate_pos
+
+        return V
 
     def _calc_polar_kinematics(self, array_dict):
         """append polar kinematics to vectors dictionary TODO: export to trajectory class"""
@@ -522,7 +544,7 @@ def gen_objects_and_fly(N_TRAJECTORIES, TEST_CONDITION, BETA, FORCES_AMPLITUDE, 
     
 
 if __name__ == '__main__':
-    N_TRAJECTORIES = 3
+    N_TRAJECTORIES = 30
     TEST_CONDITION = None  # {'Left', 'Right', None}
     # old beta- 5e-5, forces 4.12405e-6, fwind = 5e-7
     BETA, FORCES_AMPLITUDE, F_WIND_SCALE =  [  1.37213380e-06  , 1.39026239e-06 ,  7.06854777e-07]
@@ -537,9 +559,9 @@ if __name__ == '__main__':
     ######################### plotting methods
     trajectories.plot_single_3Dtrajectory(0)  # plot ith trajectory in the ensemble of trajectories
 
-    # trajectories.plot_force_violin()
     # trajectories.plot_kinematic_hists()
     # trajectories.plot_posheatmap()
+    # trajectories.plot_force_violin()
     # trajectories.plot_kinematic_compass()
     # trajectories.plot_sliced_hists()
 
