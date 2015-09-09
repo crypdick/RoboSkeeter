@@ -78,6 +78,8 @@ def load_csv2np(filedir='experimental_data/'):
 
 def make_csv_name_list(TRAJECTORY_DATA_DIR):
     print "Loading + filtering CSV files from ", TRAJECTORY_DATA_DIR
+    # file_path = os.path.join(os.getcwd(), rel_dir, data_fname + ".csv")
+    # for file in FIXME path
     os.chdir(TRAJECTORY_DATA_DIR)
     csv_list = sorted([os.path.splitext(file)[0] for file in glob("*.csv")])
     os.chdir(os.path.dirname(__file__))  # go back to old dir
