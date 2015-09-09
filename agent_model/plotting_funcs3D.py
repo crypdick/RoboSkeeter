@@ -16,11 +16,12 @@ from matplotlib.patches import Circle
 from mpl_toolkits.mplot3d.art3d import juggle_axes
 import temp_3d_scatter
 
-sns.set_palette("muted", 8)
-
+from custom_color import colormaps as cmaps
+# use cmaps.viridis for color maps
 
 def draw_cage():
     # makes a little box where the cage is
+    # DEPRECIATED in 3D
     cage_midX, cage_midY = 0.1524, 0.  # TODO: turn to absolute boundaries and put in metadata
     return plt.Rectangle((cage_midX - 0.0381, cage_midY - 0.0381), 0.0762, 0.0762,
                          facecolor='none')  # FIXME get rid of hardcoded number
@@ -29,6 +30,7 @@ def draw_cage():
 def draw_heaters(heater_position, detect_thresh):
     """ draws a circle where the heater is
     heater_position vector is [x,y, zmin, zmax, diam]
+    DEPRECIATED in 3D
     """
     heaterCircle = plt.Circle((heater_position[0], heater_position[1],), heater_position[4] / 2, color='r')
     detectCircle = plt.Circle((heater_position[0], heater_position[1],), detect_thresh, color='gray', fill=False,
@@ -148,7 +150,7 @@ def heatmaps(ensemble, metadata):
     #        MaxVal = metadata['total_trajectories']/2
     #        if metadata['total_trajectories'] > 100:
     #            plt.cla()
-    heatmap = ax.pcolormesh(xedges, yedges, probs, cmap=plt.cm.Oranges, vmin=0.)  # , vmax=.2)
+    heatmap = ax.pcolormesh(xedges, yedges, probs, cmap=cmaps.viridis, vmin=0.)  # , vmax=.2)
     if metadata['heater_position'] is not None:
         heaterCircle, detectCircle = draw_heaters(metadata['heater_position'], metadata['detection_threshold'])
         ax.add_artist(heaterCircle)
