@@ -23,7 +23,6 @@ def fly_wrapper(GUESS, *args):
     :return:
     """
     global HIGH_SCORE
-    print HIGH_SCORE, "hs"
     BETA, FORCES_AMPLITUDE, F_WIND_SCALE = GUESS
     HEATER = None
     K = 0  # no wall force for optimization
@@ -43,7 +42,7 @@ def fly_wrapper(GUESS, *args):
         mass=2.88e-6,
         agent_pos="downwind_plane",
         heater=HEATER,
-        wtf=F_WIND_SCALE,
+        windF_strength=F_WIND_SCALE,
         randomF_strength=FORCES_AMPLITUDE,
         stimF_str=0., # F_STIM_SCALE,
         beta=BETA,
@@ -58,9 +57,6 @@ def fly_wrapper(GUESS, *args):
 
     combined_score, dkl_scores, dkl_a, dkl_v, acf_score, aabs_bins, a_counts_n, vabs_bins, v_counts_n\
         = score.score(trajectories.ensemble, ACF_THRESH)
-
-
-    # print "cs", combined_score
 
     if combined_score < HIGH_SCORE:
         HIGH_SCORE = combined_score
@@ -114,7 +110,6 @@ def main():
 
 
     # import pdb; pdb.set_trace()
-    print INITIAL_GUESS, "2"
     result = basinhopping(
         fly_wrapper,
         INITIAL_GUESS,
