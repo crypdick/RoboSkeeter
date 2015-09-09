@@ -49,12 +49,9 @@ def plot_3D_kinematic_vecs(ensemble, kinematic):
     transpose = arrays.T  # 3 x timesteps matrix
     xs, ys, zs = transpose[0], transpose[1], transpose[2]
 
-    # it = np.nditer(arrays, flags=['f_index'])
-    # while not it.finished:
-    #     print "%d <%d>" % (it[0], it.index),
-    #     it.iternext()
-
-    # temp_3d_scatter(it)
+    # find longest edge
+    longest_edge = abs( max(transpose.min(), transpose.max(), key=abs) )
+    longest_edge *= 1.05  # add padding
 
     # Attaching 3D axis to the figure
     fig = plt.figure()
@@ -62,15 +59,18 @@ def plot_3D_kinematic_vecs(ensemble, kinematic):
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
     ax.set_zlabel('Z')
-    ax.set_title('3D acceleration vector distribution')
+    ax.set_title('Visualization of {} 3D vector distribution'.format(kinematic))
+    ax.autoscale(enable=False,axis='both')  #you will need this line to change the Z-axis
+    ax.set_xbound(-longest_edge, +longest_edge)
+    ax.set_ybound(-longest_edge, +longest_edge)
+    ax.set_zbound(-longest_edge, +longest_edge)
 
     cm = plt.get_cmap('Set2')
     colors = np.linspace(0, 1, len(xs))
     my_colors = cm(colors)
 
-    ax.scatter(0, 0, 0, c='r')
-    ax.scatter(xs, ys, zs, 'o', alpha=1, c=colors, edgecolors='None',
-                cmap=cm)
+    ax.scatter(0,0,0, c='r', marker='o', s=50)  # mark origin
+    ax.scatter(xs, ys, zs, '.', alpha=0.4, c=colors, lw = 0, cmap=cm)
 
 
 
@@ -566,7 +566,8 @@ def plot3D_trajectory(ensemble, metadata, plot_kwargs=None):
 
     fig3D = plt.figure()
     threedee = fig3D.gca(projection='3d')
-    threedee.auto_scale_xyz([0., 0.3], [0., 1.], [0., 0.254])
+    # threedee.auto_scale_xyz([0., 1.], [0., 0.3], [0., 0.254])
+    # threedee.set_aspect('equal')
     threedee.plot(ensemble.position_y, ensemble.position_x, ensemble.position_z)
 
     # # Cylinder
