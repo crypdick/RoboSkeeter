@@ -6,6 +6,7 @@ from statsmodels.tsa.stattools import acf
 # import statsmodels.graphics.tsaplots
 import matplotlib.pyplot as plt
 import behavioral_experiments.data_io as data_io
+import trajectory3D
 
 plt.style.use('ggplot')
 
@@ -45,8 +46,16 @@ def index_drop(df, thresh=ACF_THRESH, verbose=True):
 if __name__ == '__main__':
     csv_list = data_io.make_csv_name_list(TRAJECTORY_DATA_REL_DIR)
 
+    df_list = []
+    traj_count = 0
     for csv_name in csv_list:
         # print csv_name
         df = data_io.load_csv2DF(csv_name, rel_dir=TRAJECTORY_DATA_REL_DIR)
+        df['trajectory_num'] = traj_count
+        df_list.append(df)
+        traj_count += 1
         scores = index_drop(df, ACF_THRESH, verbose=False)
         # print scores
+
+    trajectories_object = trajectory3D.Trajectory()
+    trajectories_object.load_ensemble(df_list)
