@@ -40,14 +40,14 @@ def fly_wrapper(GUESS, *args):
         plume_object,
         windtunnel_object,
         mass=2.88e-6,
-        agent_pos="downwind_plane",
-        heater=HEATER,
+        initial_position_selection="downwind_plane",
+        experimental_condition=HEATER,
         windF_strength=F_WIND_SCALE,
         randomF_strength=FORCES_AMPLITUDE,
-        stimF_str=0., # F_STIM_SCALE,
-        beta=BETA,
-        k=K, #
-        Tmax=15.,
+        stimF_stength=0., # F_STIM_SCALE,
+        damping_coeff=BETA,
+        spring_const=K, #
+        time_max=15.,
         dt=0.01,
         bounded=True)
 
@@ -60,8 +60,8 @@ def fly_wrapper(GUESS, *args):
 
     if combined_score < HIGH_SCORE:
         HIGH_SCORE = combined_score
-        if PLOTTER is True:
-            error_plotter(ensemble, GUESS, dkl_scores, acf_score, aabs_bins, a_counts_n, vabs_bins, v_counts_n, v_observed, a_observed)
+    if PLOTTER is True:
+        error_plotter(ensemble, GUESS, dkl_scores, acf_score, aabs_bins, a_counts_n, vabs_bins, v_counts_n, v_observed, a_observed)
 
     if np.any(np.isinf(dkl_scores)):
         error_plotter(ensemble, GUESS, dkl_scores, acf_score, aabs_bins, a_counts_n, vabs_bins, v_counts_n, v_observed, a_observed)
