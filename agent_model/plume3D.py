@@ -75,7 +75,7 @@ class Plume():
         return plume_plane
 
 
-    def check_for_plume(self, position):
+    def is_in_plume(self, position):
         if self.condition is None:
             return 0
         else:

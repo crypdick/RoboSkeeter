@@ -2,7 +2,6 @@ __author__ = 'richard'
 
 import math_sorcery
 import numpy as np
-from numpy import linalg, newaxis
 from scipy.integrate import quad
 from scipy.misc import derivative as deriv
 
@@ -12,7 +11,7 @@ class Forces():
         pass
 
 
-    def randomF(rf, dim=3):
+    def randomF(self, rf, dim=3):
         """Generate random-direction force vector at each timestep from double-
         exponential distribution given exponent term rf.
 
@@ -35,7 +34,7 @@ class Forces():
         return mag * rf * ends
 
 
-    def upwindBiasF(wtf):
+    def upwindBiasF(self, wtf):
         """Biases the agent to fly upwind. Constant push with strength wtf
 
         [formerly]: Picks the direction +- pi/2 rads from
@@ -51,7 +50,7 @@ class Forces():
         return [wtf, 0., 0.]  # wf is constant, directly upwind
 
 
-    def repulsionF(position, repulsion_funcs, wallF_params):
+    def repulsionF(self, position, repulsion_funcs, wallF_params):
         """repulsion as a function of position.
         """
         scalar = wallF_params[0]
@@ -81,7 +80,7 @@ class Forces():
         return repulsionF
 
 
-    def stimF(experience, stimF_strength):
+    def stimF(self, experience, stimF_strength):
         """given force direction and strength, return a force vector
         Args:
         experience: {searching, entering, Left_plume, exit left, Left_plume, exit right, Right_plume, exit left, Right_plume, exit right}
@@ -98,7 +97,7 @@ class Forces():
             print "error", experience
             return np.array([0., 0., 0.])
 
-    def attraction_basin(k, pos, y_spring_center=0.12, z_spring_center=0.2):
+    def attraction_basin(self, k, pos, y_spring_center=0.12, z_spring_center=0.2):
         """given y position, determine if the agent is currently flighing in the left or right half of the windtunnel.
         then, figures out which spring center to use,
          and returns the spring force.

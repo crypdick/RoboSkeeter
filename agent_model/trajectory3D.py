@@ -20,7 +20,6 @@ import pandas as pd
 import plotting_funcs3D
 import numpy as np
 import score
-from math import atan2
 
 
 #def T_find_stats(t_targfinds):

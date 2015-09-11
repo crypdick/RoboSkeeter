@@ -1,9 +1,12 @@
 __author__ = 'richard'
+import numpy as np
+from math import atan2
 
-def calculate_heading(self, vector_x, vector_y):  # TODO: export to trajectory
+def calculate_heading(vector_x, vector_y):
     theta = atan2(vector_y, vector_x)
 
     return theta*180/np.pi
+
 
 def calculate_curvature(self): #TODO check if np arrays
     v_x, v_y, v_z = self.ensemble.velocity_x, self.ensemble.velocity_y, self.ensemble.velocity_z
@@ -16,7 +19,8 @@ def calculate_curvature(self): #TODO check if np arrays
             (np.linalg.norm([a_x[i], a_y[i], a_z[i]]) ** 3)
     # TODO: output?
 
-def gen_symm_vecs(dims, N):
+
+def gen_symm_vecs(dims):
     """generate radially-symmetric vectors sampled from the unit circle.  These
     can then be scaled by a force to make radially symmetric distributions.
 
@@ -25,8 +29,8 @@ def gen_symm_vecs(dims, N):
     credit: http://codereview.stackexchange.com/a/77945/76407
     """
     vecs = np.random.normal(size=dims)
-    mags = linalg.norm(vecs, axis=-1)
+    mags = np.linalg.norm(vecs, axis=-1)
 
-    ends = vecs / mags[..., newaxis]  # divide by length to get unit vector
+    ends = vecs / mags[..., np.newaxis]  # divide by length to get unit vector
 
     return ends

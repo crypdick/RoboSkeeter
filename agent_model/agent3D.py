@@ -171,16 +171,22 @@ class Agent():
         First put everything into np arrays stored inside of a dictionary
         """
         V = self._initialize_vectors()
+
+        for key, value in V.iteritems():
+            exec(key + " = V['" + key + "']")
+
+
+
         V['position'][0], V['velocity'][0] = self._set_init_pos_and_velo()
 
         for tsi in xrange(self.max_bins):
-            V['inPlume'][tsi] = self._check_in_plume(V)
+            inPlume[tsi] = self.plume_obj.is_in_plume(position[tsi])
             V = self._calc_current_behavioral_state(tsi, V)
             V = self._calc_forces(V, tsi)
 
 
             # calculate current acceleration
-            V['acceleration'][tsi] = V['totalF'][tsi] / m
+            acceleration[tsi] = totalF[tsi] / m
 
             # check if time is out, end loop before we solve for future velo, position
             if tsi == self.max_bins-1: # -1 because of how range() works
@@ -288,15 +294,6 @@ class Agent():
         return initial_position, initial_velocity
 
 
-    def _check_in_plume(self, V):
-        if self.plume_obj.condition is None:  # skip if no plume  # TODO: always check for plume
-            inPlume = 0
-        else:
-            inPlume = self.plume_obj.check_for_plume(V['position'][tsi])
-
-        return inPlume
-
-
     def _calc_current_behavioral_state(self, tsi, V):
         if tsi == 0:  # always start searching
             V['behavior_state'][tsi] = 'searching'
@@ -327,16 +324,19 @@ class Agent():
         return V
 
     def _calc_forces(self, V, tsi):
+
+
+
         ################################################
         # Calculate driving forces at this timestep
         ################################################
         V['stimF'][tsi] = self.forces.stimF(V['behavior_state'][tsi], self.stimF_strength)
 
-        V['randomF'][tsi] = self.forces.random_force(self.randomF_strength)
+        V['randomF'][tsi] = self.forces.randomF(self.randomF_strength)
 
-        V['upwindF'][tsi] = self.forces.upwindBiasForce(self.windF_strength)
+        V['upwindF'][tsi] = self.forces.upwindBiasF(self.windF_strength)
 
-        V['wallRepulsiveF'][tsi] =self.forces.attraction_basin(self.damping_coeff, V['position'][tsi])
+        V['wallRepulsiveF'][tsi] = self.forces.attraction_basin(self.damping_coeff, V['position'][tsi])
 
         ################################################
         # calculate total force
