@@ -8,21 +8,13 @@ TODO: implemement unit tests with nose
 """
 
 import numpy as np
-import baseline_driving_forces3D
-import stim_biasF3D
 import plume3D
 import trajectory3D
 import windtunnel
+import forces
 import sys
 import pandas as pd
 
-
-def solve_heading(vector_x, vector_y):  # TODO: export to trajectory
-    from math import atan2
-
-    theta = atan2(vector_y, vector_x)
-
-    return theta*180/np.pi
 
 
 # def fly_wrapper(agent_obj, args, traj_count):
@@ -36,27 +28,6 @@ def solve_heading(vector_x, vector_y):  # TODO: export to trajectory
 #     return df
 
 
-def attraction_basin(k, pos, y_spring_center=0.12, z_spring_center=0.2):
-    """given y position, determine if the agent is currently flighing in the left or right half of the windtunnel.
-    then, figures out which spring center to use,
-     and returns the spring force.
-
-    TODO: solve for correct spring centers
-    TODO: make separate k for y, z?
-    """
-    x_pos, y_pos, z_pos = pos
-    if y_pos >= 0:
-        y_sign = 1
-    else:
-        y_sign = -1
-    return np.array([
-        0.,
-        k * ((y_sign * y_spring_center) -  y_pos),
-        k * (z_spring_center -  z_pos)
-        ])
-
-
-
 class Agent():
     """Generate agent (our simulated mosquito) which can fly.
 
@@ -67,7 +38,7 @@ class Agent():
             pandas dataframe which we store all our simulated trajectories and their kinematics
         Plume_object: (plume object)
             the temperature data for our thermal, convective plume
-        windtunnel_object: (windtunnel object)
+        windtunnel_obj: (windtunnel object)
             our virtual wind tunnel
         agent_position: (list/array, "cage", "center")
             how to pick the initial position coordinates of a flight
@@ -100,9 +71,6 @@ class Agent():
 
     """
     def __init__(self,
-        Trajectory_object,
-        Plume_object,
-        Windtunnel_object,
         initial_position_selection='downwind_plane',
         initial_velocity_stdev=0.01,
         time_max=15.,
@@ -116,40 +84,51 @@ class Agent():
         mass = 2.88e-6, #3.0e-6 # 2.88e-6  # mass (kg) =2.88 mg,
         spring_const=0.):
         """generate the agent"""
-        # TODO: load wind tunnel, plume into here
 
-        self.mass = mass # population weight data: 2.88 +- 0.35mg
         self.time_max = time_max
         self.time_bin_width = dt
         self.max_bins = int(np.ceil(self.time_max / dt))  # N bins
+
+        self.mass = mass # population weight data: 2.88 +- 0.35mg
         self.stimF_strength = stimF_stength
-
-        # windtunnel
-        self.boundary = Windtunnel_object.boundary
-        self.experimental_condition = Windtunnel_object.test_condition
-        self.collision = "elastic"
-
         self.initial_position_selection = initial_position_selection
         self.initial_velocity_stdev = initial_velocity_stdev
         self.spring_const = spring_const
         self.damping_coeff = damping_coeff
         self.randomF_strength= randomF_strength
         self.windF_strength = windF_strength
+
+        self.experimental_condition = experimental_condition
         
         self.kinematics_list = ['position', 'velocity', 'acceleration']
         self.forces_list = ['totalF', 'randomF', 'wallRepulsiveF', 'upwindF', 'stimF']
         
-        
+        self.windtunnel_obj, self.plume_obj, self.trajectory_obj, self.forces = self._gen_environment_objects()
+
+        # windtunnel
+        self.boundary = self.windtunnel_obj.boundary
+
+        self.collision = self.windtunnel_obj.collision
+
         # turn thresh, in units deg s-1.
         # From Sharri:
         # it is the stdevof the broader of two Gaussians that fit the distribution of angular velocity
         self.turn_threshold = 433.5  # TODO: move this to trajectories       
-        
-        self.trajectory_obj = Trajectory_object
-        self.plume_obj = Plume_object
+
         
         # # create repulsion landscape
         # self._repulsion_funcs = repulsion_landscape3D.landscape(boundary=self.boundary)
+
+    def _gen_environment_objects(self):
+            # generate environment
+        windtunnel_object = windtunnel.Windtunnel(self.experimental_condition)
+        # generate temperature plume
+        plume_object = plume3D.Plume(self.experimental_condition)
+        # instantiate empty trajectories class
+        trajectories_object = trajectory3D.Trajectory()
+        forces_object = forces.Forces()
+
+        return windtunnel_object, plume_object, trajectories_object, forces_object
 
 
 
@@ -164,6 +143,7 @@ class Agent():
             if verbose is True:
                 sys.stdout.write("\rTrajectory {}/{}".format(traj_count+1, total_trajectories))
                 # sys.stdout.flush()
+
 
             array_dict = self._generate_flight(*args)
             array_dict['trajectory_num'] = [traj_count] * len(array_dict['velocity_x'])  # enumerate the trajectories
@@ -182,8 +162,8 @@ class Agent():
         self.total_trajectories = total_trajectories
         self.trajectory_obj.load_ensemble(df_list)  # concatinate all the dataframes at once instead of one at a
                                                           # time for performance boost.
-        # concluding stats
-#        self.trajectory_obj.add_agent_info({'time_target_find_avg': trajectory3D.T_find_stats(self.trajectory_obj.agent_info['time_to_target_find'])})
+        # add agent to trajectory object for plotting funcs
+        self.trajectory_obj.add_agent_info(self)
     
     def _generate_flight(self, dt, m, bounded=True):
         """Generate a single trajectory using our model.
@@ -273,11 +253,10 @@ class Agent():
             V[name] = np.full((self.max_bins, 3), np.nan)
 
         V['times'] = np.linspace(0, self.time_max, self.max_bins)
-        V['inPlume'] = np.full(self.max_bins, -1, dtype=np.uint8)
-        V['behavior_state'] = np.array([None]*self.max_bins)
-        V['turning'] = np.array([None]*self.max_bins)
-        V['heading_angle'] = np.full(self.max_bins, np.nan)
-        V['velocity_angular'] = np.full(self.max_bins, np.nan)
+
+        nan_arrays = ['inPlume', 'behavior_state', 'turning', 'heading_angle', 'velocity_angular']
+        for name in nan_arrays:
+            V[name] = np.full(self.max_bins, np.nan)
 
         return V
 
@@ -350,13 +329,13 @@ class Agent():
         ################################################
         # Calculate driving forces at this timestep
         ################################################
-        V['stimF'][tsi] = stim_biasF3D.stimF(V['behavior_state'][tsi], self.stimF_strength)
+        V['stimF'][tsi] = self.forces.stimF(V['behavior_state'][tsi], self.stimF_strength)
 
-        V['randomF'][tsi] = baseline_driving_forces3D.random_force(self.randomF_strength)
+        V['randomF'][tsi] = self.forces.random_force(self.randomF_strength)
 
-        V['upwindF'][tsi] = baseline_driving_forces3D.upwindBiasForce(self.windF_strength)
+        V['upwindF'][tsi] = self.forces.upwindBiasForce(self.windF_strength)
 
-        V['wallRepulsiveF'][tsi] = attraction_basin(self.damping_coeff, V['position'][tsi])
+        V['wallRepulsiveF'][tsi] =self.forces.attraction_basin(self.damping_coeff, V['position'][tsi])
 
         ################################################
         # calculate total force
@@ -485,22 +464,15 @@ class Agent():
 
 
 
+
+
 def gen_objects_and_fly(N_TRAJECTORIES, TEST_CONDITION, BETA, FORCES_AMPLITUDE, F_WIND_SCALE, K):
     """
     Params fitted using scipy.optimize
 
     """
-    # generate environment
-    windtunnel_object = windtunnel.Windtunnel(TEST_CONDITION)
-    # generate temperature plume
-    plume_object = plume3D.Plume(TEST_CONDITION)
-    # instantiate empty trajectories class
-    trajectories_object = trajectory3D.Trajectory()
     # instantiate a Roboskeeter
     skeeter = Agent(
-        trajectories_object,
-        plume_object,
-        windtunnel_object,
         mass=MASS,
         initial_position_selection="downwind_plane",
         windF_strength=F_WIND_SCALE,
@@ -513,10 +485,10 @@ def gen_objects_and_fly(N_TRAJECTORIES, TEST_CONDITION, BETA, FORCES_AMPLITUDE, 
         bounded=True)
     sys.stdout.write("\rAgent born")
 
-    # make the skeeter fly. this updates the trajectories_object
+    # make the skeeter fly. this updates the trajectory_obj
     skeeter.fly(total_trajectories=N_TRAJECTORIES)
     
-    return plume_object, skeeter.trajectory_obj, skeeter
+    return skeeter.trajectory_obj, skeeter
     
    
 #    trajectories.describe(plot_kwargs = {'trajectories':False, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_scatter':True, 'force_violin':True})
@@ -533,7 +505,7 @@ if __name__ == '__main__':
     F_STIM_SCALE = 0.  #7e-7,   # set to zero to disable tracking hot air
     K = 0.  #1e-7               # set to zero to disable wall attraction
 
-    myplume, trajectories, skeeter = gen_objects_and_fly(N_TRAJECTORIES, TEST_CONDITION, BETA, FORCES_AMPLITUDE, F_WIND_SCALE, K)
+    trajectories, skeeter = gen_objects_and_fly(N_TRAJECTORIES, TEST_CONDITION, BETA, FORCES_AMPLITUDE, F_WIND_SCALE, K)
 
     print "\nDone."
 
