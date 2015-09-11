@@ -1,7 +1,7 @@
 __author__ = 'richard'
 
 class Windtunnel():
-    def __init__(self, test_condition):
+    def __init__(self, test_condition, collision='elastic'):
         """
         boundary: (array)
             specify where walls are  (minx, maxx, miny, maxy)
@@ -11,6 +11,7 @@ class Windtunnel():
         self.test_condition = test_condition
         # place heater
         self.place_heater(test_condition)
+        self.collision = collision
 
     def place_heater(self, test_condition):
         ''' given {left, right, none, custom coords} place heater in the windtunnel
