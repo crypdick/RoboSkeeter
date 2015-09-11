@@ -75,40 +75,7 @@ def plot_3D_kinematic_vecs(ensemble, kinematic):
     ax.scatter(xs, ys, zs, '.', alpha=0.4, c=colors, lw = 0, cmap=cm)
 
 
-
-# def trajectory_plots(ensemble, metadata, plot_kwargs=None):
-#     """"Plot all the trajectories into a single arena"""
-#     fig, ax = plt.subplots(1)
-#    sns.set_style("white")
-#    for trajectory_i in range(metadata['total_trajectories']):
-#        posx = ensemble.xs(trajectory_i, level='trajectory')['position_x']
-##        if metadata['total_trajectories'] < 60:
-##            alpha=0.4
-##        else:
-##            alpha=0.02
-#        if trajectoryPlot is True:
-#            posy = ensemble.xs(trajectory_i, level='trajectory')['position_y']
-#            ax.plot(posx, posy, lw=2, alpha=1)
-#        ax.axis([0,1,0.127, -0.127])  # slight y padding for graphs
-#    title_append = r""" $T_max$ = {0} secs, $\beta = {2}$, $f = {3}$, $wtf = {4}$.
-##                """.format(metadata['time_max'], metadata['total_trajectories'], metadata['beta'], metadata['randomF_strength'], metadata['wtF'])
-#                
-
-#
-##    
-#    # plot shwag
-#    title_append = title_append + """<Tfind> = {0:}, Sourcefinds = {1}/(n = {2})""".format( metadata['time_target_find_avg'],metadata['total_finds'], metadata['total_trajectories'])
-#    plt.title("Agent trajectories" + title_append, fontsize=14)
-#    plt.xlabel("$x$", fontsize=14)
-#    plt.ylabel("$y$", fontsize=14)
-#    plt.axis(metadata['boundary'])
-#    sns.set_style("white")
-##    
-#    # save before overlaying heatmap
-#    plt.savefig("./figs/Trajectories b{beta} f{rf} wf{wtf} N{total_trajectories}.png"\
-#        .format(beta=metadata['beta'], rf=metadata['randomF_strength'], wtf=metadata['wtF'], total_trajectories=metadata['total_trajectories']))
-#    
-############################################## NEW HEATMAP #######################
+############################################## HEX HEATMAP #######################
 #    ## Position heatmap
 #    if plot_kwargs['heatmap']:
 #        with sns.axes_style("white"):
@@ -129,11 +96,8 @@ def plot_3D_kinematic_vecs(ensemble, kinematic):
 #            cage = draw_cage()
 #            hextraj.ax_joint.add_patch(cage)
 #        plt.savefig("./figs/Trajectories sns heatmap beta{beta}_f{rf}_wf{wtf}_N{total_trajectories}.png".format(beta=metadata['beta'], rf=metadata['randomF_strength'], wtf=metadata['wtF'], total_trajectories=metadata['total_trajectories']))
-#            
-########## OLD HEATMAP ##############################################
-# crunch the data
-#        counts, xedges, yedges = np.histogram2d(ensemble['position_x'], ensemble['position_y'], bins=(100,30), range=[[0, 1], [-0.15, .15]])
-# only considering trajectories between 0.25 - 0.95 m in x direction
+#   ##############################################
+
 
 def heatmaps(ensemble, metadata):
     fig, ax = plt.subplots(1)
