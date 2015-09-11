@@ -20,6 +20,7 @@ import pandas as pd
 import plotting_funcs3D
 import numpy as np
 import score
+from math import atan2
 
 
 #def T_find_stats(t_targfinds):
@@ -46,48 +47,41 @@ class Trajectory():
 
         
     def load_ensemble(self, data):
-        print type(data)
         if type(data) is dict:
             trajectory = pd.DataFrame(data)
             self.ensemble.append(trajectory)
         elif type(data) is list:
             self.ensemble = pd.concat(data)
         else:
-            print type(data), "TYPE"
+            raise Exception
 
-    def add_agent_info(self, metadata_dict):
-        self.metadata = metadata_dict
+    def add_agent_info(self, agent_obj):
+        self.agent_obj = agent_obj
 
-    def calculate_curvature(self):
-        v_x, v_y, v_z = self.ensemble.velocity_x, self.ensemble.velocity_y, self.ensemble.velocity_z
-        velo_vector = np.array([v_x, v_y, v_z]).T
-        a_x, a_y, a_z = self.ensemble.acceleration_x, self.ensemble.acceleration_y, self.ensemble.acceleration_z
-        accel_vector = np.array([a_x, a_y, a_z]).T
-        # using formula from https://en.wikipedia.org/wiki/Curvature#Local_expressions_2
-        for i in range(len(v_x)):
-            k_i = np.abs( np.cross(velo_vector, accel_vector) ) /                           \
-                (np.linalg.norm([a_x[i], a_y[i], a_z[i]]) ** 3)
+    def crunch_analysis(self):
+        calculate_curvature()
+        calculate_heading()
+
 
     def plot_single_trajectory(self, trajectory_i=0):
         plot_kwargs = {'title':"Individual agent trajectory", 'titleappend':' (id = {})'.format(trajectory_i)}
-        plotting_funcs3D.plot_single_trajectory(self.ensemble.loc[self.ensemble['trajectory_num']==trajectory_i], self.metadata, plot_kwargs)
+        plotting_funcs3D.plot_single_trajectory(self.ensemble.loc[self.ensemble['trajectory_num']==trajectory_i], self.agent_obj, plot_kwargs)
 
             
             
     def plot_force_violin(self):
-        plotting_funcs3D.force_violin(self.ensemble, self.metadata)
+        plotting_funcs3D.force_violin(self.ensemble, self.agent_obj)
         
     
     def plot_posheatmap(self):
-        plotting_funcs3D.heatmaps(self.ensemble, self.metadata)
+        plotting_funcs3D.heatmaps(self.ensemble, self.agent_obj)
         
     
     def plot_kinematic_hists(self, ensemble='none', titleappend=''):
-        print titleappend
         if type(ensemble) is str:
             ensemble = self.ensemble
             ensemble = ensemble.loc[(ensemble['position_x'] >0.25) & (ensemble['position_x'] <0.95)]
-        plotting_funcs3D.stateHistograms(ensemble, self.metadata, titleappend=titleappend)
+        plotting_funcs3D.stateHistograms(ensemble, self.agent_obj, titleappend=titleappend)
         
         
     def plot_door_velocity_compass(self, region='door', kind='avg_mag_per_bin'):
@@ -98,31 +92,31 @@ class Trajectory():
         else:
             ensemble = self.ensemble
             
-        plotting_funcs3D.velo_compass_histogram(ensemble, self.metadata, kind)
+        plotting_funcs3D.velo_compass_histogram(ensemble, self.agent_obj, kind)
     
 
     def plot_kinematic_compass(self, kind='avg_mag_per_bin', data=None, flags='', title_append=''):
         if data is None: # TODO: wtf?
             data = self.ensemble
         # TODO: add heading angle plot
-        for vector_name in self.metadata['forces']+self.metadata['kinematic_vals']:
+        for vector_name in self.agent_obj['forces']+self.agent_obj['kinematic_vals']:
             # from enemble, selec mag and theta
             df = eval("data[['"+vector_name+"_xy_mag', '"+vector_name+"_xy_theta']]")
             # rename col to play nice w plotting function
             df.rename(columns={vector_name+'_xy_mag': 'magnitude', vector_name+'_xy_theta': 'angle'}, inplace=True)
             
             title = "{flag} Avg. {name} vector magnitude in xy plane (n = {N}) {titeappend}".format(\
-            N = self.metadata['total_trajectories'], name=vector_name,\
+            N = self.agent_obj['total_trajectories'], name=vector_name,\
             flag=flags, titeappend=title_append)
             fname = "{flag} Avg mag distribution of {name}_xy compass _beta{beta}_bF{biasF_scale}_wf{wtf}_N{total_trajectories}".format(\
-            beta=self.metadata['beta'], biasF_scale=self.metadata['randomF_strength'],
-            wtf=self.metadata['wtF'], total_trajectories=self.metadata['total_trajectories'],
+            beta=self.agent_obj['beta'], biasF_scale=self.agent_obj['randomF_strength'],
+            wtf=self.agent_obj['wtF'], total_trajectories=self.agent_obj['total_trajectories'],
             name=vector_name, flag=flags)
   
             
-            plotting_funcs3D.compass_histogram(vector_name, df, self.metadata, title=title, fname=fname)
+            plotting_funcs3D.compass_histogram(vector_name, df, self.agent_obj, title=title, fname=fname)
 #            magnitudes, thetas = getattr(self.ensemble, name+).values, getattr(V, name+'_xy_theta').values
-#            plotting_funcs3D.compass_histogram(force, magnitudes, thetas, self.metadata)
+#            plotting_funcs3D.compass_histogram(force, magnitudes, thetas, self.agent_obj)
        
     def plot_plume_triggered_compass(self, kind='avg_mag_per_bin'):
         behaviors = ['searching', 'entering', 'staying', 'Left_plume, exit left',
@@ -133,7 +127,6 @@ class Trajectory():
                 print "no data for ", behavior
                 pass
             else:
-#                print ensemble
                 self.plot_kinematic_compass(data=ensemble, flags='Plume Triggered {}'.format(behavior))
 
     def plot_heading_compass(self):
@@ -142,7 +135,7 @@ class Trajectory():
         
     def plot_single_3Dtrajectory(self, trajectory_i=0):
         plot_kwargs = {'title':"Individual agent trajectory", 'titleappend':' (id = {})'.format(trajectory_i)}
-        plotting_funcs3D.plot3D_trajectory(self.ensemble.loc[self.ensemble['trajectory_num']==trajectory_i], self.metadata, plot_kwargs)
+        plotting_funcs3D.plot3D_trajectory(self.ensemble.loc[self.ensemble['trajectory_num']==trajectory_i], self.agent_obj, plot_kwargs)
       
       
         
@@ -189,7 +182,7 @@ class Trajectory():
 #        self.plot_kinematic_hists(ensemble=ensemble4, titleappend=' {} < x <= {}'.format(x_edges[3], x_edges[4]))
 #        
         print "full- + up- + down-wind"
-        plotting_funcs3D.stateHistograms(full_ensemble, self.metadata, titleappend = '', upw_ensemble = upwind_ensemble, downw_ensemble = downwind_ensemble)
+        plotting_funcs3D.stateHistograms(full_ensemble, self.agent_obj, titleappend = '', upw_ensemble = upwind_ensemble, downw_ensemble = downwind_ensemble)
 
 
     def plot_3D_kinematic_vecs(self, kinematic='acceleration'):
@@ -230,6 +223,135 @@ class Trajectory():
             temp_traj = self.ensemble[self.ensemble['trajectory_num'] == trajectory_i]
             temp_array = temp_traj[['position_x', 'position_y']].values
             np.savetxt(str(trajectory_i) + ".csv", temp_array, delimiter=",")
+
+    def visualize_forces(self, Npoints = 1000):
+        from mpl_toolkits.mplot3d import Axes3D
+        import matplotlib.pyplot as plt
+        # TODO: export plotting funcs to plotting funcs script
+        # visualize direction selection
+        fig = plt.figure(1)
+        ax = fig.add_subplot(111, projection='3d')
+
+        data = np.zeros((Npoints, 3))
+        for point in range(Npoints):
+            data[point] = math_sorcery.gen_symm_vecs(3)
+
+        x = data[:,0]
+        y = data[:,1]
+        z = data[:,2]
+
+        ax.scatter(x, y, z, c='b', marker='.', alpha=0.2)
+        ax.scatter(0,0,0, c='r', marker='o', s=50)
+
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
+        plt.title("Visualization of F_random direction selection")
+        plt.savefig('F_rand_direction_selection.png')
+        plt.show()
+
+        ##############################################################################################
+        #F_total
+        ##############################################################################################
+
+        fig = plt.figure(3)
+        ax = fig.add_subplot(111, projection='3d')
+        x = self.ensemble.totalF_x
+        y = self.ensemble.totalF_y
+        z = self.ensemble.totalF_z
+
+        ax.scatter(x, y, z, c='b', marker='.', alpha=0.2)
+        ax.scatter(0,0,0, c='r', marker='o', s=50)
+
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
+        plt.title("Visualization of F_total")
+        plt.savefig('F_total_cloud.png')
+        plt.show()
+
+        ##############################################################################################
+        # F_stim
+        ##############################################################################################
+
+
+        fig = plt.figure(4)
+        ax = fig.add_subplot(111, projection='3d')
+        x = self.ensemble.stimF_x
+        y = self.ensemble.stimF_y
+        z = self.ensemble.stimF_z
+
+        ax.scatter(x, y, z, c='b', marker='.', alpha=0.2)
+        ax.scatter(0,0,0, c='r', marker='o', s=50)
+
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
+        plt.title("Visualization of F_stim")
+        plt.savefig('F_stim_cloud.png')
+        plt.show()
+
+        ##############################################################################################
+        # F_upwind
+        ##############################################################################################
+
+
+        fig = plt.figure(5)
+        ax = fig.add_subplot(111, projection='3d')
+        x = self.ensemble.upwindF_x
+        y = self.ensemble.upwindF_y
+        z = self.ensemble.upwindF_z
+
+        ax.scatter(x[:20], y[:20], z[:20], c='b', marker='.', alpha=0.2)
+        ax.scatter(0,0,0, c='r', marker='o', s=50)
+
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
+        plt.title("Visualization of F_upwind")
+        plt.savefig('F_upwind_cloud.png')
+        plt.show()
+
+        ##############################################################################################
+        # F_random
+        ##############################################################################################
+
+        fig = plt.figure(6)
+        ax = fig.add_subplot(111, projection='3d')
+        x = self.ensemble.biasF_x
+        y = self.ensemble.biasF_y
+        z = self.ensemble.biasF_z
+
+        ax.scatter(x, y, z, c='b', marker='.', alpha=0.2)
+        ax.scatter(0,0,0, c='r', marker='o', s=50)
+
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
+        plt.title("Visualization of F_random")
+        plt.savefig('F_random_cloud.png')
+        plt.show()
+
+
+        ##############################################################################################
+        #F_wall repulsion
+        ##############################################################################################
+
+        fig = plt.figure(7)
+        ax = fig.add_subplot(111, projection='3d')
+        x = self.ensemble.wallRepulsiveF_x
+        y = self.ensemble.wallRepulsiveF_y
+        z = self.ensemble.wallRepulsiveF_z
+
+        ax.scatter(x, y, z, c='b', marker='.', alpha=0.2)
+        ax.scatter(0,0,0, c='r', marker='o', s=50)
+
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
+        plt.title("Visualization of F_wall repulsion")
+        plt.savefig('F_wall repulsion_cloud.png')
+        plt.show()
     
     def calc_score(self):
        return score.score(self.ensemble)
