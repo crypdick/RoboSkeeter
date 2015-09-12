@@ -9,7 +9,7 @@ def calculate_heading(velo_x_component, velo_y_component):
 
 
 def calculate_curvature(ensemble):
-    velo_vector = np.vstack((ensemble.velocity_x, ensemble.velocity_y, ensemble.velocity_z)
+    velo_vector = np.vstack((ensemble.velocity_x, ensemble.velocity_y, ensemble.velocity_z)  # shape is (3, R)
     accel_vector = np.vstack((ensemble.acceleration_x, ensemble.acceleration_y, ensemble.acceleration_z))
     # using formula from https://en.wikipedia.org/wiki/Curvature#Local_expressions_2
      return np.abs( np.cross(velo_vector, accel_vector) ) /                           \
