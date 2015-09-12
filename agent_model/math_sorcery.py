@@ -17,10 +17,7 @@ def calculate_curvature(ensemble):
 
 
 def gen_symm_vecs(dims):
-    """generate radially-symmetric vectors sampled from the unit circle.  These
-    can then be scaled by a force to make radially symmetric distributions.
-
-    making a scatter plot of many draws from this function makes a unit circle.
+    """sample random (radially-symmetric) 3D vectors from the unit sphere.
 
     credit: http://codereview.stackexchange.com/a/77945/76407
     """
