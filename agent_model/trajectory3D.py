@@ -20,6 +20,7 @@ import pandas as pd
 import plotting_funcs3D
 import numpy as np
 import score
+from math_sorcery import calculate_curvature, calculate_heading
 
 
 #def T_find_stats(t_targfinds):
@@ -57,9 +58,12 @@ class Trajectory():
     def add_agent_info(self, agent_obj):
         self.agent_obj = agent_obj
 
-    def crunch_analysis(self):
-        calculate_curvature()
-        calculate_heading()
+    def solve_kinematics(self):
+        self.ensemble.loc['curvature'] = calculate_curvature(self.ensemble.loc[:,('velocity_x', 'velocity_y', 'velocity_z', 'acceleration_x', 'acceleration_y', 'acceleration_z')])
+        self.ensemble.loc['heading'] = calculate_heading(self.ensemble.velocity_x.values, self.ensemble.velocity_y.values)
+        # absolute magnitude of velocity, accel vectors in 3D
+        self.ensemble.loc['velocity_magn'] = np.linalg.norm(self.ensemble.loc[:,('velocity_x', 'velocity_y', 'velocity_z')], axis=1)
+        self.ensemble.loc['acceleration_magn'] = np.linalg.norm(self.ensemble.loc[:,('acceleration_x', 'acceleration_y', 'acceleration_z')], axis=1)
 
 
     def plot_single_trajectory(self, trajectory_i=0):

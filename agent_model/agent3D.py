@@ -164,6 +164,7 @@ class Agent():
                                                           # time for performance boost.
         # add agent to trajectory object for plotting funcs
         self.trajectory_obj.add_agent_info(self)
+        self.trajectory_obj.solve_kinematics()
     
     def _generate_flight(self, dt, m, bounded=True):
         """Generate a single trajectory using our model.
@@ -347,19 +348,17 @@ class Agent():
         return V
 
 
-    def _land(self, tsi, array_dict):
+    def _land(self, tsi, V):
         ''' trim excess timebins in arrays
         '''
-        for array in array_dict.itervalues():
+        for array in V.itervalues():
             array = array[:tsi]
 
-        # array_dict = self._calc_polar_kinematics(array_dict)  # TODO: export to trajectories
+        # V = self._calc_polar_kinematics(V)  # TODO: export to trajectories
 
-        # absolute magnitude of velocity, accel vectors in 3D
-        array_dict['velocity_3Dmagn'] = np.linalg.norm(array_dict['velocity'], axis=1)
-        array_dict['acceleration_3Dmagn'] = np.linalg.norm(array_dict['acceleration'], axis=1)
+
         
-        return array_dict
+        return V
         
         
     def _check_crossing_state(self, tsi, inPlume, velocity_y):
@@ -515,7 +514,7 @@ if __name__ == '__main__':
 
     # trajectories.plot_kinematic_hists()
     # trajectories.plot_posheatmap()
-    # trajectories.plot_force_violin()
+    # trajectories.plot_force_violin()  # TODO: fix Nans in arrays
     # trajectories.plot_kinematic_compass()
     # trajectories.plot_sliced_hists()
 
