@@ -2,22 +2,18 @@ __author__ = 'richard'
 import numpy as np
 from math import atan2
 
-def calculate_heading(vector_x, vector_y):
-    theta = atan2(vector_y, vector_x)
+def calculate_heading(velo_x_component, velo_y_component):
+    theta = atan2(velo_y_component, velo_x_component)
 
     return theta*180/np.pi
 
 
-def calculate_curvature(self): #TODO check if np arrays
-    v_x, v_y, v_z = self.ensemble.velocity_x, self.ensemble.velocity_y, self.ensemble.velocity_z
-    velo_vector = np.array([v_x, v_y, v_z]).T
-    a_x, a_y, a_z = self.ensemble.acceleration_x, self.ensemble.acceleration_y, self.ensemble.acceleration_z
-    accel_vector = np.array([a_x, a_y, a_z]).T
+def calculate_curvature(ensemble):
+    velo_vector = np.vstack((ensemble.velocity_x, ensemble.velocity_y, ensemble.velocity_z)
+    accel_vector = np.vstack((ensemble.acceleration_x, ensemble.acceleration_y, ensemble.acceleration_z))
     # using formula from https://en.wikipedia.org/wiki/Curvature#Local_expressions_2
-    for i in range(len(v_x)):
-        k_i = np.abs( np.cross(velo_vector, accel_vector) ) /                           \
-            (np.linalg.norm([a_x[i], a_y[i], a_z[i]]) ** 3)
-    # TODO: output?
+     return np.abs( np.cross(velo_vector, accel_vector) ) /                           \
+            np.linalg.norm(accel_vector, axis=0)** 3
 
 
 def gen_symm_vecs(dims):
