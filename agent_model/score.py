@@ -6,6 +6,7 @@ import acfanalyze
 import behavioral_experiments.data_io as data_io
 
 # load experimentally observed velo + accel distributions
+# TODO: load csvs into trajectories, then trajectories has a calc_kernel function
 v_observed, a_observed = data_io.load_csv2np()
 
 def score(ensemble, ACF_THRESH=0.5):
