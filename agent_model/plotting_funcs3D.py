@@ -147,7 +147,7 @@ def heatmaps(ensemble, metadata):
 
 def stateHistograms(
         ensemble,
-        metadata,
+        agent=None,
         plot_kwargs=None,
         titleappend='',
         upw_ensemble="none",
@@ -339,14 +339,15 @@ def stateHistograms(
     axs[4].legend(fontsize=14)
 
     gs1.tight_layout(statefig, rect=[0, 0.03, 1, 0.95])  # overlapping text hack
-    plt.savefig(
-        "./figs/Agent Distributions b {beta},f {rf},wf {wtf},,N {total_trajectories}.svg".format(
-            beta=metadata['beta'],
-            rf=metadata['randomF_strength'],
-            wtf=metadata['wtF'],
-            total_trajectories=metadata['total_trajectories']
-        ),
-        format='svg')
+    if agent is not None:
+        plt.savefig(
+            "./figs/Agent Distributions damp {damp},f {rf},wf {wtf},,N {total_trajectories}.svg".format(
+                damp=agent.damping_coeff,
+                rf=agent.randomF_strength,
+                wtf=agent.windF_strength,
+                total_trajectories=agent.total_trajectories
+            ),
+            format='svg')
     plt.show()
 
 
