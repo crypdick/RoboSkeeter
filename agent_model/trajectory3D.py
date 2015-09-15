@@ -20,7 +20,7 @@ import pandas as pd
 import plotting_funcs3D
 import numpy as np
 import score
-from math_sorcery import calculate_curvature, calculate_heading
+from math_sorcery import calculate_curvature, calculate_heading, calc_polar_kinematics
 
 
 #def T_find_stats(t_targfinds):
@@ -59,11 +59,12 @@ class Trajectory():
         self.agent_obj = agent_obj
 
     def solve_kinematics(self):
-        self.ensemble.loc['curvature'] = calculate_curvature(self.ensemble.loc[:,('velocity_x', 'velocity_y', 'velocity_z', 'acceleration_x', 'acceleration_y', 'acceleration_z')])
-        self.ensemble.loc['heading'] = calculate_heading(self.ensemble.velocity_x.values, self.ensemble.velocity_y.values)
+        self.ensemble['curvature'] = calculate_curvature(self.ensemble)
+        self.ensemble['heading'] = calculate_heading(self.ensemble.velocity_x.values.T, self.ensemble.velocity_y.values.T)
         # absolute magnitude of velocity, accel vectors in 3D
-        self.ensemble.loc['velocity_magn'] = np.linalg.norm(self.ensemble.loc[:,('velocity_x', 'velocity_y', 'velocity_z')], axis=1)
-        self.ensemble.loc['acceleration_magn'] = np.linalg.norm(self.ensemble.loc[:,('acceleration_x', 'acceleration_y', 'acceleration_z')], axis=1)
+        self.ensemble['velocity_magn'] = np.linalg.norm(self.ensemble.loc[:,('velocity_x', 'velocity_y', 'velocity_z')], axis=1)
+        self.ensemble['acceleration_magn'] = np.linalg.norm(self.ensemble.loc[:,('acceleration_x', 'acceleration_y', 'acceleration_z')], axis=1)
+        self.ensemble = calc_polar_kinematics(self.ensemble)
 
 
     def plot_single_trajectory(self, trajectory_i=0):
@@ -141,7 +142,7 @@ class Trajectory():
         plotting_funcs3D.plot3D_trajectory(self.ensemble.loc[self.ensemble['trajectory_num']==trajectory_i], self.agent_obj, plot_kwargs)
       
       
-        
+
         
     def plot_sliced_hists(self):
         """Plot histograms from 0.25 < x < 0.95, as well as that same space
