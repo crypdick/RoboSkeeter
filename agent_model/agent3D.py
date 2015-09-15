@@ -199,52 +199,31 @@ class Agent():
             ################################################
             # Calculate candidate velocity and positions
             ################################################
-            V['velocity'][tsi+1]= V['velocity'][tsi] + V['acceleration'][tsi] * dt
+            candidate_velo= V['velocity'][tsi] + V['acceleration'][tsi] * dt
 
-            candidate_pos = V['position'][tsi] + V['velocity'][tsi]*dt # shouldnt position in future be affected by the forces in this timestep? aka use velo[i+1]
+            candidate_pos = V['position'][tsi] + candidate_velo*dt # shouldnt position in future be affected by the forces in this timestep? aka use velo[i+1]
 
             ################################################
-            # if walls are enabled, check if candidate velocity and position is illegal
+            # test candidates
             ################################################
             if bounded is True:
-                answer = self._check_candidate_position(V, tsi, candidate_pos)
-                if type(answer) is str:  # means that we reached the end of the wind tunnel
-                    V = self._land(tsi-1, V)  # discard last row
+                candidate_pos, candidate_velo = self._check_candidates(candidate_pos, candidate_velo)
+                if candidate_pos is None:  # func returns None if reaches end
+                    self._land(tsi, V)
                     break
-                else:
-                    V = answer
 
             V['position'][tsi+1] = candidate_pos
+            V['velocity'][tsi+1] = candidate_velo
 
-            # ################################################
-            # # solve for heading angle, turning state, etc. TODO: export to trajectories class
-            # ################################################
-            # # solve final heading #TODO: also solve zy?
-            # V['heading_angle'][tsi] = solve_heading(V['velocity_y'][tsi], V['velocity_x'][tsi])
-            # # ... and angular velo
-            # if tsi == 0: # hack to prevent index error
-            #     V['velocity_angular'][tsi] = 0
-            # else:
-            #     V['velocity_angular'][tsi] = (V['heading_angle'][tsi] - V['heading_angle'][tsi-1]) / dt
-            #
-            # # turning state
-            # if tsi in [0, 1]:
-            #     V['turning'][tsi] = 0
-            # else:
-            #     turn_min = 3
-            #     if abs(V['velocity_angular'][tsi-turn_min:tsi]).sum() > self.turn_threshold*turn_min:
-            #         V['turning'][tsi] = 1
-            #     else:
-            #         V['turning'][tsi] = 0
-
-        # dataframe only accepts 1D vectors
+        # prepare dict for loading into pandas (dataframe only accepts 1D vectors)
         # split xyz arrays into separate x, y, z vectors for dataframe
         for kinematic in self.kinematics_list+self.forces_list:
             V[kinematic+'_x'], V[kinematic+'_y'], V[kinematic+'_z'] = np.split(V[kinematic], 3, axis=1)
             del V[kinematic]  # delete 3D array
 
+        # fix pandas bug when trying to load (R,1) arrays when it expects (R,) arrays
         for key, array in V.iteritems():
-            V[key] = V[key].reshape(len(array))  # fix pandas bug when trying to load (R,1) arrays
+            V[key] = V[key].reshape(len(array))
 
 
         return V
@@ -299,7 +278,7 @@ class Agent():
         if tsi == 0:  # always start searching
             V['behavior_state'][tsi] = 'searching'
         else:
-            if self.plume_obj.condition is None:  # hack for no plume condition
+            if self.plume_obj.condition is None:  # hack for no plume condition FIXME
                 V['behavior_state'][tsi] = 'searching'
             else:
                 if V['behavior_state'][tsi] is None: # need to find state
@@ -352,7 +331,7 @@ class Agent():
         ''' trim excess timebins in arrays
         '''
         for array in V.itervalues():
-            array = array[:tsi]
+            array = array[:tsi-1]
 
         # V = self._calc_polar_kinematics(V)  # TODO: export to trajectories
 
@@ -395,61 +374,50 @@ class Agent():
                 else:
                     return "Right_plume Exit right"
 
-    def _check_candidate_position(self, V, tsi, candidate_pos):
+
+    def _check_candidates(self, candidate_pos, candidate_velo):
         # x dim
         if candidate_pos[0] > self.boundary[1]:  # reached far (upwind) wall (end)
 #                    self.metadata['target_found'][0]  = False
 #                    self.metadata['time_to_target_find'][0] = np.nan
-            return 'land'
-        if candidate_pos[0] < self.boundary[0]:  # too far left
-#                    print "too far left"
-            candidate_pos[0] = self.boundary[0] + 1e-4 # teleport back inside
+            return None, None
+        if candidate_pos[0] < self.boundary[0]:  # too far behind
+            candidate_pos[0] = self.boundary[0] + 1e-4  # teleport back inside
             if self.collision == 'elastic':
-                V['velocity_x'][tsi+1] *= -1
-#                        print "boom! left"
+                candidate_velo[0] *= -1.
             elif self.collision == 'crash':
-                V['velocity_x'][tsi+1] = 0.
+                candidate_velo[0] *= 0.
 
         #y dim
         if candidate_pos[1] > self.boundary[2]:  # too left
-#                    print "too left"
             candidate_pos[1] = self.boundary[2] + 1e-4 # note, left is going more negative in our convention
             if self.collision == 'elastic':
-                V['velocity'][tsi+1][1] *= -1
+                candidate_velo[1] *= -1.
             elif self.collision == "crash":
-#                        print "teleport!"
-                V['velocity'][tsi+1][1] = 0.
-#                        print "crash! top wall"
+                candidate_velo[1] *= 0.
         if candidate_pos[1] < self.boundary[3]:  # too far right
-#                    print "too far right"
             candidate_pos[1] = self.boundary[3] - 1e-4
             if self.collision == 'elastic':
-                V['velocity'][tsi+1][1] *= -1
+                candidate_velo[1] *= -1.
             elif self.collision == 'crash':
-                V['velocity'][tsi+1][1] = 0.
+                candidate_velo[1] *=0
+
 
         # z dim
         if candidate_pos[2] > self.boundary[5]:  # too far above
-#                    print "too far above"
             candidate_pos[2] = self.boundary[5] - 1e-4
             if self.collision == 'elastic':
-                V['velocity'][tsi+1][2] *= -1
-#                        print "boom! top"
+                candidate_velo[2] *= -1
             elif self.collision == "crash":
-#                        print "teleport!"
-                V['velocity'][tsi+1][2] = 0.
-#                        print "crash! top wall"
+                candidate_velo[2] *= -0
         if candidate_pos[2] < self.boundary[4]:  # too far below
-#                    print "too far below"
             candidate_pos[2] = self.boundary[4] + 1e-4
             if self.collision == 'elastic':
-                V['velocity'][tsi+1][2] *= -1
+                candidate_velo[2] *= -1
             elif self.collision == 'crash':
-                V['velocity'][tsi+1][2] = 0.
+                candidate_velo[2] *= -0
 
-        V['position'][tsi+1] = candidate_pos
-
-        return V
+        return candidate_pos, candidate_velo
 
     def _calc_polar_kinematics(self, array_dict):
         """append polar kinematics to vectors dictionary TODO: export to trajectory class"""
@@ -497,7 +465,7 @@ def gen_objects_and_fly(N_TRAJECTORIES, TEST_CONDITION, BETA, FORCES_AMPLITUDE, 
     
 
 if __name__ == '__main__':
-    N_TRAJECTORIES = 30
+    N_TRAJECTORIES = 1
     TEST_CONDITION = None  # {'Left', 'Right', None}
     # old beta- 5e-5, forces 4.12405e-6, fwind = 5e-7
     BETA, FORCES_AMPLITUDE, F_WIND_SCALE =  [  1.37213380e-06  , 1.39026239e-06 ,  7.06854777e-07]
