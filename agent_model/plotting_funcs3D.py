@@ -15,6 +15,10 @@ import seaborn as sns
 from matplotlib.patches import Circle
 from mpl_toolkits.mplot3d.art3d import juggle_axes
 import temp_3d_scatter
+import windtunnel
+
+windtunnel_object = windtunnel.Windtunnel(None)
+
 
 from custom_color import colormaps as cmaps
 # use cmaps.viridis for color maps
@@ -27,8 +31,8 @@ def draw_cage():
                          facecolor='none')  # FIXME get rid of hardcoded number
 
 
-def draw_heaters(heater_position, detect_thresh):
-    """ draws a circle where the heater is
+def draw_heater(heater_position, detect_thresh=0.02):  # FIXME detect thresh = 2cm + diam
+    """ draws a circle where the heater_position is
     heater_position vector is [x,y, zmin, zmax, diam]
     DEPRECIATED in 3D
     """
@@ -99,26 +103,29 @@ def plot_3D_kinematic_vecs(ensemble, kinematic):
 #   ##############################################
 
 
-def heatmaps(ensemble, metadata):
+def heatmaps(ensemble, agent_obj):  # remove agent_obj
     fig, ax = plt.subplots(1)
     ensemble = ensemble.loc[(ensemble['position_x'] > 0.25) & (ensemble['position_x'] < 0.95)]
     counts, xedges, yedges = np.histogram2d(ensemble['position_x'], ensemble['position_y'], bins=(100, 30),
                                             range=[[0.25, 0.95], [-0.127, .127]])
 
+    total_trajectories = len(ensemble.trajectory_num.unique())
 
 
     # counts needs to be transposed to use pcolormesh
     counts = counts.T
     probs = counts / ensemble.size
 
-    #        MaxVal = metadata['total_trajectories']/2
-    #        if metadata['total_trajectories'] > 100:
+    #        MaxVal = total_trajectories/2
+    #        if total_trajectories > 100:
     #            plt.cla()
     heatmap = ax.pcolormesh(xedges, yedges, probs, cmap=cmaps.viridis, vmin=0.)  # , vmax=.2)
-    if metadata['heater_position'] is not None:
-        heaterCircle, detectCircle = draw_heaters(metadata['heater_position'], metadata['detection_threshold'])
+
+    if windtunnel_object.test_condition is not None:
+        heaterCircle, detectCircle = draw_heater(windtunnel_object.on_heater_loc)
         ax.add_artist(heaterCircle)
         ax.add_artist(detectCircle)
+
     #        #
     #            # draw cage
     #            cage = draw_cage()
@@ -131,16 +138,16 @@ def heatmaps(ensemble, metadata):
     # overwrite previous plot schwag
     cbar = plt.colorbar(heatmap, shrink=0.5, pad=0.05)
     cbar.ax.set_ylabel('Probability')
-    plt.title("Agent trajectories 2D position histogram (n = {})".format(metadata['total_trajectories']))
+    plt.title("Agent trajectories 2D position histogram (n = {})".format(total_trajectories))
     plt.xlabel("Upwind/$x$ (meters)")
     plt.ylabel("Crosswind/$y$ (meters)")
-    plt.savefig(
-        "./figs/Trajectories heatmap beta{beta}_f{rf}_wf{wtf}_N{total_trajectories}.svg".format(beta=metadata['beta'],
-                                                                                                rf=metadata['randomF_strength'],
-                                                                                                wtf=metadata['wtF'],
-                                                                                                total_trajectories=
-                                                                                                metadata[
-                                                                                                    'total_trajectories']),
+    if agent_obj is not None:
+        plt.savefig(
+            "./figs/Trajectories heatmap beta{beta}_f{rf}_wf{wtf}_N{total_trajectories}.svg".format(
+                beta=agent_obj.damping_coeff,
+                rf=agent_obj.randomF_strength,
+                wtf=agent_obj.windF_strength,
+                total_trajectories=total_trajectories),
         format="svg")
     plt.show()
 
@@ -354,7 +361,7 @@ def stateHistograms(
 #    return xpos_counts_norm, ypos_bins, ypos_counts, ypos_counts_norm, vx_counts_n
 
 
-def force_violin(ensemble, metadata):
+def force_violin(ensemble, agent_obj):
     ensembleF = ensemble.loc[
         (ensemble['position_x'] > 0.25) & (ensemble['position_x'] < 0.95),
             ['totalF_x', 'totalF_y', 'totalF_z',
@@ -378,11 +385,12 @@ def force_violin(ensemble, metadata):
     plt.xticks(rotation=40)
     #    remove_border()
     plt.tight_layout(pad=1.8)
-
     plt.ylabel("Force magnitude distribution (newtons)")
-    plt.savefig("./figs/Force Distributions b {beta},f {rf},wf {wtf},N {total_trajectories}.svg".format( \
-        beta=metadata['beta'], rf=metadata['randomF_strength'], wtf=metadata['wtF'],
-        total_trajectories=metadata['total_trajectories']), format='svg')
+
+    if agent_obj is not None:
+        plt.savefig("./figs/Force Distributions b {beta},f {rf},wf {wtf},N {total_trajectories}.svg".format( \
+            beta=agent_obj['beta'], rf=agent_obj['randomF_strength'], wtf=agent_obj['wtF'],
+            total_trajectories=agent_obj['total_trajectories']), format='svg')
 
 
 def velo_compass_histogram(ensemble, metadata, kind):
