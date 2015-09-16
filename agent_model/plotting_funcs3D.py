@@ -527,7 +527,7 @@ def cylinder(center_x, center_y, z_min, z_max, r=0.01905, n=5):
     return x, y, z
 
 
-def plot3D_trajectory(ensemble, metadata, plot_kwargs=None):
+def plot3D_trajectory(ensemble, plot_kwargs=None):
     '''plotting without coloring
     '''
 
@@ -540,7 +540,7 @@ def plot3D_trajectory(ensemble, metadata, plot_kwargs=None):
     # # Cylinder
     #
     # # get points from cylinder and plot
-    # cx, cy, zmin, zmax, diam, label = cylinder(*metadata['heater_position'])
+    # cx, cy, zmin, zmax, diam, label = cylinder(*agent_obj['heater_position'])
     # threedee.plot_wireframe(cx, cy, zmax)
 
     # Note! I set the y axis to be the X data and vice versa
@@ -571,7 +571,7 @@ def plot3D_trajectory(ensemble, metadata, plot_kwargs=None):
     #
     #    wallF = (b, shrink, wallF_max, decay_const)
     #
-    #    ensemble, metadata = trajectory_stats.main()
+    #    ensemble, agent_obj = trajectory_stats.main()
     #
-    #    trajectory_plots(ensemble, metadata, heatmap=True, trajectoryPlot = True)
-    #    xpos_counts_norm, ypos_bins, ypos_counts, ypos_counts_norm, vx_counts_n = stateHistograms(ensemble, metadata)
+    #    trajectory_plots(ensemble, agent_obj, heatmap=True, trajectoryPlot = True)
+    #    xpos_counts_norm, ypos_bins, ypos_counts, ypos_counts_norm, vx_counts_n = stateHistograms(ensemble, agent_obj)
