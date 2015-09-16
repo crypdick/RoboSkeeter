@@ -64,7 +64,7 @@ class Trajectory():
         # absolute magnitude of velocity, accel vectors in 3D
         self.ensemble['velocity_magn'] = np.linalg.norm(self.ensemble.loc[:,('velocity_x', 'velocity_y', 'velocity_z')], axis=1)
         self.ensemble['acceleration_magn'] = np.linalg.norm(self.ensemble.loc[:,('acceleration_x', 'acceleration_y', 'acceleration_z')], axis=1)
-        self.ensemble = calc_polar_kinematics(self.ensemble)
+        # self.ensemble = calc_polar_kinematics(self.ensemble)
 
 
     def plot_single_trajectory(self, trajectory_i=0):
