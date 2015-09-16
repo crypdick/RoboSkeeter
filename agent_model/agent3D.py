@@ -107,7 +107,7 @@ class Agent():
         # windtunnel
         self.boundary = self.windtunnel_obj.boundary
 
-        self.collision = self.windtunnel_obj.collision
+        self.collision = self.windtunnel_obj.collision_type
 
         # turn thresh, in units deg s-1.
         # From Sharri:

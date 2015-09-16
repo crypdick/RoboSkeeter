@@ -85,6 +85,8 @@ class Trajectory():
         else:
             raise Exception
 
+        self.agent_obj = None
+
     def add_agent_info(self, agent_obj):
         self.agent_obj = agent_obj
 
@@ -105,6 +107,8 @@ class Trajectory():
             
             
     def plot_force_violin(self):
+        if self.agent_obj is None:
+            raise TypeError('can\'t plot force violin for experimental data')
         plotting_funcs3D.force_violin(self.ensemble, self.agent_obj)
         
     
