@@ -11,8 +11,6 @@ import csv
 from glob import glob
 
 
-script_dir = os.path.dirname(__file__) #<-- absolute dir the script is in
-
     
 def load_experiment_csv(file_path):
     """loads csv as-is"""
@@ -63,13 +61,13 @@ def load_csv2DF(data_fname, rel_dir = "data/processed_trajectories/"):
     return dataframe
 
 
-def load_csv2np(filedir='experimental_data/'):
-    v_csv = np.genfromtxt(filedir+'velocity_distributions_uw.csv',delimiter=',')
+def load_csv2np():
+    v_csv = np.genfromtxt(os.path.join(os.path.dirname(__file__),'experimental_data','velocity_distributions_uw.csv'), delimiter=',')
     v_csv = v_csv.T
     v_observed = v_csv[4][:-1]  # throw out last datum
 
     # load csv values
-    a_csv = np.genfromtxt(filedir+'/acceleration_distributions_uw.csv',delimiter=',')
+    a_csv = np.genfromtxt(os.path.join(os.path.dirname(__file__),'experimental_data','acceleration_distributions_uw.csv'), delimiter=',')
     a_csv = a_csv.T
     a_observed = a_csv[4][:-1]  # throw out last datum
 
@@ -77,14 +75,7 @@ def load_csv2np(filedir='experimental_data/'):
 
 
 def make_csv_name_list(TRAJECTORY_DATA_DIR):
-    print "Loading + filtering CSV files from ", TRAJECTORY_DATA_DIR
-    # file_path = os.path.join(os.getcwd(), rel_dir, data_fname + ".csv")
-    # for file in FIXME path
-    os.chdir(TRAJECTORY_DATA_DIR)
-    csv_list = sorted([os.path.splitext(file)[0] for file in glob("*.csv")])
-    os.chdir(os.path.dirname(__file__))  # go back to old dir
-
-    return csv_list
+    return os.listdir(os.path.join(os.path.dirname(__file__), TRAJECTORY_DATA_DIR))
 
 
 if __name__ == '__main__':
