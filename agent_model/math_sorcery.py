@@ -1,9 +1,8 @@
 __author__ = 'richard'
 import numpy as np
-from math import atan2
 
 def calculate_heading(velo_x_component, velo_y_component):
-    theta = atan2(velo_y_component, velo_x_component)
+    theta = np.arctan2(velo_y_component, velo_x_component)
 
     return theta*180/np.pi
 
@@ -47,7 +46,7 @@ def calc_polar_kinematics(ensemble):
         x_component, y_component = ensemble[name+'_x'], ensemble[name+'_y']
         angle = np.arctan2(y_component, x_component)
         angle[angle < 0] += 2*np.pi  # get vals b/w [0,2pi]
-        eval(name+'_xy_theta = '+angle)
+        eval(name+'_xy_theta = angle')
         ensemble[name+'_xy_mag'] = np.sqrt(y_component**2 + x_component**2)
 
     return array_dict
