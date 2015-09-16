@@ -19,6 +19,7 @@ trajectory.save
 import pandas as pd
 import plotting_funcs3D
 import numpy as np
+import  os
 import score
 from math_sorcery import calculate_curvature, calculate_heading, calc_polar_kinematics
 
@@ -46,12 +47,41 @@ class Trajectory():
         self.ensemble = pd.DataFrame()
 
         
-    def load_ensemble(self, data):
+    def load_ensemble(self, data='experiments'):
         if type(data) is dict:
             trajectory = pd.DataFrame(data)
             self.ensemble.append(trajectory)
         elif type(data) is list:
             self.ensemble = pd.concat(data)
+        elif data is 'experiments':
+            df_list = []
+
+            col_labels = [
+                'position_x',
+                'position_y',
+                'position_z',
+                'velocity_x',
+                'velocity_y',
+                'velocity_z',
+                'acceleration_x',
+                'acceleration_y',
+                'acceleration_z',
+                'heading_angle',
+                'angular_velo_xy',
+                'angular_velo_yz',
+                'curvature'
+            ]
+
+            rel_dir = "experimental_data/control_trajectories/"
+            for fname in os.listdir(os.path.join(os.path.dirname(__file__), rel_dir)):  # list files
+                file_path = os.path.join(os.path.dirname(__file__), rel_dir, fname)
+
+                dataframe = pd.read_csv(file_path, na_values="NaN", names=col_labels)  # recognize str(NaN) as NaN
+                dataframe.fillna(value=0, inplace=True)
+                dataframe['trajectory_num'] = [os.path.splitext(fname)[0]] * dataframe.position_x.size
+                df_list.append(dataframe)
+
+            self.load_ensemble(df_list)
         else:
             raise Exception
 
@@ -59,6 +89,7 @@ class Trajectory():
         self.agent_obj = agent_obj
 
     def solve_kinematics(self):
+        # TODO: make wrapper function that iterates through trajectories in order to solve kinematics individually
         self.ensemble['curvature'] = calculate_curvature(self.ensemble)
         self.ensemble['heading'] = calculate_heading(self.ensemble.velocity_x.values.T, self.ensemble.velocity_y.values.T)
         # absolute magnitude of velocity, accel vectors in 3D
@@ -137,11 +168,11 @@ class Trajectory():
         pass # TODO
         
         
-    def plot_single_3Dtrajectory(self, trajectory_i=0):
+    def plot_single_3Dtrajectory(self, trajectory_i=None):
+        if trajectory_i is None:
+            trajectory_i = self.ensemble.trajectory_num.min()
         plot_kwargs = {'title':"Individual agent trajectory", 'titleappend':' (id = {})'.format(trajectory_i)}
-        plotting_funcs3D.plot3D_trajectory(self.ensemble.loc[self.ensemble['trajectory_num']==trajectory_i], self.agent_obj, plot_kwargs)
-      
-      
+        plotting_funcs3D.plot3D_trajectory(self.ensemble.loc[self.ensemble['trajectory_num']==trajectory_i], plot_kwargs)
 
         
     def plot_sliced_hists(self):
