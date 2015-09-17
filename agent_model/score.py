@@ -3,20 +3,23 @@ __author__ = 'richard'
 import numpy as np
 from scipy.stats import entropy
 import acfanalyze
-import behavioral_experiments.data_io as data_io
+from trajectory3D import Trajectory
 
 # load experimentally observed velo + accel distributions
-# TODO: load csvs into trajectories, then trajectories has a calc_kernel function
-v_observed, a_observed = data_io.load_csv2np()
+experimental_trajs = Trajectory()
+experimental_trajs.load_ensemble('experiments')
+
+experimental_trajs.calc_kinematic_kernels()
+v_experimental_pos, a_experimental_pos = experimental_trajs.kde_v_positions, experimental_trajs.kde_a_positions
+# eval at positions
+v_experimental_vals, a_experimental_vals = experimental_trajs.evaluate_kernels(positions=[v_experimental_pos, a_experimental_pos])
+
 
 def score(ensemble, ACF_THRESH=0.5):
     # get histogram vals for agent ensemble
-    a_binwidth = 0.1
-    # |a|
-    amin, amax = 0., 4.9+a_binwidth  # arange drops last number, so pad range by dist
+    _, v_test_vals, _, a_test_vals = experimental_trajs.calc_kinematic_kernels(positions=(v_experimental_pos,a_experimental_pos))
 
-    accel_3Dvect_magnitude = ensemble['acceleration_3Dmagn'].values
-    a_counts, a_bins = np.histogram(accel_3Dvect_magnitude, bins=np.arange(amin, amax, a_binwidth))
+
     # turn into prob dist
     a_counts = a_counts.astype(float)
     a_total_counts = a_counts.sum()
@@ -24,7 +27,7 @@ def score(ensemble, ACF_THRESH=0.5):
     # print a_counts_n
 
     # solve DKL
-    dkl_a = entropy(a_counts_n, qk=a_observed)
+    dkl_a = entropy(a_counts_n, qk=a_dist_observed)
 
     v_binwidth =  0.015
     vmin, vmax = 0., 0.605
@@ -36,7 +39,7 @@ def score(ensemble, ACF_THRESH=0.5):
     v_counts_n = v_counts / v_total_counts  # todo make sure this is true
 
     # solve DKL
-    dkl_v = entropy(v_counts_n, qk=v_observed)
+    dkl_v = entropy(v_counts_n, qk=v_dist_observed)
     # print 'dkl_v' , dkl_v
 
 
