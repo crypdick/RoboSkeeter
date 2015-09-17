@@ -566,6 +566,136 @@ def plot3D_trajectory(ensemble, plot_kwargs=None):
     # todo: plot cylinder, detect circle, cage
 
 
+def visualize_forces(ensemble):
+        import math_sorcery
+
+        # visualize direction selection
+        fig = plt.figure(1)
+        ax = fig.add_subplot(111, projection='3d')
+
+        Npoints = 1000
+        data = np.zeros((Npoints, 3))
+        for point in range(Npoints):
+            data[point] = math_sorcery.gen_symm_vecs(3)
+
+        x = data[:,0]
+        y = data[:,1]
+        z = data[:,2]
+
+        ax.scatter(x, y, z, c='b', marker='.', alpha=0.2)
+        ax.scatter(0,0,0, c='r', marker='o', s=50)
+
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
+        plt.title("Visualization of F_random direction selection")
+        plt.savefig('F_rand_direction_selection.png')
+        plt.show()
+
+        ##############################################################################################
+        #F_total
+        ##############################################################################################
+
+        fig = plt.figure(3)
+        ax = fig.add_subplot(111, projection='3d')
+        x = ensemble.totalF_x
+        y = ensemble.totalF_y
+        z = ensemble.totalF_z
+
+        ax.scatter(x, y, z, c='b', marker='.', alpha=0.2)
+        ax.scatter(0,0,0, c='r', marker='o', s=50)
+
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
+        plt.title("Visualization of F_total")
+        plt.savefig('F_total_cloud.png')
+        plt.show()
+
+        ##############################################################################################
+        # F_stim
+        ##############################################################################################
+
+
+        fig = plt.figure(4)
+        ax = fig.add_subplot(111, projection='3d')
+        x = ensemble.stimF_x
+        y = ensemble.stimF_y
+        z = ensemble.stimF_z
+
+        ax.scatter(x, y, z, c='b', marker='.', alpha=0.2)
+        ax.scatter(0,0,0, c='r', marker='o', s=50)
+
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
+        plt.title("Visualization of F_stim")
+        plt.savefig('F_stim_cloud.png')
+        plt.show()
+
+        ##############################################################################################
+        # F_upwind
+        ##############################################################################################
+
+
+        fig = plt.figure(5)
+        ax = fig.add_subplot(111, projection='3d')
+        x = ensemble.upwindF_x
+        y = ensemble.upwindF_y
+        z = ensemble.upwindF_z
+
+        ax.scatter(x[:20], y[:20], z[:20], c='b', marker='.', alpha=0.2)
+        ax.scatter(0,0,0, c='r', marker='o', s=50)
+
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
+        plt.title("Visualization of F_upwind")
+        plt.savefig('F_upwind_cloud.png')
+        plt.show()
+
+        ##############################################################################################
+        # F_random
+        ##############################################################################################
+
+        fig = plt.figure(6)
+        ax = fig.add_subplot(111, projection='3d')
+        x = ensemble.biasF_x
+        y = ensemble.biasF_y
+        z = ensemble.biasF_z
+
+        ax.scatter(x, y, z, c='b', marker='.', alpha=0.2)
+        ax.scatter(0,0,0, c='r', marker='o', s=50)
+
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
+        plt.title("Visualization of F_random")
+        plt.savefig('F_random_cloud.png')
+        plt.show()
+
+
+        ##############################################################################################
+        #F_wall repulsion
+        ##############################################################################################
+
+        fig = plt.figure(7)
+        ax = fig.add_subplot(111, projection='3d')
+        x = ensemble.wallRepulsiveF_x
+        y = ensemble.wallRepulsiveF_y
+        z = ensemble.wallRepulsiveF_z
+
+        ax.scatter(x, y, z, c='b', marker='.', alpha=0.2)
+        ax.scatter(0,0,0, c='r', marker='o', s=50)
+
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
+        plt.title("Visualization of F_wall repulsion")
+        plt.savefig('F_wall repulsion_cloud.png')
+        plt.show()
+
+
     # if __name__ == '__main__':
     #    import trajectory_stats
     #
