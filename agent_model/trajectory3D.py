@@ -22,6 +22,7 @@ import numpy as np
 import  os
 import score
 from math_sorcery import calculate_curvature, calculate_heading, calc_polar_kinematics
+from scipy.stats import gaussian_kde
 
 
 #def T_find_stats(t_targfinds):
@@ -46,6 +47,13 @@ class Trajectory():
     def __init__(self):
         self.ensemble = pd.DataFrame()
 
+        self.kde_v_positions = None
+        self.kde_v_vals = None
+        self.kde_a_positions = None
+        self.kde_v_vals = None
+
+        self.agent_obj = None
+
         
     def load_ensemble(self, data='experiments'):
         if type(data) is dict:
@@ -66,10 +74,10 @@ class Trajectory():
                 'acceleration_x',
                 'acceleration_y',
                 'acceleration_z',
-                'heading_angle',
-                'angular_velo_xy',
-                'angular_velo_yz',
-                'curvature'
+                'heading_angleS',
+                'angular_velo_xyS',
+                'angular_velo_yzS',
+                'curvatureS'
             ]
 
             rel_dir = "experimental_data/control_trajectories/"
@@ -82,6 +90,7 @@ class Trajectory():
                 df_list.append(dataframe)
 
             self.load_ensemble(df_list)
+            self.calc_kinematic_vals()
         else:
             raise Exception
 
@@ -90,7 +99,7 @@ class Trajectory():
     def add_agent_info(self, agent_obj):
         self.agent_obj = agent_obj
 
-    def solve_kinematics(self):
+    def calc_kinematic_vals(self):
         # TODO: make wrapper function that iterates through trajectories in order to solve kinematics individually
         self.ensemble['curvature'] = calculate_curvature(self.ensemble)
         self.ensemble['heading'] = calculate_heading(self.ensemble.velocity_x.values.T, self.ensemble.velocity_y.values.T)
@@ -98,6 +107,18 @@ class Trajectory():
         self.ensemble['velocity_magn'] = np.linalg.norm(self.ensemble.loc[:,('velocity_x', 'velocity_y', 'velocity_z')], axis=1)
         self.ensemble['acceleration_magn'] = np.linalg.norm(self.ensemble.loc[:,('acceleration_x', 'acceleration_y', 'acceleration_z')], axis=1)
         # self.ensemble = calc_polar_kinematics(self.ensemble)
+
+
+    def calc_kinematic_kernels(self):
+        v = self.ensemble['velocity_magn'].values
+        velo_kernel = gaussian_kde(v)
+        self.kde_v_positions = np.linspace(v.min(), v.max(), 100)
+        self.kde_v_vals = velo_kernel(self.kde_v_positions)
+
+        a = self.ensemble['acceleration_magn'].values
+        accel_kernel = gaussian_kde(a)
+        self.kde_a_positions = np.linspace(a.min(), a.max(), 100)
+        self.kde_a_vals = accel_kernel(self.kde_a_positions)
 
 
     def plot_single_trajectory(self, trajectory_i=0):
@@ -263,134 +284,9 @@ class Trajectory():
             temp_array = temp_traj[['position_x', 'position_y']].values
             np.savetxt(str(trajectory_i) + ".csv", temp_array, delimiter=",")
 
-    def visualize_forces(self, Npoints = 1000):
-        from mpl_toolkits.mplot3d import Axes3D
-        import matplotlib.pyplot as plt
-        # TODO: export plotting funcs to plotting funcs script
-        # visualize direction selection
-        fig = plt.figure(1)
-        ax = fig.add_subplot(111, projection='3d')
+    def visualize_forces(self):
+        plotting_funcs3D(self.ensemble)
 
-        data = np.zeros((Npoints, 3))
-        for point in range(Npoints):
-            data[point] = math_sorcery.gen_symm_vecs(3)
-
-        x = data[:,0]
-        y = data[:,1]
-        z = data[:,2]
-
-        ax.scatter(x, y, z, c='b', marker='.', alpha=0.2)
-        ax.scatter(0,0,0, c='r', marker='o', s=50)
-
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_zlabel('Z')
-        plt.title("Visualization of F_random direction selection")
-        plt.savefig('F_rand_direction_selection.png')
-        plt.show()
-
-        ##############################################################################################
-        #F_total
-        ##############################################################################################
-
-        fig = plt.figure(3)
-        ax = fig.add_subplot(111, projection='3d')
-        x = self.ensemble.totalF_x
-        y = self.ensemble.totalF_y
-        z = self.ensemble.totalF_z
-
-        ax.scatter(x, y, z, c='b', marker='.', alpha=0.2)
-        ax.scatter(0,0,0, c='r', marker='o', s=50)
-
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_zlabel('Z')
-        plt.title("Visualization of F_total")
-        plt.savefig('F_total_cloud.png')
-        plt.show()
-
-        ##############################################################################################
-        # F_stim
-        ##############################################################################################
-
-
-        fig = plt.figure(4)
-        ax = fig.add_subplot(111, projection='3d')
-        x = self.ensemble.stimF_x
-        y = self.ensemble.stimF_y
-        z = self.ensemble.stimF_z
-
-        ax.scatter(x, y, z, c='b', marker='.', alpha=0.2)
-        ax.scatter(0,0,0, c='r', marker='o', s=50)
-
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_zlabel('Z')
-        plt.title("Visualization of F_stim")
-        plt.savefig('F_stim_cloud.png')
-        plt.show()
-
-        ##############################################################################################
-        # F_upwind
-        ##############################################################################################
-
-
-        fig = plt.figure(5)
-        ax = fig.add_subplot(111, projection='3d')
-        x = self.ensemble.upwindF_x
-        y = self.ensemble.upwindF_y
-        z = self.ensemble.upwindF_z
-
-        ax.scatter(x[:20], y[:20], z[:20], c='b', marker='.', alpha=0.2)
-        ax.scatter(0,0,0, c='r', marker='o', s=50)
-
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_zlabel('Z')
-        plt.title("Visualization of F_upwind")
-        plt.savefig('F_upwind_cloud.png')
-        plt.show()
-
-        ##############################################################################################
-        # F_random
-        ##############################################################################################
-
-        fig = plt.figure(6)
-        ax = fig.add_subplot(111, projection='3d')
-        x = self.ensemble.biasF_x
-        y = self.ensemble.biasF_y
-        z = self.ensemble.biasF_z
-
-        ax.scatter(x, y, z, c='b', marker='.', alpha=0.2)
-        ax.scatter(0,0,0, c='r', marker='o', s=50)
-
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_zlabel('Z')
-        plt.title("Visualization of F_random")
-        plt.savefig('F_random_cloud.png')
-        plt.show()
-
-
-        ##############################################################################################
-        #F_wall repulsion
-        ##############################################################################################
-
-        fig = plt.figure(7)
-        ax = fig.add_subplot(111, projection='3d')
-        x = self.ensemble.wallRepulsiveF_x
-        y = self.ensemble.wallRepulsiveF_y
-        z = self.ensemble.wallRepulsiveF_z
-
-        ax.scatter(x, y, z, c='b', marker='.', alpha=0.2)
-        ax.scatter(0,0,0, c='r', marker='o', s=50)
-
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_zlabel('Z')
-        plt.title("Visualization of F_wall repulsion")
-        plt.savefig('F_wall repulsion_cloud.png')
-        plt.show()
     
     def calc_score(self):
        return score.score(self.ensemble)
