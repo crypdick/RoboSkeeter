@@ -163,7 +163,7 @@ class Agent():
                                                           # time for performance boost.
         # add agent to trajectory object for plotting funcs
         self.trajectory_obj.add_agent_info(self)
-        self.trajectory_obj.solve_kinematics()
+        self.trajectory_obj.calc_kinematic_vals()
     
     def _generate_flight(self, dt, m, bounded=True):
         """Generate a single trajectory using our model.
