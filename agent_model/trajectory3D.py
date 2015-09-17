@@ -19,7 +19,7 @@ trajectory.save
 import pandas as pd
 import plotting_funcs3D
 import numpy as np
-import  os
+import os
 import score
 from math_sorcery import calculate_curvature, calculate_heading, calc_polar_kinematics
 from scipy.stats import gaussian_kde
@@ -109,16 +109,31 @@ class Trajectory():
         # self.ensemble = calc_polar_kinematics(self.ensemble)
 
 
-    def calc_kinematic_kernels(self):
+    def calc_kinematic_kernels(self, positions=None):
         v = self.ensemble['velocity_magn'].values
-        velo_kernel = gaussian_kde(v)
-        self.kde_v_positions = np.linspace(v.min(), v.max(), 100)
-        self.kde_v_vals = velo_kernel(self.kde_v_positions)
+        self.velo_kernel = gaussian_kde(v)
 
         a = self.ensemble['acceleration_magn'].values
-        accel_kernel = gaussian_kde(a)
-        self.kde_a_positions = np.linspace(a.min(), a.max(), 100)
-        self.kde_a_vals = accel_kernel(self.kde_a_positions)
+        self.accel_kernel = gaussian_kde(a)
+
+        return self.velo_kernel, self.accel_kernel
+
+
+    def evaluate_kernels(self, positions=None):
+        v = self.ensemble['velocity_magn'].values
+        a = self.ensemble['acceleration_magn'].values
+
+        if positions is None:  # want to solve them
+            self.kde_v_positions = np.linspace(v.min(), v.max(), 100)
+            self.kde_a_positions = np.linspace(a.min(), a.max(), 100)
+        else:
+            self.kde_v_positions = positions[0]
+            self.kde_a_positions = positions[1]
+
+        self.kde_v_vals = self.velo_kernel(self.kde_v_positions)
+        self.kde_a_vals = self.accel_kernel(self.kde_a_positions)
+
+        return self.kde_v_vals, self.kde_a_vals
 
 
     def plot_single_trajectory(self, trajectory_i=0):
