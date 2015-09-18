@@ -3,10 +3,12 @@ __author__ = 'richard'
 import numpy as np
 from scipy.stats import entropy
 import acfanalyze
-from trajectory3D import Trajectory
+import trajectory3D
+
+# import pdb; pdb.set_trace()
 
 # load experimentally observed velo + accel distributions
-experimental_trajs = Trajectory()
+experimental_trajs = trajectory3D.Trajectory()
 experimental_trajs.load_ensemble('experiments')
 
 experimental_trajs.calc_kinematic_kernels()

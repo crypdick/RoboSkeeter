@@ -20,7 +20,6 @@ import pandas as pd
 import plotting_funcs3D
 import numpy as np
 import os
-import score
 from math_sorcery import calculate_curvature, calculate_heading, calc_polar_kinematics
 from scipy.stats import gaussian_kde
 
@@ -304,4 +303,5 @@ class Trajectory():
 
     
     def calc_score(self):
+       import score  # avoid mutual import errors
        return score.score(self.ensemble)
