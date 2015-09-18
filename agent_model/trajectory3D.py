@@ -108,7 +108,7 @@ class Trajectory():
         # self.ensemble = calc_polar_kinematics(self.ensemble)
 
 
-    def calc_kinematic_kernels(self, positions=None):
+    def calc_kinematic_kernels(self):
         v = self.ensemble['velocity_magn'].values
         self.velo_kernel = gaussian_kde(v)
 
@@ -123,8 +123,8 @@ class Trajectory():
         a = self.ensemble['acceleration_magn'].values
 
         if positions is None:  # want to solve them
-            self.kde_v_positions = np.linspace(v.min(), v.max(), 100)
-            self.kde_a_positions = np.linspace(a.min(), a.max(), 100)
+            self.kde_v_positions = np.linspace(0., v.max(), 100)
+            self.kde_a_positions = np.linspace(0., a.max(), 100)
         else:
             self.kde_v_positions = positions[0]
             self.kde_a_positions = positions[1]
