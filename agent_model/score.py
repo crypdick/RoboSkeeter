@@ -12,38 +12,21 @@ experimental_trajs = trajectory3D.Trajectory()
 experimental_trajs.load_ensemble('experiments')
 
 experimental_trajs.calc_kinematic_kernels()
-v_experimental_pos, a_experimental_pos = experimental_trajs.kde_v_positions, experimental_trajs.kde_a_positions
-# eval at positions
-v_experimental_vals, a_experimental_vals = experimental_trajs.evaluate_kernels(positions=[v_experimental_pos, a_experimental_pos])
+experimental_trajs.evaluate_kernels()  # no positions, so generates bins
+
+v_experimental_pos, v_experimental_vals, a_experimental_pos, a_experimental_vals =\
+    experimental_trajs.kde_v_positions, experimental_trajs.kde_v_vals,\
+    experimental_trajs.kde_a_positions, experimental_trajs.kde_a_vals
 
 
 def score(ensemble, ACF_THRESH=0.5):
     # get histogram vals for agent ensemble
-    _, v_test_vals, _, a_test_vals = experimental_trajs.calc_kinematic_kernels(positions=(v_experimental_pos,a_experimental_pos))
-
-
-    # turn into prob dist
-    a_counts = a_counts.astype(float)
-    a_total_counts = a_counts.sum()
-    a_counts_n = a_counts / a_total_counts
-    # print a_counts_n
+    experimental_trajs.calc_kinematic_kernels()
+    v_vals, a_vals = experimental_trajs.evaluate_kernels(positions=(v_experimental_pos, a_experimental_pos))
 
     # solve DKL
-    dkl_a = entropy(a_counts_n, qk=a_dist_observed)
-
-    v_binwidth =  0.015
-    vmin, vmax = 0., 0.605
-    v_3Dvect_magnitude = ensemble['velocity_3Dmagn'].values
-    v_counts, v_bins = np.histogram(v_3Dvect_magnitude, bins=np.arange(vmin, vmax, v_binwidth))
-    v_counts = v_counts.astype(float)
-    v_total_counts = v_counts.sum()
-    # turn into prob dist
-    v_counts_n = v_counts / v_total_counts  # todo make sure this is true
-
-    # solve DKL
-    dkl_v = entropy(v_counts_n, qk=v_dist_observed)
-    # print 'dkl_v' , dkl_v
-
+    dkl_v = entropy(v_vals, qk=v_experimental_vals)
+    dkl_a = entropy(a_vals, qk=a_experimental_vals)
 
     dkl_scores = [dkl_v, dkl_a]
     dkl_score = sum(dkl_scores)
