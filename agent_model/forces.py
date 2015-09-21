@@ -11,7 +11,7 @@ class Forces():
         pass
 
 
-    def randomF(self, rf, dim=3):
+    def randomF(self, rf, dim=3, kind='constant'):
         """Generate random-direction force vector at each timestep from double-
         exponential distribution given exponent term rf.
 
@@ -21,17 +21,22 @@ class Forces():
         Returns:
             random force x and y components (array)
         """
-        MAG_THRESH = 3e-4
+        if kind is 'lognorm':
+            MAG_THRESH = 3e-4
 
-        ends = math_sorcery.gen_symm_vecs(3)
-        # following params were fitted from the Dickinson fligt data
-        mu = 0.600023812816
-        sigma = 0.719736466122
-        # scale = 1.82216219069
-        mag = np.random.lognormal(mean=mu, sigma=sigma, size=1)
-        if mag * rf > MAG_THRESH: # filter out huge magnitudes
-            return ends * MAG_THRESH
-        return mag * rf * ends
+            ends = math_sorcery.gen_symm_vecs(3)
+            # following params were fitted from the Dickinson fligt data
+            mu = 0.600023812816
+            sigma = 0.719736466122
+            # scale = 1.82216219069
+            mag = np.random.lognormal(mean=mu, sigma=sigma, size=1)
+            if mag * rf > MAG_THRESH: # filter out huge magnitudes
+                return ends * MAG_THRESH
+            return mag * rf * ends
+
+        elif kind is 'constant':
+            ends = math_sorcery.gen_symm_vecs(3)
+            return rf * ends
 
 
     def upwindBiasF(self, wtf):
