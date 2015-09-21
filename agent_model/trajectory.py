@@ -17,7 +17,7 @@ trajectory.describe()
 trajectory.save
 """
 import pandas as pd
-import plotting_funcs3D
+import plotting
 import numpy as np
 import os
 from math_sorcery import calculate_curvature, calculate_heading, calc_polar_kinematics
@@ -137,25 +137,25 @@ class Trajectory():
 
     def plot_single_trajectory(self, trajectory_i=0):
         plot_kwargs = {'title':"Individual agent trajectory", 'titleappend':' (id = {})'.format(trajectory_i)}
-        plotting_funcs3D.plot_single_trajectory(self.ensemble.loc[self.ensemble['trajectory_num']==trajectory_i], self.agent_obj, plot_kwargs)
+        plotting.plot_single_trajectory(self.ensemble.loc[self.ensemble['trajectory_num']==trajectory_i], self.agent_obj, plot_kwargs)
 
             
             
     def plot_force_violin(self):
         if self.agent_obj is None:
             raise TypeError('can\'t plot force violin for experimental data')
-        plotting_funcs3D.force_violin(self.ensemble, self.agent_obj)
+        plotting.force_violin(self.ensemble, self.agent_obj)
         
     
     def plot_posheatmap(self):
-        plotting_funcs3D.heatmaps(self.ensemble, self.agent_obj)
+        plotting.heatmaps(self.ensemble, self.agent_obj)
         
     
     def plot_kinematic_hists(self, ensemble='none', titleappend=''):
         if type(ensemble) is str:
             ensemble = self.ensemble
             ensemble = ensemble.loc[(ensemble['position_x'] >0.25) & (ensemble['position_x'] <0.95)]
-        plotting_funcs3D.stateHistograms(ensemble, self.agent_obj, titleappend=titleappend)
+        plotting.stateHistograms(ensemble, self.agent_obj, titleappend=titleappend)
         
         
     def plot_door_velocity_compass(self, region='door', kind='avg_mag_per_bin'):
@@ -166,7 +166,7 @@ class Trajectory():
         else:
             ensemble = self.ensemble
             
-        plotting_funcs3D.velo_compass_histogram(ensemble, self.agent_obj, kind)
+        plotting.velo_compass_histogram(ensemble, self.agent_obj, kind)
     
 
     def plot_kinematic_compass(self, kind='avg_mag_per_bin', data=None, flags='', title_append=''):
@@ -188,7 +188,7 @@ class Trajectory():
             name=vector_name, flag=flags)
   
             
-            plotting_funcs3D.compass_histogram(vector_name, df, self.agent_obj, title=title, fname=fname)
+            plotting.compass_histogram(vector_name, df, self.agent_obj, title=title, fname=fname)
 #            magnitudes, thetas = getattr(self.ensemble, name+).values, getattr(V, name+'_xy_theta').values
 #            plotting_funcs3D.compass_histogram(force, magnitudes, thetas, self.agent_obj)
        
@@ -211,7 +211,7 @@ class Trajectory():
         if trajectory_i is None:
             trajectory_i = self.ensemble.trajectory_num.min()
         plot_kwargs = {'title':"Individual agent trajectory", 'titleappend':' (id = {})'.format(trajectory_i)}
-        plotting_funcs3D.plot3D_trajectory(self.ensemble.loc[self.ensemble['trajectory_num']==trajectory_i], plot_kwargs)
+        plotting.plot3D_trajectory(self.ensemble.loc[self.ensemble['trajectory_num']==trajectory_i], plot_kwargs)
 
         
     def plot_sliced_hists(self):
@@ -256,11 +256,11 @@ class Trajectory():
 #        self.plot_kinematic_hists(ensemble=ensemble4, titleappend=' {} < x <= {}'.format(x_edges[3], x_edges[4]))
 #        
         print "full- + up- + down-wind"
-        plotting_funcs3D.stateHistograms(full_ensemble, self.agent_obj, titleappend = '', upw_ensemble = upwind_ensemble, downw_ensemble = downwind_ensemble)
+        plotting.stateHistograms(full_ensemble, self.agent_obj, titleappend = '', upw_ensemble = upwind_ensemble, downw_ensemble = downwind_ensemble)
 
 
     def plot_3D_kinematic_vecs(self, kinematic='acceleration'):
-        plotting_funcs3D.plot_3D_kinematic_vecs(self.ensemble, kinematic)
+        plotting.plot_3D_kinematic_vecs(self.ensemble, kinematic)
 
 
     def plume_stats(self):
@@ -299,7 +299,7 @@ class Trajectory():
             np.savetxt(str(trajectory_i) + ".csv", temp_array, delimiter=",")
 
     def visualize_forces(self):
-        plotting_funcs3D(self.ensemble)
+        plotting(self.ensemble)
 
     
     def calc_score(self):

@@ -8,8 +8,8 @@ TODO: implemement unit tests with nose
 """
 
 import numpy as np
-import plume3D
-import trajectory3D
+import plume
+import trajectory
 import windtunnel
 import forces
 import sys
@@ -122,9 +122,9 @@ class Agent():
             # generate environment
         windtunnel_object = windtunnel.Windtunnel(self.experimental_condition)
         # generate temperature plume
-        plume_object = plume3D.Plume(self.experimental_condition)
+        plume_object = plume.Plume(self.experimental_condition)
         # instantiate empty trajectories class
-        trajectories_object = trajectory3D.Trajectory()
+        trajectories_object = trajectory.Trajectory()
         forces_object = forces.Forces()
 
         return windtunnel_object, plume_object, trajectories_object, forces_object
