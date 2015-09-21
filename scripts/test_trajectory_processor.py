@@ -6,12 +6,13 @@ Created on Tue Apr 21 14:43:17 2015
 
 @author: richard
 """
-import pandas as pd
+import numpy as np
+import unittest
+
 from pandas import concat
 from pandas import DataFrame as df
-import numpy as np
+
 import flight_trajectory_processor
-import unittest
 
 
 def NaN_run(len):
@@ -55,8 +56,6 @@ def check_df_equal(df1, df2):
 
 
 class TestStringMethods(unittest.TestCase):
-    from pandas.util.testing import assert_frame_equal
-
     ## TEST TRIMMER
 #    def test_trimNaN_nums(self): # only numbers
 #        df1 = num_run(100)
