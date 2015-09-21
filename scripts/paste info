@@ -24,11 +24,11 @@ v_total_counts = v_counts.sum()
 # turn into prob dist
 v_counts_n = v_counts / v_total_counts
 
-a_csv = np.genfromtxt('experimental_data/acceleration_distributions_uw.csv',delimiter=',')
+a_csv = np.genfromtxt('experiments/acceleration_distributions_uw.csv',delimiter=',')
 a_csv = a_csv.T
 a_observed = a_csv[4][:-1]  # throw out last datum
 
-v_csv = np.genfromtxt('experimental_data/velocity_distributions_uw.csv',delimiter=',')
+v_csv = np.genfromtxt('experiments/velocity_distributions_uw.csv',delimiter=',')
 v_csv = v_csv.T
 v_observed = v_csv[4][:-1]  # throw out last datum
 

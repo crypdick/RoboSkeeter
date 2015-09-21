@@ -16,12 +16,14 @@ trajectory.describe()
 
 trajectory.save
 """
-import pandas as pd
-import plotting
 import numpy as np
 import os
-from math_sorcery import calculate_curvature, calculate_heading, calc_polar_kinematics
 from scipy.stats import gaussian_kde
+
+import pandas as pd
+
+from scripts import plotting
+from scripts.math_sorcery import calculate_curvature, calculate_heading
 
 
 #def T_find_stats(t_targfinds):
@@ -79,7 +81,7 @@ class Trajectory():
                 'curvatureS'
             ]
 
-            rel_dir = "experimental_data/control_trajectories/"
+            rel_dir = "experiments/control_trajectories/"
             for fname in os.listdir(os.path.join(os.path.dirname(__file__), rel_dir)):  # list files
                 file_path = os.path.join(os.path.dirname(__file__), rel_dir, fname)
 
@@ -303,5 +305,5 @@ class Trajectory():
 
     
     def calc_score(self):
-       import score  # avoid mutual import errors
+       import score
        return score.score(self.ensemble)

@@ -8,18 +8,15 @@ Created on Wed May 27 17:03:55 2015
 
 print """for interactive plots, type this into your iPython console: \n
         """
-import data_io
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 import os
-import numpy as np
-import seaborn as sns
-import pandas as pd
 from glob import glob
-import matplotlib as mpl
-            
 
-def plot3D_trajectory(xyz, csv_name, WINDOW_LEN):
+import matplotlib.pyplot as plt
+
+from scripts import data_io
+
+
+def plot_trajectory_rainbow(xyz, csv_name, WINDOW_LEN):
 ###    %matplotlib Qt4Agg
 #    palette = sns.color_palette("Pastel1", 450)
     
@@ -80,5 +77,5 @@ if __name__ == '__main__':
     df = data_io.load_csv2DF(csv_name)
     xyz = df[['pos_x', 'pos_y', 'pos_z']]
     
-    plot3D_trajectory(xyz, csv_name, WINDOW_LEN = 100)
+    plot_trajectory_rainbow(xyz, csv_name, WINDOW_LEN = 100)
     

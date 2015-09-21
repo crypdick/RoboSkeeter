@@ -1,18 +1,19 @@
 __author__ = 'richard'
 
 import numpy as np
-import pandas as pd
+
 from statsmodels.tsa.stattools import acf
+
 # import statsmodels.graphics.tsaplots
 import matplotlib.pyplot as plt
-import behavioral_experiments.data_io as data_io
-import trajectory3D
+import scripts.data_io as data_io
+import trajectory
 
 plt.style.use('ggplot')
 
 ACF_THRESH = 0.5
 NLAGS = 70
-TRAJECTORY_DATA_REL_DIR = "experimental_data/control_trajectories/"
+TRAJECTORY_DATA_REL_DIR = "experiments/control_trajectories/"
 
 csv_list = data_io.make_csv_name_list(TRAJECTORY_DATA_REL_DIR)
 
@@ -57,5 +58,5 @@ if __name__ == '__main__':
         scores = index_drop(df, ACF_THRESH, verbose=False)
         # print scores
 
-    trajectories_object = trajectory3D.Trajectory()
+    trajectories_object = trajectory.Trajectory()
     trajectories_object.load_ensemble(df_list)

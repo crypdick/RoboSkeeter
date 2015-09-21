@@ -4,16 +4,18 @@ Created on Mon Jun  1 17:00:47 2015
 
 @author: richard
 """
-import data_io
-from statsmodels.tsa.stattools import acf, pacf
-import matplotlib.pyplot as plt
 import os
 import numpy as np
+
+from statsmodels.tsa.stattools import acf, pacf
+import matplotlib.pyplot as plt
+
+from scripts import data_io
+
 #import seaborn as sns
 import pandas as pd
 from glob import glob
 import csv
-from scipy.spatial import distance
 from sklearn.metrics.pairwise import pairwise_distances
 
 

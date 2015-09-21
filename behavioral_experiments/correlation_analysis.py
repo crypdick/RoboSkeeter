@@ -7,11 +7,13 @@ Created on Thu May 14 13:12:15 2015
 @author: richard
 """
 
-import data_io
+import os
+
 import statsmodels.tsa
 import statsmodels.graphics.tsaplots
 import matplotlib.pyplot as plt
-import os
+
+from scripts import data_io
 
 plt.style.use('ggplot')
 

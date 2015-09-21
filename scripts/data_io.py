@@ -62,12 +62,12 @@ def load_csv2DF(data_fname, rel_dir = "data/processed_trajectories/"):
 
 
 def load_csv2np():
-    v_csv = np.genfromtxt(os.path.join(os.path.dirname(__file__),'experimental_data','velocity_distributions_uw.csv'), delimiter=',')
+    v_csv = np.genfromtxt(os.path.join(os.path.dirname(__file__),'experiments','velocity_distributions_uw.csv'), delimiter=',')
     v_csv = v_csv.T
     v_observed = v_csv[4][:-1]  # throw out last datum
 
     # load csv values
-    a_csv = np.genfromtxt(os.path.join(os.path.dirname(__file__),'experimental_data','acceleration_distributions_uw.csv'), delimiter=',')
+    a_csv = np.genfromtxt(os.path.join(os.path.dirname(__file__),'experiments','acceleration_distributions_uw.csv'), delimiter=',')
     a_csv = a_csv.T
     a_observed = a_csv[4][:-1]  # throw out last datum
 

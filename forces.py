@@ -1,9 +1,10 @@
 __author__ = 'richard'
 
-import math_sorcery
 import numpy as np
 from scipy.integrate import quad
 from scipy.misc import derivative as deriv
+
+from scripts import math_sorcery
 
 
 class Forces():

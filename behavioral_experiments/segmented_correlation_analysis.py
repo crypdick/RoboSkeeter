@@ -11,21 +11,18 @@ fix colors
 fix data matrix
 """
 
+import os
+import numpy as np
+from glob import glob
+import csv
+import time
 
-import data_io
 from statsmodels.tsa.stattools import acf
 from statsmodels.tsa.stattools import pacf
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-import os
-from math import floor as floor
-import numpy as np
-import seaborn as sns
 import pandas as pd
-from glob import glob
-import csv
-import multiprocessing as mp
-import time
+
+from scripts import data_io
 
 INTERESTED_VALS = ['velo_x', 'velo_y', 'velo_z', 'curve']
 

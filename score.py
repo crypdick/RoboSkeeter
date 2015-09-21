@@ -2,13 +2,15 @@ __author__ = 'richard'
 
 import numpy as np
 from scipy.stats import entropy
-import acfanalyze
-import trajectory3D
+
+import scripts.acfanalyze
+import trajectory
+
 
 # import pdb; pdb.set_trace()
 
 # load experimentally observed velo + accel distributions
-experimental_trajs = trajectory3D.Trajectory()
+experimental_trajs = trajectory.Trajectory()
 experimental_trajs.load_ensemble('experiments')
 
 experimental_trajs.calc_kinematic_kernels()
@@ -20,11 +22,11 @@ v_experimental_pos, v_experimental_vals, a_experimental_pos, a_experimental_vals
 
 
 def score(ensemble, ACF_THRESH=0.5):
-    # get histogram vals for agent ensemble
+    # get probability vals for agents
     experimental_trajs.calc_kinematic_kernels()
     v_vals, a_vals = experimental_trajs.evaluate_kernels(positions=(v_experimental_pos, a_experimental_pos))
 
-    # solve DKL
+    # solve DKL b/w agent and mosquito experiments
     dkl_v = entropy(v_vals, qk=v_experimental_vals)
     dkl_a = entropy(a_vals, qk=a_experimental_vals)
 
@@ -41,7 +43,7 @@ def score(ensemble, ACF_THRESH=0.5):
     acf_distances = []
     for i in range(N_TRAJECTORIES):
         df = ensemble.loc[ensemble['trajectory_num']==i]
-        acf_threshcross_index = acfanalyze.index_drop(df, thresh=ACF_THRESH, verbose=False)
+        acf_threshcross_index = scripts.acfanalyze.index_drop(df, thresh=ACF_THRESH, verbose=False)
         if acf_threshcross_index is 'explosion':  # bad trajectory!
             acf_distances.append(300)
         else:

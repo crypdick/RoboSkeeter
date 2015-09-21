@@ -1,16 +1,19 @@
 __author__ = 'richard'
 
-import score
-import agent3D
-import plume3D
-import windtunnel
-import trajectory3D
 from scipy.optimize import basinhopping
 import numpy as np
-from matplotlib import pyplot as plt
 import logging
 from datetime import datetime
-import behavioral_experiments.data_io as data_io
+
+from matplotlib import pyplot as plt
+
+import score
+import agent
+import plume
+import windtunnel
+import trajectory
+import scripts.data_io as data_io
+
 
 # wrapper func for agent 3D
 def fly_wrapper(GUESS, *args):
@@ -32,10 +35,10 @@ def fly_wrapper(GUESS, *args):
     #  when we run this, agent3D is run and we return a score
 
     windtunnel_object = windtunnel.Windtunnel(None) # we are fitting for the control condition
-    plume_object = plume3D.Plume(HEATER)
+    plume_object = plume.Plume(HEATER)
     #  temperature plume
-    trajectories = trajectory3D.Trajectory() # instantiate empty trajectories object
-    skeeter = agent3D.Agent(
+    trajectories = trajectory.Trajectory() # instantiate empty trajectories object
+    skeeter = agent.Agent(
         trajectories,
         plume_object,
         windtunnel_object,
@@ -134,7 +137,7 @@ if __name__ == '__main__':
     INITIAL_GUESS = [  1.37213380e-06 ,  1.39026239e-06 ,  2.06854777e-06]
     N_TRAJECTORIES = 20
 
-    myplume = plume3D.Plume(None)
+    myplume = plume.Plume(None)
 
     result = main()
 

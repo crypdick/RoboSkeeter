@@ -8,12 +8,14 @@ TODO: implemement unit tests with nose
 """
 
 import numpy as np
+import sys
+
+import pandas as pd
+
 import plume
 import trajectory
 import windtunnel
 import forces
-import sys
-import pandas as pd
 
 
 # def fly_wrapper(agent_obj, args, traj_count):

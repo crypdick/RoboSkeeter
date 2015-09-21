@@ -7,14 +7,13 @@ Created on Fri Mar 20 12:27:04 2015
 https://staff.washington.edu/decal/
 https://github.com/isomerase/
 """
-from matplotlib import pyplot as plt
-import matplotlib.gridspec as gridspec
 import numpy as np
-from mpl_toolkits.mplot3d import Axes3D
+
+from matplotlib import pyplot as plt
+
+import matplotlib.gridspec as gridspec
+
 import seaborn as sns
-from matplotlib.patches import Circle
-from mpl_toolkits.mplot3d.art3d import juggle_axes
-import temp_3d_scatter
 import windtunnel
 
 windtunnel_object = windtunnel.Windtunnel(None)
