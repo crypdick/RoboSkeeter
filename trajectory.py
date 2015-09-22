@@ -7,7 +7,7 @@ Created on Tue May  5 21:15:28 2015
 creates a trajectory object that has a bunch of sweet methods.
 takes vectors from agent and adds it to ensemble
 
-trajectory.ensemble
+trajectory.data
 trajectory.append_ensemble(a trajectory)
 
 trajectory.describe()
@@ -19,11 +19,12 @@ trajectory.save
 import numpy as np
 import os
 from scipy.stats import gaussian_kde
-
 import pandas as pd
+import string
 
 from scripts import plotting
 from scripts.math_sorcery import calculate_curvature, calculate_heading
+# import score
 
 
 #def T_find_stats(t_targfinds):
@@ -46,7 +47,7 @@ from scripts.math_sorcery import calculate_curvature, calculate_heading
 
 class Trajectory():
     def __init__(self):
-        self.ensemble = pd.DataFrame()
+        self.data = pd.DataFrame()
 
         self.kde_v_positions = None
         self.kde_v_vals = None
@@ -56,13 +57,8 @@ class Trajectory():
         self.agent_obj = None
 
         
-    def load_ensemble(self, data='experiments'):
-        if type(data) is dict:
-            trajectory = pd.DataFrame(data)
-            self.ensemble.append(trajectory)
-        elif type(data) is list:
-            self.ensemble = pd.concat(data)
-        elif data is 'experiments':
+    def load_ensemble(self, data='load_experimental_data'):
+        if data is 'load_experimental_data':  # load experiments
             df_list = []
 
             col_labels = [
@@ -81,17 +77,23 @@ class Trajectory():
                 'curvatureS'
             ]
 
-            rel_dir = "experiments/control_trajectories/"
+            rel_dir = "data/experiments/trajectories/control_trajectories/"
             for fname in os.listdir(os.path.join(os.path.dirname(__file__), rel_dir)):  # list files
                 file_path = os.path.join(os.path.dirname(__file__), rel_dir, fname)
 
                 dataframe = pd.read_csv(file_path, na_values="NaN", names=col_labels)  # recognize str(NaN) as NaN
                 dataframe.fillna(value=0, inplace=True)
-                dataframe['trajectory_num'] = [os.path.splitext(fname)[0]] * dataframe.position_x.size
+                # take fname number, turn it into a list of the correct size
+                dataframe['trajectory_num'] = [int(fname[8:])] * dataframe.position_x.size
                 df_list.append(dataframe)
 
-            self.load_ensemble(df_list)
+            self.load_ensemble(data=df_list)
             self.calc_kinematic_vals()
+        elif type(data) is dict:
+            trajectory = pd.DataFrame(data)
+            self.data.append(trajectory)
+        elif type(data) is list:
+            self.data = pd.concat(data)
         else:
             raise Exception
 
@@ -101,28 +103,29 @@ class Trajectory():
         self.agent_obj = agent_obj
 
     def calc_kinematic_vals(self):
+        ensemble = self.data
         # TODO: make wrapper function that iterates through trajectories in order to solve kinematics individually
-        self.ensemble['curvature'] = calculate_curvature(self.ensemble)
-        self.ensemble['heading'] = calculate_heading(self.ensemble.velocity_x.values.T, self.ensemble.velocity_y.values.T)
+        ensemble['curvature'] = calculate_curvature(ensemble)
+        ensemble['heading'] = calculate_heading(ensemble.velocity_x.values.T, ensemble.velocity_y.values.T)
         # absolute magnitude of velocity, accel vectors in 3D
-        self.ensemble['velocity_magn'] = np.linalg.norm(self.ensemble.loc[:,('velocity_x', 'velocity_y', 'velocity_z')], axis=1)
-        self.ensemble['acceleration_magn'] = np.linalg.norm(self.ensemble.loc[:,('acceleration_x', 'acceleration_y', 'acceleration_z')], axis=1)
-        # self.ensemble = calc_polar_kinematics(self.ensemble)
+        ensemble['velocity_magn'] = np.linalg.norm(ensemble.loc[:,('velocity_x', 'velocity_y', 'velocity_z')], axis=1)
+        ensemble['acceleration_magn'] = np.linalg.norm(ensemble.loc[:,('acceleration_x', 'acceleration_y', 'acceleration_z')], axis=1)
+        # ensemble = calc_polar_kinematics(ensemble)
 
 
     def calc_kinematic_kernels(self):
-        v = self.ensemble['velocity_magn'].values
+        v = self.data['velocity_magn'].values
         self.velo_kernel = gaussian_kde(v)
 
-        a = self.ensemble['acceleration_magn'].values
+        a = self.data['acceleration_magn'].values
         self.accel_kernel = gaussian_kde(a)
 
         return self.velo_kernel, self.accel_kernel
 
 
     def evaluate_kernels(self, positions=None):
-        v = self.ensemble['velocity_magn'].values
-        a = self.ensemble['acceleration_magn'].values
+        v = self.data['velocity_magn'].values
+        a = self.data['acceleration_magn'].values
 
         if positions is None:  # want to solve them
             self.kde_v_positions = np.linspace(0., v.max(), 100)
@@ -139,23 +142,23 @@ class Trajectory():
 
     def plot_single_trajectory(self, trajectory_i=0):
         plot_kwargs = {'title':"Individual agent trajectory", 'titleappend':' (id = {})'.format(trajectory_i)}
-        plotting.plot_single_trajectory(self.ensemble.loc[self.ensemble['trajectory_num']==trajectory_i], self.agent_obj, plot_kwargs)
+        plotting.plot_single_trajectory(self.data.loc[self.data['trajectory_num']==trajectory_i], self.agent_obj, plot_kwargs)
 
             
             
     def plot_force_violin(self):
         if self.agent_obj is None:
             raise TypeError('can\'t plot force violin for experimental data')
-        plotting.force_violin(self.ensemble, self.agent_obj)
+        plotting.force_violin(self.data, self.agent_obj)
         
     
     def plot_posheatmap(self):
-        plotting.heatmaps(self.ensemble, self.agent_obj)
+        plotting.heatmaps(self.data, self.agent_obj)
         
     
     def plot_kinematic_hists(self, ensemble='none', titleappend=''):
         if type(ensemble) is str:
-            ensemble = self.ensemble
+            ensemble = self.data
             ensemble = ensemble.loc[(ensemble['position_x'] >0.25) & (ensemble['position_x'] <0.95)]
         plotting.stateHistograms(ensemble, self.agent_obj, titleappend=titleappend)
         
@@ -164,16 +167,16 @@ class Trajectory():
         
         if region == 'door':
             """plot the area """
-            ensemble = self.ensemble.loc[((self.ensemble['position_x']>0.25) & (self.ensemble['position_x']<0.5)), ['velocity_x', 'velocity_y']]
+            ensemble = self.data.loc[((self.data['position_x']>0.25) & (self.data['position_x']<0.5)), ['velocity_x', 'velocity_y']]
         else:
-            ensemble = self.ensemble
+            ensemble = self.data
             
         plotting.velo_compass_histogram(ensemble, self.agent_obj, kind)
     
 
     def plot_kinematic_compass(self, kind='avg_mag_per_bin', data=None, flags='', title_append=''):
         if data is None: # TODO: wtf?
-            data = self.ensemble
+            data = self.data
         # TODO: add heading angle plot
         for vector_name in self.agent_obj['forces']+self.agent_obj['kinematic_vals']:
             # from enemble, selec mag and theta
@@ -191,14 +194,14 @@ class Trajectory():
   
             
             plotting.compass_histogram(vector_name, df, self.agent_obj, title=title, fname=fname)
-#            magnitudes, thetas = getattr(self.ensemble, name+).values, getattr(V, name+'_xy_theta').values
+#            magnitudes, thetas = getattr(self.data, name+).values, getattr(V, name+'_xy_theta').values
 #            plotting_funcs3D.compass_histogram(force, magnitudes, thetas, self.agent_obj)
        
     def plot_plume_triggered_compass(self, kind='avg_mag_per_bin'):
         behaviors = ['searching', 'entering', 'staying', 'Left_plume, exit left',
             'Left_plume, exit right', "Right_plume, exit left", "Right_plume, exit right"]
         for behavior in behaviors:
-            ensemble = self.ensemble.loc[self.ensemble.plume_experience == behavior]
+            ensemble = self.data.loc[self.data.plume_experience == behavior]
             if ensemble.empty is True:
                 print "no data for ", behavior
                 pass
@@ -211,9 +214,9 @@ class Trajectory():
         
     def plot_single_3Dtrajectory(self, trajectory_i=None):
         if trajectory_i is None:
-            trajectory_i = self.ensemble.trajectory_num.min()
+            trajectory_i = self.data.trajectory_num.min()
         plot_kwargs = {'title':"Individual agent trajectory", 'titleappend':' (id = {})'.format(trajectory_i)}
-        plotting.plot3D_trajectory(self.ensemble.loc[self.ensemble['trajectory_num']==trajectory_i], plot_kwargs)
+        plotting.plot3D_trajectory(self.data.loc[self.data['trajectory_num']==trajectory_i], plot_kwargs)
 
         
     def plot_sliced_hists(self):
@@ -223,53 +226,53 @@ class Trajectory():
         x_edges = np.linspace(.25,.95,5)
         
         print "full ensemble"
-        full_ensemble = self.ensemble.loc[(self.ensemble['position_x'] > x_edges[0]) \
-            & (self.ensemble['position_x'] < x_edges[4])]
+        full_ensemble = self.data.loc[(self.data['position_x'] > x_edges[0]) \
+            & (self.data['position_x'] < x_edges[4])]
         self.plot_kinematic_hists(ensemble=full_ensemble, titleappend=' {} < x <= {}'.format(x_edges[0], x_edges[4]))
         
         print "downwind half ensemble"
-        downwind_ensemble = self.ensemble.loc[(self.ensemble['position_x'] > x_edges[0]) \
-            & (self.ensemble['position_x'] < x_edges[2])]
+        downwind_ensemble = self.data.loc[(self.data['position_x'] > x_edges[0]) \
+            & (self.data['position_x'] < x_edges[2])]
         self.plot_kinematic_hists(ensemble=downwind_ensemble, titleappend=' {} < x <= {}'.format(x_edges[0], x_edges[2]))
 
         print "upwind half ensemble"
-        upwind_ensemble = self.ensemble.loc[(self.ensemble['position_x'] > x_edges[2]) \
-            & (self.ensemble['position_x'] < x_edges[4])]
+        upwind_ensemble = self.data.loc[(self.data['position_x'] > x_edges[2]) \
+            & (self.data['position_x'] < x_edges[4])]
         self.plot_kinematic_hists(ensemble=upwind_ensemble, titleappend=' {} < x <= {}'.format(x_edges[2], x_edges[4]))    
 #        
 #        print "first quarter ensemble"
-#        ensemble1 = self.ensemble.loc[(self.ensemble['position_x'] > x_edges[0]) \
-#            & (self.ensemble['position_x'] <= x_edges[1])]
+#        ensemble1 = self.data.loc[(self.data['position_x'] > x_edges[0]) \
+#            & (self.data['position_x'] <= x_edges[1])]
 #        self.plot_kinematic_hists(ensemble=ensemble1, titleappend=' {} < x <= {}'.format(x_edges[0], x_edges[1]))
 #        
 #        print "second quarter ensemble"
-#        ensemble2 = self.ensemble.loc[(self.ensemble['position_x'] > x_edges[1]) \
-#            & (self.ensemble['position_x'] <= x_edges[2])]
+#        ensemble2 = self.data.loc[(self.data['position_x'] > x_edges[1]) \
+#            & (self.data['position_x'] <= x_edges[2])]
 #        self.plot_kinematic_hists(ensemble=ensemble2, titleappend=' {} < x <= {}'.format(x_edges[1], x_edges[2]))
 #        
 #        print "third quarter ensemble"
-#        ensemble3 = self.ensemble.loc[(self.ensemble['position_x'] > x_edges[2]) \
-#            & (self.ensemble['position_x'] <= x_edges[3])]
-#        self.plot_kinematic_hists(ensemble=ensemble3, titleappend=' {} < x <= {}'.format(x_edges[2], x_edges[3]))
+#        ensemble3 = self.data.loc[(self.data['position_x'] > x_edges[2]) \
+#            & (self.data['position_x'] <= x_edges[3])]
+#        self.plot_kinematic_hists(data=ensemble3, titleappend=' {} < x <= {}'.format(x_edges[2], x_edges[3]))
 #
-#        print "fourth quarter ensemble"
-#        ensemble4 = self.ensemble.loc[(self.ensemble['position_x'] > x_edges[3]) \
-#            & (self.ensemble['position_x'] <= x_edges[4])]
-#        self.plot_kinematic_hists(ensemble=ensemble4, titleappend=' {} < x <= {}'.format(x_edges[3], x_edges[4]))
+#        print "fourth quarter kinematics"
+#        ensemble4 = self.data.loc[(self.data['position_x'] > x_edges[3]) \
+#            & (self.data['position_x'] <= x_edges[4])]
+#        self.plot_kinematic_hists(data=ensemble4, titleappend=' {} < x <= {}'.format(x_edges[3], x_edges[4]))
 #        
         print "full- + up- + down-wind"
         plotting.stateHistograms(full_ensemble, self.agent_obj, titleappend = '', upw_ensemble = upwind_ensemble, downw_ensemble = downwind_ensemble)
 
 
     def plot_3D_kinematic_vecs(self, kinematic='acceleration'):
-        plotting.plot_3D_kinematic_vecs(self.ensemble, kinematic)
+        plotting.plot_3D_kinematic_vecs(self.data, kinematic)
 
 
     def plume_stats(self):
         """ 
         in plume == 1, out == 0. therefore sum/n is % in plume
         """
-        in_out = self.ensemble.inPlume.values
+        in_out = self.data.inPlume.values
         print "Total timesteps: {size}. Total time in plume: {vecsum}. Ratio:"\
             "{ratio}".format(size=in_out.size, vecsum=in_out.sum(), ratio=in_out.sum()/in_out.size)
             
@@ -282,7 +285,7 @@ class Trajectory():
                 'states':True,
                 'singletrajectories':False,
                 'force_violin':True}):
-        print self.ensemble.describe()
+        print self.data.describe()
         if plot_kwargs['heatmap'] is True:
             self.plot_posheatmap()
         if plot_kwargs['singletrajectories'] is True:
@@ -295,15 +298,23 @@ class Trajectory():
             
             
     def dump2csvs(self):
-        for trajectory_i in self.ensemble.trajectory_num.unique():
-            temp_traj = self.ensemble[self.ensemble['trajectory_num'] == trajectory_i]
+        for trajectory_i in self.data.trajectory_num.unique():
+            temp_traj = self.data[self.data['trajectory_num'] == trajectory_i]
             temp_array = temp_traj[['position_x', 'position_y']].values
             np.savetxt(str(trajectory_i) + ".csv", temp_array, delimiter=",")
 
     def visualize_forces(self):
-        plotting(self.ensemble)
+        plotting(self.data)
 
     
     def calc_score(self):
-       import score
-       return score.score(self.ensemble)
+       return score.score(self.data)
+
+    def _extract_number_from_fname(self, token):
+        extract_digits = lambda stng: "".join(char for char in stng if char in string.digits + ".")
+        to_float = lambda x: float(x) if x.count(".") <= 1 else None
+
+        try:
+            return to_float(extract_digits(token))
+        except ValueError:
+            print token, extract_digits(token)
