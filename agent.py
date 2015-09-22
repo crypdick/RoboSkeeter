@@ -36,7 +36,7 @@ class Agent():
 
     Args:
         Trajectory_object: (trajectory object)
-            pandas dataframe which we store all our simulated trajectories and their kinematics
+            pandas dataframe which we store all our simulated trajectories and their data
         Plume_object: (plume object)
             the temperature data for our thermal, convective plume
         windtunnel_obj: (windtunnel object)
@@ -209,7 +209,7 @@ class Agent():
             ################################################
             if bounded is True:
                 candidate_pos, candidate_velo = self._check_candidates(candidate_pos, candidate_velo)
-                if candidate_pos is None:  # func returns None if reaches end
+                if candidate_pos is None:  # _check_candidates returns None if reaches end
                     self._land(tsi, V)
                     break
 
@@ -305,9 +305,6 @@ class Agent():
         return V
 
     def _calc_forces(self, V, tsi):
-
-
-
         ################################################
         # Calculate driving forces at this timestep
         ################################################
@@ -317,7 +314,7 @@ class Agent():
 
         V['upwindF'][tsi] = self.forces.upwindBiasF(self.windF_strength)
 
-        V['wallRepulsiveF'][tsi] = self.forces.attraction_basin(self.damping_coeff, V['position'][tsi])
+        V['wallRepulsiveF'][tsi] = self.forces.attraction_basin(self.spring_const, V['position'][tsi])
 
         ################################################
         # calculate total force
@@ -435,7 +432,7 @@ class Agent():
 
 
 
-def gen_objects_and_fly(N_TRAJECTORIES, TEST_CONDITION, BETA, FORCES_AMPLITUDE, F_WIND_SCALE, K):
+def gen_objects_and_fly(N_TRAJECTORIES, TEST_CONDITION, BETA, FORCES_AMPLITUDE, F_WIND_SCALE, K, bounded=True):
     """
     Params fitted using scipy.optimize
 
@@ -451,7 +448,7 @@ def gen_objects_and_fly(N_TRAJECTORIES, TEST_CONDITION, BETA, FORCES_AMPLITUDE, 
         damping_coeff=BETA,
         time_max=4.,
         dt=0.01,
-        bounded=True)
+        bounded=bounded)
     sys.stdout.write("\rAgent born")
 
     # make the skeeter fly. this updates the trajectory_obj
@@ -466,15 +463,16 @@ def gen_objects_and_fly(N_TRAJECTORIES, TEST_CONDITION, BETA, FORCES_AMPLITUDE, 
     
 
 if __name__ == '__main__':
-    N_TRAJECTORIES = 1
+    N_TRAJECTORIES = 50
     TEST_CONDITION = None  # {'Left', 'Right', None}
     # old beta- 5e-5, forces 4.12405e-6, fwind = 5e-7
     BETA, FORCES_AMPLITUDE, F_WIND_SCALE =  [  1.37213380e-06  , 1.39026239e-06 ,  7.06854777e-07]
     MASS = 2.88e-6
     F_STIM_SCALE = 0.  #7e-7,   # set to zero to disable tracking hot air
     K = 0.  #1e-7               # set to zero to disable wall attraction
+    BOUNDED = False
 
-    trajectories, skeeter = gen_objects_and_fly(N_TRAJECTORIES, TEST_CONDITION, BETA, FORCES_AMPLITUDE, F_WIND_SCALE, K)
+    trajectories, skeeter = gen_objects_and_fly(N_TRAJECTORIES, TEST_CONDITION, BETA, FORCES_AMPLITUDE, F_WIND_SCALE, K, bounded=BOUNDED)
 
     print "\nDone."
 
@@ -489,7 +487,7 @@ if __name__ == '__main__':
 
     ######################### dump data for csv for Sharri
     # print "dumping to csvs"
-    # e = trajectories.ensemble
+    # e = trajectories.data
     # r = e.trajectory_num.iloc[-1]
     #
     # for i in range(r+1):
