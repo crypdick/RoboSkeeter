@@ -76,12 +76,12 @@ class Agent():
         initial_velocity_stdev=0.01,
         time_max=15.,
         dt=0.01,
-        experimental_condition=None,  #FIXME export
+        experimental_condition=None,
         damping_coeff=1e-5,
         randomF_strength=4e-06,
         windF_strength=5e-06,
         stimF_stength=1e-4,
-        bounded=True,  # fixme export
+        bounded=True,
         mass = 2.88e-6, #3.0e-6 # 2.88e-6  # mass (kg) =2.88 mg,
         spring_const=0.):
         """generate the agent"""
@@ -107,6 +107,7 @@ class Agent():
         self.windtunnel_obj, self.plume_obj, self.trajectory_obj, self.forces = self._gen_environment_objects()
 
         # windtunnel
+        self.bounded = bounded
         self.boundary = self.windtunnel_obj.boundary
 
         self.collision = self.windtunnel_obj.collision_type
@@ -121,7 +122,8 @@ class Agent():
         # self._repulsion_funcs = repulsion_landscape3D.landscape(boundary=self.boundary)
 
     def _gen_environment_objects(self):
-            # generate environment
+        """generate environment"""
+        # we make a windtunnel even in the unbounded case b/c plotting functions use bounds
         windtunnel_object = windtunnel.Windtunnel(self.experimental_condition)
         # generate temperature plume
         plume_object = plume.Plume(self.experimental_condition)
@@ -165,25 +167,26 @@ class Agent():
                                                           # time for performance boost.
         # add agent to trajectory object for plotting funcs
         self.trajectory_obj.add_agent_info(self)
-    
-    def _generate_flight(self, dt, m, bounded=True):
+
+
+    def _generate_flight(self, dt, m):
         """Generate a single trajectory using our model.
     
         First put everything into np arrays stored inside of a dictionary
         """
         V = self._initialize_vectors()
 
+        # dynamically create easy-to-read aliases for the contents of V
         for key, value in V.iteritems():
             exec(key + " = V['" + key + "']")
-
-
 
         V['position'][0], V['velocity'][0] = self._set_init_pos_and_velo()
 
         for tsi in xrange(self.max_bins):
             inPlume[tsi] = self.plume_obj.is_in_plume(position[tsi])
             V = self._calc_current_behavioral_state(tsi, V)
-            V = self._calc_forces(V, tsi)
+            stimF[tsi], randomF[tsi], upwindF[tsi], wallRepulsiveF[tsi], totalF[tsi] =\
+                self._calc_forces(position[tsi], velocity[tsi], behavior_state[tsi], tsi)
 
 
             # calculate current acceleration
@@ -206,7 +209,7 @@ class Agent():
             ################################################
             # test candidates
             ################################################
-            if bounded is True:
+            if self.bounded:
                 candidate_pos, candidate_velo = self._check_candidates(candidate_pos, candidate_velo)
                 if candidate_pos is None:  # _check_candidates returns None if reaches end
                     self._land(tsi, V)
@@ -217,16 +220,16 @@ class Agent():
 
         # prepare dict for loading into pandas (dataframe only accepts 1D vectors)
         # split xyz arrays into separate x, y, z vectors for dataframe
+        V2 = {}
         for kinematic in self.kinematics_list+self.forces_list:
-            V[kinematic+'_x'], V[kinematic+'_y'], V[kinematic+'_z'] = np.split(V[kinematic], 3, axis=1)
-            del V[kinematic]  # delete 3D array
+            V2[kinematic+'_x'], V2[kinematic+'_y'], V2[kinematic+'_z'] = np.split(V[kinematic], 3, axis=1)
 
         # fix pandas bug when trying to load (R,1) arrays when it expects (R,) arrays
-        for key, array in V.iteritems():
-            V[key] = V[key].reshape(len(array))
+        for key, array in V2.iteritems():
+            V2[key] = V2[key].reshape(len(array))
 
 
-        return V
+        return V2
 
 
     def _initialize_vectors(self):
@@ -303,25 +306,25 @@ class Agent():
 
         return V
 
-    def _calc_forces(self, V, tsi):
+    def _calc_forces(self, position, velocity, behavior_state, tsi):
         ################################################
         # Calculate driving forces at this timestep
         ################################################
-        V['stimF'][tsi] = self.forces.stimF(V['behavior_state'][tsi], self.stimF_strength)
+        stimF = self.forces.stimF(behavior_state, self.stimF_strength)
 
-        V['randomF'][tsi] = self.forces.randomF(self.randomF_strength)
+        randomF = self.forces.randomF(self.randomF_strength)
 
-        V['upwindF'][tsi] = self.forces.upwindBiasF(self.windF_strength)
+        upwindF = self.forces.upwindBiasF(self.windF_strength)
 
-        V['wallRepulsiveF'][tsi] = self.forces.attraction_basin(self.spring_const, V['position'][tsi])
+        wallRepulsiveF = self.forces.attraction_basin(self.spring_const, position)
 
         ################################################
         # calculate total force
         ################################################
-        V['totalF'][tsi] = -self.damping_coeff * V['velocity'][tsi] +  V['randomF'][tsi] + V['upwindF'][tsi] + V['wallRepulsiveF'][tsi] + V['stimF'][tsi]
+        totalF = -self.damping_coeff * velocity +  randomF + upwindF + wallRepulsiveF + stimF
         ###############################
 
-        return V
+        return stimF, randomF, upwindF, wallRepulsiveF, totalF
 
 
     def _land(self, tsi, V):
@@ -462,7 +465,7 @@ def gen_objects_and_fly(N_TRAJECTORIES, TEST_CONDITION, BETA, FORCES_AMPLITUDE, 
     
 
 if __name__ == '__main__':
-    N_TRAJECTORIES = 50
+    N_TRAJECTORIES = 1
     TEST_CONDITION = None  # {'Left', 'Right', None}
     # old beta- 5e-5, forces 4.12405e-6, fwind = 5e-7
     BETA, FORCES_AMPLITUDE, F_WIND_SCALE =  [  1.37213380e-06  , 1.39026239e-06 ,  7.06854777e-07]
