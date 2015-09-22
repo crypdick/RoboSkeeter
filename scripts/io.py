@@ -75,7 +75,7 @@ def load_csv2np():
 
 
 def make_csv_name_list(TRAJECTORY_DATA_DIR):
-    return os.listdir(os.path.join(os.path.dirname(__file__), TRAJECTORY_DATA_DIR))
+    return os.listdir(os.path.join(os.path.realpath('.'), TRAJECTORY_DATA_DIR))
 
 
 if __name__ == '__main__':
