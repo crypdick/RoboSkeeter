@@ -2,15 +2,14 @@ __author__ = 'richard'
 
 import numpy as np
 from scipy.stats import entropy
-
 import scripts.acfanalyze
-import trajectory
 
 
-# import pdb; pdb.set_trace()
-
+""" TODO: do this ahead of time, save as a pickle, and simply load the pickle
+can't have circular dependence of imports!
+"""""
 # load experimentally observed velo + accel distributions
-experimental_trajs = trajectory.Trajectory()
+experimental_trajs = Trajectory()
 experimental_trajs.load_ensemble('experiments')
 
 experimental_trajs.calc_kinematic_kernels()
