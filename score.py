@@ -5,29 +5,16 @@ from scipy.stats import entropy
 import scripts.acfanalyze
 
 
-""" TODO: do this ahead of time, save as a pickle, and simply load the pickle
-can't have circular dependence of imports!
-"""""
-# load experimentally observed velo + accel distributions
-experimental_trajs = Trajectory()
-experimental_trajs.load_ensemble('experiments')
+def score(agent_traj, experimental_trajs, ACF_THRESH=0.5):
+    v_bins, a_bins = experimental_trajs.calc_kernel_bins
+    v_vals_experiment, a_vals_experiment = experimental_trajs.evaluate_kernels(v_bins, a_bins)
 
-experimental_trajs.calc_kinematic_kernels()
-experimental_trajs.evaluate_kernels()  # no positions, so generates bins
+    v_vals_agent, a_vals_agent = agent_traj.evaluate_kernels(v_bins, a_bins)
 
-v_experimental_pos, v_experimental_vals, a_experimental_pos, a_experimental_vals =\
-    experimental_trajs.kde_v_positions, experimental_trajs.kde_v_vals,\
-    experimental_trajs.kde_a_positions, experimental_trajs.kde_a_vals
-
-
-def score(ensemble, ACF_THRESH=0.5):
-    # get probability vals for agents
-    experimental_trajs.calc_kinematic_kernels()
-    v_vals, a_vals = experimental_trajs.evaluate_kernels(positions=(v_experimental_pos, a_experimental_pos))
 
     # solve DKL b/w agent and mosquito experiments
-    dkl_v = entropy(v_vals, qk=v_experimental_vals)
-    dkl_a = entropy(a_vals, qk=a_experimental_vals)
+    dkl_v = entropy(v_vals_agent, qk=v_vals_experiment)
+    dkl_a = entropy(a_vals_agent, qk=a_vals_experiment)
 
     dkl_scores = [dkl_v, dkl_a]
     dkl_score = sum(dkl_scores)

@@ -161,11 +161,10 @@ class Agent():
 
         
         self.total_trajectories = total_trajectories
-        self.trajectory_obj.load_ensemble(df_list)  # concatinate all the dataframes at once instead of one at a
+        self.trajectory_obj.load_ensemble_and_analyze(df_list)  # concatinate all the dataframes at once instead of one at a
                                                           # time for performance boost.
         # add agent to trajectory object for plotting funcs
         self.trajectory_obj.add_agent_info(self)
-        self.trajectory_obj.calc_kinematic_vals()
     
     def _generate_flight(self, dt, m, bounded=True):
         """Generate a single trajectory using our model.

@@ -24,7 +24,7 @@ import string
 
 from scripts import plotting
 from scripts.math_sorcery import calculate_curvature, calculate_heading
-# import score
+import score
 
 
 #def T_find_stats(t_targfinds):
@@ -48,59 +48,61 @@ from scripts.math_sorcery import calculate_curvature, calculate_heading
 class Trajectory():
     def __init__(self):
         self.data = pd.DataFrame()
-
-        self.kde_v_positions = None
-        self.kde_v_vals = None
-        self.kde_a_positions = None
-        self.kde_v_vals = None
-
         self.agent_obj = None
 
         
-    def load_ensemble(self, data='load_experimental_data'):
-        if data is 'load_experimental_data':  # load experiments
-            df_list = []
-
-            col_labels = [
-                'position_x',
-                'position_y',
-                'position_z',
-                'velocity_x',
-                'velocity_y',
-                'velocity_z',
-                'acceleration_x',
-                'acceleration_y',
-                'acceleration_z',
-                'heading_angleS',
-                'angular_velo_xyS',
-                'angular_velo_yzS',
-                'curvatureS'
-            ]
-
-            rel_dir = "data/experiments/trajectories/control_trajectories/"
-            for fname in os.listdir(os.path.join(os.path.dirname(__file__), rel_dir)):  # list files
-                file_path = os.path.join(os.path.dirname(__file__), rel_dir, fname)
-
-                dataframe = pd.read_csv(file_path, na_values="NaN", names=col_labels)  # recognize str(NaN) as NaN
-                dataframe.fillna(value=0, inplace=True)
-                # take fname number, turn it into a list of the correct size
-                dataframe['trajectory_num'] = [int(fname[8:])] * dataframe.position_x.size
-                df_list.append(dataframe)
-
-            self.load_ensemble(data=df_list)
-            self.calc_kinematic_vals()
-        elif type(data) is dict:
+    def load_ensemble_and_analyze(self, data='load_experimental_data'):
+        if type(data) is dict:
             trajectory = pd.DataFrame(data)
-            self.data.append(trajectory)
+            self.data.append(trajectory)  # this should be avoided b/c lots of overhead (slow)
+            self.run_analysis()
         elif type(data) is list:
-            self.data = pd.concat(data)
+            self.data = pd.concat(data)  # fast
+            self.run_analysis()
         else:
             raise Exception
 
+    def load_experiments(self):
         self.agent_obj = None
+
+        df_list = []
+
+        col_labels = [
+            'position_x',
+            'position_y',
+            'position_z',
+            'velocity_x',
+            'velocity_y',
+            'velocity_z',
+            'acceleration_x',
+            'acceleration_y',
+            'acceleration_z',
+            'heading_angleS',
+            'angular_velo_xyS',
+            'angular_velo_yzS',
+            'curvatureS'
+        ]
+
+        rel_dir = "data/experiments/trajectories/control_trajectories/"
+        for fname in os.listdir(os.path.join(os.path.dirname(__file__), rel_dir)):  # list files
+            file_path = os.path.join(os.path.dirname(__file__), rel_dir, fname)
+
+            dataframe = pd.read_csv(file_path, na_values="NaN", names=col_labels)  # recognize str(NaN) as NaN
+            dataframe.fillna(value=0, inplace=True)
+            # take fname number, turn it into a list of the correct size
+            dataframe['trajectory_num'] = [int(fname[8:])] * dataframe.position_x.size
+            df_list.append(dataframe)
+
+        self.load_ensemble_and_analyze(data=df_list)
+        self.calc_kernel_bins()  # no positions, so generates bins
 
     def add_agent_info(self, agent_obj):
         self.agent_obj = agent_obj
+
+    def run_analysis(self):
+        self.calc_kinematic_vals()  # evaluates kinematics
+        self.calc_kinematic_kde()  #  estimates KDE
+
 
     def calc_kinematic_vals(self):
         ensemble = self.data
@@ -113,7 +115,7 @@ class Trajectory():
         # ensemble = calc_polar_kinematics(ensemble)
 
 
-    def calc_kinematic_kernels(self):
+    def calc_kinematic_kde(self):
         v = self.data['velocity_magn'].values
         self.velo_kernel = gaussian_kde(v)
 
@@ -123,21 +125,21 @@ class Trajectory():
         return self.velo_kernel, self.accel_kernel
 
 
-    def evaluate_kernels(self, positions=None):
+    def calc_kernel_bins(self):
         v = self.data['velocity_magn'].values
         a = self.data['acceleration_magn'].values
 
-        if positions is None:  # want to solve them
-            self.kde_v_positions = np.linspace(0., v.max(), 100)
-            self.kde_a_positions = np.linspace(0., a.max(), 100)
-        else:
-            self.kde_v_positions = positions[0]
-            self.kde_a_positions = positions[1]
+        kde_v_positions = np.linspace(0., v.max(), 100)
+        kde_a_positions = np.linspace(0., a.max(), 100)
 
-        self.kde_v_vals = self.velo_kernel(self.kde_v_positions)
-        self.kde_a_vals = self.accel_kernel(self.kde_a_positions)
+        return kde_v_positions, kde_a_positions
 
-        return self.kde_v_vals, self.kde_a_vals
+
+    def evaluate_kernels(self, v_bins, a_bins):
+        kde_v_vals = self.velo_kernel(v_bins)
+        kde_a_vals = self.accel_kernel(a_bins)
+
+        return kde_v_vals, kde_a_vals
 
 
     def plot_single_trajectory(self, trajectory_i=0):
