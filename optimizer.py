@@ -12,7 +12,7 @@ import agent
 import plume
 import windtunnel
 import trajectory
-import scripts.data_io as data_io
+import scripts.io as data_io
 
 
 # wrapper func for agent 3D
@@ -56,10 +56,10 @@ def fly_wrapper(GUESS, *args):
 
     skeeter.fly(total_trajectories=N_TRAJECTORIES, verbose=False)  # fix N trajectories in main
 
-    ensemble = trajectories.ensemble
+    ensemble = trajectories.data
 
     combined_score, dkl_scores, dkl_a, dkl_v, acf_score, aabs_bins, a_counts_n, vabs_bins, v_counts_n\
-        = score.score(trajectories.ensemble, ACF_THRESH)
+        = score.score(trajectories.data, ACF_THRESH)
 
     if combined_score < HIGH_SCORE:
         HIGH_SCORE = combined_score
