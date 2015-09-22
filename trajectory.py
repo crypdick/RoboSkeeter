@@ -58,7 +58,10 @@ class Trajectory():
             self.run_analysis()
         elif type(data) is list:
             self.data = pd.concat(data)  # fast
-            self.run_analysis()
+            try:
+                self.run_analysis()
+            except Exception:
+                print "Trajectory.run_analysis() failed"
         else:
             raise Exception
 
