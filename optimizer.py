@@ -16,7 +16,7 @@ import scripts.io as data_io
 
 
 # wrapper func for agent 3D
-def fly_wrapper(GUESS, *args):
+def fly_wrapper(GUESS, experimental_traj, *args):
     """
     :param bias_scale_GUESS:
     :param mass_GUESS:
@@ -30,16 +30,16 @@ def fly_wrapper(GUESS, *args):
     HEATER = None
     K = 0  # no wall force for optimization
 
-    N_TRAJECTORIES, v_observed, a_observed = args
+    N_TRAJECTORIES, v_observed, a_observed, experimental_traj = args
     #  F_WALL_SCALE aka k
     #  when we run this, agent3D is run and we return a score
 
     windtunnel_object = windtunnel.Windtunnel(None) # we are fitting for the control condition
     plume_object = plume.Plume(HEATER)
     #  temperature plume
-    trajectories = trajectory.Trajectory() # instantiate empty trajectories object
+    agent_trajectories = trajectory.Trajectory() # instantiate empty trajectories object
     skeeter = agent.Agent(
-        trajectories,
+        agent_trajectories,
         plume_object,
         windtunnel_object,
         mass=2.88e-6,
@@ -56,10 +56,10 @@ def fly_wrapper(GUESS, *args):
 
     skeeter.fly(total_trajectories=N_TRAJECTORIES, verbose=False)  # fix N trajectories in main
 
-    ensemble = trajectories.data
+    ensemble = agent_trajectories.data
 
     combined_score, dkl_scores, dkl_a, dkl_v, acf_score, aabs_bins, a_counts_n, vabs_bins, v_counts_n\
-        = score.score(trajectories.data, ACF_THRESH)
+        = score.score(agent_trajectories, experimental_traj, ACF_THRESH)
 
     if combined_score < HIGH_SCORE:
         HIGH_SCORE = combined_score
@@ -96,10 +96,6 @@ def error_plotter(ensemble, guess, dkl_scores, acf_score, aabs_bins, a_counts_n,
 
 
 def main():
-    guess_params = "[BETA, FORCES_AMPLITUDE, F_WIND_SCALE]"  # [5e-6, 4.12405e-6, 5e-7]
-    v_observed, a_observed = data_io.load_csv2np()
-
-
     print "Starting optimizer."
 
     logging.info("""\n ############################################################
@@ -111,6 +107,12 @@ def main():
     ############################################################""".format(
         datetime.now(), OPTIM_ALGORITHM, N_TRAJECTORIES, guess_params, INITIAL_GUESS))
 
+    guess_params = "[BETA, FORCES_AMPLITUDE, F_WIND_SCALE]"  # [5e-6, 4.12405e-6, 5e-7]
+    v_observed, a_observed = data_io.load_csv2np()
+
+    # load experimental trajectories to score against
+    experimental_traj = trajectory.Trajectory()
+    experimental_traj.load_experiments()
 
     # import pdb; pdb.set_trace()
     result = basinhopping(
@@ -118,7 +120,7 @@ def main():
         INITIAL_GUESS,
         # stepsize=1e-5,
         # T=1e-4,
-        minimizer_kwargs={"args": (N_TRAJECTORIES, v_observed, a_observed), 'method': OPTIM_ALGORITHM,  "bounds": ((0, None),(0,None),(0,None))}
+        minimizer_kwargs={"args": (N_TRAJECTORIES, v_observed, a_observed, experimental_traj), 'method': OPTIM_ALGORITHM,  "bounds": ((0, None),(0,None),(0,None))}
         # disp=True
         )
 

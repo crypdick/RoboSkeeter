@@ -59,4 +59,4 @@ if __name__ == '__main__':
         # print scores
 
     trajectories_object = trajectory.Trajectory()
-    trajectories_object.load_ensemble(df_list)
+    trajectories_object.load_ensemble_and_analyze(df_list)
