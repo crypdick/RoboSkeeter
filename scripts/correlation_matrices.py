@@ -10,7 +10,7 @@ import numpy as np
 from statsmodels.tsa.stattools import acf, pacf
 import matplotlib.pyplot as plt
 
-from scripts import io
+from scripts import i_o
 
 #import seaborn as sns
 import pandas as pd
@@ -44,7 +44,7 @@ def csvList2df(csv_list):
     print "Extracting csv data."
     df_list = []
     for csv_fname in csv_list:
-        df = io.load_csv2DF(csv_fname)
+        df = i_o.load_csv2DF(csv_fname)
         df_vars = df[INTERESTED_VALS] # slice only cols we want
         
 #        df_vars['log_curve'] = np.log(df_vars.loc[:,'curve'])

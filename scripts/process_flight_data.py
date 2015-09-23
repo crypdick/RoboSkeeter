@@ -32,8 +32,7 @@ raw - 3D position of the trajectory. (n x 3, where n is the number of timesteps)
 
 import os
 import numpy as np
-
-import scripts.io
+from scripts import i_o
 
 
 #def sanitychecks(full_trajectory):
@@ -42,51 +41,6 @@ import scripts.io
 #    TODO:Implement
 #    """
 #    return full_trajectory
-
-    
-#def trim_NaNs(filt, trim='fb'):
-#    """
-#    Trim the leading and/or trailing NaNs from a 1-D array or sequence.
-#    Parameters
-#    ----------
-#    filt : 1-D array or sequence
-#        Input array.
-#    trim : str, optional
-#        A string with 'f' representing trim from front and 'b' to trim from
-#        back. Default is 'fb', trim NaNs from both front and back of the
-#        array.
-#    Returns
-#    -------
-#    trimmed : 1-D array or sequence
-#        The result of trimming the input. The input data type is preserved.
-#    Examples
-#    --------
-#    >>> a = np.array((0, 0, 0, 1, 2, 3, 0, 2, 1, 0))
-#    >>> np.trim_NaNs(a)
-#    array([1, 2, 3, 0, 2, 1])
-#    >>> np.trim_NaNs(a, 'b')
-#    array([0, 0, 0, 1, 2, 3, 0, 2, 1])
-#    The input data type is preserved, list/tuple in means list/tuple out.
-#    >>> np.trim_NaNs([0, 1, 2, 0])
-#    [1, 2]
-#    """
-#    first = 0
-#    trim = trim.upper()
-#    if 'F' in trim:
-#        for i in filt:
-#            if np.isnan(i) == False:
-#                break
-#            else:
-#                first = first + 1
-#    last = len(filt)
-#    if 'B' in trim:
-#        for i in filt[::-1]:
-#            if np.isnan(i) == False:
-#                break
-#            else:
-#                last = last - 1
-#    return first, last
-##    return filt[first:last]
     
 
 def trim_leading_trailing_NaNs(array, trim='fb'):
@@ -228,12 +182,12 @@ def split_trajectories(full_trajectory, NaN_split_thresh=50, min_trajectory_len=
 
 def get_filepaths():
     print("Enter source directory")
-    source_dir = scripts.io.get_directory()
+    source_dir = i_o.get_directory()
     print("Enters destination directory")
-    destination_dir = scripts.io.get_directory()
+    destination_dir = i_o.get_directory()
 
-    csv_list = scripts.io.get_csv_name_list(source_dir, relative=False)
-    filepaths = scripts.io.get_csv_filepath_list(source_dir, csv_list)
+    csv_list = i_o.get_csv_name_list(source_dir, relative=False)
+    filepaths = i_o.get_csv_filepath_list(source_dir, csv_list)
     print("Found data: {}".format(csv_list))
 
     return filepaths
@@ -242,7 +196,7 @@ def load_csvs(filepath):
     if type(filepath) == unicode or type(filepath) == str:
         # load the csv
         debug = False
-        Data = scripts.io.load_experiment_csv(filepath)
+        Data = i_o.load_experiment_csv(filepath)
     else:  # (for debugging) if script is fed a dataframe instead of a path
         debug = True
         Data = filepath

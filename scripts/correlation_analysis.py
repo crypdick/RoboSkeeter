@@ -13,7 +13,7 @@ import statsmodels.tsa
 import statsmodels.graphics.tsaplots
 import matplotlib.pyplot as plt
 
-from scripts import io
+from scripts import i_o
 
 plt.style.use('ggplot')
 
@@ -34,7 +34,7 @@ csv_list = make_csv_name_list()
 for csv_fname in csv_list:
     print csv_fname
     os.chdir(os.path.dirname(__file__))
-    df = io.load_csv2DF(csv_fname)
+    df = i_o.load_csv2DF(csv_fname)
 
     if not os.path.exists('./correlation_figs/{data_name}'.format(data_name = csv_fname)):
         os.makedirs('./correlation_figs/{data_name}'.format(data_name = csv_fname))
