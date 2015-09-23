@@ -23,7 +23,7 @@ import pandas as pd
 import string
 
 
-import scripts.io
+from scripts import i_o
 from scripts import plotting
 from scripts.math_sorcery import calculate_curvature, calculate_heading
 import score
@@ -51,6 +51,8 @@ class Trajectory():
     def __init__(self):
         self.data = pd.DataFrame()
         self.agent_obj = None
+        self.velo_kernel = None
+        self.accel_kernel = None
 
         
     def load_ensemble_and_analyze(self, data='load_experimental_data'):
@@ -69,7 +71,7 @@ class Trajectory():
 
     def load_experiments(self):
         print("Enter directory with experimental data")
-        directory = scripts.io.get_directory()
+        directory = i_o.get_directory()
         self.agent_obj = None
 
         df_list = []
@@ -159,18 +161,18 @@ class Trajectory():
     def plot_force_violin(self):
         if self.agent_obj is None:
             raise TypeError('can\'t plot force violin for experimental data')
-        plotting.force_violin(self.data, self.agent_obj)
+        plotting.plot_forces_violinplots(self.data, self.agent_obj)
         
     
     def plot_posheatmap(self):
-        plotting.heatmaps(self.data, self.agent_obj)
+        plotting.plot_2D_position_heatmap(self.data, self.agent_obj)
         
     
     def plot_kinematic_hists(self, ensemble='none', titleappend=''):
         if type(ensemble) is str:
             ensemble = self.data
             ensemble = ensemble.loc[(ensemble['position_x'] >0.25) & (ensemble['position_x'] <0.95)]
-        plotting.stateHistograms(ensemble, self.agent_obj, titleappend=titleappend)
+        plotting.plot_kinematic_histograms(ensemble, self.agent_obj, titleappend=titleappend)
         
         
     def plot_door_velocity_compass(self, region='door', kind='avg_mag_per_bin'):
@@ -181,7 +183,7 @@ class Trajectory():
         else:
             ensemble = self.data
             
-        plotting.velo_compass_histogram(ensemble, self.agent_obj, kind)
+        plotting.plot_velocity_compassplot(ensemble, self.agent_obj, kind)
     
 
     def plot_kinematic_compass(self, kind='avg_mag_per_bin', data=None, flags='', title_append=''):
@@ -203,7 +205,7 @@ class Trajectory():
             name=vector_name, flag=flags)
   
             
-            plotting.compass_histogram(vector_name, df, self.agent_obj, title=title, fname=fname)
+            plotting.plot_compass_histogram(vector_name, df, self.agent_obj, title=title, fname=fname)
 #            magnitudes, thetas = getattr(self.data, name+).values, getattr(V, name+'_xy_theta').values
 #            plotting_funcs3D.compass_histogram(force, magnitudes, thetas, self.agent_obj)
        
@@ -271,11 +273,11 @@ class Trajectory():
 #        self.plot_kinematic_hists(data=ensemble4, titleappend=' {} < x <= {}'.format(x_edges[3], x_edges[4]))
 #        
         print "full- + up- + down-wind"
-        plotting.stateHistograms(full_ensemble, self.agent_obj, titleappend = '', upw_ensemble = upwind_ensemble, downw_ensemble = downwind_ensemble)
+        plotting.plot_kinematic_histograms(full_ensemble, self.agent_obj, titleappend = '', upw_ensemble = upwind_ensemble, downw_ensemble = downwind_ensemble)
 
 
     def plot_3D_kinematic_vecs(self, kinematic='acceleration'):
-        plotting.plot_3D_kinematic_vecs(self.data, kinematic)
+        plotting.plot_vector_cloud(self.data, kinematic)
 
 
     def plume_stats(self):
