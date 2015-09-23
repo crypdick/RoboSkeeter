@@ -1,6 +1,6 @@
 # RoboSkeeter
 [![Build Status](https://travis-ci.org/isomerase/RoboSkeeter.svg?branch=master)](https://travis-ci.org/isomerase/RoboSkeeter)
-[![Test coverage](https://img.shields.io/coveralls/SpiderOak/crypton.svg?style=flat)](https://coveralls.io/r/SpiderOak/crypton?branch=master)
+[![Coverage Status](https://coveralls.io/repos/isomerase/RoboSkeeter/badge.svg?branch=master&service=github)](https://coveralls.io/github/isomerase/RoboSkeeter?branch=master)
 
 Simulating mosquito decision making in turbulent, convective thermal plumes.
 
