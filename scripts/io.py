@@ -9,7 +9,8 @@ import pandas as pd
 import numpy as np
 import csv
 from glob import glob
-
+from Tkinter import Tk
+from tkFileDialog import askdirectory
 
     
 def load_experiment_csv(file_path):
@@ -40,15 +41,15 @@ def load_csv2DF(data_fname, rel_dir = "data/processed_trajectories/"):
     file_path = os.path.join(os.getcwd(), rel_dir, data_fname + ".csv")
 
     col_labels = [
-        'pos_x',
-        'pos_y',
-        'pos_z',
-        'velo_x',
-        'velo_y',
-        'velo_z',
-        'accel_x',
-        'accel_y',
-        'accel_z',
+        'position_x',
+        'position_y',
+        'position_z',
+        'velocity_x',
+        'velocity_y',
+        'velocity_z',
+        'acceleration_x',
+        'acceleration_y',
+        'acceleration_z',
         'heading_angle',
         'angular_velo_xy',
         'angular_velo_yz',
@@ -59,6 +60,12 @@ def load_csv2DF(data_fname, rel_dir = "data/processed_trajectories/"):
     dataframe.fillna(value=0, inplace=True)
 
     return dataframe
+
+def load_CSVdir_to_trajectory(relative_dir):
+    import trajectory
+    t = trajectory.Trajectory()
+    t.load_experiments(relative_dir=relative_dir)
+    return t
 
 
 def load_csv2np():
@@ -74,9 +81,21 @@ def load_csv2np():
     return  v_observed, a_observed
 
 
-def make_csv_name_list(TRAJECTORY_DATA_DIR):
-    return os.listdir(os.path.join(os.path.realpath('.'), TRAJECTORY_DATA_DIR))
+def get_csv_name_list(path, relative=True):
+    if relative:
+        return os.listdir(os.path.join(os.path.realpath('.'), path))
+    else:
+        return os.listdir(path)
 
+def get_csv_filepath_list(path, csv_list):
+    paths = [os.path.join(path, fname) for fname in csv_list]
+    return paths
+
+def get_directory():
+    Tk().withdraw()
+    directory = askdirectory()
+    print("Selected dir {}".format(directory))
+    return directory
 
 if __name__ == '__main__':
     a = load_csv2DF('Control-27')
