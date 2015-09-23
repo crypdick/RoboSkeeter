@@ -1,5 +1,4 @@
 pandas
 seaborn
-blas
-lapack
 scipy
+numpy
