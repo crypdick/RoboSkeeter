@@ -22,6 +22,8 @@ from scipy.stats import gaussian_kde
 import pandas as pd
 import string
 
+
+import scripts.io
 from scripts import plotting
 from scripts.math_sorcery import calculate_curvature, calculate_heading
 import score
@@ -66,6 +68,8 @@ class Trajectory():
             raise Exception
 
     def load_experiments(self):
+        print("Enter directory with experimental data")
+        directory = scripts.io.get_directory()
         self.agent_obj = None
 
         df_list = []
@@ -86,14 +90,15 @@ class Trajectory():
             'curvatureS'
         ]
 
-        rel_dir = "data/experiments/trajectories/control_trajectories/"
-        for fname in os.listdir(os.path.join(os.path.dirname(__file__), rel_dir)):  # list files
-            file_path = os.path.join(os.path.dirname(__file__), rel_dir, fname)
+        for fname in os.listdir(directory):  # list files
+            print fname
+            file_path = os.path.join(directory, fname)
+            base_name = os.path.splitext(file_path)[0]
 
             dataframe = pd.read_csv(file_path, na_values="NaN", names=col_labels)  # recognize str(NaN) as NaN
             dataframe.fillna(value=0, inplace=True)
             # take fname number, turn it into a list of the correct size
-            dataframe['trajectory_num'] = [int(fname[8:])] * dataframe.position_x.size
+            dataframe['trajectory_num'] = [int(base_name[8:])] * dataframe.position_x.size
             df_list.append(dataframe)
 
         self.load_ensemble_and_analyze(data=df_list)
