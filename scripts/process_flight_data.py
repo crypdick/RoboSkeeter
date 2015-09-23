@@ -205,9 +205,13 @@ def load_csvs(filepath):
     return Data
 
 
-def main():
-    filepaths = get_filepaths()
-    data_list = [load_csvs(filepath) for filepath in filepaths]
+def main(input_df=None):
+    if input_df is None:
+        filepaths = get_filepaths()
+        data_list = [load_csvs(filepath) for filepath in filepaths]
+    else:
+        data_list = []
+        data_list.append(input_df)
     trimmed_data_list = [trim_leading_trailing_NaNs(data) for data in data_list]
     ###    sanitychecks(trimmed_Data)
     # trajectory_list = split_trajectories(trimmed_data_list)

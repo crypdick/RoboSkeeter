@@ -65,42 +65,42 @@ class TestProcessor(unittest.TestCase):
     ## TEST SPLITTER
     def test_allNums(self): # only numbers
         df1 = self.self.num100
-        df2 = process_flight_data.main(df1)
+        df2 = process_flight_data.main(input_df=df1)
         self.assertTrue(self.check_df_equal(df1, df2[0]))
 
     def test_someNaNs(self):
         df1 = concat([self.num50, self.NaN20, self.num30]).reset_index()[['x', 'y', 'z']]
-        df2 = process_flight_data.main(df1)
+        df2 = process_flight_data.main(input_df=df1)
         self.assertTrue(self.check_df_equal(df1, df2[0]))
 
     def test_manyNaNs(self):
         df1 = concat([self.num50, self.NaN100, self.num30]).reset_index()[['x', 'y', 'z']]
-        df2 = process_flight_data.main(df1)
+        df2 = process_flight_data.main(input_df=df1)
         self.assertTrue(self.check_df_equal( self.num50,  df2[0]))
         self.assertTrue(self.check_df_equal( self.num30,  df2[1]))
 
 
     def test_leadingNaNs(self):
         df1 = concat([self.NaN100, self.num50, self.NaN100, self.num30, self.NaN100]).reset_index()[['x', 'y', 'z']]
-        df2 = process_flight_data.main(df1)
+        df2 = process_flight_data.main(input_df=df1)
         self.assertTrue(self.check_df_equal( self.num50,  df2[0]))
         self.assertTrue(self.check_df_equal( self.num30,  df2[1]))
 
 
     def test_trailingNaNs(self):
         df1 = concat([self.num50, self.NaN100, self.num30, self.NaN100]).reset_index()[['x', 'y', 'z']]
-        df2 = process_flight_data.main(df1)
+        df2 = process_flight_data.main(input_df=df1)
         self.assertTrue(self.check_df_equal( self.num50,  df2[0]))
         self.assertTrue(self.check_df_equal( self.num30,  df2[1]))
 
     def test_short_trajectory(self):
         df1 = concat([self.num50, self.NaN100, self.num10, self.NaN100, self.self.num100]).reset_index()[['x', 'y', 'z']]
-        df2 = process_flight_data.main(df1)
+        df2 = process_flight_data.main(input_df=df1)
         self.assertTrue(self.check_df_equal( self.num50,  df2[0]))
         self.assertTrue(self.check_df_equal( self.self.num100,  df2[1]))
 
     def test_50NaNs(self):
         df1 = concat([self.num21, self.NaN50, self.num21]).reset_index()[['x', 'y', 'z']]
-        df2 = process_flight_data.main(df1)
+        df2 = process_flight_data.main(input_df=df1)
         self.assertTrue(self.check_df_equal(self.num21, df2[0]))
         self.assertTrue(self.check_df_equal(self.num21, df2[1]))
