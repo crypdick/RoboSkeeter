@@ -6,7 +6,7 @@ from statsmodels.tsa.stattools import acf
 
 # import statsmodels.graphics.tsaplots
 import matplotlib.pyplot as plt
-import scripts.io as io
+import scripts.io
 import trajectory
 
 plt.style.use('ggplot')
@@ -15,7 +15,7 @@ ACF_THRESH = 0.5
 NLAGS = 70
 TRAJECTORY_DATA_REL_DIR = "data/experiments/trajectories/control_trajectories/"
 
-csv_list = io.make_csv_name_list(TRAJECTORY_DATA_REL_DIR)
+csv_list = scripts.io.get_csv_name_list(TRAJECTORY_DATA_REL_DIR)
 
 
 def arg_less(inarray,threshold):
@@ -45,13 +45,13 @@ def index_drop(df, thresh=ACF_THRESH, verbose=True):
     return indices
 
 if __name__ == '__main__':
-    csv_list = io.make_csv_name_list(TRAJECTORY_DATA_REL_DIR)
+    csv_list = scripts.io.get_csv_name_list(TRAJECTORY_DATA_REL_DIR)
 
     df_list = []
     traj_count = 0
     for csv_name in csv_list:
         # print csv_name
-        df = io.load_csv2DF(csv_name, rel_dir=TRAJECTORY_DATA_REL_DIR)
+        df = scripts.io.load_csv2DF(csv_name, rel_dir=TRAJECTORY_DATA_REL_DIR)
         df['trajectory_num'] = traj_count
         df_list.append(df)
         traj_count += 1
