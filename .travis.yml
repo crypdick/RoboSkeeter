@@ -25,7 +25,8 @@ install:
 
 # Run test
 script:
-  - nosetests --with-cov --cov isomerase/RoboSkeeter --cov-config .coveragerc --logging-level=INFO
+  - nosetests
+  #- nosetests --with-cov --cov isomerase/RoboSkeeter --cov-config .coveragerc --logging-level=INFO
 
 # Calculate coverage
 after_success:
