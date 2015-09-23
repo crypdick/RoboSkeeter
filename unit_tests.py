@@ -4,16 +4,15 @@ import unittest
 
 
 class TestSorcery(unittest.TestCase):
-
-    def setUp(self):
+    def __init__(self):
         pass
 
-    def test_curvature(self):
-        self.assertEqual( calculate_curvature(3,4), 12)
+    # def setUp(self):
+    #     pass
+    #
+    # def test_curvature(self):
+    #     self.assertEqual( calculate_curvature(3,4), 12)
+    #
+    # def test_heading_vecs(self):
+    #     self.assertEqual( multiply('a',3), 'aaa')
 
-    def test_heading_vecs(self):
-        self.assertEqual( multiply('a',3), 'aaa')
-
-
-if __name__ == '__main__':
-    unittest.main()
