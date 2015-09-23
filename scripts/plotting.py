@@ -13,14 +13,34 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.gridspec as gridspec
 
+import os
+
 import seaborn as sns
 import windtunnel
+
+
+PROJECT_PATH = os.path.dirname(agent.__file__)
+MODEL_FIG_PATH = os.path.join(PROJECT_PATH, 'data', 'model')
+EXPERIMENT_FIG_PATH = os.path.join(PROJECT_PATH, 'data', 'experiments')
+
 
 windtunnel_object = windtunnel.Windtunnel(None)
 
 
 from custom_color import colormaps as cmaps
 # use cmaps.viridis for color maps
+
+def agent_to_fname_suffix(agent):
+    return " cond{condition}|damp{damp}|rF{rf}|wF{wtf}|stmF{stim}|N{total_trajectories}|K{K}|m{m}".format(
+                condition=agent.experimental_condition,
+                damp=agent.damping_coeff,
+                rf=agent.randomF_strength,
+                wtf=agent.windF_strength,
+                stim=agent.stimF_stength,
+                total_trajectories=agent.total_trajectories,
+                K=agent.spring_const,
+                m=agent.mass
+            )
 
 def draw_cage():
     # makes a little box where the cage is
@@ -42,7 +62,7 @@ def draw_heater(heater_position, detect_thresh=0.02):  # FIXME detect thresh = 2
     return heaterCircle, detectCircle
 
 
-def plot_3D_kinematic_vecs(ensemble, kinematic):
+def plot_vector_cloud(ensemble, kinematic):  # TODO: merge with visualize_forces()?
     labels = []
     for dim in ['x', 'y', 'z']:
         labels.append(kinematic+'_'+dim)
@@ -102,7 +122,7 @@ def plot_3D_kinematic_vecs(ensemble, kinematic):
 #   ##############################################
 
 
-def heatmaps(ensemble, agent_obj):  # remove agent_obj
+def plot_2D_position_heatmap(ensemble, agent_obj=None):
     fig, ax = plt.subplots(1)
     ensemble = ensemble.loc[(ensemble['position_x'] > 0.25) & (ensemble['position_x'] < 0.95)]
     counts, xedges, yedges = np.histogram2d(ensemble['position_x'], ensemble['position_y'], bins=(100, 30),
@@ -140,20 +160,19 @@ def heatmaps(ensemble, agent_obj):  # remove agent_obj
     plt.title("Agent trajectories 2D position histogram (n = {})".format(total_trajectories))
     plt.xlabel("Upwind/$x$ (meters)")
     plt.ylabel("Crosswind/$y$ (meters)")
+
     if agent_obj is not None:
-        plt.savefig(
-            "./figs/Trajectories heatmap beta{beta}_f{rf}_wf{wtf}_N{total_trajectories}.svg".format(
-                beta=agent_obj.damping_coeff,
-                rf=agent_obj.randomF_strength,
-                wtf=agent_obj.windF_strength,
-                total_trajectories=total_trajectories),
-        format="svg")
+        titleappend = agent_to_fname_suffix(agent_obj)
+    else:
+        titleappend = ''
+
+    plt.savefig("./figs/Trajectories heatmap"+titleappend,format="svg")
     plt.show()
 
 
-def stateHistograms(
+def plot_kinematic_histograms(
         ensemble,
-        agent=None,
+        agent_obj=None,
         plot_kwargs=None,
         titleappend='',
         upw_ensemble="none",
@@ -345,22 +364,19 @@ def stateHistograms(
     axs[4].legend(fontsize=14)
 
     gs1.tight_layout(statefig, rect=[0, 0.03, 1, 0.95])  # overlapping text hack
-    if agent is not None:
-        plt.savefig(
-            "./figs/Agent Distributions damp {damp},f {rf},wf {wtf},,N {total_trajectories}.svg".format(
-                damp=agent.damping_coeff,
-                rf=agent.randomF_strength,
-                wtf=agent.windF_strength,
-                total_trajectories=agent.total_trajectories
-            ),
-            format='svg')
+    if agent_obj is not None:
+        titleappend = agent_to_fname_suffix(agent_obj)
+    else:
+        titleappend = ''
+
+    plt.savefig("./figs/Agent Distributions"+titleappend, format='svg')
     plt.show()
 
 
 #    return xpos_counts_norm, ypos_bins, ypos_counts, ypos_counts_norm, vx_counts_n
 
 
-def force_violin(ensemble, agent_obj):
+def plot_forces_violinplots(ensemble, agent_obj):
     ensembleF = ensemble.loc[
         (ensemble['position_x'] > 0.25) & (ensemble['position_x'] < 0.95),
             ['totalF_x', 'totalF_y', 'totalF_z',
@@ -387,12 +403,14 @@ def force_violin(ensemble, agent_obj):
     plt.ylabel("Force magnitude distribution (newtons)")
 
     if agent_obj is not None:
-        plt.savefig("./figs/Force Distributions b {beta},f {rf},wf {wtf},N {total_trajectories}.svg".format( \
-            beta=agent_obj['beta'], rf=agent_obj['randomF_strength'], wtf=agent_obj['wtF'],
-            total_trajectories=agent_obj['total_trajectories']), format='svg')
+        titleappend = agent_to_fname_suffix(agent_obj)
+    else:
+        titleappend = ''
+
+    plt.savefig("./figs/Force Distributions" + titleappend, format='svg')
 
 
-def velo_compass_histogram(ensemble, metadata, kind):
+def plot_velocity_compassplot(ensemble, agent_obj, kind):
     N = 25
     roundbins = np.linspace(0.0, 2 * np.pi, N)
 
@@ -419,12 +437,15 @@ def velo_compass_histogram(ensemble, metadata, kind):
                     r'$\pi$', r'$\frac{5\pi}{4}$', r'$\frac{3\pi}{2}$', r'$\frac{7\pi}{4}$']
         plt.xticks(x_tix, x_labels, size=20)
         plt.title(
-            "Agent velocities 0.25 < x < 0.5, center repulsion on (n = {})".format(metadata['total_trajectories']),
+            "Agent velocities 0.25 < x < 0.5, center repulsion on (n = {})".format(agent_obj['total_trajectories']),
             y=1.1)
-        plt.savefig(
-            "./figs/Velocity compass, center repulsion on_ beta{beta}_rf{biasF_scale}_wf{wtf}_N{total_trajectories}.svg".format( \
-                beta=metadata['beta'], biasF_scale=metadata['randomF_strength'], wtf=metadata['wtF'],
-                total_trajectories=metadata['total_trajectories']), format="svg")
+
+        if agent_obj is not None:
+         titleappend = agent_to_fname_suffix(agent_obj)
+        else:
+            titleappend = ''
+
+        plt.savefig("./figs/Velocity compass"+titleappend, format="svg")
 
     if kind == 'bin_average':
         """for each bin, we want the average magnitude
@@ -439,12 +460,12 @@ def velo_compass_histogram(ensemble, metadata, kind):
             bin_mag_avgs[i] = bin_mag_avg
 
 
-def compass_histogram(vector_name, ensemble, metadata, kind='avg_mag_per_bin', title='', fname=''):
+def plot_compass_histogram(vector_name, ensemble, agent_obj, kind='avg_mag_per_bin', title='', fname=''):
     """TODO: make compass plot total mag per bin, overlay compass arrows for avg magnitude
 
     :param vector_name:
     :param ensemble:
-    :param metadata:
+    :param agent_obj:
     :param kind:
     :param title:
     :param fname:
@@ -471,9 +492,9 @@ def compass_histogram(vector_name, ensemble, metadata, kind='avg_mag_per_bin', t
     #        xL=['0',r'$\frac{\pi}{4}$',r'$\frac{\pi}{2}$',r'$\frac{3\pi}{4}$',\
     #            r'$\pi$',r'$\frac{5\pi}{4}$',r'$\frac{3\pi}{2}$',r'$\frac{7\pi}{4}$']
     #        plt.xticks(xT, xL, size = 20)
-    #        plt.title("Agent velocities 0.25 < x < 0.5, center repulsion on (n = {})".format(metadata['total_trajectories']), y=1.1)
+    #        plt.title("Agent velocities 0.25 < x < 0.5, center repulsion on (n = {})".format(agent_obj['total_trajectories']), y=1.1)
     #        plt.savefig("./figs/Compass plot , center repulsion on_ beta{beta}_rf{biasF_scale}_wf{wtf}_N{total_trajectories}.svg".format(\
-    #            beta=metadata['beta'], biasF_scale=metadata['randomF_strength'], wtf=metadata['wtF'], total_trajectories=metadata['total_trajectories']), format="svg")
+    #            beta=agent_obj['beta'], biasF_scale=agent_obj['randomF_strength'], wtf=agent_obj['wtF'], total_trajectories=agent_obj['total_trajectories']), format="svg")
 
     if kind == 'avg_mag_per_bin':
         """for each bin, we want the average magnitude
@@ -500,10 +521,16 @@ def compass_histogram(vector_name, ensemble, metadata, kind='avg_mag_per_bin', t
               r'$\pi$', r'$\frac{5\pi}{4}$', r'$\frac{3\pi}{2}$', r'$\frac{7\pi}{4}$']
         plt.xticks(x_tix, x_labels, size=20)
         plt.title(title)
-        plt.savefig("./figs/Compass {fname}.svg".format(fname=fname), format="svg")
+
+        if agent_obj is not None:
+            titleappend = agent_to_fname_suffix(agent_obj)
+        else:
+            titleappend = ''
+
+        plt.savefig("./figs/Compass {fname}{append}.svg".format(fname=fname, append=titleappend), format="svg")
 
 
-def cylinder(center_x, center_y, z_min, z_max, r=0.01905, n=5):
+def draw_cylinder(center_x, center_y, z_min, z_max, r=0.01905, n=5):
     '''
     Returns the unit cylinder that corresponds to the curve r.
     INPUTS:  r - a vector of radii
@@ -559,7 +586,9 @@ def plot3D_trajectory(ensemble, plot_kwargs=None):
     threedee.set_ylabel("Upwind/$x$ (meters)", fontsize=14)
     threedee.set_zlabel("Elevation/$z$ (meters)", fontsize=14)
     threedee.set_title(plot_kwargs['title'] + plot_kwargs['titleappend'], fontsize=20)
-    #    plt.savefig("./correlation_figs/{data_name}/{data_name} Trajectory.svg".format(data_name = csv_name), format="svg")
+
+    plt.savefig("./correlation_figs/{data_name}/{data_name} Trajectory.svg".format(data_name = csv_name), format="svg")
+
     plt.show()
 
     # todo: plot cylinder, detect circle, cage
@@ -693,22 +722,3 @@ def visualize_forces(ensemble):
         plt.title("Visualization of F_wall repulsion")
         plt.savefig('F_wall repulsion_cloud.png')
         plt.show()
-
-
-    # if __name__ == '__main__':
-    #    import trajectory_stats
-    #
-    #        # wallF params
-    #    wallF_max=5e-7
-    #    decay_const = 250
-    #
-    #    # center repulsion params
-    #    b = 4e-1  # determines shape
-    #    shrink = 5e-7  # determines size/magnitude
-    #
-    #    wallF = (b, shrink, wallF_max, decay_const)
-    #
-    #    ensemble, agent_obj = trajectory_stats.main()
-    #
-    #    trajectory_plots(ensemble, agent_obj, heatmap=True, trajectoryPlot = True)
-    #    xpos_counts_norm, ypos_bins, ypos_counts, ypos_counts_norm, vx_counts_n = stateHistograms(ensemble, agent_obj)

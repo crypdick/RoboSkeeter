@@ -12,7 +12,7 @@ import agent
 import plume
 import windtunnel
 import trajectory
-import scripts.io as data_io
+from scripts import i_o
 
 
 # wrapper func for agent 3D
@@ -108,7 +108,7 @@ def main():
         datetime.now(), OPTIM_ALGORITHM, N_TRAJECTORIES, guess_params, INITIAL_GUESS))
 
     guess_params = "[BETA, FORCES_AMPLITUDE, F_WIND_SCALE]"  # [5e-6, 4.12405e-6, 5e-7]
-    v_observed, a_observed = data_io.load_csv2np()
+    v_observed, a_observed = i_o.load_csv2np()
 
     # load experimental trajectories to score against
     experimental_traj = trajectory.Trajectory()
