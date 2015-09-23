@@ -29,5 +29,5 @@ script:
   #- nosetests --with-cov --cov isomerase/RoboSkeeter --cov-config .coveragerc --logging-level=INFO
 
 # Calculate coverage
-after_success:
-  - coveralls --config_file .coveragerc
+#after_success:
+#  - coveralls --config_file .coveragerc
