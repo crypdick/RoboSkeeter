@@ -32,7 +32,7 @@ raw - 3D position of the trajectory. (n x 3, where n is the number of timesteps)
 
 import os
 import numpy as np
-from scripts import i_o
+import i_o
 
 
 #def sanitychecks(full_trajectory):
