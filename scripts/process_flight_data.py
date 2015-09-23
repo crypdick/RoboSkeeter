@@ -33,7 +33,7 @@ raw - 3D position of the trajectory. (n x 3, where n is the number of timesteps)
 import os
 import numpy as np
 
-from scripts import io
+import scripts.io
 
 
 #def sanitychecks(full_trajectory):
@@ -89,12 +89,14 @@ from scripts import io
 ##    return filt[first:last]
     
 
-def trim_NaNs(filt, trim='fb'):
+def trim_leading_trailing_NaNs(array, trim='fb'):
     """
+    A custom version of numpy's trim_NaNs() function by Richard....
+
     Trim the leading and/or trailing NaNs from a 1-D array or sequence.
     Parameters
     ----------
-    filt : 1-D array or sequence
+    array : 1-D array or sequence
         Input array.
     trim : str, optional
         A string with 'f' representing trim from front and 'b' to trim from
@@ -115,7 +117,7 @@ def trim_NaNs(filt, trim='fb'):
     >>> np.trim_NaNs([0, 1, 2, 0])
     [1, 2]
     """
-    filtx = filt['x']  # we assume that if there's a NaN  in the x col the 
+    filtx = array['x']  # we assume that if there's a NaN  in the x col the
                     # rest of that row will also be NaNs
     first = 0
     trim = trim.upper()
@@ -125,14 +127,14 @@ def trim_NaNs(filt, trim='fb'):
                 break
             else:
                 first += 1
-    last = len(filt)
+    last = len(array)
     if 'B' in trim:
         for i in filtx[::-1]:
             if np.isnan(i) == False:
                 break
             else:
                 last -= 1
-    return filt[first:last].reset_index()[['x', 'y', 'z']]
+    return array[first:last].reset_index()[['x', 'y', 'z']]
 
 
 def split_trajectories(full_trajectory, NaN_split_thresh=50, min_trajectory_len=20):
@@ -224,30 +226,48 @@ def split_trajectories(full_trajectory, NaN_split_thresh=50, min_trajectory_len=
     return split_trajectory_list
 
 
-def main(filepath):
+def get_filepaths():
+    print("Enter source directory")
+    source_dir = scripts.io.get_directory()
+    print("Enters destination directory")
+    destination_dir = scripts.io.get_directory()
+
+    csv_list = scripts.io.get_csv_name_list(source_dir, relative=False)
+    filepaths = scripts.io.get_csv_filepath_list(source_dir, csv_list)
+    print("Found data: {}".format(csv_list))
+
+    return filepaths
+
+def load_csvs(filepath):
     if type(filepath) == unicode or type(filepath) == str:
         # load the csv
         debug = False
-        Data = io.load_experiment_csv(filepath)
-    else: # if script is fed a dataframe instead of a path, for debugging
-        debug = True        
+        Data = scripts.io.load_experiment_csv(filepath)
+    else:  # (for debugging) if script is fed a dataframe instead of a path
+        debug = True
         Data = filepath
     Data.columns = ['x','y','z']
-    trimmed_Data = trim_NaNs(Data)
-###    sanitychecks(trimmed_Data)
-    trajectory_list = split_trajectories(trimmed_Data)   
 
-    
-    # save
-    if debug is False:    
-        io.save_processed_csv(trajectory_list, filepath)
+    return Data
 
 
-    return trajectory_list
+def main():
+    filepaths = get_filepaths()
+    data_list = [load_csvs(filepath) for filepath in filepaths]
+    trimmed_data_list = [trim_leading_trailing_NaNs(data) for data in data_list]
+    ###    sanitychecks(trimmed_Data)
+    # trajectory_list = split_trajectories(trimmed_data_list)
+#
+#
+#     # save
+#     if debug is False:
+#         io.save_processed_csv(trajectory_list, filepath)
+#
+#
+#     return trajectory_list
 
 
-if __name__ == "__main__":
-    script_dir = os.path.dirname(__file__) #<-- absolute dir the script is in
-    rel_data_path = "data/trajectories/"
-    file_path = os.path.join(script_dir, rel_data_path, "195511-1.csv")
-    trajectory_list = main(file_path)
+
+
+
+    # trajectory_list = main(file_path)
