@@ -25,7 +25,7 @@ import string
 
 from scripts import i_o
 from scripts import plotting
-from scripts.math_sorcery import calculate_curvature, calculate_heading
+from scripts.math_sorcery import calculate_curvature, calculate_heading, calculate_xy_heading_angle, calculate_xy_magnitude
 import score
 
 
@@ -118,11 +118,17 @@ class Trajectory():
         ensemble = self.data
         # TODO: make wrapper function that iterates through trajectories in order to solve kinematics individually
         ensemble['curvature'] = calculate_curvature(ensemble)
-        ensemble['heading'] = calculate_heading(ensemble.velocity_x.values.T, ensemble.velocity_y.values.T)
         # absolute magnitude of velocity, accel vectors in 3D
         ensemble['velocity_magn'] = np.linalg.norm(ensemble.loc[:,('velocity_x', 'velocity_y', 'velocity_z')], axis=1)
         ensemble['acceleration_magn'] = np.linalg.norm(ensemble.loc[:,('acceleration_x', 'acceleration_y', 'acceleration_z')], axis=1)
-        # ensemble = calc_polar_kinematics(ensemble)
+        self._calc_polar_kinematics()
+
+    def _calc_polar_kinematics(self):
+        """append polar kinematics to vectors dictionary TODO: export to trajectory class"""
+        for name in ['velocity', 'acceleration', 'randomF', 'wallRepulsiveF', 'upwindF', 'stimF']:
+            x_component, y_component = self.data[name+'_x'], self.data[name+'_y']
+            self.data[name+'_xy_theta'] = calculate_xy_heading_angle(x_component, y_component)
+            self.data[name+'_xy_mag'] = calculate_xy_magnitude(x_component, y_component)
 
 
     def calc_kinematic_kde(self):
@@ -199,9 +205,7 @@ class Trajectory():
             title = "{flag} Avg. {name} vector magnitude in xy plane (n = {N}) {titeappend}".format(\
             N = self.agent_obj['total_trajectories'], name=vector_name,\
             flag=flags, titeappend=title_append)
-            fname = "{flag} Avg mag distribution of {name}_xy compass _beta{beta}_bF{biasF_scale}_wf{wtf}_N{total_trajectories}".format(\
-            beta=self.agent_obj['beta'], biasF_scale=self.agent_obj['randomF_strength'],
-            wtf=self.agent_obj['wtF'], total_trajectories=self.agent_obj['total_trajectories'],
+            fname = "{flag} Avg mag distribution of {name}_xy compass _".format(\
             name=vector_name, flag=flags)
   
             

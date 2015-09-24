@@ -1,11 +1,6 @@
 __author__ = 'richard'
 import numpy as np
 
-def calculate_heading(velo_x_component, velo_y_component):
-    theta = np.arctan2(velo_y_component, velo_x_component)
-
-    return theta*180/np.pi
-
 
 def calculate_angular_velocity(velocity_vec):
     #
@@ -38,18 +33,19 @@ def gen_symm_vecs(dims=3):
 
     return ends
 
+def rads_to_degrees(rads):
+    degrees = (rads * 180/np.pi) % 360  # map to [0,360)
+    return degrees
 
-def calc_polar_kinematics(ensemble):
-    """append polar kinematics to ensemble"""
-    field_list = ['velocity', 'acceleration', 'randomF', 'wallRepulsiveF', 'upwindF', 'stimF']
-    for name in field_list:
-        x_component, y_component = ensemble[name+'_x'], ensemble[name+'_y']
-        angle = np.arctan2(y_component, x_component)
-        angle[angle < 0] += 2*np.pi  # get vals b/w [0,2pi]
-        eval(name+'_xy_theta = angle')
-        ensemble[name+'_xy_mag'] = np.sqrt(y_component**2 + x_component**2)
 
-    return array_dict
+def calculate_xy_heading_angle(x_component, y_component):
+    angle = np.arctan2(y_component, x_component)
+    angle = rads_to_degrees(angle)
+    return angle
+
+def calculate_xy_magnitude(x_component, y_component):
+    return np.sqrt(x_component**2 + y_component**2)
+
 
 def check_turning():
     pass

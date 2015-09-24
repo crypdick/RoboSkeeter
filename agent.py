@@ -419,17 +419,6 @@ class Agent():
 
         return candidate_pos, candidate_velo
 
-    def _calc_polar_kinematics(self, array_dict):
-        """append polar kinematics to vectors dictionary TODO: export to trajectory class"""
-        for name in self.kinematics_list+self.forces_list:  # ['velocity', 'acceleration', 'randomF', 'wallRepulsiveF', 'upwindF', 'stimF']
-            x_component, y_component = array_dict[name+'_x'], array_dict[name+'_y']
-            angle = np.arctan2(y_component, x_component)
-            angle[angle < 0] += 2*np.pi  # get vals b/w [0,2pi]
-            array_dict[name+'_xy_theta'] = angle
-            array_dict[name+'_xy_mag'] = np.sqrt(y_component**2 + x_component**2)
-        
-        return array_dict
-
 
 
 
