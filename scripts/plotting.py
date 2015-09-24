@@ -8,18 +8,15 @@ https://staff.washington.edu/decal/
 https://github.com/isomerase/
 """
 import numpy as np
-
-from matplotlib import pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.gridspec as gridspec
-
 import os
 
+from matplotlib import pyplot as plt
+import matplotlib.gridspec as gridspec
 import seaborn as sns
+
 import windtunnel
 
-
-PROJECT_PATH = os.path.dirname(agent.__file__)
+PROJECT_PATH = os.path.dirname(windtunnel.__file__)
 MODEL_FIG_PATH = os.path.join(PROJECT_PATH, 'data', 'model')
 EXPERIMENT_FIG_PATH = os.path.join(PROJECT_PATH, 'data', 'experiments')
 
@@ -163,10 +160,12 @@ def plot_2D_position_heatmap(ensemble, agent_obj=None):
 
     if agent_obj is not None:
         titleappend = agent_to_fname_suffix(agent_obj)
+        path = MODEL_FIG_PATH
     else:
         titleappend = ''
+        path = EXPERIMENT_FIG_PATH
 
-    plt.savefig("./figs/Trajectories heatmap"+titleappend,format="svg")
+    plt.savefig(os.path.join(path, "Trajectories heatmap" + titleappend), format="svg")
     plt.show()
 
 
@@ -188,14 +187,16 @@ def plot_kinematic_histograms(
     # X pos
     xpos_min, xpos_max = 0.25, .85
     xpos_counts, xpos_bins = np.histogram(ensemble['position_x'],
-                                          bins=np.linspace(xpos_min, xpos_max, (xpos_max - xpos_min) / pos_binwidth))
+                                          bins=np.linspace(xpos_min, xpos_max,
+                                                           ceil(xpos_max - xpos_min) / pos_binwidth))
     xpos_counts = xpos_counts.astype(float)
     xpos_counts_norm = xpos_counts / xpos_counts.sum()
     axs[0].plot(xpos_bins[:-1] + pos_binwidth / 2, xpos_counts_norm, lw=2, label="Full")
     axs[0].bar(xpos_bins[:-1], xpos_counts_norm, xpos_bins[1] - xpos_bins[0], facecolor='blue', linewidth=0, alpha=0.1)
     if type(downw_ensemble) != str:
-        xpos_counts, xpos_bins = np.histogram(downw_ensemble['position_x'], bins=np.linspace(xpos_min, xpos_max, (
-        xpos_max - xpos_min) / pos_binwidth))
+        xpos_counts, xpos_bins = np.histogram(downw_ensemble['position_x'],
+                                              bins=np.linspace(xpos_min, xpos_max,
+                                                               (xpos_max - xpos_min) / pos_binwidth))
         xpos_counts = xpos_counts.astype(float)
         xpos_counts_norm = xpos_counts / xpos_counts.sum()
         axs[0].plot(xpos_bins[:-1] + pos_binwidth / 2, xpos_counts_norm, lw=2, label="Downwind")
@@ -366,10 +367,12 @@ def plot_kinematic_histograms(
     gs1.tight_layout(statefig, rect=[0, 0.03, 1, 0.95])  # overlapping text hack
     if agent_obj is not None:
         titleappend = agent_to_fname_suffix(agent_obj)
+        path = MODEL_FIG_PATH
     else:
         titleappend = ''
+        path = EXPERIMENT_FIG_PATH
 
-    plt.savefig("./figs/Agent Distributions"+titleappend, format='svg')
+    plt.savefig(os.path.join(path, "Agent Distributions" + titleappend), format="svg")
     plt.show()
 
 
@@ -404,10 +407,13 @@ def plot_forces_violinplots(ensemble, agent_obj):
 
     if agent_obj is not None:
         titleappend = agent_to_fname_suffix(agent_obj)
+        path = MODEL_FIG_PATH
     else:
         titleappend = ''
+        path = EXPERIMENT_FIG_PATH
 
-    plt.savefig("./figs/Force Distributions" + titleappend, format='svg')
+    plt.savefig(os.path.join(path, "Force Distributions" + titleappend), format="svg")
+    plt.show()
 
 
 def plot_velocity_compassplot(ensemble, agent_obj, kind):
@@ -441,11 +447,15 @@ def plot_velocity_compassplot(ensemble, agent_obj, kind):
             y=1.1)
 
         if agent_obj is not None:
-         titleappend = agent_to_fname_suffix(agent_obj)
+            titleappend = agent_to_fname_suffix(agent_obj)
+            path = MODEL_FIG_PATH
         else:
             titleappend = ''
+            path = EXPERIMENT_FIG_PATH
 
-        plt.savefig("./figs/Velocity compass"+titleappend, format="svg")
+        plt.savefig(os.path.join(path, "Velocity compass" + titleappend), format="svg")
+        plt.show()
+
 
     if kind == 'bin_average':
         """for each bin, we want the average magnitude
@@ -524,10 +534,15 @@ def plot_compass_histogram(vector_name, ensemble, agent_obj, kind='avg_mag_per_b
 
         if agent_obj is not None:
             titleappend = agent_to_fname_suffix(agent_obj)
+            path = MODEL_FIG_PATH
         else:
             titleappend = ''
+            path = EXPERIMENT_FIG_PATH
 
-        plt.savefig("./figs/Compass {fname}{append}.svg".format(fname=fname, append=titleappend), format="svg")
+        plt.savefig(os.path.join(path, "Compass {fname}" + titleappend), format="svg")
+        plt.show()
+
+        # plt.savefig("./figs/Compass {fname}{append}.svg".format(fname=fname, append=titleappend), format="svg")
 
 
 def draw_cylinder(center_x, center_y, z_min, z_max, r=0.01905, n=5):
@@ -587,7 +602,7 @@ def plot3D_trajectory(ensemble, plot_kwargs=None):
     threedee.set_zlabel("Elevation/$z$ (meters)", fontsize=14)
     threedee.set_title(plot_kwargs['title'] + plot_kwargs['titleappend'], fontsize=20)
 
-    plt.savefig("./correlation_figs/{data_name}/{data_name} Trajectory.svg".format(data_name = csv_name), format="svg")
+    # plt.savefig("./correlation_figs/Trajectory.svg"., format="svg")
 
     plt.show()
 

@@ -1,12 +1,12 @@
 __author__ = 'richard'
 
 import unittest
-import numpy as np
-from pandas import concat
-from pandas import DataFrame as df
 
-from scripts import process_flight_data
-#
+
+class SampleTest(unittest.TestCase):
+    def test(self):
+        self.assertEqual(3 ** 2, 9)
+
 # class TestSorcery(unittest.TestCase):
 #     def __init__(self):
 #         pass
@@ -105,5 +105,5 @@ from scripts import process_flight_data
 #         self.assertTrue(self.check_df_equal(self.num21, df2[0]))
 #         self.assertTrue(self.check_df_equal(self.num21, df2[1]))
 #
-# if __name__ == '__main__':
-#     unittest.main()
+if __name__ == '__main__':
+    unittest.main()
