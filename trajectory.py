@@ -19,13 +19,13 @@ trajectory.save
 import numpy as np
 import os
 from scipy.stats import gaussian_kde
-import pandas as pd
 import string
 
+import pandas as pd
 
 from scripts import i_o
 from scripts import plotting
-from scripts.math_sorcery import calculate_curvature, calculate_heading, calculate_xy_heading_angle, calculate_xy_magnitude
+from scripts.math_sorcery import calculate_curvature, calculate_xy_heading_angle, calculate_xy_magnitude
 import score
 
 
@@ -54,8 +54,7 @@ class Trajectory():
         self.velo_kernel = None
         self.accel_kernel = None
 
-        
-    def load_ensemble_and_analyze(self, data='load_experimental_data'):
+    def load_ensemble_and_analyze(self, data):
         if type(data) is dict:
             trajectory = pd.DataFrame(data)
             self.data.append(trajectory)  # this should be avoided b/c lots of overhead (slow)
@@ -93,14 +92,14 @@ class Trajectory():
         ]
 
         for fname in os.listdir(directory):  # list files
-            print fname
+            print "Loading " + fname
             file_path = os.path.join(directory, fname)
             base_name = os.path.splitext(file_path)[0]
 
             dataframe = pd.read_csv(file_path, na_values="NaN", names=col_labels)  # recognize str(NaN) as NaN
             dataframe.fillna(value=0, inplace=True)
-            # take fname number, turn it into a list of the correct size
-            dataframe['trajectory_num'] = [int(base_name[8:])] * dataframe.position_x.size
+            # take fname number, skip "control_" and ".csv"
+            dataframe['trajectory_num'] = [int(fname[8:-4])] * dataframe.position_x.size
             df_list.append(dataframe)
 
         self.load_ensemble_and_analyze(data=df_list)
@@ -123,9 +122,14 @@ class Trajectory():
         ensemble['acceleration_magn'] = np.linalg.norm(ensemble.loc[:,('acceleration_x', 'acceleration_y', 'acceleration_z')], axis=1)
         self._calc_polar_kinematics()
 
+
     def _calc_polar_kinematics(self):
         """append polar kinematics to vectors dictionary TODO: export to trajectory class"""
-        for name in ['velocity', 'acceleration', 'randomF', 'wallRepulsiveF', 'upwindF', 'stimF']:
+        kinematics = ['velocity', 'acceleration']
+        if self.agent_obj is not None:  # we don't want to calculate the polar versions of these for experiments
+            kinematics.append(['randomF', 'wallRepulsiveF', 'upwindF', 'stimF'])
+
+        for name in kinematics:
             x_component, y_component = self.data[name+'_x'], self.data[name+'_y']
             self.data[name+'_xy_theta'] = calculate_xy_heading_angle(x_component, y_component)
             self.data[name+'_xy_mag'] = calculate_xy_magnitude(x_component, y_component)
@@ -279,9 +283,12 @@ class Trajectory():
         print "full- + up- + down-wind"
         plotting.plot_kinematic_histograms(full_ensemble, self.agent_obj, titleappend = '', upw_ensemble = upwind_ensemble, downw_ensemble = downwind_ensemble)
 
-
-    def plot_3D_kinematic_vecs(self, kinematic='acceleration'):
+    def plot_vector_cloud(self, kinematic='acceleration'):
         plotting.plot_vector_cloud(self.data, kinematic)
+
+    def visualize_forces(self):
+        """like plot_vector_cloud, but with all of the kinematics at once"""
+        plotting.plot_all_force_clouds(self.data)
 
 
     def plume_stats(self):
@@ -318,9 +325,6 @@ class Trajectory():
             temp_traj = self.data[self.data['trajectory_num'] == trajectory_i]
             temp_array = temp_traj[['position_x', 'position_y']].values
             np.savetxt(str(trajectory_i) + ".csv", temp_array, delimiter=",")
-
-    def visualize_forces(self):
-        plotting(self.data)
 
     
     def calc_score(self):
