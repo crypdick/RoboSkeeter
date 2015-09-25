@@ -53,6 +53,8 @@ class Trajectory():
         self.agent_obj = None
         self.velo_kernel = None
         self.accel_kernel = None
+        self.curvature_kernel = None
+        self.is_agent = None
 
     def load_ensemble_and_analyze(self, data):
         if type(data) is dict:
@@ -109,8 +111,14 @@ class Trajectory():
         self.agent_obj = agent_obj
 
     def run_analysis(self):
+        self.test_if_agent()
         self.calc_kinematic_vals()  # evaluates kinematics
+
+        # stuff for scoring
         self.calc_kinematic_kde()  #  estimates KDE
+        if self.is_agent is "Mosquito":
+            v_bins, a_bins, c_bins = self.calc_kernel_bins()
+            self.evaluate_kernels(v_bins, a_bins, c_bins)
 
 
     def calc_kinematic_vals(self):
@@ -127,7 +135,7 @@ class Trajectory():
         """append polar kinematics to vectors dictionary TODO: export to trajectory class"""
         kinematics = ['velocity', 'acceleration']
         if self.agent_obj is not None:  # we don't want to calculate the polar versions of these for experiments
-            kinematics.append(['randomF', 'wallRepulsiveF', 'upwindF', 'stimF'])
+            kinematics += ['randomF', 'wallRepulsiveF', 'upwindF', 'stimF']
 
         for name in kinematics:
             x_component, y_component = self.data[name+'_x'], self.data[name+'_y']
@@ -142,25 +150,37 @@ class Trajectory():
         a = self.data['acceleration_magn'].values
         self.accel_kernel = gaussian_kde(a)
 
-        return self.velo_kernel, self.accel_kernel
+        c = self.data['curvature'].values
+        self.curvature_kernel = gaussian_kde(c)
+
+        return self.velo_kernel, self.accel_kernel, self.curvature_kernel
 
 
     def calc_kernel_bins(self):
         v = self.data['velocity_magn'].values
         a = self.data['acceleration_magn'].values
+        c = self.data['curvature'].values
 
-        kde_v_positions = np.linspace(0., v.max(), 100)
-        kde_a_positions = np.linspace(0., a.max(), 100)
+        kde_v_bins = np.linspace(0., v.max(), 100)
+        kde_a_bins = np.linspace(0., a.max(), 100)
+        kde_c_bins = np.linspace(0., c.max(), 100)
 
-        return kde_v_positions, kde_a_positions
+        if self.is_agent is "Mosquito":
+            self.experiment_v_bins, self.experiment_a_bins, self.experiment_c_bins = kde_v_bins, kde_a_bins, kde_c_bins
 
+        return kde_v_bins, kde_a_bins, kde_c_bins
 
-    def evaluate_kernels(self, v_bins, a_bins):
+    def evaluate_kernels(self, v_bins, a_bins, c_bins):
         kde_v_vals = self.velo_kernel(v_bins)
         kde_a_vals = self.accel_kernel(a_bins)
+        kde_c_vals = self.curvature_kernel(c_bins)
 
-        return kde_v_vals, kde_a_vals
-            
+        if self.is_agent is "Mosquito":
+            self.v_vals_experiment, self.a_vals_experiment, self.c_vals_experiment = kde_v_vals, kde_a_vals, kde_c_vals
+
+        return kde_v_vals, kde_a_vals, kde_c_vals
+
+
     def plot_force_violin(self):
         if self.agent_obj is None:
             raise TypeError('can\'t plot force violin for experimental data')
@@ -226,12 +246,7 @@ class Trajectory():
         
         
     def plot_single_3Dtrajectory(self, trajectory_i=None):
-        # classify
-        if self.agent_obj is None:
-            type = "Mosquito"
-        else:
-            type = "Agent"
-        plot_kwargs = {'title': "{type} trajectory #{N}".format(type=type, N=trajectory_i)}
+        plot_kwargs = {'title': "{type} trajectory #{N}".format(type=self.is_agent, N=trajectory_i)}
 
         # get data
         if trajectory_i is None:
@@ -330,7 +345,8 @@ class Trajectory():
 
     
     def calc_score(self):
-       return score.score(self.data)
+        total_score, scores = score.score(self)
+        print "total_score ", total_score
 
     def _extract_number_from_fname(self, token):
         extract_digits = lambda stng: "".join(char for char in stng if char in string.digits + ".")
@@ -346,3 +362,12 @@ class Trajectory():
 
     def _trim_df_endzones(self):
         return self.data.loc[(self.data['position_x'] > 0.25) & (self.data['position_x'] < 0.95)]
+
+    def test_if_agent(self):
+        """Voight-Kampff test to test whether real mosquito or a robot"""
+        if self.agent_obj is None:
+            type = "Mosquito"
+        else:
+            type = "Agent"
+
+        self.is_agent = type
