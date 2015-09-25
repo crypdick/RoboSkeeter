@@ -37,6 +37,8 @@ Y_AXIS_POSITION_LABEL = "Crosswind/$y$ (meters)"
 Z_AXIS_POSITION_LABEL = "Elevation/$z$ (meters)"
 PROBABILITY_LABEL = 'Probability'
 
+FIG_FORMAT = ".png"
+
 
 
 def agent_to_fname_suffix(agent):
@@ -131,7 +133,7 @@ def plot_position_heatmaps(ensemble, agent_obj=None):
     color_axis = the_divider.append_axes("right", size="5%", pad=0.1)
     cbar0 = plt.colorbar(heatmap_xy, cax=color_axis)
     cbar0.ax.set_ylabel(PROBABILITY_LABEL)
-    plt.savefig(os.path.join(path, title1 + fileappend), format="svg")
+    plt.savefig(os.path.join(path, title1 + fileappend + FIG_FORMAT))
 
     #### XZ
     fig1, ax1 = plt.subplots(1)
@@ -147,7 +149,7 @@ def plot_position_heatmaps(ensemble, agent_obj=None):
     color_axis = the_divider.append_axes("right", size="5%", pad=0.1)
     cbar1 = plt.colorbar(heatmap_xz, cax=color_axis)
     cbar1.ax.set_ylabel(PROBABILITY_LABEL)
-    plt.savefig(os.path.join(path, title2 + fileappend), format="svg")
+    plt.savefig(os.path.join(path, title2 + fileappend + FIG_FORMAT))
 
 
     #### YZ
@@ -165,7 +167,7 @@ def plot_position_heatmaps(ensemble, agent_obj=None):
     color_axis = the_divider.append_axes("right", size="5%", pad=0.1)
     cbar2 = plt.colorbar(heatmap_yz, cax=color_axis)
     cbar2.ax.set_ylabel(PROBABILITY_LABEL)
-    plt.savefig(os.path.join(path, title3 + fileappend), format="svg")
+    plt.savefig(os.path.join(path, title3 + fileappend + FIG_FORMAT))
 
 
     # if windtunnel_object.test_condition is not None:
@@ -180,7 +182,7 @@ def plot_position_heatmaps(ensemble, agent_obj=None):
 
 
     #
-    # plt.savefig(os.path.join(path, "Trajectories heatmap" + titleappend), format="svg")
+    # plt.savefig(os.path.join(path, "Trajectories heatmap" + titleappend + FIG_FORMAT))
     # plt.show()
 
 
@@ -387,7 +389,7 @@ def plot_kinematic_histograms(
         titleappend = ''
         path = EXPERIMENT_FIG_PATH
 
-    plt.savefig(os.path.join(path, "Agent Distributions" + titleappend), format="svg")
+    plt.savefig(os.path.join(path, "Agent Distributions" + titleappend + FIG_FORMAT))
     plt.show()
 
 
@@ -427,7 +429,7 @@ def plot_forces_violinplots(ensemble, agent_obj):
         titleappend = ''
         path = EXPERIMENT_FIG_PATH
 
-    plt.savefig(os.path.join(path, "Force Distributions" + titleappend), format="svg")
+    plt.savefig(os.path.join(path, "Force Distributions" + titleappend + FIG_FORMAT))
     plt.show()
 
 
@@ -468,7 +470,7 @@ def plot_velocity_compassplot(ensemble, agent_obj, kind):
             titleappend = ''
             path = EXPERIMENT_FIG_PATH
 
-        plt.savefig(os.path.join(path, "Velocity compass" + titleappend), format="svg")
+        plt.savefig(os.path.join(path, "Velocity compass" + titleappend + FIG_FORMAT))
         plt.show()
 
 
@@ -519,7 +521,7 @@ def plot_compass_histogram(vector_name, ensemble, agent_obj, kind='avg_mag_per_b
     #        plt.xticks(xT, xL, size = 20)
     #        plt.title("Agent velocities 0.25 < x < 0.5, center repulsion on (n = {})".format(agent_obj['total_trajectories']), y=1.1)
     #        plt.savefig("./figs/Compass plot , center repulsion on_ beta{beta}_rf{randomF_scale}_wf{wtf}_N{total_trajectories}.svg".format(\
-    #            beta=agent_obj['beta'], randomF_scale=agent_obj['randomF_strength'], wtf=agent_obj['wtF'], total_trajectories=agent_obj['total_trajectories']), format="svg")
+    #            beta=agent_obj['beta'], randomF_scale=agent_obj['randomF_strength'], wtf=agent_obj['wtF'], total_trajectories=agent_obj['total_trajectories'] + FIG_FORMAT))
 
     if kind == 'avg_mag_per_bin':
         """for each bin, we want the average magnitude
@@ -554,10 +556,10 @@ def plot_compass_histogram(vector_name, ensemble, agent_obj, kind='avg_mag_per_b
             titleappend = ''
             path = EXPERIMENT_FIG_PATH
 
-        plt.savefig(os.path.join(path, "Compass {fname}" + titleappend), format="svg")
+        plt.savefig(os.path.join(path, "Compass {fname}" + titleappend + FIG_FORMAT))
         plt.show()
 
-        # plt.savefig("./figs/Compass {fname}{append}.svg".format(fname=fname, append=titleappend), format="svg")
+        # plt.savefig("./figs/Compass {fname}{append}.svg".format(fname=fname, append=titleappend + FIG_FORMAT))
 
 
 def draw_cylinder(center_x, center_y, z_min, z_max, r=0.01905, n=5):
