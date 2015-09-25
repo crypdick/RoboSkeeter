@@ -129,6 +129,7 @@ class Agent():
         plume_object = plume.Plume(self.experimental_condition)
         # instantiate empty trajectories class
         trajectories_object = trajectory.Trajectory()
+        trajectories_object.add_agent_info(self)
         forces_object = forces.Forces()
 
         return windtunnel_object, plume_object, trajectories_object, forces_object
@@ -159,15 +160,11 @@ class Agent():
                 if verbose is True:
                     sys.stdout.write("\rSimulations finished. Performing deep magic.")
                     sys.stdout.flush()
-        
 
-        
         self.total_trajectories = total_trajectories
         self.trajectory_obj.load_ensemble_and_analyze(df_list)  # concatinate all the dataframes at once instead of one at a
                                                           # time for performance boost.
         # add agent to trajectory object for plotting funcs
-        self.trajectory_obj.add_agent_info(self)
-
 
     def _generate_flight(self, dt, m):
         """Generate a single trajectory using our model.
@@ -452,7 +449,7 @@ def gen_objects_and_fly(N_TRAJECTORIES, TEST_CONDITION, BETA, FORCES_AMPLITUDE, 
     
 
 if __name__ == '__main__':
-    N_TRAJECTORIES = 1
+    N_TRAJECTORIES = 5
     TEST_CONDITION = None  # {'Left', 'Right', None}
     # old beta- 5e-5, forces 4.12405e-6, fwind = 5e-7
     BETA, FORCES_AMPLITUDE, F_WIND_SCALE =  [  1.37213380e-06  , 1.39026239e-06 ,  7.06854777e-07]
