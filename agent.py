@@ -145,7 +145,7 @@ class Agent():
         while traj_count < total_trajectories:
             if verbose is True:
                 sys.stdout.write("\rTrajectory {}/{}".format(traj_count+1, total_trajectories))
-                # sys.stdout.flush()
+                sys.stdout.flush()
 
 
             array_dict = self._generate_flight(*args)
@@ -418,8 +418,6 @@ class Agent():
                 candidate_velo[2] *= -0
 
         return candidate_pos, candidate_velo
-
-
 
 
 

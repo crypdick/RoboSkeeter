@@ -160,22 +160,15 @@ class Trajectory():
         kde_a_vals = self.accel_kernel(a_bins)
 
         return kde_v_vals, kde_a_vals
-
-
-    def plot_single_trajectory(self, trajectory_i=0):
-        plot_kwargs = {'title':"Individual agent trajectory", 'titleappend':' (id = {})'.format(trajectory_i)}
-        plotting.plot_single_trajectory(self.data.loc[self.data['trajectory_num']==trajectory_i], self.agent_obj, plot_kwargs)
-
-            
             
     def plot_force_violin(self):
         if self.agent_obj is None:
             raise TypeError('can\'t plot force violin for experimental data')
         plotting.plot_forces_violinplots(self.data, self.agent_obj)
-        
-    
-    def plot_posheatmap(self):
-        plotting.plot_2D_position_heatmap(self.data, self.agent_obj)
+
+    def plot_position_heatmaps(self):
+        trimmed_df = self._trim_df_endzones()
+        plotting.plot_position_heatmaps(trimmed_df, self.agent_obj)
         
     
     def plot_kinematic_hists(self, ensemble='none', titleappend=''):
@@ -233,10 +226,19 @@ class Trajectory():
         
         
     def plot_single_3Dtrajectory(self, trajectory_i=None):
+        # classify
+        if self.agent_obj is None:
+            type = "Mosquito"
+        else:
+            type = "Agent"
+        plot_kwargs = {'title': "{type} trajectory #{N}".format(type=type, N=trajectory_i)}
+
+        # get data
         if trajectory_i is None:
             trajectory_i = self.data.trajectory_num.min()
-        plot_kwargs = {'title':"Individual agent trajectory", 'titleappend':' (id = {})'.format(trajectory_i)}
-        plotting.plot3D_trajectory(self.data.loc[self.data['trajectory_num']==trajectory_i], plot_kwargs)
+        selected_trajectory = self.get_trajectory_i(trajectory_i)
+
+        plotting.plot3D_trajectory(selected_trajectory, plot_kwargs)
 
         
     def plot_sliced_hists(self):
@@ -310,7 +312,7 @@ class Trajectory():
                 'force_violin':True}):
         print self.data.describe()
         if plot_kwargs['heatmap'] is True:
-            self.plot_posheatmap()
+            self.plot_position_heatmaps()
         if plot_kwargs['singletrajectories'] is True:
             self.plot_single_trajectory()
         if plot_kwargs['states'] is True:
@@ -338,3 +340,9 @@ class Trajectory():
             return to_float(extract_digits(token))
         except ValueError:
             print token, extract_digits(token)
+
+    def get_trajectory_i(self, index):
+        return self.data.loc[self.data['trajectory_num'] == index]
+
+    def _trim_df_endzones(self):
+        return self.data.loc[(self.data['position_x'] > 0.25) & (self.data['position_x'] < 0.95)]
