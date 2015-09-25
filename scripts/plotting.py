@@ -11,21 +11,33 @@ import numpy as np
 import os
 
 from matplotlib import pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.gridspec as gridspec
 import seaborn as sns
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 import windtunnel
+
+windtunnel_object = windtunnel.Windtunnel(None)
+
+stopdeletingmeplease = Axes3D
+
+from custom_color import colormaps
+
+CM = colormaps.ListedColormap(colormaps.viridis.colors[::-1])
+# use colormaps.viridis for color maps
+
 
 PROJECT_PATH = os.path.dirname(windtunnel.__file__)
 MODEL_FIG_PATH = os.path.join(PROJECT_PATH, 'data', 'model')
 EXPERIMENT_FIG_PATH = os.path.join(PROJECT_PATH, 'data', 'experiments')
 
+X_AXIS_POSITION_LABEL = "Upwind/$x$ (meters)"
+Y_AXIS_POSITION_LABEL = "Crosswind/$y$ (meters)"
+Z_AXIS_POSITION_LABEL = "Elevation/$z$ (meters)"
+PROBABILITY_LABEL = 'Probability'
 
-windtunnel_object = windtunnel.Windtunnel(None)
 
-
-from custom_color import colormaps as cmaps
-# use cmaps.viridis for color maps
 
 def agent_to_fname_suffix(agent):
     return " cond{condition}|damp{damp}|rF{rf}|wF{wtf}|stmF{stim}|N{total_trajectories}|K{K}|m{m}".format(
@@ -33,7 +45,7 @@ def agent_to_fname_suffix(agent):
                 damp=agent.damping_coeff,
                 rf=agent.randomF_strength,
                 wtf=agent.windF_strength,
-                stim=agent.stimF_stength,
+        stim=agent.stimF_strength,
                 total_trajectories=agent.total_trajectories,
                 K=agent.spring_const,
                 m=agent.mass
@@ -59,114 +71,117 @@ def draw_heater(heater_position, detect_thresh=0.02):  # FIXME detect thresh = 2
     return heaterCircle, detectCircle
 
 
-def plot_vector_cloud(ensemble, kinematic):  # TODO: merge with visualize_forces()?
-    labels = []
-    for dim in ['x', 'y', 'z']:
-        labels.append(kinematic+'_'+dim)
-
-    # grab labels
-    vecs = []
-    selection = ensemble.loc[:,labels]
-    arrays = selection.values
-    transpose = arrays.T  # 3 x timesteps matrix
-    xs, ys, zs = transpose[0], transpose[1], transpose[2]
-
-    # find longest edge
-    longest_edge = abs( max(transpose.min(), transpose.max(), key=abs) )
-    longest_edge *= 1.05  # add padding
-
-    # Attaching 3D axis to the figure
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Z')
-    ax.set_title('Visualization of {} 3D vector distribution'.format(kinematic))
-    ax.autoscale(enable=False,axis='both')  #you will need this line to change the Z-axis
-    ax.set_xbound(-longest_edge, +longest_edge)
-    ax.set_ybound(-longest_edge, +longest_edge)
-    ax.set_zbound(-longest_edge, +longest_edge)
-
-    cm = plt.get_cmap('Set2')
-    colors = np.linspace(0, 1, len(xs))
-    my_colors = cm(colors)
-
-    ax.scatter(0,0,0, c='r', marker='o', s=50)  # mark origin
-    ax.scatter(xs, ys, zs, '.', alpha=0.4, c=colors, lw = 0, cmap=cm)
-
-
-############################################## HEX HEATMAP #######################
-#    ## Position heatmap
-#    if plot_kwargs['heatmap']:
-#        with sns.axes_style("white"):
-#            hextraj = sns.jointplot('position_x', 'position_y', ensemble, size=10)#, ylim=(-.15, .15))
-#            hextraj.plot_marginals(sns.distplot, kde=False)
-#            hextraj.plot_joint(plt.hexbin, vmax=30, extent = [metadata['boundary'][0], metadata['boundary'][1], metadata['boundary'][3], metadata['boundary'][2]])#joint_kws={'gridsize':(100,30), })
-#            hextraj.ax_joint.set_aspect('equal')
-#            hextraj.ax_joint.invert_yaxis()  # hack to match y axis convention 
-#            cax = hextraj.fig.add_axes([1, .25, .04, .5])
-#            plt.colorbar(cax=cax)
-#            
-#            if metadata['heater_position'] is not None:
-#                heaterCircle, detectCircle = draw_heaters(metadata['heater_position'], metadata['detection_threshold'])
-#                hextraj.ax_joint.add_artist(heaterCircle)
-#                hextraj.ax_joint.add_artist(detectCircle)
-#        #    
-#            # draw cage
-#            cage = draw_cage()
-#            hextraj.ax_joint.add_patch(cage)
-#        plt.savefig("./figs/Trajectories sns heatmap beta{beta}_f{rf}_wf{wtf}_N{total_trajectories}.png".format(beta=metadata['beta'], rf=metadata['randomF_strength'], wtf=metadata['wtF'], total_trajectories=metadata['total_trajectories']))
-#   ##############################################
-
-
-def plot_2D_position_heatmap(ensemble, agent_obj=None):
-    fig, ax = plt.subplots(1)
-    ensemble = ensemble.loc[(ensemble['position_x'] > 0.25) & (ensemble['position_x'] < 0.95)]
-    counts, xedges, yedges = np.histogram2d(ensemble['position_x'], ensemble['position_y'], bins=(100, 30),
-                                            range=[[0.25, 0.95], [-0.127, .127]])
-
+def plot_position_heatmaps(ensemble, agent_obj=None):
     total_trajectories = len(ensemble.trajectory_num.unique())
 
+    N_points = len(ensemble)
+    nbins_x = 100
+    nbins_y = 30
+    nbins_z = 30
 
-    # counts needs to be transposed to use pcolormesh
-    counts = counts.T
-    probs = counts / ensemble.size
+    x = ensemble.position_x.values
+    y = ensemble.position_y.values
+    z = ensemble.position_z.values
 
-    #        MaxVal = total_trajectories/2
-    #        if total_trajectories > 100:
-    #            plt.cla()
-    heatmap = ax.pcolormesh(xedges, yedges, probs, cmap=cmaps.viridis, vmin=0.)  # , vmax=.2)
+    [x_min, x_max, y_min, y_max, z_min, z_max] = [0.0, 1.0, -0.127, 0.127, 0., 0.254]
 
-    if windtunnel_object.test_condition is not None:
-        heaterCircle, detectCircle = draw_heater(windtunnel_object.on_heater_loc)
-        ax.add_artist(heaterCircle)
-        ax.add_artist(detectCircle)
+    counts, [x_bins, y_bins, z_bins] = np.histogramdd((x, y, z), bins=(nbins_x, nbins_y, nbins_z),
+                                                      range=((x_min, x_max), (y_min, y_max), (z_min, z_max)))
+
+    # counts need to be transposed to use pcolormesh
+    countsT = counts.T
+    probs = countsT / N_points
+
+    # reduce dimensionality for the different plots
+    probs_xy = np.sum(probs, axis=0)
+    probs_yz = np.sum(probs, axis=2)
+    probs_xz = np.sum(probs, axis=1)
+    # max_probability = np.max([np.max(probs_xy), np.max(probs_xz), np.max(probs_yz)])
+    max_probability = np.max(probs_xy) * 0.8
+
+    #### file naming and directory selection
+    if agent_obj is not None:
+        fileappend = agent_to_fname_suffix(agent_obj)
+        path = MODEL_FIG_PATH
+    else:
+        fileappend = ''
+        path = EXPERIMENT_FIG_PATH
+
+    ### Label stuff
+    if agent_obj is None:
+        type = "Mosquito"
+    else:
+        type = "Agent"
+    titlebase = "{type} Position Heatmap"
+    numbers = " (n = {})".format(total_trajectories)
+
+    #### XY
+    fig0, ax0 = plt.subplots(1)
+    heatmap_xy = ax0.pcolormesh(x_bins, y_bins, probs_xy, cmap=CM, vmin=0., vmax=max_probability)
+    ax0.set_aspect('equal')
+    ax0.invert_yaxis()  # hack to match y axis convention
+    # overwrite previous plot schwag
+    title1 = titlebase.format(type=type) + " - XY projection" + numbers
+    plt.title(title1)
+    plt.xlabel(X_AXIS_POSITION_LABEL)
+    plt.ylabel(Y_AXIS_POSITION_LABEL)
+    plt.xlim((x_min, x_max))
+    plt.ylim((y_min, y_max))
+    the_divider = make_axes_locatable(ax0)
+    color_axis = the_divider.append_axes("right", size="5%", pad=0.1)
+    cbar0 = plt.colorbar(heatmap_xy, cax=color_axis)
+    cbar0.ax.set_ylabel(PROBABILITY_LABEL)
+    plt.savefig(os.path.join(path, title1 + fileappend), format="svg")
+
+    #### XZ
+    fig1, ax1 = plt.subplots(1)
+    heatmap_xz = ax1.pcolormesh(x_bins, z_bins, probs_xz, cmap=CM, vmin=0., vmax=max_probability)
+    ax1.set_aspect('equal')
+    plt.xlabel(X_AXIS_POSITION_LABEL)
+    plt.ylabel(Z_AXIS_POSITION_LABEL)
+    title2 = titlebase.format(type=type) + " - XZ projection" + numbers
+    plt.title(title2)
+    plt.xlim((x_min, x_max))
+    plt.ylim((z_min, z_max))
+    the_divider = make_axes_locatable(ax1)
+    color_axis = the_divider.append_axes("right", size="5%", pad=0.1)
+    cbar1 = plt.colorbar(heatmap_xz, cax=color_axis)
+    cbar1.ax.set_ylabel(PROBABILITY_LABEL)
+    plt.savefig(os.path.join(path, title2 + fileappend), format="svg")
+
+
+    #### YZ
+    fig2, ax2 = plt.subplots(1)
+    heatmap_yz = ax2.pcolormesh(y_bins, z_bins, probs_yz, cmap=CM, vmin=0., vmax=max_probability)
+    ax2.set_aspect('equal')
+    ax2.invert_xaxis()  # hack to match y axis convention
+    plt.xlabel(Y_AXIS_POSITION_LABEL)
+    plt.ylabel(Z_AXIS_POSITION_LABEL)
+    title3 = titlebase.format(type=type) + " - YZ projection" + numbers
+    plt.title(title3)
+    plt.xlim((y_min, y_max))
+    plt.ylim((z_min, z_max))
+    the_divider = make_axes_locatable(ax2)
+    color_axis = the_divider.append_axes("right", size="5%", pad=0.1)
+    cbar2 = plt.colorbar(heatmap_yz, cax=color_axis)
+    cbar2.ax.set_ylabel(PROBABILITY_LABEL)
+    plt.savefig(os.path.join(path, title3 + fileappend), format="svg")
+
+
+    # if windtunnel_object.test_condition is not None:
+    #     heaterCircle, detectCircle = draw_heater(windtunnel_object.on_heater_loc)
+    #     ax.add_artist(heaterCircle)
+    #     ax.add_artist(detectCircle)
 
     #        #
     #            # draw cage
     #            cage = draw_cage()
     #            hextraj.ax_joint.add_patch(cage)
-    ax.set_aspect('equal')
-    #        ax.invert_yaxis()  # hack to match y axis convention --- now unneeded?
-    ax.set_ylim([0.127, -.127])  # keep positive first to invert axis
-    ax.set_xlim([0.25, 0.95])
 
-    # overwrite previous plot schwag
-    cbar = plt.colorbar(heatmap, shrink=0.5, pad=0.05)
-    cbar.ax.set_ylabel('Probability')
-    plt.title("Agent trajectories 2D position histogram (n = {})".format(total_trajectories))
-    plt.xlabel("Upwind/$x$ (meters)")
-    plt.ylabel("Crosswind/$y$ (meters)")
 
-    if agent_obj is not None:
-        titleappend = agent_to_fname_suffix(agent_obj)
-        path = MODEL_FIG_PATH
-    else:
-        titleappend = ''
-        path = EXPERIMENT_FIG_PATH
-
-    plt.savefig(os.path.join(path, "Trajectories heatmap" + titleappend), format="svg")
-    plt.show()
+    #
+    # plt.savefig(os.path.join(path, "Trajectories heatmap" + titleappend), format="svg")
+    # plt.show()
 
 
 def plot_kinematic_histograms(
@@ -213,8 +228,8 @@ def plot_kinematic_histograms(
         axs[0].legend()
     axs[0].set_title("Upwind ($x$) Position Distributions", fontsize=12)
     axs[0].set_xlim(xpos_min + pos_binwidth / 2, xpos_max - pos_binwidth / 2)
-    axs[0].set_xlabel("Position ($m$)")
-    axs[0].set_ylabel("Probability")
+    axs[0].set_xlabel(Z_AXIS_POSITION_LABEL)
+    axs[0].set_ylabel(PROBABILITY_LABEL)
 
     # Y pos
     ypos_min, ypos_max = -0.127, 0.127
@@ -243,8 +258,8 @@ def plot_kinematic_histograms(
         axs[1].fill_between(ypos_bins[:-1] + pos_binwidth / 2, 0, ypos_counts_norm, facecolor='blue', alpha=0.1)
         axs[1].legend()
     axs[1].set_title("Cross-wind ($y$) Position Distributions")
-    axs[1].set_xlabel("Position ($m$)")
-    axs[1].set_ylabel("Probability")
+    axs[1].set_xlabel(Y_AXIS_POSITION_LABEL)
+    axs[1].set_ylabel(PROBABILITY_LABEL)
 
     #    Z
     zpos_min, zpos_max = 0, 0.254
@@ -273,8 +288,8 @@ def plot_kinematic_histograms(
         axs[2].fill_between(zpos_bins[:-1] + pos_binwidth / 2, 0, zpos_counts_norm, facecolor='blue', alpha=0.1)
         axs[2].legend()
     axs[2].set_title("Elevation ($z$) Position Distributions")
-    axs[2].set_xlabel("Position ($m$)")
-    axs[2].set_ylabel("Probability")
+    axs[2].set_xlabel(Z_AXIS_POSITION_LABEL)
+    axs[2].set_ylabel(PROBABILITY_LABEL)
 
     ## Velo distributions
     vmin, vmax = -.7, .7
@@ -316,7 +331,7 @@ def plot_kinematic_histograms(
 
     axs[3].set_title("Velocity Distributions")
     axs[3].set_xlabel("Velocity ($m/s$)", fontsize=12)
-    axs[3].set_ylabel("Probability", fontsize=12)
+    axs[3].set_ylabel(PROBABILITY_LABEL, fontsize=12)
     axs[3].legend(fontsize=14)
 
     ## Acceleration distributions
@@ -361,7 +376,7 @@ def plot_kinematic_histograms(
     axs[4].fill_between(aabs_bins[:-1], 0, aabs_counts_n, facecolor='yellow', alpha=0.1)
     axs[4].set_title("Acceleration Distribution")
     axs[4].set_xlabel("Acceleration ($m^s/s$)")
-    axs[4].set_ylabel("Probability")
+    axs[4].set_ylabel(PROBABILITY_LABEL)
     axs[4].legend(fontsize=14)
 
     gs1.tight_layout(statefig, rect=[0, 0.03, 1, 0.95])  # overlapping text hack
@@ -383,7 +398,7 @@ def plot_forces_violinplots(ensemble, agent_obj):
     ensembleF = ensemble.loc[
         (ensemble['position_x'] > 0.25) & (ensemble['position_x'] < 0.95),
             ['totalF_x', 'totalF_y', 'totalF_z',
-            'biasF_x', 'biasF_y', 'biasF_z',
+             'randomF_x', 'randomF_y', 'randomF_z',
             'upwindF_x',
             'wallRepulsiveF_x', 'wallRepulsiveF_y', 'wallRepulsiveF_z',
             'stimF_x', 'stimF_y']] #, 'stimF_z']]== Nans
@@ -503,8 +518,8 @@ def plot_compass_histogram(vector_name, ensemble, agent_obj, kind='avg_mag_per_b
     #            r'$\pi$',r'$\frac{5\pi}{4}$',r'$\frac{3\pi}{2}$',r'$\frac{7\pi}{4}$']
     #        plt.xticks(xT, xL, size = 20)
     #        plt.title("Agent velocities 0.25 < x < 0.5, center repulsion on (n = {})".format(agent_obj['total_trajectories']), y=1.1)
-    #        plt.savefig("./figs/Compass plot , center repulsion on_ beta{beta}_rf{biasF_scale}_wf{wtf}_N{total_trajectories}.svg".format(\
-    #            beta=agent_obj['beta'], biasF_scale=agent_obj['randomF_strength'], wtf=agent_obj['wtF'], total_trajectories=agent_obj['total_trajectories']), format="svg")
+    #        plt.savefig("./figs/Compass plot , center repulsion on_ beta{beta}_rf{randomF_scale}_wf{wtf}_N{total_trajectories}.svg".format(\
+    #            beta=agent_obj['beta'], randomF_scale=agent_obj['randomF_strength'], wtf=agent_obj['wtF'], total_trajectories=agent_obj['total_trajectories']), format="svg")
 
     if kind == 'avg_mag_per_bin':
         """for each bin, we want the average magnitude
@@ -576,7 +591,7 @@ def draw_cylinder(center_x, center_y, z_min, z_max, r=0.01905, n=5):
     return x, y, z
 
 
-def plot3D_trajectory(ensemble, plot_kwargs=None):
+def plot3D_trajectory(trajectory, plot_kwargs=None):
     '''plotting without coloring
     '''
 
@@ -584,10 +599,9 @@ def plot3D_trajectory(ensemble, plot_kwargs=None):
     threedee = fig3D.gca(projection='3d')
     # threedee.auto_scale_xyz([0., 1.], [0., 0.3], [0., 0.254])
     # threedee.set_aspect('equal')
-    threedee.plot(ensemble.position_y, ensemble.position_x, ensemble.position_z)
+    threedee.plot(trajectory.position_y, trajectory.position_x, trajectory.position_z)
 
     # # Cylinder
-    #
     # # get points from cylinder and plot
     # cx, cy, zmin, zmax, diam, label = cylinder(*agent_obj['heater_position'])
     # threedee.plot_wireframe(cx, cy, zmax)
@@ -600,7 +614,7 @@ def plot3D_trajectory(ensemble, plot_kwargs=None):
     threedee.set_xlabel("Crosswind/$y$ (meters)", fontsize=14)  # remember! x,y switched in plot() above!
     threedee.set_ylabel("Upwind/$x$ (meters)", fontsize=14)
     threedee.set_zlabel("Elevation/$z$ (meters)", fontsize=14)
-    threedee.set_title(plot_kwargs['title'] + plot_kwargs['titleappend'], fontsize=20)
+    threedee.set_title(plot_kwargs['title'], fontsize=20)
 
     # plt.savefig("./correlation_figs/Trajectory.svg"., format="svg")
 
@@ -609,131 +623,177 @@ def plot3D_trajectory(ensemble, plot_kwargs=None):
     # todo: plot cylinder, detect circle, cage
 
 
-def visualize_forces(ensemble):
-        import math_sorcery
+def plot_vector_cloud(ensemble, kinematic):
+    labels = []
+    for dim in ['x', 'y', 'z']:
+        labels.append(kinematic + '_' + dim)
 
-        # visualize direction selection
-        fig = plt.figure(1)
-        ax = fig.add_subplot(111, projection='3d')
+    # grab labels
+    vecs = []
+    selection = ensemble.loc[:, labels]
+    arrays = selection.values
+    transpose = arrays.T  # 3 x timesteps matrix
+    xs, ys, zs = transpose[0], transpose[1], transpose[2]
 
-        Npoints = 1000
-        data = np.zeros((Npoints, 3))
-        for point in range(Npoints):
-            data[point] = math_sorcery.gen_symm_vecs(3)
+    # find longest edge
+    longest_edge = abs(max(transpose.min(), transpose.max(), key=abs))
+    longest_edge *= 1.05  # add padding
 
-        x = data[:,0]
-        y = data[:,1]
-        z = data[:,2]
+    # Attaching 3D axis to the figure
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    ax.set_title('Visualization of {} 3D vector distribution'.format(kinematic))
+    ax.autoscale(enable=False, axis='both')  # you will need this line to change the Z-axis
+    ax.set_xbound(-longest_edge, +longest_edge)
+    ax.set_ybound(-longest_edge, +longest_edge)
+    ax.set_zbound(-longest_edge, +longest_edge)
 
-        ax.scatter(x, y, z, c='b', marker='.', alpha=0.2)
-        ax.scatter(0,0,0, c='r', marker='o', s=50)
+    colors = np.linspace(0, 1, len(xs))
+    ensemble_cmap = CM(colors)
+    i = range(len(ensemble))
 
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_zlabel('Z')
-        plt.title("Visualization of F_random direction selection")
-        plt.savefig('F_rand_direction_selection.png')
-        plt.show()
-
-        ##############################################################################################
-        #F_total
-        ##############################################################################################
-
-        fig = plt.figure(3)
-        ax = fig.add_subplot(111, projection='3d')
-        x = ensemble.totalF_x
-        y = ensemble.totalF_y
-        z = ensemble.totalF_z
-
-        ax.scatter(x, y, z, c='b', marker='.', alpha=0.2)
-        ax.scatter(0,0,0, c='r', marker='o', s=50)
-
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_zlabel('Z')
-        plt.title("Visualization of F_total")
-        plt.savefig('F_total_cloud.png')
-        plt.show()
-
-        ##############################################################################################
-        # F_stim
-        ##############################################################################################
+    ax.scatter(0, 0, 0, c='r', marker='o', s=50)  # mark origin
+    ax.scatter(xs, ys, zs, '.', s=80, linewidths=0, c=ensemble_cmap)
 
 
-        fig = plt.figure(4)
-        ax = fig.add_subplot(111, projection='3d')
-        x = ensemble.stimF_x
-        y = ensemble.stimF_y
-        z = ensemble.stimF_z
+def plot_all_force_clouds(ensemble):
+    import math_sorcery
 
-        ax.scatter(x, y, z, c='b', marker='.', alpha=0.2)
-        ax.scatter(0,0,0, c='r', marker='o', s=50)
+    # visualize direction selection
+    fig = plt.figure(1)
+    ax = fig.add_subplot(111, projection='3d')
 
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_zlabel('Z')
-        plt.title("Visualization of F_stim")
-        plt.savefig('F_stim_cloud.png')
-        plt.show()
+    Npoints = 1000
+    data = np.zeros((Npoints, 3))
 
-        ##############################################################################################
-        # F_upwind
-        ##############################################################################################
+    for point in range(Npoints):
+        data[point] = math_sorcery.gen_symm_vecs(3)
 
+    x = data[:, 0]
+    y = data[:, 1]
+    z = data[:, 2]
 
-        fig = plt.figure(5)
-        ax = fig.add_subplot(111, projection='3d')
-        x = ensemble.upwindF_x
-        y = ensemble.upwindF_y
-        z = ensemble.upwindF_z
+    ax.scatter(x, y, z, c=ensemble_cmap, marker='.', s=80, linewidths=0)
+    ax.scatter(0, 0, 0, c='r', marker='o', s=150, linewidths=0)
 
-        ax.scatter(x[:20], y[:20], z[:20], c='b', marker='.', alpha=0.2)
-        ax.scatter(0,0,0, c='r', marker='o', s=50)
-
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_zlabel('Z')
-        plt.title("Visualization of F_upwind")
-        plt.savefig('F_upwind_cloud.png')
-        plt.show()
-
-        ##############################################################################################
-        # F_random
-        ##############################################################################################
-
-        fig = plt.figure(6)
-        ax = fig.add_subplot(111, projection='3d')
-        x = ensemble.biasF_x
-        y = ensemble.biasF_y
-        z = ensemble.biasF_z
-
-        ax.scatter(x, y, z, c='b', marker='.', alpha=0.2)
-        ax.scatter(0,0,0, c='r', marker='o', s=50)
-
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_zlabel('Z')
-        plt.title("Visualization of F_random")
-        plt.savefig('F_random_cloud.png')
-        plt.show()
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    plt.title("Visualization of F_random direction selection")
+    plt.savefig('F_rand_direction_selection.png')
+    plt.show()
 
 
-        ##############################################################################################
-        #F_wall repulsion
-        ##############################################################################################
 
-        fig = plt.figure(7)
-        ax = fig.add_subplot(111, projection='3d')
-        x = ensemble.wallRepulsiveF_x
-        y = ensemble.wallRepulsiveF_y
-        z = ensemble.wallRepulsiveF_z
 
-        ax.scatter(x, y, z, c='b', marker='.', alpha=0.2)
-        ax.scatter(0,0,0, c='r', marker='o', s=50)
+    ##############################################################################################
+    # colors for rest of this funct
+    ##############################################################################################
+    colors = np.linspace(0, 1, len(ensemble))
+    ensemble_cmap = CM(colors)
+    ##############################################################################################
+    # F_total
+    ##############################################################################################
 
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_zlabel('Z')
-        plt.title("Visualization of F_wall repulsion")
-        plt.savefig('F_wall repulsion_cloud.png')
-        plt.show()
+    fig = plt.figure(3)
+    ax = fig.add_subplot(111, projection='3d')
+    x = ensemble.totalF_x
+    y = ensemble.totalF_y
+    z = ensemble.totalF_z
+
+    ax.scatter(x, y, z, marker='.', s=80, linewidths=0, c=ensemble_cmap)
+    ax.scatter(0, 0, 0, c='r', marker='o', s=150, linewidths=0)  # mark center
+
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    plt.title("Visualization of F_total")
+    plt.savefig('F_total_cloud.png')
+    plt.show()
+
+    ##############################################################################################
+    # F_stim
+    ##############################################################################################
+
+
+    fig = plt.figure(4)
+    ax = fig.add_subplot(111, projection='3d')
+    x = ensemble.stimF_x
+    y = ensemble.stimF_y
+    z = ensemble.stimF_z
+
+    ax.scatter(x, y, z, marker='.', s=80, linewidths=0, c=ensemble_cmap)
+    ax.scatter(0, 0, 0, c='r', marker='o', s=50)
+
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    plt.title("Visualization of F_stim")
+    plt.savefig('F_stim_cloud.png')
+    plt.show()
+
+    ##############################################################################################
+    # F_upwind
+    ##############################################################################################
+
+
+    fig = plt.figure(5)
+    ax = fig.add_subplot(111, projection='3d')
+    x = ensemble.upwindF_x
+    y = ensemble.upwindF_y
+    z = ensemble.upwindF_z
+
+    ax.scatter(x[:20], y[:20], z[:20], marker='.', s=80, linewidths=0, c=ensemble_cmap)
+    ax.scatter(0, 0, 0, c='r', marker='o', s=50)
+
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    plt.title("Visualization of F_upwind")
+    plt.savefig('F_upwind_cloud.png')
+    plt.show()
+
+    ##############################################################################################
+    # F_random
+    ##############################################################################################
+
+    fig = plt.figure(6)
+    ax = fig.add_subplot(111, projection='3d')
+    x = ensemble.randomF_x
+    y = ensemble.randomF_y
+    z = ensemble.randomF_z
+    i = range(len(ensemble))
+
+    ax.scatter(x, y, z, marker='.', s=80, linewidths=0, c=ensemble_cmap)
+    ax.scatter(0, 0, 0, c='r', marker='o', s=50)
+
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    plt.title("Visualization of F_random")
+    plt.savefig('F_random_cloud.png')
+    plt.show()
+
+
+    ##############################################################################################
+    # F_wall repulsion
+    ##############################################################################################
+
+    fig = plt.figure(7)
+    ax = fig.add_subplot(111, projection='3d')
+    x = ensemble.wallRepulsiveF_x
+    y = ensemble.wallRepulsiveF_y
+    z = ensemble.wallRepulsiveF_z
+
+    ax.scatter(x, y, z, marker='.', s=80, linewidths=0, c=ensemble_cmap)
+    ax.scatter(0, 0, 0, c='r', marker='o', s=50)
+
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    plt.title("Visualization of F_wall repulsion")
+    plt.savefig('F_wall repulsion_cloud.png')
+    plt.show()
