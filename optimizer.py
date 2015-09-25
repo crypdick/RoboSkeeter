@@ -1,7 +1,6 @@
 __author__ = 'richard'
 
 from scipy.optimize import basinhopping
-import numpy as np
 import logging
 from datetime import datetime
 
@@ -12,11 +11,11 @@ import agent
 import plume
 import windtunnel
 import trajectory
-from scripts import i_o
+from scripts import pickle_experiments
 
 
 # wrapper func for agent 3D
-def fly_wrapper(GUESS, experimental_traj, *args):
+def fly_wrapper(GUESS, *args):
     """
     :param bias_scale_GUESS:
     :param mass_GUESS:
@@ -25,49 +24,45 @@ def fly_wrapper(GUESS, experimental_traj, *args):
         estimated damping was 5e-6, # cranked up to get more noise #5e-6,#1e-6,  # 1e-5
     :return:
     """
-    global HIGH_SCORE
+    # load  pickled experimental data just once
+    experimental_trajs = pickle_experiments.load_mosquito_pickle()
+
     BETA, FORCES_AMPLITUDE, F_WIND_SCALE = GUESS
     HEATER = None
     K = 0  # no wall force for optimization
+    F_STIM_SCALE = 0
 
-    N_TRAJECTORIES, v_observed, a_observed, experimental_traj = args
+    N_TRAJECTORIES = args
     #  F_WALL_SCALE aka k
     #  when we run this, agent3D is run and we return a score
+
 
     windtunnel_object = windtunnel.Windtunnel(None) # we are fitting for the control condition
     plume_object = plume.Plume(HEATER)
     #  temperature plume
     agent_trajectories = trajectory.Trajectory() # instantiate empty trajectories object
     skeeter = agent.Agent(
-        agent_trajectories,
-        plume_object,
-        windtunnel_object,
-        mass=2.88e-6,
-        initial_position_selection="downwind_plane",
         experimental_condition=HEATER,
         windF_strength=F_WIND_SCALE,
         randomF_strength=FORCES_AMPLITUDE,
-        stimF_stength=0., # F_STIM_SCALE,
+        stimF_stength=F_STIM_SCALE,
         damping_coeff=BETA,
-        spring_const=K, #
-        time_max=15.,
-        dt=0.01,
-        bounded=True)
+        spring_const=K,
+        bounded=False)
 
     skeeter.fly(total_trajectories=N_TRAJECTORIES, verbose=False)  # fix N trajectories in main
 
     ensemble = agent_trajectories.data
 
-    combined_score, dkl_scores, dkl_a, dkl_v, acf_score, aabs_bins, a_counts_n, vabs_bins, v_counts_n\
-        = score.score(agent_trajectories, experimental_traj, ACF_THRESH)
+    combined_score, dkl_scores = score.score(agent_trajectories, experimental_trajs)
 
     if combined_score < HIGH_SCORE:
         HIGH_SCORE = combined_score
-    if PLOTTER is True:
-        error_plotter(ensemble, GUESS, dkl_scores, acf_score, aabs_bins, a_counts_n, vabs_bins, v_counts_n, v_observed, a_observed)
-
-    if np.any(np.isinf(dkl_scores)):
-        error_plotter(ensemble, GUESS, dkl_scores, acf_score, aabs_bins, a_counts_n, vabs_bins, v_counts_n, v_observed, a_observed)
+    # if PLOTTER is True:
+    #     error_plotter(ensemble, GUESS, dkl_scores, acf_score, aabs_bins, a_counts_n, vabs_bins, v_counts_n, v_observed, a_observed)
+    #
+    # if np.any(np.isinf(dkl_scores)):
+    #     error_plotter(ensemble, GUESS, dkl_scores, acf_score, aabs_bins, a_counts_n, vabs_bins, v_counts_n, v_observed, a_observed)
 
     return combined_score
 
@@ -98,29 +93,25 @@ def error_plotter(ensemble, guess, dkl_scores, acf_score, aabs_bins, a_counts_n,
 def main():
     print "Starting optimizer."
 
-    logging.info("""\n ############################################################
-    ############################################################
-    {} Start optimization with {} algorithm
-    # trajectories = {}
-    Params = {}
-    Initial Guess = {}
-    ############################################################""".format(
-        datetime.now(), OPTIM_ALGORITHM, N_TRAJECTORIES, guess_params, INITIAL_GUESS))
 
     guess_params = "[BETA, FORCES_AMPLITUDE, F_WIND_SCALE]"  # [5e-6, 4.12405e-6, 5e-7]
-    v_observed, a_observed = i_o.load_csv2np()
 
-    # load experimental trajectories to score against
-    experimental_traj = trajectory.Trajectory()
-    experimental_traj.load_experiments()
+    logging.info("""\n ############################################################
+        ############################################################
+        {} Start optimization with {} algorithm
+        # trajectories = {}
+        Params = {}
+        Initial Guess = {}
+        ############################################################""".format(
+        datetime.now(), OPTIM_ALGORITHM, N_TRAJECTORIES, guess_params, INITIAL_GUESS))
 
-    # import pdb; pdb.set_trace()
     result = basinhopping(
         fly_wrapper,
         INITIAL_GUESS,
         # stepsize=1e-5,
         # T=1e-4,
-        minimizer_kwargs={"args": (N_TRAJECTORIES, v_observed, a_observed, experimental_traj), 'method': OPTIM_ALGORITHM,  "bounds": ((0, None),(0,None),(0,None))}
+        minimizer_kwargs={"args": (N_TRAJECTORIES,), 'method': OPTIM_ALGORITHM,
+                          "bounds": ((0, None), (0, None), (0, None))}
         # disp=True
         )
 
@@ -130,7 +121,6 @@ def main():
 if __name__ == '__main__':
     logging.basicConfig(filename='basin_hopping.log',level=logging.DEBUG)
 
-    global HIGH_SCORE
     HIGH_SCORE = 1e10
 
     OPTIM_ALGORITHM = 'SLSQP'
