@@ -93,7 +93,7 @@ class Trajectory():
             'curvatureS'
         ]
 
-        for fname in os.listdir(directory):  # list files
+        for fname in [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]:  # list files
             print "Loading " + fname
             file_path = os.path.join(directory, fname)
             base_name = os.path.splitext(file_path)[0]
