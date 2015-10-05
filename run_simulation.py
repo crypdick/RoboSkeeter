@@ -11,7 +11,7 @@ MASS = 2.88e-6
 K = 0.  # 1e-7               # set to zero to disable wall attraction
 BOUNDED = False
 
-trajectories, skeeter = agent.gen_objects_and_fly(
+simulation, skeeter = agent.gen_objects_and_fly(
     N_TRAJECTORIES,
     TEST_CONDITION,
     BETA,
@@ -26,7 +26,7 @@ trajectories, skeeter = agent.gen_objects_and_fly(
 print "\nDone."
 
 ######################### plotting methods
-trajectories.plot_single_3Dtrajectory(0)  # plot ith trajectory in the ensemble of trajectories
+simulation.plot_single_3Dtrajectory(0)  # plot ith trajectory in the ensemble of trajectories
 
 # trajectories.plot_kinematic_hists()
 # trajectories.plot_posheatmap()

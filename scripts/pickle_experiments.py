@@ -1,5 +1,6 @@
 __author__ = 'richard'
 import pickle
+import os
 
 from scripts import i_o
 import trajectory

@@ -93,8 +93,7 @@ def error_plotter(ensemble, guess, dkl_scores, acf_score, aabs_bins, a_counts_n,
 def main():
     print "Starting optimizer."
 
-
-    guess_params = "[BETA, FORCES_AMPLITUDE, F_WIND_SCALE]"  # [5e-6, 4.12405e-6, 5e-7]
+    guess_params = "[BETA, RANDF_STRENGTH, F_WIND_SCALE]"  # [5e-6, 4.12405e-6, 5e-7]
 
     logging.info("""\n ############################################################
         ############################################################
