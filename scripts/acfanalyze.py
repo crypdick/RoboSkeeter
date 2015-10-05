@@ -13,9 +13,7 @@ plt.style.use('ggplot')
 
 ACF_THRESH = 0.5
 NLAGS = 70
-TRAJECTORY_DATA_REL_DIR = "data/experiments/trajectories/control_trajectories/"
 
-csv_list = i_o.get_csv_name_list(TRAJECTORY_DATA_REL_DIR)
 
 
 def arg_less(inarray,threshold):
@@ -45,13 +43,15 @@ def index_drop(df, thresh=ACF_THRESH, verbose=True):
     return indices
 
 if __name__ == '__main__':
-    csv_list = i_o.get_csv_name_list(TRAJECTORY_DATA_REL_DIR)
+    CONTROL_EXP_PATH = i_o.get_directory('CONTROL_EXP_PATH')
+
+    csv_list = i_o.get_csv_name_list(CONTROL_EXP_PATH)
 
     df_list = []
     traj_count = 0
     for csv_name in csv_list:
         # print csv_name
-        df = i_o.load_csv2DF(csv_name, rel_dir=TRAJECTORY_DATA_REL_DIR)
+        df = i_o.load_csv2DF(csv_name, rel_dir=CONTROL_EXP_PATH)
         df['trajectory_num'] = traj_count
         df_list.append(df)
         traj_count += 1

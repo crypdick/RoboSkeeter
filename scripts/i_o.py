@@ -5,14 +5,15 @@ Created on Tue Apr 21 17:21:42 2015
 @author: richard
 """
 import os
-import pandas as pd
 import numpy as np
-import csv
-from glob import glob
 from Tkinter import Tk
 from tkFileDialog import askdirectory
 
-    
+import pandas as pd
+
+import unit_tests  # hack to get root dir
+
+
 def load_experiment_csv(file_path):
     """loads csv as-is"""
 #    file_path = os.path.join(script_dir, rel_data_path, filename)
@@ -91,11 +92,45 @@ def get_csv_filepath_list(path, csv_list):
     paths = [os.path.join(path, fname) for fname in csv_list]
     return paths
 
-def get_directory():
-    Tk().withdraw()
-    directory = askdirectory()
-    print("Selected dir {}".format(directory))
-    return directory
+
+def get_directory(selection=None):
+    """Centralized func to define directories, or select using dialog box
+
+    In:
+    Selection
+        None, open dialog box
+        PROJECT_PATH = os.path.dirname(trajectory.__file__)
+        MODEL_PATH = os.path.join(PROJECT_PATH, 'data', 'model')
+        EXPERIMENT_PATH = os.path.join(PROJECT_PATH, 'data', 'experiments')
+        CONTROL_EXP_PATH = os.path.join(EXPERIMENT_PATH, 'control_processed_and_filtered')
+
+    Out:
+    directory path
+    """
+
+    PROJECT_PATH = os.path.dirname(unit_tests.__file__)
+    MODEL_PATH = os.path.join(PROJECT_PATH, 'data', 'model')
+    EXPERIMENT_PATH = os.path.join(PROJECT_PATH, 'data', 'experiments')
+    CONTROL_EXP_PATH = os.path.join(EXPERIMENT_PATH, 'control_processed_and_filtered')
+
+    if selection is None:
+        Tk().withdraw()
+        directory = askdirectory()
+        print("Selected dir {}".format(directory))
+        return directory
+    if selection is 'PROJECT_PATH':
+        return PROJECT_PATH
+    if selection is 'MODEL_PATH':
+        return MODEL_PATH
+    if selection is 'EXPERIMENT_PATH':
+        return EXPERIMENT_PATH
+    if selection is 'CONTROL_EXP_PATH':
+        return CONTROL_EXP_PATH
+
+
+
+
+
 
 if __name__ == '__main__':
     a = load_csv2DF('Control-27')
