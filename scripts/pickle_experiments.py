@@ -1,17 +1,16 @@
 __author__ = 'richard'
-import os
 import pickle
 
+from scripts import i_o
 import trajectory
 
-PROJECT_PATH = os.path.dirname(trajectory.__file__)
-MODEL_PATH = os.path.join(PROJECT_PATH, 'data', 'model')
-EXPERIMENT_PATH = os.path.join(PROJECT_PATH, 'data', 'experiments')
+CONTROLS = i_o.get_directory('CONTROL_EXP_PATH')
+EXPERIMENT_PATH = i_o.get_directory('EXPERIMENT_PATH')
 
 
 def store_mosquito_pickle():
-    MOSQUITOES = trajectory.Trajectory()
-    MOSQUITOES.load_experiments()
+    MOSQUITOES = trajectory.Experimental_Trajectory()
+    MOSQUITOES.load_experiments(directory=CONTROLS)
     pickle.dump(MOSQUITOES, open(os.path.join(EXPERIMENT_PATH, "controls.p"), "wb"))
 
 
