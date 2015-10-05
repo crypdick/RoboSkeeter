@@ -128,7 +128,7 @@ class Agent():
         # generate temperature plume
         plume_object = plume.Plume(self.experimental_condition)
         # instantiate empty trajectories class
-        trajectories_object = trajectory.Trajectory()
+        trajectories_object = trajectory.Agent_Trajectory()
         trajectories_object.add_agent_info(self)
         forces_object = forces.Forces()
 
@@ -417,8 +417,8 @@ class Agent():
         return candidate_pos, candidate_velo
 
 
-
-def gen_objects_and_fly(N_TRAJECTORIES, TEST_CONDITION, BETA, FORCES_AMPLITUDE, F_WIND_SCALE, K, bounded=True):
+def gen_objects_and_fly(N_TRAJECTORIES, TEST_CONDITION, BETA, RANDF_STRENGTH, Fwind_strength, F_stim_scale, MASS, K,
+                        bounded=True):
     """
     Params fitted using scipy.optimize
 
@@ -427,9 +427,10 @@ def gen_objects_and_fly(N_TRAJECTORIES, TEST_CONDITION, BETA, FORCES_AMPLITUDE, 
     skeeter = Agent(
         mass=MASS,
         initial_position_selection="downwind_plane",
-        windF_strength=F_WIND_SCALE,
-        randomF_strength=FORCES_AMPLITUDE,
-        stimF_stength=F_STIM_SCALE,
+        windF_strength=Fwind_strength,
+        randomF_strength=RANDF_STRENGTH,
+        experimental_condition=TEST_CONDITION,
+        stimF_stength=F_stim_scale,
         spring_const=K,
         damping_coeff=BETA,
         time_max=4.,
@@ -446,43 +447,3 @@ def gen_objects_and_fly(N_TRAJECTORIES, TEST_CONDITION, BETA, FORCES_AMPLITUDE, 
 #    trajectories.describe(plot_kwargs = {'trajectories':False, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_scatter':True, 'force_violin':True})
     #trajectories.plot_single_3Dtrajectory()
 #    
-    
-
-if __name__ == '__main__':
-    N_TRAJECTORIES = 5
-    TEST_CONDITION = None  # {'Left', 'Right', None}
-    # old beta- 5e-5, forces 4.12405e-6, fwind = 5e-7
-    BETA, FORCES_AMPLITUDE, F_WIND_SCALE =  [  1.37213380e-06  , 1.39026239e-06 ,  7.06854777e-07]
-    MASS = 2.88e-6
-    F_STIM_SCALE = 0.  #7e-7,   # set to zero to disable tracking hot air
-    K = 0.  #1e-7               # set to zero to disable wall attraction
-    BOUNDED = False
-
-    trajectories, skeeter = gen_objects_and_fly(N_TRAJECTORIES, TEST_CONDITION, BETA, FORCES_AMPLITUDE, F_WIND_SCALE, K, bounded=BOUNDED)
-
-    print "\nDone."
-
-    ######################### plotting methods
-    trajectories.plot_single_3Dtrajectory(0)  # plot ith trajectory in the ensemble of trajectories
-
-    # trajectories.plot_kinematic_hists()
-    # trajectories.plot_posheatmap()
-    # trajectories.plot_force_violin()  # TODO: fix Nans in arrays
-    # trajectories.plot_kinematic_compass()
-    # trajectories.plot_sliced_hists()
-
-    ######################### dump data for csv for Sharri
-    # print "dumping to csvs"
-    # e = trajectories.data
-    # r = e.trajectory_num.iloc[-1]
-    #
-    # for i in range(r+1):
-    #     e1 = e.loc[e['trajectory_num'] == i, ['position_x', 'position_y', 'position_z', 'inPlume']]
-    #     e1.to_csv("l"+str(i)+'.csv', index=False)
-    #
-    # # trajectories.plot_kinematic_hists()
-    # # trajectories.plot_posheatmap()
-    # # trajectories.plot_force_violin()
-    #
-    # # # for plume stats
-    # # g = e.loc[e['behavior_state'].isin(['Left_plume Exit left', 'Left_plume Exit right', 'Right_plume Exit left', 'Right_plume Exit right'])]

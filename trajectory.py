@@ -49,12 +49,15 @@ import score
 
 class Trajectory():
     def __init__(self):
-        self.data = pd.DataFrame()
+        self.reload_data()
         self.agent_obj = None
         self.velo_kernel = None
         self.accel_kernel = None
         self.curvature_kernel = None
         self.is_agent = None
+
+    def reload_data(self):
+        self.data = pd.DataFrame()
 
     def load_ensemble_and_analyze(self, data):
         if type(data) is dict:
@@ -69,46 +72,6 @@ class Trajectory():
                 print "Trajectory.run_analysis() failed"
         else:
             raise Exception
-
-    def load_experiments(self):
-        print("Enter directory with experimental data")
-        directory = i_o.get_directory()
-        self.agent_obj = None
-
-        df_list = []
-
-        col_labels = [
-            'position_x',
-            'position_y',
-            'position_z',
-            'velocity_x',
-            'velocity_y',
-            'velocity_z',
-            'acceleration_x',
-            'acceleration_y',
-            'acceleration_z',
-            'heading_angleS',
-            'angular_velo_xyS',
-            'angular_velo_yzS',
-            'curvatureS'
-        ]
-
-        for fname in [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]:  # list files
-            print "Loading " + fname
-            file_path = os.path.join(directory, fname)
-            base_name = os.path.splitext(file_path)[0]
-
-            dataframe = pd.read_csv(file_path, na_values="NaN", names=col_labels)  # recognize str(NaN) as NaN
-            dataframe.fillna(value=0, inplace=True)
-            # take fname number, skip "control_" and ".csv"
-            dataframe['trajectory_num'] = [int(fname[8:-4])] * dataframe.position_x.size
-            df_list.append(dataframe)
-
-        self.load_ensemble_and_analyze(data=df_list)
-        self.calc_kernel_bins()  # no positions, so generates bins
-
-    def add_agent_info(self, agent_obj):
-        self.agent_obj = agent_obj
 
     def run_analysis(self):
         self.test_if_agent()
@@ -179,12 +142,6 @@ class Trajectory():
             self.v_vals_experiment, self.a_vals_experiment, self.c_vals_experiment = kde_v_vals, kde_a_vals, kde_c_vals
 
         return kde_v_vals, kde_a_vals, kde_c_vals
-
-
-    def plot_force_violin(self):
-        if self.agent_obj is None:
-            raise TypeError('can\'t plot force violin for experimental data')
-        plotting.plot_forces_violinplots(self.data, self.agent_obj)
 
     def plot_position_heatmaps(self):
         trimmed_df = self._trim_df_endzones()
@@ -300,13 +257,6 @@ class Trajectory():
         print "full- + up- + down-wind"
         plotting.plot_kinematic_histograms(full_ensemble, self.agent_obj, titleappend = '', upw_ensemble = upwind_ensemble, downw_ensemble = downwind_ensemble)
 
-    def plot_vector_cloud(self, kinematic='acceleration'):
-        plotting.plot_vector_cloud(self.data, kinematic)
-
-    def visualize_forces(self):
-        """like plot_vector_cloud, but with all of the kinematics at once"""
-        plotting.plot_all_force_clouds(self.data)
-
 
     def plume_stats(self):
         """ 
@@ -361,13 +311,78 @@ class Trajectory():
         return self.data.loc[self.data['trajectory_num'] == index]
 
     def _trim_df_endzones(self):
-        return self.data.loc[(self.data['position_x'] > 0.25) & (self.data['position_x'] < 0.95)]
+        return self.data.loc[(self.data['position_x'] > 0.05) & (self.data['position_x'] < 0.95)]
 
     def test_if_agent(self):
-        """Voight-Kampff test to test whether real mosquito or a robot"""
+        """Voight-Kampff test to test whether real mosquito or a robot
+        Todo: is necessary?"""
         if self.agent_obj is None:
             type = "Mosquito"
         else:
             type = "Agent"
 
         self.is_agent = type
+
+
+class Agent_Trajectory(Trajectory):
+    def __init__(self):
+        self.is_agent = "Agent"
+
+    def visualize_forces(self):
+        """like plot_vector_cloud, but with all of the kinematics at once"""
+        plotting.plot_all_force_clouds(self.data)
+
+    def plot_vector_cloud(self, kinematic='acceleration'):
+        plotting.plot_vector_cloud(self.data, kinematic)
+
+    def plot_force_violin(self):
+        if self.agent_obj is None:
+            raise TypeError('can\'t plot force violin for experimental data')
+        plotting.plot_forces_violinplots(self.data, self.agent_obj)
+
+    def add_agent_info(self, agent_obj):
+        self.agent_obj = agent_obj
+
+
+class Experimental_Trajectory(Trajectory):
+    def __init__(self):
+        self.is_agent = "Mosquito"
+        self.agent_obj = None
+        self.load_experiments()
+
+    def load_experiments(self):
+        print("Enter directory with experimental data")
+        directory = i_o.get_directory()
+        self.agent_obj = None
+
+        df_list = []
+
+        col_labels = [
+            'position_x',
+            'position_y',
+            'position_z',
+            'velocity_x',
+            'velocity_y',
+            'velocity_z',
+            'acceleration_x',
+            'acceleration_y',
+            'acceleration_z',
+            'heading_angleS',
+            'angular_velo_xyS',
+            'angular_velo_yzS',
+            'curvatureS'
+        ]
+
+        for fname in [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]:  # list files
+            print "Loading " + fname
+            file_path = os.path.join(directory, fname)
+            base_name = os.path.splitext(file_path)[0]
+
+            dataframe = pd.read_csv(file_path, na_values="NaN", names=col_labels)  # recognize str(NaN) as NaN
+            dataframe.fillna(value=0, inplace=True)
+            # take fname number, skip "control_" and ".csv"
+            dataframe['trajectory_num'] = [int(fname[8:-4])] * dataframe.position_x.size
+            df_list.append(dataframe)
+
+        self.load_ensemble_and_analyze(data=df_list)
+        self.calc_kernel_bins()  # no positions, so generates bins
