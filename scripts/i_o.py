@@ -5,7 +5,6 @@ Created on Tue Apr 21 17:21:42 2015
 @author: richard
 """
 import os
-import numpy as np
 from Tkinter import Tk
 from tkFileDialog import askdirectory
 
@@ -69,17 +68,17 @@ def load_CSVdir_to_trajectory(relative_dir):
     return t
 
 
-def load_csv2np():
-    v_csv = np.genfromtxt(os.path.join(os.path.dirname(__file__),'experiments','velocity_distributions_uw.csv'), delimiter=',')
-    v_csv = v_csv.T
-    v_observed = v_csv[4][:-1]  # throw out last datum
-
-    # load csv values
-    a_csv = np.genfromtxt(os.path.join(os.path.dirname(__file__),'experiments','acceleration_distributions_uw.csv'), delimiter=',')
-    a_csv = a_csv.T
-    a_observed = a_csv[4][:-1]  # throw out last datum
-
-    return  v_observed, a_observed
+# def load_csv2np():
+#     v_csv = np.genfromtxt(os.path.join(os.path.dirname(__file__),'experiments','velocity_distributions_uw.csv'), delimiter=',')
+#     v_csv = v_csv.T
+#     v_observed = v_csv[4][:-1]  # throw out last datum
+#
+#     # load csv values
+#     a_csv = np.genfromtxt(os.path.join(os.path.dirname(__file__),'experiments','acceleration_distributions_uw.csv'), delimiter=',')
+#     a_csv = a_csv.T
+#     a_observed = a_csv[4][:-1]  # throw out last datum
+#
+#     return  v_observed, a_observed
 
 
 def get_csv_name_list(path, relative=True):
@@ -114,18 +113,20 @@ def get_directory(selection=None):
     CONTROL_EXP_PATH = os.path.join(EXPERIMENT_PATH, 'control_processed_and_filtered')
 
     if selection is None:
+        print("Enter directory with experimental data")
         Tk().withdraw()
         directory = askdirectory()
-        print("Selected dir {}".format(directory))
-        return directory
     if selection is 'PROJECT_PATH':
-        return PROJECT_PATH
+        directory = PROJECT_PATH
     if selection is 'MODEL_PATH':
-        return MODEL_PATH
+        directory = MODEL_PATH
     if selection is 'EXPERIMENT_PATH':
-        return EXPERIMENT_PATH
+        directory = EXPERIMENT_PATH
     if selection is 'CONTROL_EXP_PATH':
-        return CONTROL_EXP_PATH
+        directory = CONTROL_EXP_PATH
+
+    print("Directory selected: {}".format(directory))
+    return directory
 
 
 

@@ -348,11 +348,10 @@ class Experimental_Trajectory(Trajectory):
     def __init__(self):
         self.is_agent = "Mosquito"
         self.agent_obj = None
-        self.load_experiments()
 
-    def load_experiments(self):
-        print("Enter directory with experimental data")
-        directory = i_o.get_directory()
+    def load_experiments(self, directory=None):
+        directory = i_o.get_directory(selection=directory)
+
         self.agent_obj = None
 
         df_list = []
