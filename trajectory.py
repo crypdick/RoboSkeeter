@@ -18,7 +18,6 @@ trajectory.save
 """
 import numpy as np
 import os
-from scipy.stats import gaussian_kde
 import string
 
 import pandas as pd
@@ -73,15 +72,9 @@ class Trajectory():
         else:
             raise Exception
 
-    def run_analysis(self):
+    def run_analysis(self):  # FIXME: this seems obsolete
         self.test_if_agent()
         self.calc_kinematic_vals()  # evaluates kinematics
-
-        # stuff for scoring
-        self.calc_kinematic_kde()  #  estimates KDE
-        if self.is_agent is "Mosquito":
-            v_bins, a_bins, c_bins = self.calc_kernel_bins()
-            self.evaluate_kernels(v_bins, a_bins, c_bins)
 
 
     def calc_kinematic_vals(self):
@@ -106,42 +99,6 @@ class Trajectory():
             self.data[name+'_xy_mag'] = calculate_xy_magnitude(x_component, y_component)
 
 
-    def calc_kinematic_kde(self):
-        v = self.data['velocity_magn'].values
-        self.velo_kernel = gaussian_kde(v)
-
-        a = self.data['acceleration_magn'].values
-        self.accel_kernel = gaussian_kde(a)
-
-        c = self.data['curvature'].values
-        self.curvature_kernel = gaussian_kde(c)
-
-        return self.velo_kernel, self.accel_kernel, self.curvature_kernel
-
-
-    def calc_kernel_bins(self):
-        v = self.data['velocity_magn'].values
-        a = self.data['acceleration_magn'].values
-        c = self.data['curvature'].values
-
-        kde_v_bins = np.linspace(0., v.max(), 100)
-        kde_a_bins = np.linspace(0., a.max(), 100)
-        kde_c_bins = np.linspace(0., c.max(), 100)
-
-        if self.is_agent is "Mosquito":
-            self.experiment_v_bins, self.experiment_a_bins, self.experiment_c_bins = kde_v_bins, kde_a_bins, kde_c_bins
-
-        return kde_v_bins, kde_a_bins, kde_c_bins
-
-    def evaluate_kernels(self, v_bins, a_bins, c_bins):
-        kde_v_vals = self.velo_kernel(v_bins)
-        kde_a_vals = self.accel_kernel(a_bins)
-        kde_c_vals = self.curvature_kernel(c_bins)
-
-        if self.is_agent is "Mosquito":
-            self.v_vals_experiment, self.a_vals_experiment, self.c_vals_experiment = kde_v_vals, kde_a_vals, kde_c_vals
-
-        return kde_v_vals, kde_a_vals, kde_c_vals
 
     def plot_position_heatmaps(self):
         trimmed_df = self._trim_df_endzones()
@@ -186,6 +143,7 @@ class Trajectory():
             plotting.plot_compass_histogram(vector_name, df, self.agent_obj, title=title, fname=fname)
 #            magnitudes, thetas = getattr(self.data, name+).values, getattr(V, name+'_xy_theta').values
 #            plotting_funcs3D.compass_histogram(force, magnitudes, thetas, self.agent_obj)
+
        
     def plot_plume_triggered_compass(self, kind='avg_mag_per_bin'):
         behaviors = ['searching', 'entering', 'staying', 'Left_plume, exit left',
@@ -297,6 +255,7 @@ class Trajectory():
     def calc_score(self):
         total_score, scores = score.score(self)
         print "total_score ", total_score
+        print "scores", scores
 
     def _extract_number_from_fname(self, token):
         extract_digits = lambda stng: "".join(char for char in stng if char in string.digits + ".")
@@ -349,8 +308,8 @@ class Experimental_Trajectory(Trajectory):
         self.is_agent = "Mosquito"
         self.agent_obj = None
 
-    def load_experiments(self, directory=None):
-        directory = i_o.get_directory(selection=directory)
+    def load_experiments(self, selection=None):
+        directory = i_o.get_directory(selection=selection)
 
         self.agent_obj = None
 
@@ -384,4 +343,3 @@ class Experimental_Trajectory(Trajectory):
             df_list.append(dataframe)
 
         self.load_ensemble_and_analyze(data=df_list)
-        self.calc_kernel_bins()  # no positions, so generates bins

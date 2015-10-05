@@ -1,27 +1,37 @@
 __author__ = 'richard'
 
 from scipy.stats import entropy
+import numpy as np
+from scipy.stats import gaussian_kde as kde
 
 import scripts.acfanalyze
 import scripts.pickle_experiments
 
 
-def score(agent_traj, experimental_trajs=None):
-    if experimental_trajs is None:
-        experimental_trajs = scripts.pickle_experiments.load_mosquito_pickle()
+def score(targ_ensemble, ref_ensemble=None):
+    if ref_ensemble is None:
+        ref_ensemble = scripts.pickle_experiments.load_mosquito_pickle()  # load control data
 
-    v_bins, a_bins, c_bins = experimental_trajs.experiment_v_bins, experimental_trajs.experiment_a_bins, experimental_trajs.experiment_c_bins
-    v_vals_experiment, a_vals_experiment, c_vals_experiment = experimental_trajs.v_vals_experiment, experimental_trajs.a_vals_experiment, experimental_trajs.c_vals_experiment
+    ref_data = get_data(ref_ensemble)
+    experimental_bins = calc_bins(ref_data)
+    experimental_KDEs = calc_kde(ref_data)
+    experimental_vals = evaluate_kdes(experimental_KDEs, experimental_bins)
 
-    v_vals_agent, a_vals_agent, c_vals_agent = agent_traj.evaluate_kernels(v_bins, a_bins, c_bins)
+    targ_data = get_data(targ_ensemble)
+    targ_KDEs = calc_kde(targ_data)
+    targ_vals = evaluate_kdes(targ_KDEs, experimental_bins)  # we evaluate targ KDE at experimental vins for comparison
 
 
-    # solve DKL b/w agent and mosquito experiments
-    dkl_v = entropy(v_vals_agent, qk=v_vals_experiment)
-    dkl_a = entropy(a_vals_agent, qk=a_vals_experiment)
-    dkl_c = entropy(c_vals_agent, qk=c_vals_experiment)
+    # solve DKL b/w target and reference trajectories
+    dkl_v_x = entropy(targ_vals['v_x'], qk=experimental_vals['v_x'])
+    dkl_v_y = entropy(targ_vals['v_y'], qk=experimental_vals['v_y'])
+    dkl_v_z = entropy(targ_vals['v_z'], qk=experimental_vals['v_z'])
+    dkl_a_x = entropy(targ_vals['a_x'], qk=experimental_vals['a_x'])
+    dkl_a_y = entropy(targ_vals['a_y'], qk=experimental_vals['a_y'])
+    dkl_a_z = entropy(targ_vals['a_z'], qk=experimental_vals['a_z'])
+    dkl_c = entropy(targ_vals['c'], qk=experimental_vals['c']) * 6  # scaled up by 6 to increase relative importance
 
-    dkl_scores = [dkl_v, dkl_a, dkl_c]
+    dkl_scores = [dkl_v_x, dkl_v_y, dkl_v_z, dkl_a_x, dkl_a_y, dkl_a_z, dkl_c]
     dkl_score = sum(dkl_scores)
     # final_score = dkl_v
     # if np.isinf(dkl_score):
@@ -49,3 +59,55 @@ def score(agent_traj, experimental_trajs=None):
     # combined_score = dkl_score + rmse_ACF
 
     return dkl_score, dkl_scores
+
+
+def calc_kde(data):
+    kdes = {'v_x': kde(data['v_x']),
+            'v_y': kde(data['v_y']),
+            'v_z': kde(data['v_z']),
+            'a_x': kde(data['a_x']),
+            'a_y': kde(data['a_y']),
+            'a_z': kde(data['a_z']),
+            'c': kde(data['c']),
+
+            }
+
+    return kdes
+
+
+def get_data(trajectory):
+    data = {'v_x': np.abs(trajectory.data['velocity_x'].values),
+            'v_y': np.abs(trajectory.data['velocity_y'].values),
+            'v_z': np.abs(trajectory.data['velocity_z'].values),
+            'a_x': np.abs(trajectory.data['acceleration_x'].values),
+            'a_y': np.abs(trajectory.data['acceleration_y'].values),
+            'a_z': np.abs(trajectory.data['acceleration_z'].values),
+            'c': np.abs(trajectory.data['curvature'].values)
+            }
+    return data
+
+
+def calc_bins(data):
+    bins_dict = {'v_x': np.linspace(0., data['v_x'].max(), 100),
+                 'v_y': np.linspace(0., data['v_y'].max(), 100),
+                 'v_z': np.linspace(0., data['v_z'].max(), 100),
+                 'a_x': np.linspace(0., data['a_x'].max(), 100),
+                 'a_y': np.linspace(0., data['a_y'].max(), 100),
+                 'a_z': np.linspace(0., data['a_z'].max(), 100),
+                 'c': np.linspace(0., data['c'].max(), 100)
+                 }
+
+    return bins_dict
+
+
+def evaluate_kdes(KDE, bins):
+    vals = {'v_x': KDE['v_x'](bins['v_x']),
+            'v_y': KDE['v_y'](bins['v_y']),
+            'v_z': KDE['v_z'](bins['v_z']),
+            'a_x': KDE['a_x'](bins['a_x']),
+            'a_y': KDE['a_y'](bins['a_y']),
+            'a_z': KDE['a_z'](bins['a_z']),
+            'c': KDE['c'](bins['c']),
+            }
+
+    return vals
