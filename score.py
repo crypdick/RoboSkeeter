@@ -8,14 +8,17 @@ import scripts.acfanalyze
 import scripts.pickle_experiments
 
 
-def score(targ_ensemble, ref_ensemble=None):
+def score(targ_ensemble, ref_ensemble='pickle'):
     if ref_ensemble is None:
-        ref_ensemble = scripts.pickle_experiments.load_mosquito_pickle()  # load control data
+        ref_ensemble = scripts.pickle_experiments.load_mosquito_trajectory_pickle()  # load control data
 
-    ref_data = get_data(ref_ensemble)
-    experimental_bins = calc_bins(ref_data)
-    experimental_KDEs = calc_kde(ref_data)
-    experimental_vals = evaluate_kdes(experimental_KDEs, experimental_bins)
+        ref_data = get_data(ref_ensemble)
+        experimental_bins = calc_bins(ref_data)
+        experimental_KDEs = calc_kde(ref_data)
+        experimental_vals = evaluate_kdes(experimental_KDEs, experimental_bins)
+
+    if ref_ensemble is 'pickle':
+        experimental_bins, experimental_vals = scripts.pickle_experiments.load_mosquito_kdes()
 
     targ_data = get_data(targ_ensemble)
     targ_KDEs = calc_kde(targ_data)
