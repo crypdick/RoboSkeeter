@@ -4,6 +4,8 @@ from scipy.stats import entropy
 import numpy as np
 from scipy.stats import gaussian_kde as kde
 
+import pandas as pd  # fixme
+
 import scripts.acfanalyze
 import scripts.pickle_experiments
 
@@ -21,7 +23,7 @@ def score(targ_ensemble, ref_ensemble='pickle'):
         experimental_bins, experimental_vals = scripts.pickle_experiments.load_mosquito_kdes()
 
     targ_data = get_data(targ_ensemble)
-    targ_KDEs = calc_kde(targ_data)
+    targ_KDEs = calc_kde(targ_data, targ_ensemble)
     targ_vals = evaluate_kdes(targ_KDEs, experimental_bins)  # we evaluate targ KDE at experimental vins for comparison
 
 
@@ -64,16 +66,34 @@ def score(targ_ensemble, ref_ensemble='pickle'):
     return dkl_score, dkl_scores
 
 
-def calc_kde(data):
-    kdes = {'v_x': kde(data['v_x']),
+def calc_kde(data, ensemble):  # fixme remove ensemble after debugging
+    try:
+        kdes = {'v_x': kde(data['v_x']),
             'v_y': kde(data['v_y']),
-            'v_z': kde(data['v_z']),
+                'v_z': kde(data['v_z'])}
+    except ValueError:  # ValueError: array must not contain infs or NaNs
+        print "Infs, Nans"
+        print "velos", data['v_x'], data['v_y'], data['v_z']
+        print "accels", data['a_x'], data['a_y'], data['a_z']
+        print ensemble.data['trajectory_num']
+
+    try:
+        kdes.update({
             'a_x': kde(data['a_x']),
             'a_y': kde(data['a_y']),
             'a_z': kde(data['a_z']),
             'c': kde(data['c']),
+        })
+    except ValueError:
+        print "v_x", ensemble.data['velocity_x'].values
+        print "tF_x", ensemble.data['totalF_x'].values
+        print "nulls", pd.isnull(ensemble.data).any()  # .nonzero()[0]
+        print "df", ensemble.data
+    except np.linalg.linalg.LinAlgError as err:
+        print "SINGULAR"
+        print data['a_x']
+        print ensemble
 
-            }
 
     return kdes
 
