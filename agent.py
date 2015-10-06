@@ -82,7 +82,7 @@ class Agent():
         windF_strength=5e-06,
         stimF_stength=1e-4,
         bounded=True,
-        mass = 2.88e-6, #3.0e-6 # 2.88e-6  # mass (kg) =2.88 mg,
+                 mass=2.88e-6,  # avg. mass of our colony (kg) =2.88 mg,
         spring_const=0.):
         """generate the agent"""
 
@@ -150,6 +150,11 @@ class Agent():
 
 
             array_dict = self._generate_flight(*args)
+
+            if len(array_dict['velocity_x']) < 5:  # hack to catch when optimizer makes trajectories explode
+                print "catching explosion"
+                break
+
             array_dict['trajectory_num'] = [traj_count] * len(array_dict['velocity_x'])  # enumerate the trajectories
             df = pd.DataFrame(array_dict)
 
@@ -196,12 +201,24 @@ class Agent():
                 V = self._land(tsi, V)
                 break
 
+            # check if we're seeing enormous forces, which sometimes happens when running the optimization algoirithm
+            if np.abs(acceleration[tsi]).max() > 20:
+                print "tremdous acceleration experienced at {}: {}".format(tsi, acceleration[tsi])
+                V = self._land(tsi, V)
+                break
+
+            if np.isnan(np.sum(acceleration[tsi])):  # checks for NaNs
+                print "found NaNs at {}: {}".format(tsi, acceleration[tsi])
+                V = self._land(tsi, V)
+                break
+
             ################################################
             # Calculate candidate velocity and positions
             ################################################
             candidate_velo= V['velocity'][tsi] + V['acceleration'][tsi] * dt
 
-            candidate_pos = V['position'][tsi] + candidate_velo*dt # shouldnt position in future be affected by the forces in this timestep? aka use velo[i+1]
+            candidate_pos = V['position'][
+                                tsi] + candidate_velo * dt  # shouldnt position in future be affected by the forces in this timestep? aka use velo[i+1]
 
             ################################################
             # test candidates
@@ -327,11 +344,12 @@ class Agent():
     def _land(self, tsi, V):
         ''' trim excess timebins in arrays
         '''
-        for array in V.itervalues():
-            array = array[:tsi-1]
-
-        # V = self._calc_polar_kinematics(V)  # TODO: export to trajectories
-
+        if tsi == 0:  # hack for if we need to chop a trajectory at the very start
+            for k, array in V.iteritems():
+                V[k] = array[:1]
+        else:
+            for k, array in V.iteritems():
+                V[k] = array[:tsi - 1]
 
         
         return V
@@ -417,15 +435,21 @@ class Agent():
         return candidate_pos, candidate_velo
 
 
-def gen_objects_and_fly(N_TRAJECTORIES, TEST_CONDITION, BETA, RANDF_STRENGTH, Fwind_strength, F_stim_scale, MASS, K,
-                        bounded=True):
+def gen_objects_and_fly(N_TRAJECTORIES,
+                        TEST_CONDITION,
+                        BETA,
+                        RANDF_STRENGTH,
+                        Fwind_strength,
+                        F_stim_scale,
+                        K,
+                        bounded=True,
+                        verbose=True):
     """
     Params fitted using scipy.optimize
 
     """
     # instantiate a Roboskeeter
     skeeter = Agent(
-        mass=MASS,
         initial_position_selection="downwind_plane",
         windF_strength=Fwind_strength,
         randomF_strength=RANDF_STRENGTH,
@@ -436,10 +460,9 @@ def gen_objects_and_fly(N_TRAJECTORIES, TEST_CONDITION, BETA, RANDF_STRENGTH, Fw
         time_max=4.,
         dt=0.01,
         bounded=bounded)
-    sys.stdout.write("\rAgent born")
 
     # make the skeeter fly. this updates the trajectory_obj
-    skeeter.fly(total_trajectories=N_TRAJECTORIES)
+    skeeter.fly(total_trajectories=N_TRAJECTORIES, verbose=verbose)
     
     return skeeter.trajectory_obj, skeeter
     
