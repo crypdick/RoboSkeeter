@@ -151,9 +151,9 @@ class Agent():
 
             array_dict = self._generate_flight(*args)
 
-            if len(array_dict['velocity_x']) < 5:  # hack to catch when optimizer makes trajectories explode
-                print "catching explosion"
-                break
+            # if len(array_dict['velocity_x']) < 5:  # hack to catch when optimizer makes trajectories explode
+            #     print "catching explosion"
+            #     break
 
             array_dict['trajectory_num'] = [traj_count] * len(array_dict['velocity_x'])  # enumerate the trajectories
             df = pd.DataFrame(array_dict)
@@ -202,7 +202,7 @@ class Agent():
                 break
 
             # check if we're seeing enormous forces, which sometimes happens when running the optimization algoirithm
-            if np.abs(acceleration[tsi]).max() > 20:
+            if np.abs(acceleration[tsi]).max() > 300:
                 print "tremdous acceleration experienced at {}: {}".format(tsi, acceleration[tsi])
                 V = self._land(tsi, V)
                 break
@@ -241,6 +241,8 @@ class Agent():
         # fix pandas bug when trying to load (R,1) arrays when it expects (R,) arrays
         for key, array in V2.iteritems():
             V2[key] = V2[key].reshape(len(array))
+            if V2[key].size == 0:
+                V2[key] = np.array([0.])  # hack so that kde calculation doesn't freeze on empty arrays
 
 
         return V2
@@ -349,6 +351,7 @@ class Agent():
                 V[k] = array[:1]
         else:
             for k, array in V.iteritems():
+                V[k] = array[:tsi - 1]
                 V[k] = array[:tsi - 1]
 
         
