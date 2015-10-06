@@ -100,7 +100,7 @@ def plot_position_heatmaps(ensemble, agent_obj=None):
     probs_yz = np.sum(probs, axis=2)
     probs_xz = np.sum(probs, axis=1)
     # max_probability = np.max([np.max(probs_xy), np.max(probs_xz), np.max(probs_yz)])
-    max_probability = np.max(probs_xy) * 0.8
+    max_probability = np.max(probs_xy)
 
     #### file naming and directory selection
     if agent_obj is not None:
