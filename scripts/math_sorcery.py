@@ -15,7 +15,11 @@ def calculate_curvature(ensemble):
     numerator = np.linalg.norm( np.cross(velocity_vec.T, acceleration_vec.T), axis=1)
     denominator = np.linalg.norm(acceleration_vec, axis=0)** 3
 
-    return numerator/denominator
+    curvature = numerator/denominator
+
+    curvature = np.nan_to_num(curvature)  # hack to prevent curvature nans
+
+    return curvature
 
 
 def gen_symm_vecs(dims=3):
