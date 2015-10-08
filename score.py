@@ -37,10 +37,13 @@ def score(targ_ensemble, ref_ensemble='pickle'):
     dkl_c = entropy(targ_vals['c'], qk=experimental_vals['c']) * 6  # scaled up by 6 to increase relative importance
 
     dkl_scores = [dkl_v_x, dkl_v_y, dkl_v_z, dkl_a_x, dkl_a_y, dkl_a_z, dkl_c]
+
+    for i, val in enumerate(dkl_scores):
+        if val > 20:
+            dkl_scores[i] = 20.
+
     dkl_score = sum(dkl_scores)
-    # final_score = dkl_v
-    # if np.isinf(dkl_score):
-    #     dkl_score = 100000
+
 
     # ################ ACF metrics############
     # # TODO: switch to RMSE of ACFs
@@ -117,7 +120,7 @@ def calc_bins(data):
                  'a_x': np.linspace(0., data['a_x'].max(), 100),
                  'a_y': np.linspace(0., data['a_y'].max(), 100),
                  'a_z': np.linspace(0., data['a_z'].max(), 100),
-                 'c': np.linspace(0., data['c'].max(), 100)
+                 'c': np.linspace(0., data['c'].max(), 1000)  # more granularity for the curvature
                  }
 
     return bins_dict
