@@ -6,6 +6,9 @@ from scripts import i_o
 import trajectory
 import score
 
+reload(score)
+reload(trajectory)
+
 EXPERIMENT_PATH = i_o.get_directory('EXPERIMENT_PATH')
 
 
@@ -13,6 +16,7 @@ def store_mosquito_pickle():
     MOSQUITOES = trajectory.Experimental_Trajectory()
     MOSQUITOES.load_experiments(selection='CONTROL_EXP_PATH')  # load the experimental data
     pickle.dump(MOSQUITOES, open(os.path.join(EXPERIMENT_PATH, "controls.p"), "wb"))
+
     ref_data = score.get_data(MOSQUITOES)
     experimental_bins = score.calc_bins(ref_data)
     experimental_KDEs = score.calc_kde(ref_data)
@@ -31,3 +35,7 @@ def load_mosquito_kdes():
     vals = pickle.load(open(os.path.join(EXPERIMENT_PATH, "experimental_vals.p"), "rb"))
 
     return bins, vals
+
+
+if __name__ is '__main__':
+    store_mosquito_pickle()
