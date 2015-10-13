@@ -24,6 +24,8 @@ import pandas as pd
 
 from scripts import i_o
 from scripts import plotting
+
+# from scripts.correlation_matrices import trajectory_DF
 from scripts.math_sorcery import calculate_curvature, calculate_xy_heading_angle, calculate_xy_magnitude
 import score
 
@@ -64,7 +66,18 @@ class Trajectory():
             self.data.append(trajectory)  # this should be avoided b/c lots of overhead (slow)
             self.run_analysis()
         elif type(data) is list:
-            self.data = pd.concat(data)  # fast
+            try:
+                self.data = pd.concat(data)  # fast
+            except ValueError:  # sometimes happens when running optimizer FIXME
+                self.data = pd.DataFrame({'velocity_x': np.zeros(1),
+                                          'velocity_y': np.zeros(1),
+                                          'velocity_z': np.zeros(1),
+                                          'acceleration_x': np.zeros(1),
+                                          'acceleration_y': np.zeros(1),
+                                          'acceleration_z': np.zeros(1),
+                                          'curvature': np.zeros(1)
+                                          })
+
             try:
                 self.run_analysis()
             except Exception:
@@ -158,19 +171,23 @@ class Trajectory():
 
     def plot_heading_compass(self):
         pass # TODO
-        
-        
-    def plot_single_3Dtrajectory(self, trajectory_i=None):
-        plot_kwargs = {'title': "{type} trajectory #{N}".format(type=self.is_agent, N=trajectory_i)}
 
-        # get data
+    def plot_3Dtrajectory(self, trajectory_i=None):
         if trajectory_i is None:
             trajectory_i = self.data.trajectory_num.min()
-        selected_trajectory = self.get_trajectory_i(trajectory_i)
 
-        plotting.plot3D_trajectory(selected_trajectory, plot_kwargs)
+        if type(trajectory_i) is np.int64 or int:
+            selected_trajectory_df = self.get_trajectory_i_df(trajectory_i)  # get data
+            plot_kwargs = {'title': "{type} trajectory #{N}".format(type=self.is_agent, N=trajectory_i)}
+            plotting.plot3D_trajectory(selected_trajectory_df, plot_kwargs)
 
-        
+        elif trajectory_i is "ALL":
+            all = self.data.trajectory_num.unique()
+            for i in all:
+                selected_trajectory_df = self.get_trajectory_i_df(i)
+                plot_kwargs = {'title': "{type} trajectory #{N}".format(type=self.is_agent, N=i)}
+                plotting.plot3D_trajectory(selected_trajectory_df, plot_kwargs)
+
     def plot_sliced_hists(self):
         """Plot histograms from 0.25 < x < 0.95, as well as that same space
         divided into 4 equal 0.15 m segments 
@@ -254,8 +271,9 @@ class Trajectory():
     
     def calc_score(self):
         total_score, scores = score.score(self)
-        print "total_score ", total_score
-        print "scores", scores
+        print "Trajectory score: ", total_score
+
+        return total_score, scores
 
     def _extract_number_from_fname(self, token):
         extract_digits = lambda stng: "".join(char for char in stng if char in string.digits + ".")
@@ -266,7 +284,7 @@ class Trajectory():
         except ValueError:
             print token, extract_digits(token)
 
-    def get_trajectory_i(self, index):
+    def get_trajectory_i_df(self, index):
         return self.data.loc[self.data['trajectory_num'] == index]
 
     def _trim_df_endzones(self):
@@ -334,12 +352,13 @@ class Experimental_Trajectory(Trajectory):
         for fname in [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]:  # list files
             print "Loading " + fname
             file_path = os.path.join(directory, fname)
-            base_name = os.path.splitext(file_path)[0]
+            # base_name = os.path.splitext(file_path)[0]
 
             dataframe = pd.read_csv(file_path, na_values="NaN", names=col_labels)  # recognize str(NaN) as NaN
             dataframe.fillna(value=0, inplace=True)
             # take fname number, skip "control_" and ".csv"
             dataframe['trajectory_num'] = [int(fname[8:-4])] * dataframe.position_x.size
             df_list.append(dataframe)
+            dataframe.keys()
 
         self.load_ensemble_and_analyze(data=df_list)

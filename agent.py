@@ -460,7 +460,7 @@ def gen_objects_and_fly(N_TRAJECTORIES,
         stimF_stength=F_stim_scale,
         spring_const=K,
         damping_coeff=BETA,
-        time_max=4.,
+        time_max=15.,
         dt=0.01,
         bounded=bounded)
 
