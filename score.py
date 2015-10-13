@@ -29,12 +29,12 @@ def score(targ_ensemble, ref_ensemble='pickle'):
     dkl_v_x = entropy(targ_vals['v_x'], qk=experimental_vals['v_x'])
     dkl_v_y = entropy(targ_vals['v_y'], qk=experimental_vals['v_y'])
     dkl_v_z = entropy(targ_vals['v_z'], qk=experimental_vals['v_z'])
-    dkl_a_x = entropy(targ_vals['a_x'], qk=experimental_vals['a_x'])
-    dkl_a_y = entropy(targ_vals['a_y'], qk=experimental_vals['a_y'])
-    dkl_a_z = entropy(targ_vals['a_z'], qk=experimental_vals['a_z'])
-    dkl_c = entropy(targ_vals['c'], qk=experimental_vals['c']) * 10  # scaled up by 6 to increase relative importance
+#    dkl_a_x = entropy(targ_vals['a_x'], qk=experimental_vals['a_x'])
+#    dkl_a_y = entropy(targ_vals['a_y'], qk=experimental_vals['a_y'])
+#    dkl_a_z = entropy(targ_vals['a_z'], qk=experimental_vals['a_z'])
+    dkl_c = entropy(targ_vals['c'], qk=experimental_vals['c']) * 3  # scaled up by 6 to increase relative importance
 
-    dkl_scores = [dkl_v_x, dkl_v_y, dkl_v_z, dkl_a_x, dkl_a_y, dkl_a_z, dkl_c]
+    dkl_scores = [dkl_v_x, dkl_v_y, dkl_v_z, dkl_c]
 
     # for i, val in enumerate(dkl_scores):
     #     if val > 20:
@@ -71,9 +71,9 @@ def get_data(trajectory):
     data = {'v_x': np.abs(trajectory.data['velocity_x'].values),
             'v_y': np.abs(trajectory.data['velocity_y'].values),
             'v_z': np.abs(trajectory.data['velocity_z'].values),
-            'a_x': np.abs(trajectory.data['acceleration_x'].values),
-            'a_y': np.abs(trajectory.data['acceleration_y'].values),
-            'a_z': np.abs(trajectory.data['acceleration_z'].values),
+#            'a_x': np.abs(trajectory.data['acceleration_x'].values),
+#            'a_y': np.abs(trajectory.data['acceleration_y'].values),
+#            'a_z': np.abs(trajectory.data['acceleration_z'].values),
             'c': np.abs(trajectory.data['curvature'].values)
             }
     return data
@@ -82,8 +82,8 @@ def get_data(trajectory):
 def calc_bins(data):
     pad_coeff = 2.  # pad the distribution to properly penalize values above
     bins_dict = {}
-    for k, v in data.items():
-        bins_dict[k] = np.linspace(0., v.max() * pad_coeff, 1000)
+    for k, vect in data.items():
+        bins_dict[k] = np.linspace(0., vect.max() * pad_coeff, 1000)
 
 
     return bins_dict
