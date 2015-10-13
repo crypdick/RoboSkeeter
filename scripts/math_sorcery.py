@@ -1,6 +1,8 @@
 __author__ = 'richard'
 import numpy as np
 
+from sklearn.neighbors import KernelDensity
+
 
 def calculate_angular_velocity(velocity_vec):
     #
@@ -51,7 +53,7 @@ def calculate_xy_magnitude(x_component, y_component):
     return np.sqrt(x_component**2 + y_component**2)
 
 
-def check_turning():
+def is_turning():
     pass
 """            # # turning state
             # if tsi in [0, 1]:
@@ -62,3 +64,25 @@ def check_turning():
             #         V['turning'][tsi] = 1
             #     else:
             #         V['turning'][tsi] = 0"""
+
+
+def calculate_1Dkde(vector, bandwidth=0.5):
+    """
+
+    :param vector: a 1D vector
+    :return: kde object
+    """
+    kernel = 'gaussian'
+    vector = vector[:, np.newaxis]
+
+    kde = KernelDensity(kernel=kernel, bandwidth=bandwidth).fit(vector)
+
+    return kde
+
+
+def evaluate_kde(kde, bins):
+    log_dens = kde.score_samples(bins.reshape(-1, 1))  # fixes error: http://stackoverflow.com/a/27748566
+    dens = np.exp(log_dens)
+
+    return dens
+
