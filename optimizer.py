@@ -99,7 +99,7 @@ class MyBounds(object):
         return tmax and tmin
 
 
-if __name__ == '__main__':
+def main(x_0=None):
     logging.basicConfig(filename='basin_hopping.log', level=logging.DEBUG)
 
     global HIGH_SCORE
@@ -112,8 +112,11 @@ if __name__ == '__main__':
     PLOTTER = False
     # ACF_THRESH = 0.5
     GUESS_PARAMS = "[beta, F_rand_strength, F_WIND_SCALE]"  # [5e-6, 4.12405e-6, 5e-7]
-    INITIAL_GUESS = [1.98753667e-04, 3.31694004e-06, 7.99143188e-07]
-    N_TRAJECTORIES = 5
+    if x_0 is None:
+        INITIAL_GUESS = [1.98753667e-04, 3.31694004e-06, 7.99143188e-07]
+    else:
+        INITIAL_GUESS = x_0
+    N_TRAJECTORIES = 40
 
     print "Starting optimizer."
 
@@ -131,13 +134,13 @@ if __name__ == '__main__':
     result = basinhopping(
         fly_wrapper,
         INITIAL_GUESS,
-        stepsize=1e-7,
+        stepsize=1e-6,
         T=1e-5,
         niter=40,  # number of basin hopping iterations, default 100
-        niter_success=15,  # Stop the run if the global minimum candidate remains the same for this number of iterations
+        niter_success=20,  # Stop the run if the global minimum candidate remains the same for this number of iterations
         minimizer_kwargs={"args": (N_TRAJECTORIES, PLOTTER),
                           'method': OPTIM_ALGORITHM,
-                          "bounds": [(1e-7, 1.), (1e-7, 1e-2), (1e-7, 1e-2)]},
+                          "bounds": [(1e-6, 1e-3), (1e-6, 1e-2), (1e-7, 1e-2)]},
         disp=True,
         accept_test=mybounds
         )
@@ -150,4 +153,8 @@ if __name__ == '__main__':
      {2}
     ############################################################""".format(BEST_GUESS, HIGH_SCORE, result))
 
-    print result
+    return BEST_GUESS, HIGH_SCORE
+    
+
+if __name__ == '__main__':
+    main()
