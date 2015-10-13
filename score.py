@@ -2,12 +2,10 @@ __author__ = 'richard'
 
 from scipy.stats import entropy
 import numpy as np
-from scipy.stats import gaussian_kde as kde
-
-import pandas as pd  # fixme
-
+# from scipy.stats import gaussian_kde as kde
 import scripts.acfanalyze
 import scripts.pickle_experiments
+from scripts.math_sorcery import calculate_1Dkde, evaluate_kde
 
 
 def score(targ_ensemble, ref_ensemble='pickle'):
@@ -23,8 +21,8 @@ def score(targ_ensemble, ref_ensemble='pickle'):
         experimental_bins, experimental_vals = scripts.pickle_experiments.load_mosquito_kdes()
 
     targ_data = get_data(targ_ensemble)
-    targ_KDEs = calc_kde(targ_data, targ_ensemble)
-    targ_vals = evaluate_kdes(targ_KDEs, experimental_bins)  # we evaluate targ KDE at experimental vins for comparison
+    targ_KDEs = calc_kde(targ_data)
+    targ_vals = evaluate_kdes(targ_KDEs, experimental_bins)  # we evaluate targ KDE at experimental bins for comparison
 
 
     # solve DKL b/w target and reference trajectories
@@ -34,13 +32,13 @@ def score(targ_ensemble, ref_ensemble='pickle'):
     dkl_a_x = entropy(targ_vals['a_x'], qk=experimental_vals['a_x'])
     dkl_a_y = entropy(targ_vals['a_y'], qk=experimental_vals['a_y'])
     dkl_a_z = entropy(targ_vals['a_z'], qk=experimental_vals['a_z'])
-    dkl_c = entropy(targ_vals['c'], qk=experimental_vals['c']) * 6  # scaled up by 6 to increase relative importance
+    dkl_c = entropy(targ_vals['c'], qk=experimental_vals['c']) * 10  # scaled up by 6 to increase relative importance
 
     dkl_scores = [dkl_v_x, dkl_v_y, dkl_v_z, dkl_a_x, dkl_a_y, dkl_a_z, dkl_c]
 
-    for i, val in enumerate(dkl_scores):
-        if val > 20:
-            dkl_scores[i] = 20.
+    # for i, val in enumerate(dkl_scores):
+    #     if val > 20:
+    #         dkl_scores[i] = 20.
 
     dkl_score = sum(dkl_scores)
 
@@ -69,38 +67,6 @@ def score(targ_ensemble, ref_ensemble='pickle'):
     return dkl_score, dkl_scores
 
 
-def calc_kde(data, ensemble):  # fixme remove ensemble after debugging
-    try:
-        kdes = {'v_x': kde(data['v_x']),
-            'v_y': kde(data['v_y']),
-                'v_z': kde(data['v_z'])}
-    except ValueError:  # ValueError: array must not contain infs or NaNs
-        print "Infs, Nans"
-        print "velos", data['v_x'], data['v_y'], data['v_z']
-        print "accels", data['a_x'], data['a_y'], data['a_z']
-        print ensemble.data['trajectory_num']
-
-    try:
-        kdes.update({
-            'a_x': kde(data['a_x']),
-            'a_y': kde(data['a_y']),
-            'a_z': kde(data['a_z']),
-            'c': kde(data['c']),
-        })
-    except ValueError:
-        print "v_x", ensemble.data['velocity_x'].values
-        print "tF_x", ensemble.data['totalF_x'].values
-        print "nulls", pd.isnull(ensemble.data).any()  # .nonzero()[0]
-        print "df", ensemble.data
-    except np.linalg.linalg.LinAlgError as err:
-        print "SINGULAR"
-        print data['a_x']
-        print ensemble
-
-
-    return kdes
-
-
 def get_data(trajectory):
     data = {'v_x': np.abs(trajectory.data['velocity_x'].values),
             'v_y': np.abs(trajectory.data['velocity_y'].values),
@@ -114,26 +80,29 @@ def get_data(trajectory):
 
 
 def calc_bins(data):
-    bins_dict = {'v_x': np.linspace(0., data['v_x'].max(), 100),
-                 'v_y': np.linspace(0., data['v_y'].max(), 100),
-                 'v_z': np.linspace(0., data['v_z'].max(), 100),
-                 'a_x': np.linspace(0., data['a_x'].max(), 100),
-                 'a_y': np.linspace(0., data['a_y'].max(), 100),
-                 'a_z': np.linspace(0., data['a_z'].max(), 100),
-                 'c': np.linspace(0., data['c'].max(), 1000)  # more granularity for the curvature
-                 }
+    pad_coeff = 2.  # pad the distribution to properly penalize values above
+    bins_dict = {}
+    for k, v in data.items():
+        bins_dict[k] = np.linspace(0., v.max() * pad_coeff, 1000)
+
 
     return bins_dict
 
 
-def evaluate_kdes(KDE, bins):
-    vals = {'v_x': KDE['v_x'](bins['v_x']),
-            'v_y': KDE['v_y'](bins['v_y']),
-            'v_z': KDE['v_z'](bins['v_z']),
-            'a_x': KDE['a_x'](bins['a_x']),
-            'a_y': KDE['a_y'](bins['a_y']),
-            'a_z': KDE['a_z'](bins['a_z']),
-            'c': KDE['c'](bins['c']),
-            }
+def calc_kde(data):
+    kdes_dict = {}
+
+    for k, v in data.items():
+        kdes_dict[k] = calculate_1Dkde(v)
+
+    return kdes_dict
+
+
+def evaluate_kdes(kdes_dict, bins_dict):
+    vals = {}
+
+    for k, kde in kdes_dict.items():
+        bins = bins_dict[k]
+        vals[k] = evaluate_kde(kde, bins)
 
     return vals
