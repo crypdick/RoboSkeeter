@@ -45,8 +45,16 @@ def fly_wrapper(GUESS, *args):
 
     combined_score, _ = simulation.calc_score()
 
-    # if combined_score < HIGH_SCORE:
-    #     HIGH_SCORE = combined_score
+    global HIGH_SCORE
+    global BEST_GUESS
+    if combined_score < HIGH_SCORE:
+        HIGH_SCORE = combined_score
+        BEST_GUESS = GUESS
+        string = "{0} New high score: {1}. Guess: {2}. Score components = {3}".format(datetime.now(), HIGH_SCORE, GUESS,
+                                                                                      combined_score)
+        print(string)
+        logging.info(string)
+
     # if PLOTTER is True:
     #     error_plotter(ensemble, GUESS, dkl_scores, acf_score, aabs_bins, a_counts_n, vabs_bins, v_counts_n, v_observed, a_observed)
     #
@@ -80,7 +88,7 @@ def fly_wrapper(GUESS, *args):
 
 
 class MyBounds(object):
-    def __init__(self, xmax=[3., 3., 3.], xmin=[0., 0., 0.]):
+    def __init__(self, xmax=[3., 1., 1.], xmin=[1e08, 1e08, 1e08]):
         self.xmax = np.array(xmax)
         self.xmin = np.array(xmin)
 
@@ -94,14 +102,18 @@ class MyBounds(object):
 if __name__ == '__main__':
     logging.basicConfig(filename='basin_hopping.log', level=logging.DEBUG)
 
+    global HIGH_SCORE
     HIGH_SCORE = 1e10
+
+    global BEST_GUESS
+    BEST_GUESS = None
 
     OPTIM_ALGORITHM = 'SLSQP'
     PLOTTER = False
     # ACF_THRESH = 0.5
     GUESS_PARAMS = "[beta, F_rand_strength, F_WIND_SCALE]"  # [5e-6, 4.12405e-6, 5e-7]
-    INITIAL_GUESS = [1.37213380e-06, 1.39026239e-06, 7.06854777e-07]
-    N_TRAJECTORIES = 10
+    INITIAL_GUESS = [1.98753667e-04, 3.31694004e-06, 7.99143188e-07]
+    N_TRAJECTORIES = 5
 
     print "Starting optimizer."
 
@@ -119,11 +131,13 @@ if __name__ == '__main__':
     result = basinhopping(
         fly_wrapper,
         INITIAL_GUESS,
-        stepsize=1e-5,
-        T=1e-2,
+        stepsize=1e-7,
+        T=1e-5,
+        niter=40,  # number of basin hopping iterations, default 100
+        niter_success=15,  # Stop the run if the global minimum candidate remains the same for this number of iterations
         minimizer_kwargs={"args": (N_TRAJECTORIES, PLOTTER),
                           'method': OPTIM_ALGORITHM,
-                          "bounds": ((1e-8, 1), (1e-8, 1e-2), (1e-8, 1))},
+                          "bounds": [(1e-7, 1.), (1e-7, 1e-2), (1e-7, 1e-2)]},
         disp=True,
         accept_test=mybounds
         )
@@ -131,7 +145,9 @@ if __name__ == '__main__':
 
 
     logging.info("""############################################################
-    Trial end. FINAL RESULT: {}
-    ############################################################""".format(result))
+    Trial end. FINAL GUESS: {0}
+    SCORE: {1}
+     {2}
+    ############################################################""".format(BEST_GUESS, HIGH_SCORE, result))
 
     print result
