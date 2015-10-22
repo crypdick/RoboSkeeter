@@ -4,18 +4,14 @@ Created on Mon Jun  1 17:00:47 2015
 
 @author: richard
 """
-import os
 import numpy as np
 
 from statsmodels.tsa.stattools import acf, pacf
 import matplotlib.pyplot as plt
 
-from scripts import i_o
-
 #import seaborn as sns
 import pandas as pd
-from glob import glob
-import csv
+from scripts import i_o
 from sklearn.metrics.pairwise import pairwise_distances
 
 
@@ -25,19 +21,6 @@ INTERESTED_VALS = ['velo_x', 'velo_y', 'velo_z']
 WINDOW_LEN = 100
 LAGS = 20
 MIN_TRAJECTORY_LEN = 500
-
-
-def make_csv_name_list():
-    # TODO export this to io
-    dyn_traj_reldir = "data/dynamical_trajectories/"
-    print "Loading + filtering CSV files from ", dyn_traj_reldir
-    os.chdir(dyn_traj_reldir)
-    csv_list = sorted([os.path.splitext(file)[0] for file in glob("*.csv") if sum(1 for row in csv.reader(open(file))) > MIN_TRAJECTORY_LEN])
-#    csv_list = sorted([os.path.splitext(file)[0] for file in glob("*.csv")])
-    os.chdir(os.path.dirname(__file__))
-    
-    return csv_list
-
 
 def csvList2df(csv_list):
     # TODO export this to io
@@ -123,7 +106,9 @@ def global_analysis(csv_fname, trajectory_df):
         
         return acf_data, pacf_data
 
-csv_list = make_csv_name_list()
+
+TRAJECTORY_DIR = "data/dynamical_trajectories/"
+csv_list = i_o.get_csv_name_list(TRAJECTORY_DIR)
 
 ##csv_list = ['Right Plume-39', 'Control-27']
 ##name = csv_list[0]
