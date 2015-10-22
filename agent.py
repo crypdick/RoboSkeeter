@@ -142,10 +142,10 @@ class Agent():
         args = (self.time_bin_width, self.mass)
         df_list = []
 
-        traj_count = 0
-        while traj_count < total_trajectories:
+        traj_i = 0
+        while traj_i < total_trajectories:
             if verbose is True:
-                sys.stdout.write("\rTrajectory {}/{}".format(traj_count+1, total_trajectories))
+                sys.stdout.write("\rTrajectory {}/{}".format(traj_i + 1, total_trajectories))
                 sys.stdout.flush()
 
 
@@ -155,13 +155,16 @@ class Agent():
             #     print "catching explosion"
             #     break
 
-            array_dict['trajectory_num'] = [traj_count] * len(array_dict['velocity_x'])  # enumerate the trajectories
+            array_len = len(array_dict['tsi'])
+
+            array_dict['trajectory_num'] = [traj_i] * array_len  # enumerate the trajectories
             df = pd.DataFrame(array_dict)
+            df = df.set_index(['trajectory_num', 'tsi'])
 
             df_list.append(df)
-            
-            traj_count += 1
-            if traj_count == total_trajectories:
+
+            traj_i += 1
+            if traj_i == total_trajectories:
                 if verbose is True:
                     sys.stdout.write("\rSimulations finished. Performing deep magic.")
                     sys.stdout.flush()
@@ -182,9 +185,9 @@ class Agent():
         for key, value in V.iteritems():
             exec(key + " = V['" + key + "']")
 
-        V['position'][0], V['velocity'][0] = self._set_init_pos_and_velo()
+        position[0], velocity[0] = self._set_init_pos_and_velo()
 
-        for tsi in xrange(self.max_bins):
+        for tsi in V['tsi']:
             inPlume[tsi] = self.plume_obj.is_in_plume(position[tsi])
             V = self._calc_current_behavioral_state(tsi, V)
             stimF[tsi], randomF[tsi], upwindF[tsi], wallRepulsiveF[tsi], totalF[tsi] =\
@@ -204,30 +207,29 @@ class Agent():
             ################################################
             # Calculate candidate velocity and positions
             ################################################
-            candidate_velo= V['velocity'][tsi] + V['acceleration'][tsi] * dt
+            candidate_velo = velocity[tsi] + acceleration[tsi] * dt
 
             # make sure velocity doesn't diverge to infinity if system is unstable
             candidate_velo = self._velocity_ceiling(candidate_velo)
 
-            candidate_pos = V['position'][
+            candidate_pos = position[
                                 tsi] + candidate_velo * dt  # shouldnt position in future be affected by the forces in this timestep? aka use velo[i+1]
 
             ################################################
             # test candidates
             ################################################
             if self.bounded:
-                candidate_pos, candidate_velo = self._collide_with_wall(candidate_pos, candidate_vel
-                o)
+                candidate_pos, candidate_velo = self._collide_with_wall(candidate_pos, candidate_velo)
                 if candidate_pos is None:  # _collide_with_wall returns None if reaches end
                     self._land(tsi, V)  # end flight if reach end of tunnel
                     break
 
-            V['position'][tsi+1] = candidate_pos
-            V['velocity'][tsi+1] = candidate_velo
+            position[tsi + 1] = candidate_pos
+            velocity[tsi + 1] = candidate_velo
 
         # prepare dict for loading into pandas (dataframe only accepts 1D vectors)
         # split xyz arrays into separate x, y, z vectors for dataframe
-        V2 = {}
+        V2 = {'tsi': V['tsi'], 'times': V['times']}
         for kinematic in self.kinematics_list+self.forces_list:
             V2[kinematic+'_x'], V2[kinematic+'_y'], V2[kinematic+'_z'] = np.split(V[kinematic], 3, axis=1)
 
@@ -250,6 +252,7 @@ class Agent():
         for name in self.kinematics_list+self.forces_list:
             V[name] = np.full((self.max_bins, 3), np.nan)
 
+        V['tsi'] = np.arange(self.max_bins)
         V['times'] = np.linspace(0, self.time_max, self.max_bins)
         V['inPlume'] = np.full(self.max_bins, -1, dtype=np.uint8)
         V['behavior_state'] = np.array([None]*self.max_bins)
@@ -434,10 +437,10 @@ class Agent():
          algoirithm. if so, cap the velocity instead of landing. this allows the optimizer to keep running.
         """
         for i, velo in enumerate(candidate_velo):
-            if velo > 300:
-                candidate_velo[i] = 300.
-            elif velo < -300:
-                candidate_velo[i] = -300.
+            if velo > 20:
+                candidate_velo[i] = 20.
+            elif velo < -20:
+                candidate_velo[i] = -20.
 
         return candidate_velo
 
