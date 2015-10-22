@@ -25,6 +25,7 @@ import pandas as pd
 from scripts import i_o
 from scripts import plotting
 
+
 # from scripts.correlation_matrices import trajectory_DF
 from scripts.math_sorcery import calculate_curvature, calculate_xy_heading_angle, calculate_xy_magnitude
 import score
@@ -232,6 +233,15 @@ class Trajectory():
         print "full- + up- + down-wind"
         plotting.plot_kinematic_histograms(full_ensemble, self.agent_obj, titleappend = '', upw_ensemble = upwind_ensemble, downw_ensemble = downwind_ensemble)
 
+    def plot_timeseries(self):
+        """
+
+        """
+        df = self.data.loc[:,
+             ['position_x', 'position_y', 'position_z', 'velocity_x', 'velocity_y', 'velocity_z', 'acceleration_x',
+              'acceleration_y', 'acceleration_z', 'curvature']]
+        plotting.plot_timeseries(df)
+
 
     def plume_stats(self):
         """ 
@@ -263,8 +273,10 @@ class Trajectory():
             
             
     def dump2csvs(self):
+        """we don't use self.data.to_csv(name) because Sharri likes having separate csvs for each trajectory
+        """
         for trajectory_i in self.data.trajectory_num.unique():
-            temp_traj = self.data[self.data['trajectory_num'] == trajectory_i]
+            temp_traj = self.get_trajectory_i_df(trajectory_i)
             temp_array = temp_traj[['position_x', 'position_y']].values
             np.savetxt(str(trajectory_i) + ".csv", temp_array, delimiter=",")
 
@@ -285,7 +297,7 @@ class Trajectory():
             print token, extract_digits(token)
 
     def get_trajectory_i_df(self, index):
-        return self.data.loc[self.data['trajectory_num'] == index]
+        return self.data.loc[index]
 
     def _trim_df_endzones(self):
         return self.data.loc[(self.data['position_x'] > 0.05) & (self.data['position_x'] < 0.95)]
@@ -299,6 +311,13 @@ class Trajectory():
             type = "Agent"
 
         self.is_agent = type
+
+    #     def mk_iterator_from_col(self, col):
+    # a.xs(0, level='trajectory_num')
+
+    def get_trajectory_numbers(self):
+        return self.data.index.get_level_values('trajectory_num').unique()
+
 
 
 class Agent_Trajectory(Trajectory):
@@ -356,8 +375,15 @@ class Experimental_Trajectory(Trajectory):
 
             dataframe = pd.read_csv(file_path, na_values="NaN", names=col_labels)  # recognize str(NaN) as NaN
             dataframe.fillna(value=0, inplace=True)
-            # take fname number, skip "control_" and ".csv"
-            dataframe['trajectory_num'] = [int(fname[8:-4])] * dataframe.position_x.size
+
+            df_len = len(dataframe.position_x)
+
+            # take fname number, slice out "control_" and ".csv"
+            fname_num = int(fname[8:-4])
+            dataframe['trajectory_num'] = [fname_num] * df_len
+            dataframe['tsi'] = np.arange(df_len)
+
+            dataframe = dataframe.set_index(['trajectory_num', 'tsi']).sort_index()
             df_list.append(dataframe)
             dataframe.keys()
 
