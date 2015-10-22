@@ -23,7 +23,8 @@ def fly_wrapper(GUESS, *args):
     Guess: {}
     ##############################################################""".format(GUESS)
 
-    beta, F_rand_strength, windF_strength = GUESS
+    beta, F_rand_strength = GUESS
+    windF_strength = 0.
     TEST_CONDITION = None
     K = 0  # no wall force for optimization
     F_STIM_SCALE = 0
@@ -88,7 +89,7 @@ def fly_wrapper(GUESS, *args):
 
 
 class MyBounds(object):
-    def __init__(self, xmax=[3., 1., 1.], xmin=[1e08, 1e08, 1e08]):
+    def __init__(self, xmax=[1e-4, 1e-4], xmin=[1e06, 1e06]):  # , 1e08]):
         self.xmax = np.array(xmax)
         self.xmin = np.array(xmin)
 
@@ -111,9 +112,9 @@ def main(x_0=None):
     OPTIM_ALGORITHM = 'SLSQP'
     PLOTTER = False
     # ACF_THRESH = 0.5
-    GUESS_PARAMS = "[beta, F_rand_strength, F_WIND_SCALE]"  # [5e-6, 4.12405e-6, 5e-7]
+    GUESS_PARAMS = "[beta, F_rand_strength]"  #, F_WIND_SCALE]"  # [5e-6, 4.12405e-6, 5e-7]
     if x_0 is None:
-        INITIAL_GUESS = [1.98753667e-04, 3.31694004e-06, 7.99143188e-07]
+        INITIAL_GUESS = [1.98753667e-04, 3.31694004e-06]  #, 7.99143188e-07]
     else:
         INITIAL_GUESS = x_0
     N_TRAJECTORIES = 40
@@ -140,21 +141,22 @@ def main(x_0=None):
         niter_success=20,  # Stop the run if the global minimum candidate remains the same for this number of iterations
         minimizer_kwargs={"args": (N_TRAJECTORIES, PLOTTER),
                           'method': OPTIM_ALGORITHM,
-                          "bounds": [(1e-6, 1e-3), (1e-6, 1e-2), (1e-7, 1e-2)]},
+                          "bounds": [(1e-6, 1e-3), (1e-6, 1e-2)]},
         disp=True,
         accept_test=mybounds
         )
 
+    return BEST_GUESS, HIGH_SCORE, result
 
 
-    logging.info("""############################################################
+if __name__ == '__main__':
+    BEST_GUESS, HIGH_SCORE, result = main()
+
+    msg = """############################################################
     Trial end. FINAL GUESS: {0}
     SCORE: {1}
      {2}
-    ############################################################""".format(BEST_GUESS, HIGH_SCORE, result))
+    ############################################################""".format(BEST_GUESS, HIGH_SCORE, result)
 
-    return BEST_GUESS, HIGH_SCORE
-    
-
-if __name__ == '__main__':
-    main()
+    logging.info(msg)
+    print msg
