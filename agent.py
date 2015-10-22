@@ -201,21 +201,13 @@ class Agent():
                 V = self._land(tsi, V)
                 break
 
-            # check if we're seeing enormous forces, which sometimes happens when running the optimization algoirithm
-            if np.abs(acceleration[tsi]).max() > 300:
-                print "tremdous acceleration experienced at {}: {}".format(tsi, acceleration[tsi])
-                V = self._land(tsi, V)
-                break
-
-            if np.isnan(np.sum(acceleration[tsi])):  # checks for NaNs
-                print "found NaNs at {}: {}".format(tsi, acceleration[tsi])
-                V = self._land(tsi, V)
-                break
-
             ################################################
             # Calculate candidate velocity and positions
             ################################################
             candidate_velo= V['velocity'][tsi] + V['acceleration'][tsi] * dt
+
+            # make sure velocity doesn't diverge to infinity if system is unstable
+            candidate_velo = self._velocity_ceiling(candidate_velo)
 
             candidate_pos = V['position'][
                                 tsi] + candidate_velo * dt  # shouldnt position in future be affected by the forces in this timestep? aka use velo[i+1]
@@ -224,9 +216,10 @@ class Agent():
             # test candidates
             ################################################
             if self.bounded:
-                candidate_pos, candidate_velo = self._check_candidates(candidate_pos, candidate_velo)
-                if candidate_pos is None:  # _check_candidates returns None if reaches end
-                    self._land(tsi, V)
+                candidate_pos, candidate_velo = self._collide_with_wall(candidate_pos, candidate_vel
+                o)
+                if candidate_pos is None:  # _collide_with_wall returns None if reaches end
+                    self._land(tsi, V)  # end flight if reach end of tunnel
                     break
 
             V['position'][tsi+1] = candidate_pos
@@ -392,8 +385,7 @@ class Agent():
                 else:
                     return "Right_plume Exit right"
 
-
-    def _check_candidates(self, candidate_pos, candidate_velo):
+    def _collide_with_wall(self, candidate_pos, candidate_velo):
         # x dim
         if candidate_pos[0] > self.boundary[1]:  # reached far (upwind) wall (end)
 #                    self.metadata['target_found'][0]  = False
@@ -436,6 +428,19 @@ class Agent():
                 candidate_velo[2] *= -0
 
         return candidate_pos, candidate_velo
+
+    def _velocity_ceiling(self, candidate_velo):
+        """check if we're seeing enormous velocities, which sometimes happens when running the optimization
+         algoirithm. if so, cap the velocity instead of landing. this allows the optimizer to keep running.
+        """
+        for i, velo in enumerate(candidate_velo):
+            if velo > 300:
+                candidate_velo[i] = 300.
+            elif velo < -300:
+                candidate_velo[i] = -300.
+
+        return candidate_velo
+
 
 
 def gen_objects_and_fly(N_TRAJECTORIES,
