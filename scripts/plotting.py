@@ -382,6 +382,22 @@ def plot_kinematic_histograms(
     axs[4].set_ylabel(PROBABILITY_LABEL)
     axs[4].legend(fontsize=14)
 
+    ## Curvatures
+
+    c_counts, c_bins = np.histogram(ensemble['curvature'])
+    c_counts = c_counts.astype(float)
+    c_counts_n = c_counts / c_counts.sum()
+    axs[5].plot(c_bins[:-1], c_counts_n, label="curvature", lw=2)
+    axs[5].fill_between(c_bins[:-1], 0, c_counts_n, facecolor='blue', linewidth=0,
+                        alpha=0.1)
+
+    axs[5].set_title("Curvature Distribution")
+    axs[5].set_xlabel("Curvature")
+    axs[5].set_ylabel(PROBABILITY_LABEL)
+    axs[5].legend(fontsize=14)
+
+    ####################
+
     gs1.tight_layout(statefig, rect=[0, 0.03, 1, 0.95])  # overlapping text hack
     if agent_obj is not None:
         titleappend = agent_to_fname_suffix(agent_obj)
@@ -390,11 +406,34 @@ def plot_kinematic_histograms(
         titleappend = ''
         path = EXPERIMENT_FIG_PATH
 
+
     plt.savefig(os.path.join(path, "Agent Distributions" + titleappend + FIG_FORMAT))
     plt.show()
 
 
 #    return xpos_counts_norm, ypos_bins, ypos_counts, ypos_counts_norm, vx_counts_n
+
+def plot_timeseries(ensemble):
+    traj_numbers = ensemble.index.get_level_values('trajectory_num').unique()
+    data_dict = {}
+
+    for col in ensemble.columns:
+        data = []
+        col_data = ensemble[col]
+
+        for i in traj_numbers:
+            data.append(col_data.xs(i, level='trajectory_num'))
+
+        data_dict[col] = data
+
+    for k, v in data_dict.iteritems():
+        plt.figure()
+        sns.tsplot(data=v, err_style="unit_traces")
+        plt.title(k)
+        plt.xlabel("Timestep index")
+        plt.ylabel("Value")
+        plt.show()
+
 
 
 def plot_forces_violinplots(ensemble, agent_obj):
