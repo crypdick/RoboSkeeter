@@ -46,6 +46,10 @@ class Forces():
         [formerly]: Picks the direction +- pi/2 rads from
         the upwind direction and scales it by accelList constant magnitude, "wtf".
 
+        Todo: solve for upwindF using this data:
+        In[15]: np.mean(control.data.velocity_x.values)
+        Out[15]: 0.0065768027700562788
+
         Args:
             wtf: bias distribution exponent
             upwind_direction: direction of upwind (in radians)
