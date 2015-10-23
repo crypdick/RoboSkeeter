@@ -106,15 +106,13 @@ def plot_position_heatmaps(ensemble, agent_obj=None):
     if agent_obj is not None:
         fileappend = agent_to_fname_suffix(agent_obj)
         path = MODEL_FIG_PATH
+        agent = "Agent"
     else:
         fileappend = ''
         path = EXPERIMENT_FIG_PATH
+        agent = "Mosquito"
 
-    ### Label stuff
-    if agent_obj is None:
-        type = "Mosquito"
-    else:
-        type = "Agent"
+
     titlebase = "{type} Position Heatmap"
     numbers = " (n = {})".format(total_trajectories)
 
@@ -197,7 +195,6 @@ def plot_kinematic_histograms(
     statefig = plt.figure()  # , figsize=(9, 8))
     gs1 = gridspec.GridSpec(2, 3)
     axs = [statefig.add_subplot(ss) for ss in gs1]
-    statefig.suptitle("Agent Model Flight Distributions" + titleappend, fontsize=14)
     # position distributions
     #    pos_all = np.concatenate(pos, axis=0)
     pos_binwidth = .01
@@ -399,39 +396,64 @@ def plot_kinematic_histograms(
     ####################
 
     gs1.tight_layout(statefig, rect=[0, 0.03, 1, 0.95])  # overlapping text hack
+
     if agent_obj is not None:
         titleappend = agent_to_fname_suffix(agent_obj)
         path = MODEL_FIG_PATH
+        agent = "Agent"
     else:
         titleappend = ''
         path = EXPERIMENT_FIG_PATH
+        agent = "Mosquito"
 
+    suptit = "{} Flight Distributions".format(agent) + titleappend
+    statefig.suptitle(suptit, fontsize=14)
 
-    plt.savefig(os.path.join(path, "Agent Distributions" + titleappend + FIG_FORMAT))
+    plt.savefig(os.path.join(path, suptit + FIG_FORMAT))
     plt.show()
 
 
 #    return xpos_counts_norm, ypos_bins, ypos_counts, ypos_counts_norm, vx_counts_n
 
-def plot_timeseries(ensemble):
-    traj_numbers = ensemble.index.get_level_values('trajectory_num').unique()
+def plot_timeseries(ensemble, agent_obj):
+    traj_numbers = [int(i) for i in ensemble.index.get_level_values('trajectory_num').unique()]
     data_dict = {}
+    times_dict = {}
 
     for col in ensemble.columns:
         data = []
         col_data = ensemble[col]
 
         for i in traj_numbers:
-            data.append(col_data.xs(i, level='trajectory_num'))
+            df = col_data.xs(i, level='trajectory_num')
+            data.append(df)
 
-        data_dict[col] = data
+        data_dict[col] = data  # every key linked to list of lists
 
-    for k, v in data_dict.iteritems():
+    #### file naming and directory selection
+    if agent_obj is not None:
+        fileappend = agent_to_fname_suffix(agent_obj)
+        path = MODEL_FIG_PATH
+        agent = "Agent"
+    else:
+        fileappend = ''
+        path = EXPERIMENT_FIG_PATH
+        agent = "Mosquito"
+
+    titlebase = "{agent} {kinematic} timeseries".format(agent=agent, kinematic="{kinematic}")
+    numbers = " (n = {})".format(len(traj_numbers))
+
+    for k, v in iter(sorted(data_dict.iteritems())):
         plt.figure()
-        sns.tsplot(data=v, err_style="unit_traces")
-        plt.title(k)
+        for trial in v:
+            plt.plot(trial.index, trial)
+        # print v
+        # sns.tsplot(data=v, times=times_dict[k], err_style=None) #"unit_traces")
+        format_title = titlebase.format(kinematic=k)
+        plt.suptitle(format_title + numbers, fontsize=14)
         plt.xlabel("Timestep index")
         plt.ylabel("Value")
+        plt.savefig(os.path.join(path, format_title + fileappend + FIG_FORMAT))
         plt.show()
 
 
