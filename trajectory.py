@@ -26,6 +26,7 @@ from scripts import i_o
 from scripts import plotting
 
 
+
 # from scripts.correlation_matrices import trajectory_DF
 from scripts.math_sorcery import calculate_curvature, calculate_xy_heading_angle, calculate_xy_magnitude
 import score
@@ -69,6 +70,7 @@ class Trajectory():
         elif type(data) is list:
             try:
                 self.data = pd.concat(data)  # fast
+                self.data = self.data.sort_index()
             except ValueError:  # sometimes happens when running optimizer FIXME
                 self.data = pd.DataFrame({'velocity_x': np.zeros(1),
                                           'velocity_y': np.zeros(1),
@@ -240,7 +242,7 @@ class Trajectory():
         df = self.data.loc[:,
              ['position_x', 'position_y', 'position_z', 'velocity_x', 'velocity_y', 'velocity_z', 'acceleration_x',
               'acceleration_y', 'acceleration_z', 'curvature']]
-        plotting.plot_timeseries(df)
+        plotting.plot_timeseries(df, self.agent_obj)
 
 
     def plume_stats(self):
@@ -383,7 +385,7 @@ class Experimental_Trajectory(Trajectory):
             dataframe['trajectory_num'] = [fname_num] * df_len
             dataframe['tsi'] = np.arange(df_len)
 
-            dataframe = dataframe.set_index(['trajectory_num', 'tsi']).sort_index()
+            dataframe = dataframe.set_index(['trajectory_num', 'tsi'])
             df_list.append(dataframe)
             dataframe.keys()
 
