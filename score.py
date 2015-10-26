@@ -79,7 +79,7 @@ def calc_bins(data):
     pad_coeff = 2.  # pad the distribution to properly penalize values above
     bins_dict = {}
     for k, vect in data.items():
-        bins_dict[k] = np.linspace(0., vect.max() * pad_coeff, 2000)
+        bins_dict[k] = np.linspace(vect.min(), vect.max() * pad_coeff, 2000)
 
 
     return bins_dict
