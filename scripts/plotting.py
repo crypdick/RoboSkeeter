@@ -1000,12 +1000,11 @@ def plot_all_force_clouds(ensemble):
     plt.show()
 
 
-def plot_scores(ensemble):
+def plot_scores(trajectories_obj):
     from scripts.pickle_experiments import load_mosquito_kde_data_dicts
 
     ref_bins_dict, ref_kde_vals_dict = load_mosquito_kde_data_dicts()
-    total_score, scores, targ_kde_vals_dict = ensemble.calc_score(ensemble,
-                                                                  ref_ensemble=[ref_bins_dict, ref_kde_vals_dict])
+    total_score, scores, targ_kde_vals_dict = trajectories_obj.calc_score()
 
     for kinematic, ref_vals in ref_kde_vals_dict.iteritems():
         targ_vals = targ_kde_vals_dict[kinematic]

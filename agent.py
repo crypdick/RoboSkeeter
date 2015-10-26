@@ -7,8 +7,9 @@ Created on Tue May  5 21:08:51 2015
 TODO: implemement unit tests with nose
 """
 
-import numpy as np
 import sys
+
+import numpy as np
 
 import pandas as pd
 

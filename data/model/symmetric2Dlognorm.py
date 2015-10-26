@@ -7,7 +7,6 @@ Created on Sun Apr 12 16:41:26 2015
 
 import numpy as np
 from numpy import linalg, newaxis, random
-from matplotlib import collections
 from matplotlib import pyplot as plt
 
 def gen_rand_vecs(dims):
