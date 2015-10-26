@@ -784,6 +784,81 @@ def vector_cloud_heatmap(trajectories_obj, kinematic, i=None):
     # cbar2.ax.set_ylabel(PROBABILITY_LABEL)
 
 
+def vector_cloud_kde(trajectories_obj, kinematic, i=None):
+    # test whether we are a simulation; if not, forbid plotting of  drivers
+    if trajectories_obj.agent_obj is None:
+        if kinematic not in ['velocity', 'acceleration']:
+            raise TypeError("we don't know the mosquito drivers")
+
+    labels = []
+    for dim in ['x', 'y', 'z']:
+        labels.append(kinematic + '_' + dim)
+
+    if i is None:
+        ensemble = trajectories_obj.data
+    else:
+        ensemble = trajectories_obj.get_trajectory_i_df(i)
+
+    # grab labels
+    vecs = []
+
+    selection = ensemble.loc[:, labels]
+
+    sns.jointplot(x=labels[0], y=labels[1], data=selection, kind='kde', cmap=CM, n_levels=100, shade=True,
+                  xlim=(-1.4, 1.4), ylim=(-1.4, 1.4))
+
+    sns.jointplot(x=labels[0], y=labels[2], data=selection, kind='kde', cmap=CM, n_levels=100, shade=True,
+                  xlim=(-1.4, 1.4), ylim=(-1.4, 1.4))
+
+    sns.jointplot(x=labels[0], y=labels[2], data=selection, kind='kde', cmap=CM, n_levels=100, shade=True,
+                  xlim=(-1.4, 1.4), ylim=(-1.4, 1.4))
+
+
+
+    # arrays = selection.values
+    # transpose = arrays.T  # 3 x timesteps matrix
+    # xs, ys, zs = transpose[0], transpose[1], transpose[2]
+    #
+    #
+    # #### XY
+    # fig0, ax0 = plt.subplots(1)
+    # heatmap_xy = ax0.pcolormesh(x_bins, y_bins, probs_xy, cmap=CM, vmin=0., vmax=max_probability)
+    # plt.scatter(0, 0, c='r', marker='x')
+    # ax0.set_aspect('equal')
+    # # overwrite previous plot schwag
+    # the_divider = make_axes_locatable(ax0)
+    # color_axis = the_divider.append_axes("right", size="5%", pad=0.1)
+    # cbar0 = plt.colorbar(heatmap_xy, cax=color_axis)
+    #
+    # #### XZ
+    # fig1, ax1 = plt.subplots(1)
+    # heatmap_xz = ax1.pcolormesh(x_bins, z_bins, probs_xz, cmap=CM, vmin=0., vmax=max_probability)
+    # ax1.set_aspect('equal')
+    # plt.scatter(0, 0, c='r', marker='x')
+    # # plt.xlabel(X_AXIS_POSITION_LABEL)
+    # # plt.ylabel(Z_AXIS_POSITION_LABEL)
+    # # title2 = titlebase.format(type=type) + " - XZ projection" + numbers
+    # # plt.title(title2)
+    # the_divider = make_axes_locatable(ax1)
+    # color_axis = the_divider.append_axes("right", size="5%", pad=0.1)
+    # cbar1 = plt.colorbar(heatmap_xz, cax=color_axis)
+    # cbar1.ax.set_ylabel(PROBABILITY_LABEL)
+    #
+    # #### YZ
+    # fig2, ax2 = plt.subplots(1)
+    # heatmap_yz = ax2.pcolormesh(y_bins, z_bins, probs_yz, cmap=CM, vmin=0., vmax=max_probability)
+    # plt.scatter(0, 0, c='r', marker='x')
+    # ax2.set_aspect('equal')
+    # # plt.xlabel(Y_AXIS_POSITION_LABEL)
+    # # plt.ylabel(Z_AXIS_POSITION_LABEL)
+    # # title3 = titlebase.format(type=type) + " - YZ projection" + numbers
+    # # plt.title(title3)
+    # the_divider = make_axes_locatable(ax2)
+    # color_axis = the_divider.append_axes("right", size="5%", pad=0.1)
+    # cbar2 = plt.colorbar(heatmap_yz, cax=color_axis)
+    # # cbar2.ax.set_ylabel(PROBABILITY_LABEL)
+
+
 
 def plot_all_force_clouds(ensemble):
     import math_sorcery
