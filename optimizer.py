@@ -1,10 +1,12 @@
 __author__ = 'richard'
 
-from scipy.optimize import basinhopping
 import logging
 from datetime import datetime
+
+from scipy.optimize import basinhopping
 import numpy as np
 
+from scripts.pickle_experiments import load_mosquito_kde_data_dicts
 import agent
 
 
@@ -29,7 +31,7 @@ def fly_wrapper(GUESS, *args):
     K = 0  # no wall force for optimization
     F_STIM_SCALE = 0
 
-    N_TRAJECTORIES, PLOTTER = args
+    N_TRAJECTORIES, PLOTTER, (EXP_BINS, EXP_VALS) = args
     # import pdb; pdb.set_trace()
 
     simulation, skeeter = agent.gen_objects_and_fly(
@@ -44,7 +46,7 @@ def fly_wrapper(GUESS, *args):
         verbose=False
     )
 
-    combined_score, _ = simulation.calc_score()
+    combined_score, _, _ = simulation.calc_score(ref_ensemble=(EXP_BINS, EXP_VALS))
 
     global HIGH_SCORE
     global BEST_GUESS
@@ -114,7 +116,7 @@ def main(x_0=None):
     # ACF_THRESH = 0.5
     GUESS_PARAMS = "[beta, F_rand_strength]"  #, F_WIND_SCALE]"  # [5e-6, 4.12405e-6, 5e-7]
     if x_0 is None:
-        INITIAL_GUESS = [1.98753667e-04, 3.31694004e-06]  #, 7.99143188e-07]
+        INITIAL_GUESS = [1.01955384e-06, 1.10810914e-05]  # , 7.99143188e-07]
     else:
         INITIAL_GUESS = x_0
     N_TRAJECTORIES = 40
@@ -137,14 +139,16 @@ def main(x_0=None):
         INITIAL_GUESS,
         stepsize=1e-6,
         T=1e-5,
-        niter=40,  # number of basin hopping iterations, default 100
+        niter=100,  # number of basin hopping iterations, default 100
         niter_success=20,  # Stop the run if the global minimum candidate remains the same for this number of iterations
-        minimizer_kwargs={"args": (N_TRAJECTORIES, PLOTTER),
-                          'method': OPTIM_ALGORITHM,
-                          "bounds": [(1e-6, 1e-3), (1e-6, 1e-2)]},
+        minimizer_kwargs={
+            "args": (N_TRAJECTORIES, PLOTTER, (load_mosquito_kde_data_dicts())),
+            'method': OPTIM_ALGORITHM,
+            "bounds": [(5e-7, 1e-3), (5e-7, 1e-2)]
+        },
         disp=True,
         accept_test=mybounds
-        )
+    )
 
     return BEST_GUESS, HIGH_SCORE, result
 
