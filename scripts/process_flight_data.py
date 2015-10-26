@@ -30,8 +30,8 @@ video - string name of the recording file (avi)
 raw - 3D position of the trajectory. (n x 3, where n is the number of timesteps)
 """
 
-import os
 import numpy as np
+
 import i_o
 
 

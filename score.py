@@ -8,17 +8,13 @@ import scripts.pickle_experiments
 from scripts.math_sorcery import calculate_1Dkde, evaluate_kde
 
 
-def score(targ_ensemble, ref_ensemble='pickle'):
-    if ref_ensemble is None:
-        ref_ensemble = scripts.pickle_experiments.load_mosquito_trajectory_pickle()  # load control data
+def score(targ_ensemble, ref_bins_vals='pickle'):
+    if ref_bins_vals is 'pickle':  # load already calculated KDEs
+        experimental_bins, experimental_vals = scripts.pickle_experiments.load_mosquito_kde_data_dicts()
+    else:  # provided
+        experimental_bins, experimental_vals = ref_bins_vals
 
-        ref_data = get_data(ref_ensemble)
-        experimental_bins = calc_bins(ref_data)
-        experimental_KDEs = calc_kde(ref_data)
-        experimental_vals = evaluate_kdes(experimental_KDEs, experimental_bins)
 
-    if ref_ensemble is 'pickle':
-        experimental_bins, experimental_vals = scripts.pickle_experiments.load_mosquito_kdes()
 
     targ_data = get_data(targ_ensemble)
     targ_KDEs = calc_kde(targ_data)
@@ -64,17 +60,17 @@ def score(targ_ensemble, ref_ensemble='pickle'):
     # print "dkl_score", dkl_score
     # combined_score = dkl_score + rmse_ACF
 
-    return dkl_score, dkl_scores
+    return dkl_score, dkl_scores, targ_vals
 
 
 def get_data(trajectory):
-    data = {'v_x': np.abs(trajectory.data['velocity_x'].values),
-            'v_y': np.abs(trajectory.data['velocity_y'].values),
-            'v_z': np.abs(trajectory.data['velocity_z'].values),
+    data = {'v_x': trajectory.data['velocity_x'].values,
+            'v_y': trajectory.data['velocity_y'].values,
+            'v_z': trajectory.data['velocity_z'].values,
 #            'a_x': np.abs(trajectory.data['acceleration_x'].values),
 #            'a_y': np.abs(trajectory.data['acceleration_y'].values),
 #            'a_z': np.abs(trajectory.data['acceleration_z'].values),
-            'c': np.abs(trajectory.data['curvature'].values)
+            'c': trajectory.data['curvature'].values
             }
     return data
 
@@ -83,7 +79,7 @@ def calc_bins(data):
     pad_coeff = 2.  # pad the distribution to properly penalize values above
     bins_dict = {}
     for k, vect in data.items():
-        bins_dict[k] = np.linspace(0., vect.max() * pad_coeff, 1000)
+        bins_dict[k] = np.linspace(0., vect.max() * pad_coeff, 2000)
 
 
     return bins_dict
@@ -99,10 +95,10 @@ def calc_kde(data):
 
 
 def evaluate_kdes(kdes_dict, bins_dict):
-    vals = {}
+    vals_dict = {}
 
-    for k, kde in kdes_dict.items():
-        bins = bins_dict[k]
-        vals[k] = evaluate_kde(kde, bins)
+    for kinem, kde in kdes_dict.items():
+        bins = bins_dict[kinem]
+        vals_dict[kinem] = evaluate_kde(kde, bins)
 
-    return vals
+    return vals_dict

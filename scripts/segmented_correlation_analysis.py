@@ -12,11 +12,11 @@ fix data matrix
 """
 
 import os
-import numpy as np
 from glob import glob
 import csv
 import time
 
+import numpy as np
 from statsmodels.tsa.stattools import acf
 from statsmodels.tsa.stattools import pacf
 import matplotlib.pyplot as plt

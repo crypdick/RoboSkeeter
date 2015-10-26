@@ -8,11 +8,11 @@ Created on Fri Apr 24 12:21:55 2015
 """
 
 import os
-import numpy as np
 from glob import glob
+
+import numpy as np
 from matplotlib import pyplot as plt
 import seaborn as sns
-
 
 script_dir = os.path.dirname(__file__)  #behavior/postion/
 rel_data_path = "data/distributions/"

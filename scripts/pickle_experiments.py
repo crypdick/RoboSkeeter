@@ -18,21 +18,22 @@ def store_mosquito_pickle():
     pickle.dump(MOSQUITOES, open(os.path.join(EXPERIMENT_PATH, "controls.p"), "wb"))
 
     ref_data = score.get_data(MOSQUITOES)
-    experimental_bins = score.calc_bins(ref_data)
-    experimental_KDEs = score.calc_kde(ref_data)
-    experimental_vals = score.evaluate_kdes(experimental_KDEs, experimental_bins)
+    experimental_bins_dict = score.calc_bins(ref_data)
+    experimental_KDEs_dict = score.calc_kde(ref_data)
+    experimental_vals_dict = score.evaluate_kdes(experimental_KDEs_dict, experimental_bins_dict)
 
-    pickle.dump(experimental_bins, open(os.path.join(EXPERIMENT_PATH, "experimental_bins.p"), "wb"))
-    pickle.dump(experimental_vals, open(os.path.join(EXPERIMENT_PATH, "experimental_vals.p"), "wb"))
+    pickle.dump(experimental_bins_dict, open(os.path.join(EXPERIMENT_PATH, "experimental_bins_dict.p"), "wb"))
+    pickle.dump(experimental_vals_dict, open(os.path.join(EXPERIMENT_PATH, "experimental_vals_dict.p"), "wb"))
+    print "Pickles dumped."
 
 
 def load_mosquito_trajectory_pickle():
     return pickle.load(open(os.path.join(EXPERIMENT_PATH, "controls.p"), "rb"))
 
 
-def load_mosquito_kdes():
-    bins = pickle.load(open(os.path.join(EXPERIMENT_PATH, "experimental_bins.p"), "rb"))
-    vals = pickle.load(open(os.path.join(EXPERIMENT_PATH, "experimental_vals.p"), "rb"))
+def load_mosquito_kde_data_dicts():
+    bins = pickle.load(open(os.path.join(EXPERIMENT_PATH, "experimental_bins_dict.p"), "rb"))
+    vals = pickle.load(open(os.path.join(EXPERIMENT_PATH, "experimental_vals_dict.p"), "rb"))
 
     return bins, vals
 
