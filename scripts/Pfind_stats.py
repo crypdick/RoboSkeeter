@@ -8,9 +8,11 @@ Created on Wed Mar 25 09:59:21 2015
 
 @author: richard
 """
-import trajectory_stats
 import numpy as np
 import matplotlib.pyplot as plt
+
+import trajectory_stats
+
 
 # number of sections to divide flight arena into
 Nx, Ny = (40, 12)  # wind tunnel ratio is 1m:0.3m:0.3m

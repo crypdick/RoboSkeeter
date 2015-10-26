@@ -8,7 +8,9 @@ Created on Tue Apr  7 23:07:31 2015
 from scipy import stats
 import numpy as np
 from matplotlib import pyplot as plt
+
 import Dickinson_experiments.dick_pickle
+
 
 # grab odor off info
 odor_off = Dickinson_experiments.dick_pickle.main(plotting=False)

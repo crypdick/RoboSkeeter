@@ -7,9 +7,10 @@ Demo trajectories
 @author: Richard Decal
 """
 
+from matplotlib import pyplot as plt
+
 import generate_trajectory
 from trajectory_stats import main as ts
-from matplotlib import pyplot as plt
 
 default_wallF = (4e-1, 1e-6, 1e-7, 250)
 

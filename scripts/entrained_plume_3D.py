@@ -80,8 +80,7 @@ class Plume():
     def show(self):
         ''' show a plot of the plume object
         '''
-        from matplotlib import pyplot as plt
-        
+
         ax = self.plume.plot(kind='hexbin', x='x', y='y', C='temp', reduce_C_function=np.max,
                         gridsize=(20,60), vmax=297, title ="Temperature inside wind tunnel (K)", ylim=[-0.127, 0.127])
         ax.set_aspect('equal')
