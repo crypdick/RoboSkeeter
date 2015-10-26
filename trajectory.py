@@ -16,14 +16,16 @@ trajectory.describe()
 
 trajectory.save
 """
-import numpy as np
 import os
 import string
 
+import numpy as np
 import pandas as pd
 
 from scripts import i_o
 from scripts import plotting
+
+
 
 
 
@@ -117,8 +119,7 @@ class Trajectory():
 
 
     def plot_position_heatmaps(self):
-        trimmed_df = self._trim_df_endzones()
-        plotting.plot_position_heatmaps(trimmed_df, self.agent_obj)
+        plotting.plot_position_heatmaps(self)
         
     
     def plot_kinematic_hists(self, ensemble='none', titleappend=''):
@@ -235,6 +236,9 @@ class Trajectory():
         print "full- + up- + down-wind"
         plotting.plot_kinematic_histograms(full_ensemble, self.agent_obj, titleappend = '', upw_ensemble = upwind_ensemble, downw_ensemble = downwind_ensemble)
 
+    def plot_scores(self):
+        plotting.plot_scores(self)
+
     def plot_timeseries(self):
         """
 
@@ -282,12 +286,12 @@ class Trajectory():
             temp_array = temp_traj[['position_x', 'position_y']].values
             np.savetxt(str(trajectory_i) + ".csv", temp_array, delimiter=",")
 
-    
-    def calc_score(self):
-        total_score, scores = score.score(self)
+    def calc_score(self, ref_ensemble='pickle'):
+        total_score, scores, targ_vals = score.score(self)
         print "Trajectory score: ", total_score
+        self.total_score, self.scores, self.targ_vals = total_score, scores, targ_vals
 
-        return total_score, scores
+        return total_score, scores, targ_vals
 
     def _extract_number_from_fname(self, token):
         extract_digits = lambda stng: "".join(char for char in stng if char in string.digits + ".")
@@ -320,6 +324,23 @@ class Trajectory():
     def get_trajectory_numbers(self):
         return self.data.index.get_level_values('trajectory_num').unique()
 
+    def plot_vector_cloud(self, kinematic='acceleration', i=None):
+        plotting.plot_vector_cloud(self, kinematic, i)
+
+    def plot_vector_cloud_heatmap(self, kinematic='acceleration', i=None):
+        plotting.vector_cloud_heatmap(self, kinematic, i)
+
+    def plot_vector_cloud_kde(self, kinematic='acceleration', i=None):
+        plotting.vector_cloud_kde(self, kinematic, i=None)
+
+        # def compare_scores(self):
+        #     # make sure to run calc_score first so that we have self.targ_vals
+        #     import pickle_experiments
+        #     _, ref_vals = pickle_experiments.load_mosquito_kde_data_dicts()
+        #     plotting.plot_scores
+        #     for k, v in ref_vals.iteritems():
+
+
 
 
 class Agent_Trajectory(Trajectory):
@@ -329,9 +350,6 @@ class Agent_Trajectory(Trajectory):
     def visualize_forces(self):
         """like plot_vector_cloud, but with all of the kinematics at once"""
         plotting.plot_all_force_clouds(self.data)
-
-    def plot_vector_cloud(self, kinematic='acceleration'):
-        plotting.plot_vector_cloud(self.data, kinematic)
 
     def plot_force_violin(self):
         if self.agent_obj is None:
