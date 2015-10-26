@@ -7,10 +7,10 @@ Created on Fri Mar 20 12:27:04 2015
 https://staff.washington.edu/decal/
 https://github.com/isomerase/
 """
-import numpy as np
 import os
 from math import ceil
 
+import numpy as np
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.gridspec as gridspec
@@ -41,18 +41,26 @@ PROBABILITY_LABEL = 'Probability'
 FIG_FORMAT = ".png"
 
 
-
-def agent_to_fname_suffix(agent):
-    return " cond{condition}|damp{damp}|rF{rf}|wF{wtf}|stmF{stim}|N{total_trajectories}|K{K}|m{m}".format(
-                condition=agent.experimental_condition,
-                damp=agent.damping_coeff,
-                rf=agent.randomF_strength,
-                wtf=agent.windF_strength,
-        stim=agent.stimF_strength,
-                total_trajectories=agent.total_trajectories,
-                K=agent.spring_const,
-                m=agent.mass
+def get_agent_info(agent_obj):
+    if agent_obj is not None:
+        titleappend = " cond{condition}|damp{damp}|rF{rf}|wF{wtf}|stmF{stim}|N{total_trajectories}|K{K}|m{m}".format(
+            condition=agent_obj.experimental_condition,
+            damp=agent_obj.damping_coeff,
+            rf=agent_obj.randomF_strength,
+            wtf=agent_obj.windF_strength,
+            stim=agent_obj.stimF_strength,
+            total_trajectories=agent_obj.total_trajectories,
+            K=agent_obj.spring_const,
+            m=agent_obj.mass
             )
+        path = MODEL_FIG_PATH
+        is_agent = 'Agent'
+    else:
+        titleappend = ''
+        path = EXPERIMENT_FIG_PATH
+        is_agent = 'Mosquito'
+
+    return titleappend, path, is_agent
 
 def draw_cage():
     # makes a little box where the cage is
@@ -74,8 +82,10 @@ def draw_heater(heater_position, detect_thresh=0.02):  # FIXME detect thresh = 2
     return heaterCircle, detectCircle
 
 
-def plot_position_heatmaps(ensemble, agent_obj=None):
-    total_trajectories = len(ensemble.trajectory_num.unique())
+def plot_position_heatmaps(trajectories_obj):
+    trimmed_df = trajectories_obj._trim_df_endzones()
+    ensemble = trimmed_df
+    total_trajectories = len(trajectories_obj.get_trajectory_numbers())
 
     N_points = len(ensemble)
     nbins_x = 100
@@ -103,17 +113,9 @@ def plot_position_heatmaps(ensemble, agent_obj=None):
     max_probability = np.max(probs_xy)
 
     #### file naming and directory selection
-    if agent_obj is not None:
-        fileappend = agent_to_fname_suffix(agent_obj)
-        path = MODEL_FIG_PATH
-        agent = "Agent"
-    else:
-        fileappend = ''
-        path = EXPERIMENT_FIG_PATH
-        agent = "Mosquito"
+    fileappend, path, agent = get_agent_info(trajectories_obj.agent_obj)
 
-
-    titlebase = "{type} Position Heatmap"
+    titlebase = "{type} Position Heatmap".format(type=agent)
     numbers = " (n = {})".format(total_trajectories)
 
     #### XY
@@ -397,14 +399,7 @@ def plot_kinematic_histograms(
 
     gs1.tight_layout(statefig, rect=[0, 0.03, 1, 0.95])  # overlapping text hack
 
-    if agent_obj is not None:
-        titleappend = agent_to_fname_suffix(agent_obj)
-        path = MODEL_FIG_PATH
-        agent = "Agent"
-    else:
-        titleappend = ''
-        path = EXPERIMENT_FIG_PATH
-        agent = "Mosquito"
+    fileappend, path, agent = get_agent_info(agent_obj)
 
     suptit = "{} Flight Distributions".format(agent) + titleappend
     statefig.suptitle(suptit, fontsize=14)
@@ -431,14 +426,7 @@ def plot_timeseries(ensemble, agent_obj):
         data_dict[col] = data  # every key linked to list of lists
 
     #### file naming and directory selection
-    if agent_obj is not None:
-        fileappend = agent_to_fname_suffix(agent_obj)
-        path = MODEL_FIG_PATH
-        agent = "Agent"
-    else:
-        fileappend = ''
-        path = EXPERIMENT_FIG_PATH
-        agent = "Mosquito"
+    fileappend, path, agent = get_agent_info(agent_obj)
 
     titlebase = "{agent} {kinematic} timeseries".format(agent=agent, kinematic="{kinematic}")
     numbers = " (n = {})".format(len(traj_numbers))
@@ -455,7 +443,6 @@ def plot_timeseries(ensemble, agent_obj):
         plt.ylabel("Value")
         plt.savefig(os.path.join(path, format_title + fileappend + FIG_FORMAT))
         plt.show()
-
 
 
 def plot_forces_violinplots(ensemble, agent_obj):
@@ -484,12 +471,7 @@ def plot_forces_violinplots(ensemble, agent_obj):
     plt.tight_layout(pad=1.8)
     plt.ylabel("Force magnitude distribution (newtons)")
 
-    if agent_obj is not None:
-        titleappend = agent_to_fname_suffix(agent_obj)
-        path = MODEL_FIG_PATH
-    else:
-        titleappend = ''
-        path = EXPERIMENT_FIG_PATH
+    fileappend, path, agent = get_agent_info(agent_obj)
 
     plt.savefig(os.path.join(path, "Force Distributions" + titleappend + FIG_FORMAT))
     plt.show()
@@ -525,14 +507,9 @@ def plot_velocity_compassplot(ensemble, agent_obj, kind):
             "Agent velocities 0.25 < x < 0.5, center repulsion on (n = {})".format(agent_obj['total_trajectories']),
             y=1.1)
 
-        if agent_obj is not None:
-            titleappend = agent_to_fname_suffix(agent_obj)
-            path = MODEL_FIG_PATH
-        else:
-            titleappend = ''
-            path = EXPERIMENT_FIG_PATH
+        fileappend, path, agent = get_agent_info(agent_obj)
 
-        plt.savefig(os.path.join(path, "Velocity compass" + titleappend + FIG_FORMAT))
+        plt.savefig(os.path.join(path, "Velocity compass" + fileappend + FIG_FORMAT))
         plt.show()
 
 
@@ -611,14 +588,9 @@ def plot_compass_histogram(vector_name, ensemble, agent_obj, kind='avg_mag_per_b
         plt.xticks(x_tix, x_labels, size=20)
         plt.title(title)
 
-        if agent_obj is not None:
-            titleappend = agent_to_fname_suffix(agent_obj)
-            path = MODEL_FIG_PATH
-        else:
-            titleappend = ''
-            path = EXPERIMENT_FIG_PATH
+        fileappend
 
-        plt.savefig(os.path.join(path, "Compass {fname}" + titleappend + FIG_FORMAT))
+        plt.savefig(os.path.join(path, "Compass {fname}" + fileappend + FIG_FORMAT))
         plt.show()
 
         # plt.savefig("./figs/Compass {fname}{append}.svg".format(fname=fname, append=titleappend + FIG_FORMAT))
@@ -687,13 +659,25 @@ def plot3D_trajectory(trajectory, plot_kwargs=None):
     # todo: plot cylinder, detect circle, cage
 
 
-def plot_vector_cloud(ensemble, kinematic):
+def plot_vector_cloud(trajectories_obj, kinematic, i=None):
+    # test whether we are a simulation; if not, forbid plotting of  drivers
+    if trajectories_obj.agent_obj is None:
+        if kinematic not in ['velocity', 'acceleration']:
+            raise TypeError("we don't know the mosquito drivers")
+
+
     labels = []
     for dim in ['x', 'y', 'z']:
         labels.append(kinematic + '_' + dim)
 
+    if i is None:
+        ensemble = trajectories_obj.data
+    else:
+        ensemble = trajectories_obj.get_trajectory_i_df(i)
+
     # grab labels
     vecs = []
+
     selection = ensemble.loc[:, labels]
     arrays = selection.values
     transpose = arrays.T  # 3 x timesteps matrix
@@ -719,8 +703,86 @@ def plot_vector_cloud(ensemble, kinematic):
     ensemble_cmap = CM(colors)
     i = range(len(ensemble))
 
+    ax.plot(xs, ys, zs)
     ax.scatter(0, 0, 0, c='r', marker='o', s=50)  # mark origin
-    ax.scatter(xs, ys, zs, '.', s=80, linewidths=0, c=ensemble_cmap)
+    ax.scatter(xs, ys, zs, '.', s=20, linewidths=0, c=ensemble_cmap, alpha=0.2)
+
+
+def vector_cloud_heatmap(trajectories_obj, kinematic, i=None):
+    # test whether we are a simulation; if not, forbid plotting of  drivers
+    if trajectories_obj.agent_obj is None:
+        if kinematic not in ['velocity', 'acceleration']:
+            raise TypeError("we don't know the mosquito drivers")
+
+    labels = []
+    for dim in ['x', 'y', 'z']:
+        labels.append(kinematic + '_' + dim)
+
+    if i is None:
+        ensemble = trajectories_obj.data
+    else:
+        ensemble = trajectories_obj.get_trajectory_i_df(i)
+
+    # grab labels
+    vecs = []
+
+    selection = ensemble.loc[:, labels]
+    arrays = selection.values
+    transpose = arrays.T  # 3 x timesteps matrix
+    xs, ys, zs = transpose[0], transpose[1], transpose[2]
+
+    N_points = len(ensemble)
+
+    counts, [x_bins, y_bins, z_bins] = np.histogramdd((xs, ys, zs), bins=(50, 50, 50))
+
+    # counts need to be transposed to use pcolormesh
+    countsT = counts.T
+    probs = countsT / N_points
+
+    # reduce dimensionality for the different plots
+    probs_xy = np.sum(probs, axis=0)
+    probs_yz = np.sum(probs, axis=2)
+    probs_xz = np.sum(probs, axis=1)
+    max_probability = np.max([np.max(probs_xy), np.max(probs_xz), np.max(probs_yz)])
+
+    #### XY
+    fig0, ax0 = plt.subplots(1)
+    heatmap_xy = ax0.pcolormesh(x_bins, y_bins, probs_xy, cmap=CM, vmin=0., vmax=max_probability)
+    plt.scatter(0, 0, c='r', marker='x')
+    ax0.set_aspect('equal')
+    # overwrite previous plot schwag
+    the_divider = make_axes_locatable(ax0)
+    color_axis = the_divider.append_axes("right", size="5%", pad=0.1)
+    cbar0 = plt.colorbar(heatmap_xy, cax=color_axis)
+
+    #### XZ
+    fig1, ax1 = plt.subplots(1)
+    heatmap_xz = ax1.pcolormesh(x_bins, z_bins, probs_xz, cmap=CM, vmin=0., vmax=max_probability)
+    ax1.set_aspect('equal')
+    plt.scatter(0, 0, c='r', marker='x')
+    # plt.xlabel(X_AXIS_POSITION_LABEL)
+    # plt.ylabel(Z_AXIS_POSITION_LABEL)
+    # title2 = titlebase.format(type=type) + " - XZ projection" + numbers
+    # plt.title(title2)
+    the_divider = make_axes_locatable(ax1)
+    color_axis = the_divider.append_axes("right", size="5%", pad=0.1)
+    cbar1 = plt.colorbar(heatmap_xz, cax=color_axis)
+    cbar1.ax.set_ylabel(PROBABILITY_LABEL)
+
+    #### YZ
+    fig2, ax2 = plt.subplots(1)
+    heatmap_yz = ax2.pcolormesh(y_bins, z_bins, probs_yz, cmap=CM, vmin=0., vmax=max_probability)
+    plt.scatter(0, 0, c='r', marker='x')
+    ax2.set_aspect('equal')
+    # plt.xlabel(Y_AXIS_POSITION_LABEL)
+    # plt.ylabel(Z_AXIS_POSITION_LABEL)
+    # title3 = titlebase.format(type=type) + " - YZ projection" + numbers
+    # plt.title(title3)
+    the_divider = make_axes_locatable(ax2)
+    color_axis = the_divider.append_axes("right", size="5%", pad=0.1)
+    cbar2 = plt.colorbar(heatmap_yz, cax=color_axis)
+    # cbar2.ax.set_ylabel(PROBABILITY_LABEL)
+
 
 
 def plot_all_force_clouds(ensemble):
@@ -861,3 +923,19 @@ def plot_all_force_clouds(ensemble):
     plt.title("Visualization of F_wall repulsion")
     plt.savefig('F_wall repulsion_cloud.png')
     plt.show()
+
+
+def plot_scores(ensemble):
+    from scripts.pickle_experiments import load_mosquito_kde_data_dicts
+
+    ref_bins_dict, ref_kde_vals_dict = load_mosquito_kde_data_dicts()
+    total_score, scores, targ_kde_vals_dict = ensemble.calc_score(ensemble,
+                                                                  ref_ensemble=[ref_bins_dict, ref_kde_vals_dict])
+
+    for kinematic, ref_vals in ref_kde_vals_dict.iteritems():
+        targ_vals = targ_kde_vals_dict[kinematic]
+
+        plt.figure()
+        plt.plot(ref_bins_dict[kinematic], targ_vals, label="Input")
+        plt.plot(ref_bins_dict[kinematic], ref_vals, label="Reference")
+        plt.title(kinematic + "KDE comparison")
