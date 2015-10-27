@@ -119,7 +119,7 @@ def main(x_0=None):
         INITIAL_GUESS = [1.01955384e-06, 1.10810914e-05]  # , 7.99143188e-07]
     else:
         INITIAL_GUESS = x_0
-    N_TRAJECTORIES = 40
+    N_TRAJECTORIES = 100
 
     print "Starting optimizer."
 
@@ -144,7 +144,8 @@ def main(x_0=None):
         minimizer_kwargs={
             "args": (N_TRAJECTORIES, PLOTTER, (load_mosquito_kde_data_dicts())),
             'method': OPTIM_ALGORITHM,
-            "bounds": [(5e-7, 1e-3), (5e-7, 1e-2)]
+            "bounds": [(5e-7, 1e-3), (5e-7, 1e-2)],
+            "tol": 0.002  # tolerance for considering a basin minimized
         },
         disp=True,
         accept_test=mybounds
