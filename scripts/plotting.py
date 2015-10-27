@@ -733,7 +733,7 @@ def vector_cloud_heatmap(trajectories_obj, kinematic, i=None):
 
     N_points = len(ensemble)
 
-    counts, [x_bins, y_bins, z_bins] = np.histogramdd((xs, ys, zs), bins=(50, 50, 50))
+    counts, [x_bins, y_bins, z_bins] = np.histogramdd((xs, ys, zs), bins=(200, 200, 200))
 
     # counts need to be transposed to use pcolormesh
     countsT = counts.T
@@ -743,13 +743,14 @@ def vector_cloud_heatmap(trajectories_obj, kinematic, i=None):
     probs_xy = np.sum(probs, axis=0)
     probs_yz = np.sum(probs, axis=2)
     probs_xz = np.sum(probs, axis=1)
-    max_probability = np.max([np.max(probs_xy), np.max(probs_xz), np.max(probs_yz)])
+    # max_probability = np.max([np.max(probs_xy), np.max(probs_xz), np.max(probs_yz)])
 
     #### XY
     fig0, ax0 = plt.subplots(1)
-    heatmap_xy = ax0.pcolormesh(x_bins, y_bins, probs_xy, cmap=CM, vmin=0., vmax=max_probability)
+    heatmap_xy = ax0.pcolormesh(x_bins, y_bins, probs_xy, cmap=CM, vmin=0., )
     plt.scatter(0, 0, c='r', marker='x')
     ax0.set_aspect('equal')
+    plt.axis([-1, 1, -1, 1])
     # overwrite previous plot schwag
     the_divider = make_axes_locatable(ax0)
     color_axis = the_divider.append_axes("right", size="5%", pad=0.1)
@@ -757,8 +758,9 @@ def vector_cloud_heatmap(trajectories_obj, kinematic, i=None):
 
     #### XZ
     fig1, ax1 = plt.subplots(1)
-    heatmap_xz = ax1.pcolormesh(x_bins, z_bins, probs_xz, cmap=CM, vmin=0., vmax=max_probability)
+    heatmap_xz = ax1.pcolormesh(x_bins, z_bins, probs_xz, cmap=CM, vmin=0.)
     ax1.set_aspect('equal')
+    plt.axis([-1, 1, -1, 1])
     plt.scatter(0, 0, c='r', marker='x')
     # plt.xlabel(X_AXIS_POSITION_LABEL)
     # plt.ylabel(Z_AXIS_POSITION_LABEL)
@@ -771,8 +773,9 @@ def vector_cloud_heatmap(trajectories_obj, kinematic, i=None):
 
     #### YZ
     fig2, ax2 = plt.subplots(1)
-    heatmap_yz = ax2.pcolormesh(y_bins, z_bins, probs_yz, cmap=CM, vmin=0., vmax=max_probability)
+    heatmap_yz = ax2.pcolormesh(y_bins, z_bins, probs_yz, cmap=CM, vmin=0.)
     plt.scatter(0, 0, c='r', marker='x')
+    plt.axis([-1, 1, -1, 1])
     ax2.set_aspect('equal')
     # plt.xlabel(Y_AXIS_POSITION_LABEL)
     # plt.ylabel(Z_AXIS_POSITION_LABEL)
@@ -804,14 +807,14 @@ def vector_cloud_kde(trajectories_obj, kinematic, i=None):
 
     selection = ensemble.loc[:, labels]
 
-    sns.jointplot(x=labels[0], y=labels[1], data=selection, kind='kde', cmap=CM, n_levels=100, shade=True,
-                  xlim=(-1.4, 1.4), ylim=(-1.4, 1.4))
+    sns.jointplot(x=labels[0], y=labels[1], data=selection, kind='kde', cmap=CM, n_levels=6, shade=True,
+                  xlim=(-0.7, 0.7), ylim=(-0.7, 0.7), shade_lowest=False)
 
-    sns.jointplot(x=labels[0], y=labels[2], data=selection, kind='kde', cmap=CM, n_levels=100, shade=True,
-                  xlim=(-1.4, 1.4), ylim=(-1.4, 1.4))
+    sns.jointplot(x=labels[0], y=labels[2], data=selection, kind='kde', cmap=CM, n_levels=6, shade=True,
+                  xlim=(-0.7, 0.7), ylim=(-0.7, 0.7), shade_lowest=False)
 
-    sns.jointplot(x=labels[0], y=labels[2], data=selection, kind='kde', cmap=CM, n_levels=100, shade=True,
-                  xlim=(-1.4, 1.4), ylim=(-1.4, 1.4))
+    sns.jointplot(x=labels[1], y=labels[2], data=selection, kind='kde', cmap=CM, n_levels=6, shade=True,
+                  xlim=(-0.7, 0.7), ylim=(-0.7, 0.7), shade_lowest=False)
 
 
 
@@ -1000,7 +1003,7 @@ def plot_all_force_clouds(ensemble):
     plt.show()
 
 
-def plot_scores(trajectories_obj):
+def plot_score_comparison(trajectories_obj):
     from scripts.pickle_experiments import load_mosquito_kde_data_dicts
 
     ref_bins_dict, ref_kde_vals_dict = load_mosquito_kde_data_dicts()
@@ -1012,4 +1015,8 @@ def plot_scores(trajectories_obj):
         plt.figure()
         plt.plot(ref_bins_dict[kinematic], targ_vals, label="Input")
         plt.plot(ref_bins_dict[kinematic], ref_vals, label="Reference")
-        plt.title(kinematic + "KDE comparison")
+        plt.ylabel("Probability")
+        plt.xlabel("Value")
+        plt.legend()
+        plt.title("Comparison of {kinematic} Probabilities between Control Experiments and Simulation (n = {N})".format(
+            kinematic=kinematic, N=len(trajectories_obj.data.index.get_level_values('trajectory_num').unique())))
