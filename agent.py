@@ -124,7 +124,7 @@ class Agent():
     def _gen_environment_objects(self):
         """generate environment"""
         # we make a windtunnel even in the unbounded case b/c plotting functions use bounds
-        windtunnel_object = windtunnel.Windtunnel(self.experimental_condition)
+        windtunnel_object = windtunnel.Windtunnel(self.experimental_condition, collision_type='crash')
         # generate temperature plume
         plume_object = plume.Plume(self.experimental_condition)
         # instantiate empty trajectories class
@@ -263,8 +263,7 @@ class Agent():
 
         return V
 
-
-    def _set_init_pos_and_velo(self, agent_pos='downwind_plane'):
+    def _set_init_pos_and_velo(self):
         ''' puts the agent in an initial position, usually within the bounds of the
         cage
 
@@ -275,6 +274,7 @@ class Agent():
 
         # generate random intial velocity condition using normal distribution fitted to experimental data
         initial_velocity = np.random.normal(0, self.initial_velocity_stdev, 3)
+        agent_pos = self.initial_position_selection
 
         if type(agent_pos) is list:
             initial_position = np.array(agent_pos)
@@ -283,8 +283,11 @@ class Agent():
             # FIXME cage is actually suspending above floor
         if agent_pos == 'downwind_plane':
             initial_position =  np.array([0.1, np.random.uniform(-0.127, 0.127), np.random.uniform(0., 0.254)])
+        if agent_pos == 'downwind_high':
+            initial_position = np.array(
+                [0.1, np.random.uniform(-0.127, 0.127), 0.2373])  # 0.2373 is mode of z pos distribution
         else:
-            raise Exception('invalid agent position specified')
+            raise Exception('invalid agent position specified: {}'.format(agent_pos))
 
 
         return initial_position, initial_velocity
@@ -454,6 +457,7 @@ def gen_objects_and_fly(N_TRAJECTORIES,
                         Fwind_strength,
                         F_stim_scale,
                         K,
+                        initial_position_selection,
                         bounded=True,
                         verbose=True):
     """
@@ -462,7 +466,7 @@ def gen_objects_and_fly(N_TRAJECTORIES,
     """
     # instantiate a Roboskeeter
     skeeter = Agent(
-        initial_position_selection="downwind_plane",
+        initial_position_selection=initial_position_selection,
         windF_strength=Fwind_strength,
         randomF_strength=RANDF_STRENGTH,
         experimental_condition=TEST_CONDITION,
