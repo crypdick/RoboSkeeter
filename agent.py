@@ -10,7 +10,6 @@ TODO: implemement unit tests with nose
 import sys
 
 import numpy as np
-
 import pandas as pd
 
 import plume
@@ -156,12 +155,13 @@ class Agent():
             #     print "catching explosion"
             #     break
 
+            # add label column to enumerate the trajectories
             array_len = len(array_dict['tsi'])
+            array_dict['trajectory_num'] = [traj_i] * array_len
 
-            array_dict['trajectory_num'] = [traj_i] * array_len  # enumerate the trajectories
+            # mk df, add to list of dfs
             df = pd.DataFrame(array_dict)
             df = df.set_index(['trajectory_num', 'tsi'])
-
             df_list.append(df)
 
             traj_i += 1

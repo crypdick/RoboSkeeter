@@ -29,6 +29,7 @@ from scripts import plotting
 
 
 
+
 # from scripts.correlation_matrices import trajectory_DF
 from scripts.math_sorcery import calculate_curvature, calculate_xy_heading_angle, calculate_xy_magnitude
 import score
@@ -178,7 +179,7 @@ class Trajectory():
 
     def plot_3Dtrajectory(self, trajectory_i=None):
         if trajectory_i is None:
-            trajectory_i = self.data.trajectory_num.min()
+            trajectory_i = self.get_trajectory_numbers().min()
 
         if type(trajectory_i) is np.int64 or int:
             selected_trajectory_df = self.get_trajectory_i_df(trajectory_i)  # get data
@@ -236,8 +237,8 @@ class Trajectory():
         print "full- + up- + down-wind"
         plotting.plot_kinematic_histograms(full_ensemble, self.agent_obj, titleappend = '', upw_ensemble = upwind_ensemble, downw_ensemble = downwind_ensemble)
 
-    def plot_scores(self):
-        plotting.plot_scores(self)
+    def plot_score_comparison(self):
+        plotting.plot_score_comparison(self)
 
     def plot_timeseries(self):
         """
@@ -333,12 +334,9 @@ class Trajectory():
     def plot_vector_cloud_kde(self, kinematic='acceleration', i=None):
         plotting.vector_cloud_kde(self, kinematic, i=None)
 
-        # def compare_scores(self):
-        #     # make sure to run calc_score first so that we have self.targ_vals
-        #     import pickle_experiments
-        #     _, ref_vals = pickle_experiments.load_mosquito_kde_data_dicts()
-        #     plotting.plot_scores
-        #     for k, v in ref_vals.iteritems():
+    def plot_vector_cloud_pairgrid(self, kinematic='acceleration', i=None):
+        plotting.vector_cloud_pairgrid(self, kinematic, i=None)
+
 
 
 
