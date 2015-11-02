@@ -46,7 +46,7 @@ def fly_wrapper(GUESS, *args):
         verbose=False
     )
 
-    combined_score, _, _ = simulation.calc_score(ref_ensemble=(EXP_BINS, EXP_VALS))
+    combined_score, score_components, _ = simulation.calc_score(ref_ensemble=(EXP_BINS, EXP_VALS))
 
     global HIGH_SCORE
     global BEST_GUESS
@@ -54,7 +54,7 @@ def fly_wrapper(GUESS, *args):
         HIGH_SCORE = combined_score
         BEST_GUESS = GUESS
         string = "{0} New high score: {1}. Guess: {2}. Score components = {3}".format(datetime.now(), HIGH_SCORE, GUESS,
-                                                                                      combined_score)
+                                                                                      score_components)
         print(string)
         logging.info(string)
 
@@ -116,7 +116,7 @@ def main(x_0=None):
     # ACF_THRESH = 0.5
     GUESS_PARAMS = "[beta, F_rand_strength]"  #, F_WIND_SCALE]"  # [5e-6, 4.12405e-6, 5e-7]
     if x_0 is None:
-        INITIAL_GUESS = [1.01955384e-06, 1.10810914e-05]  # , 7.99143188e-07]
+        INITIAL_GUESS = [3.63674551e-07, 6.55599224e-06]
     else:
         INITIAL_GUESS = x_0
     N_TRAJECTORIES = 100
@@ -145,7 +145,8 @@ def main(x_0=None):
             "args": (N_TRAJECTORIES, PLOTTER, (load_mosquito_kde_data_dicts())),
             'method': OPTIM_ALGORITHM,
             "bounds": [(5e-7, 1e-3), (5e-7, 1e-2)],
-            "tol": 0.002  # tolerance for considering a basin minimized
+            "tol": 0.01  # tolerance for considering a basin minimized, set to about the difference between re-scoring
+            # same simulation
         },
         disp=True,
         accept_test=mybounds
