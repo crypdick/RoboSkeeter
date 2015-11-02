@@ -2,10 +2,11 @@ __author__ = 'richard'
 
 import agent
 
-N_TRAJECTORIES = 10
+N_TRAJECTORIES = 100
 TEST_CONDITION = None  # {'Left', 'Right', None}
 # old beta- 5e-5, forces 4.12405e-6, fwind = 5e-7
-BETA, RANDF_STRENGTH = [1.81424112e-06, 1.90272597e-05]  # [1.00000000e-06, 1.00000000e-06]
+# BETA, RANDF_STRENGTH = [  3.63674551e-07,   6.55599224e-06]  # 10/28
+BETA, RANDF_STRENGTH = [3.63674551e-07, 6.55599224e-06]
 F_WIND_SCALE = 0.
 # BETA, RANDF_STRENGTH, F_WIND_SCALE = [1.37213380e-06, 1.39026239e-06, 7.06854777e-07]#
 F_STIM_SCALE = 0.  # 7e-7,   # set to zero to disable tracking hot air
