@@ -805,16 +805,21 @@ def vector_cloud_kde(trajectories_obj, kinematic, i=None):
     # grab labels
     vecs = []
 
+    if kinematic is "velocity":
+        xlim, ylim = (-0.8, 0.8), (-0.8, 0.8)
+    else:
+        xlim, ylim = None, None
+
     selection = ensemble.loc[:, labels]
 
     sns.jointplot(x=labels[0], y=labels[1], data=selection, kind='kde', shade=True,
-                  xlim=(-0.8, 0.8), ylim=(-0.8, 0.8), shade_lowest=False, space=0, stat_func=None)
+                  xlim=xlim, ylim=ylim, shade_lowest=False, space=0, stat_func=None)
 
     sns.jointplot(x=labels[0], y=labels[2], data=selection, kind='kde', shade=True,
-                  xlim=(-0.8, 0.8), ylim=(-0.8, 0.8), shade_lowest=False, space=0, stat_func=None)
+                  xlim=xlim, ylim=ylim, shade_lowest=False, space=0, stat_func=None)
 
     sns.jointplot(x=labels[1], y=labels[2], data=selection, kind='kde', shade=True,
-                  xlim=(-0.8, 0.8), ylim=(-0.8, 0.8), shade_lowest=False, space=0, stat_func=None)
+                  xlim=xlim, ylim=ylim, shade_lowest=False, space=0, stat_func=None)
 
 
 def vector_cloud_pairgrid(trajectories_obj, kinematic, i=None):
