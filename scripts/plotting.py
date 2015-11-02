@@ -401,7 +401,7 @@ def plot_kinematic_histograms(
 
     fileappend, path, agent = get_agent_info(agent_obj)
 
-    suptit = "{} Flight Distributions".format(agent) + titleappend
+    suptit = "{} Kinematic Distributions".format(agent) + titleappend
     statefig.suptitle(suptit, fontsize=14)
 
     plt.savefig(os.path.join(path, suptit + FIG_FORMAT))
@@ -807,14 +807,44 @@ def vector_cloud_kde(trajectories_obj, kinematic, i=None):
 
     selection = ensemble.loc[:, labels]
 
-    sns.jointplot(x=labels[0], y=labels[1], data=selection, kind='kde', cmap=CM, n_levels=6, shade=True,
-                  xlim=(-0.7, 0.7), ylim=(-0.7, 0.7), shade_lowest=False)
+    sns.jointplot(x=labels[0], y=labels[1], data=selection, kind='kde', shade=True,
+                  xlim=(-0.8, 0.8), ylim=(-0.8, 0.8), shade_lowest=False, space=0, stat_func=None)
 
-    sns.jointplot(x=labels[0], y=labels[2], data=selection, kind='kde', cmap=CM, n_levels=6, shade=True,
-                  xlim=(-0.7, 0.7), ylim=(-0.7, 0.7), shade_lowest=False)
+    sns.jointplot(x=labels[0], y=labels[2], data=selection, kind='kde', shade=True,
+                  xlim=(-0.8, 0.8), ylim=(-0.8, 0.8), shade_lowest=False, space=0, stat_func=None)
 
-    sns.jointplot(x=labels[1], y=labels[2], data=selection, kind='kde', cmap=CM, n_levels=6, shade=True,
-                  xlim=(-0.7, 0.7), ylim=(-0.7, 0.7), shade_lowest=False)
+    sns.jointplot(x=labels[1], y=labels[2], data=selection, kind='kde', shade=True,
+                  xlim=(-0.8, 0.8), ylim=(-0.8, 0.8), shade_lowest=False, space=0, stat_func=None)
+
+
+def vector_cloud_pairgrid(trajectories_obj, kinematic, i=None):
+    # test whether we are a simulation; if not, forbid plotting of  drivers
+    if trajectories_obj.agent_obj is None:
+        if kinematic not in ['velocity', 'acceleration']:
+            raise TypeError("we don't know the mosquito drivers")
+
+    labels = []
+    for dim in ['x', 'y', 'z']:
+        labels.append(kinematic + '_' + dim)
+
+    if i is None:
+        ensemble = trajectories_obj.data
+    else:
+        ensemble = trajectories_obj.get_trajectory_i_df(i)
+
+    # grab labels
+    vecs = []
+
+    selection = ensemble.loc[:, labels]
+
+    g = sns.PairGrid(selection)
+    g.map_upper(plt.scatter, s=2, alpha=0.1)
+    g.map_lower(sns.kdeplot, cmap="Blues_d", shade=True)
+    g.map_diag(sns.kdeplot, lw=3, legend=False)
+    plt.subplots_adjust(top=0.9)
+    g.fig.suptitle('Pairwise comparison of {agent_type} {kinematic}'.format(agent_type=trajectories_obj.is_agent,
+                                                                            kinematic=kinematic))
+    g.set(xlim=(-0.8, 0.8), ylim=(-0.8, 0.8))
 
 
 
