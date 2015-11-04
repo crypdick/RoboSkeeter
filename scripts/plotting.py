@@ -434,7 +434,7 @@ def plot_timeseries(ensemble, agent_obj):
     for k, v in iter(sorted(data_dict.iteritems())):
         plt.figure()
         for trial in v:
-            plt.plot(trial.index, trial)
+            plt.plot(trial.index, trial, alpha=0.3)
         # print v
         # sns.tsplot(data=v, times=times_dict[k], err_style=None) #"unit_traces")
         format_title = titlebase.format(kinematic=k)
