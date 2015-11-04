@@ -83,7 +83,8 @@ class Agent():
         stimF_stength=1e-4,
         bounded=True,
                  mass=2.88e-6,  # avg. mass of our colony (kg) =2.88 mg,
-        spring_const=0.):
+                 spring_const=0.,
+                 collision_type='crash'):
         """generate the agent"""
 
         self.time_max = time_max
@@ -100,6 +101,7 @@ class Agent():
         self.windF_strength = windF_strength
 
         self.experimental_condition = experimental_condition
+        self.collision_type = collision_type
         
         self.kinematics_list = ['position', 'velocity', 'acceleration']
         self.forces_list = ['totalF', 'randomF', 'wallRepulsiveF', 'upwindF', 'stimF']
@@ -109,8 +111,6 @@ class Agent():
         # windtunnel
         self.bounded = bounded
         self.boundary = self.windtunnel_obj.boundary
-
-        self.collision = self.windtunnel_obj.collision_type
 
         # turn thresh, in units deg s-1.
         # From Sharri:
@@ -124,7 +124,7 @@ class Agent():
     def _gen_environment_objects(self):
         """generate environment"""
         # we make a windtunnel even in the unbounded case b/c plotting functions use bounds
-        windtunnel_object = windtunnel.Windtunnel(self.experimental_condition, collision_type='crash')
+        windtunnel_object = windtunnel.Windtunnel(self.experimental_condition)
         # generate temperature plume
         plume_object = plume.Plume(self.experimental_condition)
         # instantiate empty trajectories class
@@ -285,7 +285,7 @@ class Agent():
             initial_position =  np.array([0.1, np.random.uniform(-0.127, 0.127), np.random.uniform(0., 0.254)])
         if agent_pos == 'downwind_high':
             initial_position = np.array(
-                [0.1, np.random.uniform(-0.127, 0.127), 0.2373])  # 0.2373 is mode of z pos distribution
+                [0.05, np.random.uniform(-0.127, 0.127), 0.2373])  # 0.2373 is mode of z pos distribution
         else:
             raise Exception('invalid agent position specified: {}'.format(agent_pos))
 
@@ -393,48 +393,59 @@ class Agent():
                     return "Right_plume Exit right"
 
     def _collide_with_wall(self, candidate_pos, candidate_velo):
+        walls = self.windtunnel_obj.walls
+        boundary = self.boundary
+        xpos, ypos, zpos = candidate_pos
+        xvelo, yvelo, zvelo = candidate_velo
+
         # x dim
-        if candidate_pos[0] > self.boundary[1]:  # reached far (upwind) wall (end)
+        if xpos > walls.upwind:  # reached far (upwind) wall (end)
 #                    self.metadata['target_found'][0]  = False
 #                    self.metadata['time_to_target_find'][0] = np.nan
             return None, None
-        if candidate_pos[0] < self.boundary[0]:  # too far behind
-            candidate_pos[0] = self.boundary[0] + 1e-4  # teleport back inside
-            if self.collision == 'elastic':
-                candidate_velo[0] *= -1.
-            elif self.collision == 'crash':
-                candidate_velo[0] *= 0.
+        if xpos < walls.downwind:  # too far behind
+            xpos = walls.downwind + 0.02  # teleport back inside
+            if self.collision_type == 'elastic':
+                xvelo *= -1.
+            elif self.collision_type == 'crash':
+                xvelo *= -1
+                candidate_velo *= 0.5
 
         #y dim
-        if candidate_pos[1] > self.boundary[2]:  # too left
-            candidate_pos[1] = self.boundary[2] + 1e-4 # note, left is going more negative in our convention
-            if self.collision == 'elastic':
-                candidate_velo[1] *= -1.
-            elif self.collision == "crash":
-                candidate_velo[1] *= 0.
-        if candidate_pos[1] < self.boundary[3]:  # too far right
-            candidate_pos[1] = self.boundary[3] - 1e-4
-            if self.collision == 'elastic':
-                candidate_velo[1] *= -1.
-            elif self.collision == 'crash':
-                candidate_velo[1] *=0
-
+        if ypos > walls.left:  # too left
+            ypos = walls.left + 0.01  # note, left is going more negative in our convention
+            if self.collision_type == 'elastic':
+                yvelo *= -1.
+            elif self.collision_type == "crash":
+                yvelo *= -1
+                candidate_velo *= 0.5
+        if ypos < walls.right:  # too far right
+            ypos = walls.right - 0.01
+            if self.collision_type == 'elastic':
+                yvelo *= -1.
+            elif self.collision_type == 'crash':
+                yvelo *= -1
+                candidate_velo *= 0.5
 
         # z dim
-        if candidate_pos[2] > self.boundary[5]:  # too far above
-            candidate_pos[2] = self.boundary[5] - 1e-4
-            if self.collision == 'elastic':
-                candidate_velo[2] *= -1
-            elif self.collision == "crash":
-                candidate_velo[2] *= -0
-        if candidate_pos[2] < self.boundary[4]:  # too far below
-            candidate_pos[2] = self.boundary[4] + 1e-4
-            if self.collision == 'elastic':
-                candidate_velo[2] *= -1
-            elif self.collision == 'crash':
-                candidate_velo[2] *= -0
+        if zpos > walls.ceiling:  # too far above
+            zpos = walls.ceiling - 0.01
+            if self.collision_type == 'elastic':
+                zvelo *= -1
+            elif self.collision_type == "crash":
+                zvelo *= -1
+                candidate_velo *= 0.5
+        if zpos < walls.floor:  # too far below
+            zpos = walls.floor + 0.01
+            if self.collision_type == 'elastic':
+                zvelo *= -1
+            elif self.collision_type == 'crash':
+                zvelo *= -1
+                candidate_velo *= 0.5
+
 
         return candidate_pos, candidate_velo
+
 
     def _velocity_ceiling(self, candidate_velo):
         """check if we're seeing enormous velocities, which sometimes happens when running the optimization
@@ -459,7 +470,9 @@ def gen_objects_and_fly(N_TRAJECTORIES,
                         K,
                         initial_position_selection,
                         bounded=True,
-                        verbose=True):
+                        verbose=True,
+                        collision_type='crash'
+                        ):
     """
     Params fitted using scipy.optimize
 
@@ -475,7 +488,8 @@ def gen_objects_and_fly(N_TRAJECTORIES,
         damping_coeff=BETA,
         time_max=15.,
         dt=0.01,
-        bounded=bounded)
+        bounded=bounded,
+        collision_type=collision_type)
 
     # make the skeeter fly. this updates the trajectory_obj
     skeeter.fly(total_trajectories=N_TRAJECTORIES, verbose=verbose)
