@@ -11,7 +11,9 @@ F_WIND_SCALE = 0.
 # BETA, RANDF_STRENGTH, F_WIND_SCALE = [1.37213380e-06, 1.39026239e-06, 7.06854777e-07]#
 F_STIM_SCALE = 0.  # 7e-7,   # set to zero to disable tracking hot air
 K = 0.  # 1e-7               # set to zero to disable wall attraction
-BOUNDED = False
+BOUNDED = True
+INITIAL_POS = 'downwind_high'
+COLLISION_TYPE = 'crash'
 
 simulation, skeeter = agent.gen_objects_and_fly(
     N_TRAJECTORIES,
@@ -21,7 +23,9 @@ simulation, skeeter = agent.gen_objects_and_fly(
     F_WIND_SCALE,
     F_STIM_SCALE,
     K,
-    bounded=BOUNDED
+    INITIAL_POS,
+    bounded=BOUNDED,
+    collision_type=COLLISION_TYPE
 )
 
 print "\nDone."
