@@ -1,15 +1,19 @@
 __author__ = 'richard'
 
 class Windtunnel():
-    def __init__(self, test_condition, collision_type='elastic'):
+    def __init__(self, test_condition):
         """
         boundary: (array)
             specify where walls are  (minx, maxx, miny, maxy)
+        collision type:
+            'elastic', 'crash'
+
+        TODO: class  Wall. left wall right wall
 
         """
-        self.boundary = [0.0, 1.0, 0.127, -0.127, 0., 0.254]  # these are real dims of our wind tunnel
+        self.walls = Walls()
+        self.boundary = self.walls.boundary
         self.test_condition = test_condition
-        self.collision_type = collision_type
 
         self.left_heater = Heater('left')
         self.left_heater_loc = self.left_heater.xy_coords
@@ -20,6 +24,18 @@ class Windtunnel():
         self.on_heater = Heater(test_condition)
         if self.on_heater is not None:
             self.on_heater_loc = self.on_heater.xy_coords
+
+
+class Walls():
+    def __init__(self):
+        # these are real dims of our wind tunnel
+        self.left = 0.127
+        self.right = -0.127
+        self.upwind = 1.0
+        self.downwind = 0.0
+        self.ceiling = 0.254
+        self.floor = 0.
+        self.boundary = [self.downwind, self.upwind, self.left, self.right, self.floor, self.ceiling]
 
 
 class Heater():
