@@ -7,9 +7,10 @@ Created on Thu Apr 23 10:53:11 2015
 @author: richard
 """
 
-from scipy.spatial import cKDTree
-import pandas as pd
 import numpy as np
+import pandas as pd
+
+from windtunnel import Walls
 
 
 #boundary = [2.0, 2.3, 0.15, -0.15, 1]  # these are real dims of our wind tunnel
@@ -35,17 +36,7 @@ import numpy as np
 #    plume['y'] = plume.y.values - 0.127
 #    
 #    return plume
-#    
-def load_simulated_plume(condition):
-    try:
-        if condition in 'lLleftLeft':
-            df = pd.read_csv('plume_sim/left_plume_bounds.csv')
-            return df
-        elif condition in 'rightRight':
-            df = pd.read_csv('plume_sim/right_plume_bounds.csv')
-            return df
-    except TypeError: # throwing None at in <str> freaks Python out
-        return pd.DataFrame.empty  # TODO: make plume that's 0 everywhere
+#
 
 # depreciated
 #def mk_tree(plume):
@@ -61,32 +52,56 @@ class Plume():
     '''
     def __init__(self, condition):
         self.condition = condition
-        self.data = load_simulated_plume(condition=condition)
+        self.data = self.load_plume_data()
+
+        self.walls = Walls()
+
+    def load_plume_data(self):
+        col_names = ['fixme1', 'fixme2', 'fixme3']
+        # col_names = ['x_position', 'y_position', 'radius']
         try:
-            self.x_vals = self.data.x.values
-        except AttributeError:  # don't store non-existent vector if empty df
-            pass
-#        self.plume_kdTree = mk_tree(self.plume) # depreciated      
+            if self.condition in 'lLleftLeft':
+                df = pd.read_csv('data/experiments/plume_data/left_plume_bounds.csv', names=col_names)
+            elif self.condition in 'rightRight':
+                df = pd.read_csv('data/experiments/plume_data/right_plume_bounds.csv', names=col_names)
+        except TypeError:  # throwing None at in <str> freaks Python out
+            df = pd.DataFrame.empty  # TODO: make plume that's 0 everywhere
 
-    def find_nearest_plume_plane(self, x_val):
-        closest_plume_index = (np.abs(self.x_vals - x_val)).argmin()
-        plume_plane = self.data.loc[closest_plume_index]
-        
-        return plume_plane
+        return df
 
+    def in_plume(self, position):
+        in_bounds, _ = self.walls.in_bounds(position)
+        if in_bounds is False:
+            raise ValueError('position is not in windtunnel bounds! {}'.format(position))
 
-    def is_in_plume(self, position):
         if self.condition is None:
-            return 0
+            inplume = 0
         else:
             x, y, z = position
-            plume_plane = self.find_nearest_plume_plane(x)
+            plume_plane = self._get_nearest_plume_plane(x)
+
             # divide by 3 to transform the ellipsoid space to a circle
-            distance_from_center = ( (y - plume_plane.y) ** 2 + (1/3*(z - plume_plane.z)) ** 2) ** 0.5
+            distance_from_center = ((y - plume_plane.y) ** 2 + (1 / 3 * (z - plume_plane.z)) ** 2) ** 0.5
+
             if distance_from_center <= plume_plane.small_radius:
-                return 1
+                inplume = 1
             else:
-                return 0
+                inplume = 0
+
+        return inplume
+
+    def _get_nearest_plume_plane(self, x_position):
+        """given x position, find nearest plan"""
+        closest_plume_index = (np.abs(self.data['position_x'] - x_position)).argmin()
+        plume_plane = self.data.loc[closest_plume_index]
+
+        return plume_plane
+
+    def show(self):
+        ''' show a plot of the plume object
+        '''
+
+        raise NotImplementedError
         
         
 
@@ -122,10 +137,5 @@ class Plume():
 #        ax.invert_yaxis()
 
 
-def main(condition=None):
-    return Plume(condition)
-      
-
 if __name__ == '__main__':
-    test_plume = main(condition='l')
-    
+    test_plume = Plume('l')
