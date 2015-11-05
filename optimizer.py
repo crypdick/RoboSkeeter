@@ -42,6 +42,7 @@ def fly_wrapper(GUESS, *args):
         windF_strength,
         F_STIM_SCALE,
         K,
+        'downwind_high',
         bounded=False,
         verbose=False
     )
@@ -91,7 +92,7 @@ def fly_wrapper(GUESS, *args):
 
 
 class MyBounds(object):
-    def __init__(self, xmax=[1e-4, 1e-4], xmin=[1e06, 1e06]):  # , 1e08]):
+    def __init__(self, xmax=[1e-4, 1e-4], xmin=[1e-7, 1e-7]):  # , 1e08]):
         self.xmax = np.array(xmax)
         self.xmin = np.array(xmin)
 
@@ -145,7 +146,7 @@ def main(x_0=None):
             "args": (N_TRAJECTORIES, PLOTTER, (load_mosquito_kde_data_dicts())),
             'method': OPTIM_ALGORITHM,
             "bounds": [(5e-7, 1e-3), (5e-7, 1e-2)],
-            "tol": 0.01  # tolerance for considering a basin minimized, set to about the difference between re-scoring
+            "tol": 0.02  # tolerance for considering a basin minimized, set to about the difference between re-scoring
             # same simulation
         },
         disp=True,
