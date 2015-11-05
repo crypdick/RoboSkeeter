@@ -2,32 +2,26 @@ __author__ = 'richard'
 
 import agent
 
-N_TRAJECTORIES = 100
-TEST_CONDITION = None  # {'Left', 'Right', None}
-# old beta- 5e-5, forces 4.12405e-6, fwind = 5e-7
-# BETA, RANDF_STRENGTH = [  3.63674551e-07,   6.55599224e-06]  # 10/28
-BETA, RANDF_STRENGTH = [3.63674551e-07, 6.55599224e-06]
-F_WIND_SCALE = 0.
-# BETA, RANDF_STRENGTH, F_WIND_SCALE = [1.37213380e-06, 1.39026239e-06, 7.06854777e-07]#
-F_STIM_SCALE = 0.  # 7e-7,   # set to zero to disable tracking hot air
-K = 0.  # 1e-7               # set to zero to disable wall attraction
+N_TRAJECTORIES = 15  # set to zero to disable wall attraction
 BOUNDED = True
 INITIAL_POS = 'downwind_high'
 COLLISION_TYPE = 'elastic'
 # COLLISION_TYPE = 'crash'
 
-simulation, skeeter = agent.gen_objects_and_fly(
-    N_TRAJECTORIES,
-    TEST_CONDITION,
-    BETA,
-    RANDF_STRENGTH,
-    F_WIND_SCALE,
-    F_STIM_SCALE,
-    K,
-    INITIAL_POS,
-    bounded=BOUNDED,
-    collision_type=COLLISION_TYPE
-)
+agent_kwargs = {'initial_position_selection': 'downwind_high',
+                'windF_strength': 0.,
+                'randomF_strength': 6.55599224e-06,
+                'experimental_condition': None,  # {'Left', 'Right', None}
+                'stimF_stength': 0.,
+                'spring_const': 0,
+                'damping_coeff': 3.63674551e-07,
+                'time_max': 15.,
+                'bounded': True,
+                'collision_type': 'crash',
+                'crash_coeff': 0.8
+                }
+
+simulation, skeeter = agent.gen_objects_and_fly(N_TRAJECTORIES, agent_kwargs)
 
 print "\nDone."
 
