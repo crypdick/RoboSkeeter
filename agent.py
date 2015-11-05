@@ -12,10 +12,10 @@ import sys
 import numpy as np
 import pandas as pd
 
+import forces
 import plume
 import trajectory
 import windtunnel
-import forces
 
 
 # def fly_wrapper(agent_obj, args, traj_count):
@@ -189,7 +189,7 @@ class Agent():
         position[0], velocity[0] = self._set_init_pos_and_velo()
 
         for tsi in V['tsi']:
-            inPlume[tsi] = self.plume_obj.is_in_plume(position[tsi])
+            inPlume[tsi] = self.plume_obj.in_plume(position[tsi])
             V = self._calc_current_behavioral_state(tsi, V)
             stimF[tsi], randomF[tsi], upwindF[tsi], wallRepulsiveF[tsi], totalF[tsi] =\
                 self._calc_forces(position[tsi], velocity[tsi], behavior_state[tsi], tsi)
