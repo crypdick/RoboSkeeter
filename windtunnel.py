@@ -29,8 +29,8 @@ class Windtunnel():
 class Walls():
     def __init__(self):
         # these are real dims of our wind tunnel
-        self.left = 0.127
-        self.right = -0.127
+        self.left = -0.127
+        self.right = 0.127
         self.upwind = 1.0
         self.downwind = 0.0
         self.ceiling = 0.254
