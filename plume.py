@@ -71,10 +71,8 @@ class Plume():
 
     def in_plume(self, position):
         in_bounds, _ = self.walls.in_bounds(position)
-        if in_bounds is False:
-            raise ValueError('position is not in windtunnel bounds! {}'.format(position))
-
-        if self.condition is None:
+        if in_bounds is False or self.condition is None:
+            print("WARNING: sniffing outside of windtunnel bounds")
             inplume = 0
         else:
             x, y, z = position
