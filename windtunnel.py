@@ -37,6 +37,33 @@ class Walls():
         self.floor = 0.
         self.boundary = [self.downwind, self.upwind, self.left, self.right, self.floor, self.ceiling]
 
+    def in_bounds(self, position):
+        xpos, ypos, zpos = position
+        inside = True
+        past_wall = []
+
+        if xpos > self.upwind:  # beyond upwind(upwind) wall (end)
+            inside = False
+            past_wall.append('upwind')
+        if xpos < self.downwind:  # too far behind
+            inside = False
+            past_wall.append('downwind')
+        if ypos < self.left:  # too left
+            inside = False
+            past_wall.append('left')
+        if ypos > self.right:  # too far right
+            inside = False
+            past_wall.append('right')
+        if zpos > self.ceiling:  # too far above
+            inside = False
+            past_wall.append('ceiling')
+        if zpos < self.floor:  # too far below
+            inside = False
+            past_wall.append('floor')
+
+        return inside, past_wall
+
+
 
 class Heater():
     def __init__(self, side):
