@@ -161,7 +161,7 @@ class Agent():
 
             # mk df, add to list of dfs
             df = pd.DataFrame(array_dict)
-            df = df.set_index(['trajectory_num', 'tsi'])
+            df = df.set_index(['trajectory_num'])
             df_list.append(df)
 
             traj_i += 1
@@ -211,23 +211,24 @@ class Agent():
             candidate_velo = velocity[tsi] + acceleration[tsi] * dt
 
             # make sure velocity doesn't diverge to infinity if system is unstable
+            # this stops the optimizer from crashing
             candidate_velo = self._velocity_ceiling(candidate_velo)
 
-            candidate_pos = position[
-                                tsi] + candidate_velo * dt  # shouldnt position in future be affected by the forces in this timestep? aka use velo[i+1]
+            candidate_pos = position[tsi] + candidate_velo * dt
 
             ################################################
             # test candidates
             ################################################
             if self.bounded:
                 candidate_pos, candidate_velo = self._collide_with_wall(candidate_pos, candidate_velo)
-                if candidate_pos is None:  # _collide_with_wall returns None if reaches end
-                    self._land(tsi, V)  # end flight if reach end of tunnel
-                    break
+            #                if candidate_pos is None:  # _collide_with_wall returns None if reaches end
+            #                    self._land(tsi, V)  # end flight if reach end of tunnel
+            #                    break
 
             position[tsi + 1] = candidate_pos
             velocity[tsi + 1] = candidate_velo
 
+        # TODO: put in "fix dict" func
         # prepare dict for loading into pandas (dataframe only accepts 1D vectors)
         # split xyz arrays into separate x, y, z vectors for dataframe
         V2 = {'tsi': V['tsi'], 'times': V['times']}
@@ -394,54 +395,65 @@ class Agent():
 
     def _collide_with_wall(self, candidate_pos, candidate_velo):
         walls = self.windtunnel_obj.walls
-        boundary = self.boundary
         xpos, ypos, zpos = candidate_pos
         xvelo, yvelo, zvelo = candidate_velo
+
+        crash = False
 
         # x dim
         if xpos > walls.upwind:  # reached far (upwind) wall (end)
 #                    self.metadata['target_found'][0]  = False
 #                    self.metadata['time_to_target_find'][0] = np.nan
-            return None, None
+#            return None, None  # this is needed to end at end
+xpos = walls.upwind - 0.02  # teleport back inside
+if self.collision_type == 'elastic':
+    xvelo *= -1.
+elif self.collision_type == 'crash':
+    xvelo *= -1.
+    crash = True
         if xpos < walls.downwind:  # too far behind
             xpos = walls.downwind + 0.02  # teleport back inside
             if self.collision_type == 'elastic':
                 xvelo *= -1.
             elif self.collision_type == 'crash':
-                xvelo *= -1
-                candidate_velo *= 0.5
+                xvelo *= -1.
+                crash = True
 
         #y dim
-        if ypos > walls.left:  # too left
-            ypos = walls.left + 0.01  # note, left is going more negative in our convention
+        if ypos < walls.left:  # too left
             if self.collision_type == 'elastic':
                 yvelo *= -1.
             elif self.collision_type == "crash":
-                yvelo *= -1
-                candidate_velo *= 0.5
-        if ypos < walls.right:  # too far right
+                yvelo *= -1.
+                crash = True
+        if ypos > walls.right:  # too far right
             ypos = walls.right - 0.01
             if self.collision_type == 'elastic':
                 yvelo *= -1.
             elif self.collision_type == 'crash':
-                yvelo *= -1
-                candidate_velo *= 0.5
+                yvelo *= -1.
+                crash = True
 
         # z dim
         if zpos > walls.ceiling:  # too far above
             zpos = walls.ceiling - 0.01
             if self.collision_type == 'elastic':
-                zvelo *= -1
+                zvelo *= -1.
             elif self.collision_type == "crash":
-                zvelo *= -1
-                candidate_velo *= 0.5
+                zvelo *= -1.
+                crash = True
         if zpos < walls.floor:  # too far below
             zpos = walls.floor + 0.01
             if self.collision_type == 'elastic':
-                zvelo *= -1
+                zvelo *= -1.
             elif self.collision_type == 'crash':
-                zvelo *= -1
-                candidate_velo *= 0.5
+                zvelo *= -1.
+                crash = True
+
+        candidate_pos, candidate_velo = np.array([xpos, ypos, zpos]), np.array([xvelo, yvelo, zvelo])
+
+        if crash is True:
+            candidate_velo *= 0.2
 
 
         return candidate_pos, candidate_velo
