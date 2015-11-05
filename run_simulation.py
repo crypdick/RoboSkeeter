@@ -13,7 +13,8 @@ F_STIM_SCALE = 0.  # 7e-7,   # set to zero to disable tracking hot air
 K = 0.  # 1e-7               # set to zero to disable wall attraction
 BOUNDED = True
 INITIAL_POS = 'downwind_high'
-COLLISION_TYPE = 'crash'
+COLLISION_TYPE = 'elastic'
+# COLLISION_TYPE = 'crash'
 
 simulation, skeeter = agent.gen_objects_and_fly(
     N_TRAJECTORIES,
