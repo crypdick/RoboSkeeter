@@ -10,12 +10,12 @@ https://github.com/isomerase/
 import os
 from math import ceil
 
-import numpy as np
-from matplotlib import pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.gridspec as gridspec
+import numpy as np
 import seaborn as sns
+from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from mpl_toolkits.mplot3d import Axes3D
 
 import windtunnel
 
@@ -107,8 +107,11 @@ def plot_position_heatmaps(trajectories_obj):
 
     # reduce dimensionality for the different plots
     probs_xy = np.sum(probs, axis=0)
+    probs_xy = np.ma.masked_array(probs_xy, probs_xy < 1e-7)
     probs_yz = np.sum(probs, axis=2)
+    probs_yz = np.ma.masked_array(probs_yz, probs_yz < 1e-7)
     probs_xz = np.sum(probs, axis=1)
+    probs_xz = np.ma.masked_array(probs_xz, probs_xz < 1e-7)
     # max_probability = np.max([np.max(probs_xy), np.max(probs_xz), np.max(probs_yz)])
     max_probability = np.max(probs_xy)
 
@@ -410,37 +413,90 @@ def plot_kinematic_histograms(
 
 #    return xpos_counts_norm, ypos_bins, ypos_counts, ypos_counts_norm, vx_counts_n
 
-def plot_timeseries(ensemble, agent_obj):
+def plot_start(ensemble):
     traj_numbers = [int(i) for i in ensemble.index.get_level_values('trajectory_num').unique()]
+    positions_at_timestep_0 = ensemble.loc[(ensemble.tsi == 0), ['position_x', 'position_y', 'position_z']]
+
+    f1 = plt.figure()
+    ax = f1.add_subplot(111, projection='3d')
+    ax.scatter(positions_at_timestep_0['position_x'], positions_at_timestep_0['position_y'],
+               positions_at_timestep_0['position_z'])
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+
+    g = sns.PairGrid(positions_at_timestep_0, diag_sharey=False)
+    g.map_upper(plt.scatter)
+    g.map_lower(sns.kdeplot, cmap="Blues_d", shade=True)  # , clip=((0,1)))
+    g.map_diag(sns.kdeplot, lw=3, legend=False)
+
+    xlabels, ylabels = [], []
+
+    # labels on all plots
+    for ax in g.axes[-1, :]:
+        xlabel = ax.xaxis.get_label_text()
+        xlabels.append(xlabel)
+    for ax in g.axes[:, 0]:
+        ylabel = ax.yaxis.get_label_text()
+        ylabels.append(ylabel)
+
+    for i in range(len(xlabels)):
+        for j in range(len(ylabels)):
+            g.axes[j, i].xaxis.set_label_text(xlabels[i])
+            g.axes[j, i].yaxis.set_label_text(ylabels[j])
+
+    # ticks on all graphs
+    for ax in g.axes.flat:
+        _ = plt.setp(ax.get_yticklabels(), visible=True)
+        _ = plt.setp(ax.get_xticklabels(), visible=True)
+
+
+def plot_timeseries(ensemble, agent_obj, kinematic=None):
+    #    traj_numbers = [int(i) for i in ensemble.index.get_level_values('trajectory_num').unique()]
     data_dict = {}
     times_dict = {}
 
-    for col in ensemble.columns:
+    # for each kinematic, slice out each trajectory, append to data_dict
+    if kinematic is None:
+        col_list = list(ensemble.columns.values)
+        col_list.remove('tsi')
+        col_list.remove('trajectory_num')
+    else:
+        col_list = []
+        for dim in ['x', 'y', 'z']:
+            col_list.append(kinematic + '_' + dim)
+
+    for col in col_list:
         data = []
-        col_data = ensemble[col]
+        col_data = ensemble[['tsi', 'trajectory_num', col]]  # this all trajectories
 
-        for i in traj_numbers:
-            df = col_data.xs(i, level='trajectory_num')
-            data.append(df)
-
-        data_dict[col] = data  # every key linked to list of lists
+        #        # store each trajectory to data
+        #        for i in traj_numbers:
+        #            df = col_data.xs(i, level='trajectory_num')
+        #            data.append(df)
+        #
+        #        data_dict[col] = data  # every key linked to list of lists
+        data_dict[col] = col_data
 
     #### file naming and directory selection
     fileappend, path, agent = get_agent_info(agent_obj)
 
     titlebase = "{agent} {kinematic} timeseries".format(agent=agent, kinematic="{kinematic}")
-    numbers = " (n = {})".format(len(traj_numbers))
+    numbers = " (n = {})".format(ensemble['trajectory_num'].max())
 
-    for k, v in iter(sorted(data_dict.iteritems())):
+    # k is kinematic v is a list of trajectories
+    for k, v in data_dict.iteritems():
+        print "plotting {}".format(k)
         plt.figure()
-        for trial in v:
-            plt.plot(trial.index, trial, alpha=0.3)
+        #        for i, trial in enumerate(v):
+        #            plt.plot(trial.index, trial, alpha=0.3)
         # print v
         # sns.tsplot(data=v, times=times_dict[k], err_style=None) #"unit_traces")
         format_title = titlebase.format(kinematic=k)
         plt.suptitle(format_title + numbers, fontsize=14)
         plt.xlabel("Timestep index")
         plt.ylabel("Value")
+        plt.legend()  # FIXME remove after debugging
         plt.savefig(os.path.join(path, format_title + fileappend + FIG_FORMAT))
         plt.show()
 
@@ -790,7 +846,7 @@ def vector_cloud_heatmap(trajectories_obj, kinematic, i=None):
 def vector_cloud_kde(trajectories_obj, kinematic, i=None):
     # test whether we are a simulation; if not, forbid plotting of  drivers
     if trajectories_obj.agent_obj is None:
-        if kinematic not in ['velocity', 'acceleration']:
+        if kinematic not in ['position', 'velocity', 'acceleration']:
             raise TypeError("we don't know the mosquito drivers")
 
     labels = []
