@@ -17,9 +17,7 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from mpl_toolkits.mplot3d import Axes3D
 
-import windtunnel
-
-windtunnel_object = windtunnel.Windtunnel(None)
+import environment
 
 stopdeletingmeplease = Axes3D
 
@@ -29,7 +27,7 @@ CM = colormaps.ListedColormap(colormaps.viridis.colors[::-1])
 # use colormaps.viridis for color maps
 
 
-PROJECT_PATH = os.path.dirname(windtunnel.__file__)
+PROJECT_PATH = os.path.dirname(environment.__file__)
 MODEL_FIG_PATH = os.path.join(PROJECT_PATH, 'data', 'model')
 EXPERIMENT_FIG_PATH = os.path.join(PROJECT_PATH, 'data', 'experiments')
 
@@ -44,7 +42,7 @@ FIG_FORMAT = ".png"
 def get_agent_info(agent_obj):
     if agent_obj is not None:
         titleappend = " cond{condition}|damp{damp}|rF{rf}|wF{wtf}|stmF{stim}|N{total_trajectories}|K{K}|m{m}".format(
-            condition=agent_obj.experimental_condition,
+            condition=agent_obj.experiment.condition,
             damp=agent_obj.damping_coeff,
             rf=agent_obj.randomF_strength,
             wtf=agent_obj.windF_strength,
@@ -414,7 +412,6 @@ def plot_kinematic_histograms(
 #    return xpos_counts_norm, ypos_bins, ypos_counts, ypos_counts_norm, vx_counts_n
 
 def plot_start(ensemble):
-    traj_numbers = [int(i) for i in ensemble.index.get_level_values('trajectory_num').unique()]
     positions_at_timestep_0 = ensemble.loc[(ensemble.tsi == 0), ['position_x', 'position_y', 'position_z']]
 
     f1 = plt.figure()
@@ -529,7 +526,7 @@ def plot_forces_violinplots(ensemble, agent_obj):
 
     fileappend, path, agent = get_agent_info(agent_obj)
 
-    plt.savefig(os.path.join(path, "Force Distributions" + titleappend + FIG_FORMAT))
+    plt.savefig(os.path.join(path, "Force Distributions" + fileappend + FIG_FORMAT))
     plt.show()
 
 
@@ -644,7 +641,7 @@ def plot_compass_histogram(vector_name, ensemble, agent_obj, kind='avg_mag_per_b
         plt.xticks(x_tix, x_labels, size=20)
         plt.title(title)
 
-        fileappend
+        fileappend, path, agent = get_agent_info(agent_obj)
 
         plt.savefig(os.path.join(path, "Compass {fname}" + fileappend + FIG_FORMAT))
         plt.show()
