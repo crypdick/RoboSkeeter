@@ -110,7 +110,7 @@ def get_directory(selection=None):
     PROJECT_PATH = os.path.dirname(unit_tests.__file__)
     MODEL_PATH = os.path.join(PROJECT_PATH, 'data', 'model')
     EXPERIMENT_PATH = os.path.join(PROJECT_PATH, 'data', 'experiments')
-    CONTROL_EXP_PATH = os.path.join(EXPERIMENT_PATH, 'control_processed_and_filtered')
+    CONTROL_EXP_PATH = os.path.join(EXPERIMENT_PATH, 'control_pooled')
 
     if selection is None:
         print("Enter directory with experimental data")
@@ -122,8 +122,12 @@ def get_directory(selection=None):
         directory = MODEL_PATH
     if selection is 'EXPERIMENT_PATH':
         directory = EXPERIMENT_PATH
-    if selection is 'CONTROL_EXP_PATH':
+    if selection in 'controlControlCONTROL':
         directory = CONTROL_EXP_PATH
+    if selection in 'leftLeftLEFT':
+        raise IOError
+    if selection in 'rightRightRIGHT':
+        raise IOError
 
     print("Directory selected: {}".format(directory))
     return directory
