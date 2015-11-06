@@ -13,9 +13,6 @@ import numpy as np
 import pandas as pd
 
 import forces
-import plume
-import trajectory
-import windtunnel
 
 
 # def fly_wrapper(agent_obj, args, traj_count):
@@ -71,46 +68,32 @@ class Agent():
         Agent object
 
     """
-    def __init__(self,
-        initial_position_selection='downwind_plane',
-        initial_velocity_stdev=0.01,
-        time_max=15.,
-        dt=0.01,
-        experimental_condition=None,
-        damping_coeff=1e-5,
-        randomF_strength=4e-06,
-        windF_strength=5e-06,
-        stimF_stength=1e-4,
-        bounded=True,
-                 mass=2.88e-6,  # avg. mass of our colony (kg) =2.88 mg,
-                 spring_const=0.,
-                 collision_type='crash'):
+
+    def __init__(self, experiment, **agent_kwargs):
         """generate the agent"""
+        # defaults
+        self.mass = 2.88e-6  # avg. mass of our colony (kg) =2.88 mg,
+        self.time_max = 15.
+        self.dt = 0.01
+        self.max_bins = int(np.ceil(self.time_max / self.dt))  # N bins
+        self.initial_velocity_stdev = 0.01
+        self.forces = forces.Forces()
 
-        self.time_max = time_max
-        self.time_bin_width = dt
-        self.max_bins = int(np.ceil(self.time_max / dt))  # N bins
+        for key in agent_kwargs:
+            setattr(self, key, agent_kwargs[key])
 
-        self.mass = mass # population weight data: 2.88 +- 0.35mg
-        self.stimF_strength = stimF_stength
-        self.initial_position_selection = initial_position_selection
-        self.initial_velocity_stdev = initial_velocity_stdev
-        self.spring_const = spring_const
-        self.damping_coeff = damping_coeff
-        self.randomF_strength= randomF_strength
-        self.windF_strength = windF_strength
-
-        self.experimental_condition = experimental_condition
-        self.collision_type = collision_type
-        
         self.kinematics_list = ['position', 'velocity', 'acceleration']
         self.forces_list = ['totalF', 'randomF', 'wallRepulsiveF', 'upwindF', 'stimF']
-        
-        self.windtunnel_obj, self.plume_obj, self.trajectory_obj, self.forces = self._gen_environment_objects()
 
-        # windtunnel
-        self.bounded = bounded
+        # things fed to the class
+        self.experiment = experiment
+
+        # useful aliases
+        self.windtunnel_obj = self.experiment.windtunnel
+        self.bounded = self.experiment.bounded
         self.boundary = self.windtunnel_obj.boundary
+        self.plume_obj = self.experiment.plume
+        self.trajectory_obj = self.experiment.trajectories
 
         # turn thresh, in units deg s-1.
         # From Sharri:
@@ -121,35 +104,19 @@ class Agent():
         # # create repulsion landscape
         # self._repulsion_funcs = repulsion_landscape3D.landscape(boundary=self.boundary)
 
-    def _gen_environment_objects(self):
-        """generate environment"""
-        # we make a windtunnel even in the unbounded case b/c plotting functions use bounds
-        windtunnel_object = windtunnel.Windtunnel(self.experimental_condition)
-        # generate temperature plume
-        plume_object = plume.Plume(self.experimental_condition)
-        # instantiate empty trajectories class
-        trajectories_object = trajectory.Agent_Trajectory()
-        trajectories_object.add_agent_info(self)
-        forces_object = forces.Forces()
-
-        return windtunnel_object, plume_object, trajectories_object, forces_object
-
 
 
     def fly(self, total_trajectories=1, verbose=True):
         ''' iterates self._fly_single() total_trajectories times
         '''
-        args = (self.time_bin_width, self.mass)
         df_list = []
-
         traj_i = 0
         while traj_i < total_trajectories:
             if verbose is True:
                 sys.stdout.write("\rTrajectory {}/{}".format(traj_i + 1, total_trajectories))
                 sys.stdout.flush()
 
-
-            array_dict = self._generate_flight(*args)
+            array_dict = self._generate_flight()
 
             # if len(array_dict['velocity_x']) < 5:  # hack to catch when optimizer makes trajectories explode
             #     print "catching explosion"
@@ -161,7 +128,7 @@ class Agent():
 
             # mk df, add to list of dfs
             df = pd.DataFrame(array_dict)
-            df = df.set_index(['trajectory_num'])
+            # df = df.set_index(['trajectory_num'])
             df_list.append(df)
 
             traj_i += 1
@@ -175,11 +142,13 @@ class Agent():
                                                           # time for performance boost.
         # add agent to trajectory object for plotting funcs
 
-    def _generate_flight(self, dt, m):
+    def _generate_flight(self):
         """Generate a single trajectory using our model.
     
         First put everything into np arrays stored inside of a dictionary
         """
+        dt = self.dt
+        m = self.mass
         V = self._initialize_vectors()
 
         # dynamically create easy-to-read aliases for the contents of V
@@ -190,7 +159,8 @@ class Agent():
 
         for tsi in V['tsi']:
             inPlume[tsi] = self.plume_obj.in_plume(position[tsi])
-            V = self._calc_current_behavioral_state(tsi, V)
+            # V = self._calc_current_behavioral_state(tsi, V)
+            behavior_state[tsi] = 'searching'  # FIXME, get function working again
             stimF[tsi], randomF[tsi], upwindF[tsi], wallRepulsiveF[tsi], totalF[tsi] =\
                 self._calc_forces(position[tsi], velocity[tsi], behavior_state[tsi], tsi)
 
@@ -275,53 +245,53 @@ class Agent():
 
         # generate random intial velocity condition using normal distribution fitted to experimental data
         initial_velocity = np.random.normal(0, self.initial_velocity_stdev, 3)
-        agent_pos = self.initial_position_selection
+        selection = self.experiment.initial_position_selection
 
-        if type(agent_pos) is list:
-            initial_position = np.array(agent_pos)
-        if agent_pos == "door":  # start trajectories as they exit the front door
+        if type(selection) is list:
+            initial_position = np.array(selection)
+        if selection == "door":  # start trajectories as they exit the front door
             initial_position = np.array([0.1909, np.random.uniform(-0.0381, 0.0381), np.random.uniform(0., 0.1016)])
             # FIXME cage is actually suspending above floor
-        if agent_pos == 'downwind_plane':
+        if selection == 'downwind_plane':
             initial_position =  np.array([0.1, np.random.uniform(-0.127, 0.127), np.random.uniform(0., 0.254)])
-        if agent_pos == 'downwind_high':
+        if selection == 'downwind_high':
             initial_position = np.array(
                 [0.05, np.random.uniform(-0.127, 0.127), 0.2373])  # 0.2373 is mode of z pos distribution
         else:
-            raise Exception('invalid agent position specified: {}'.format(agent_pos))
+            raise Exception('invalid agent position specified: {}'.format(selection))
 
 
         return initial_position, initial_velocity
 
-
-    def _calc_current_behavioral_state(self, tsi, V):
-        if tsi == 0:  # always start searching
-            V['behavior_state'][tsi] = 'searching'
-        else:
-            if self.plume_obj.condition is None:  # hack for no plume condition FIXME
-                V['behavior_state'][tsi] = 'searching'
-            else:
-                if V['behavior_state'][tsi] is None: # need to find state
-                    V['behavior_state'][tsi] = self._check_crossing_state(tsi, V['inPlume'], V['velocity_y'][tsi-1])
-                    if V['behavior_state'][tsi] in (
-                            'Left_plume Exit leftLeft_plume Exit rightRight_plume Exit leftRight_plume Exit right'):
-                        try:
-                            for i in range(PLUME_TRIGGER_TIME): # store experience for the following timeperiod
-                                V['behavior_state'][tsi+i] = str(V['behavior_state'][tsi])
-                        except IndexError: # can't store whole snapshot, so save 'truncated' label instead
-                           # print "plume trigger turn lasted less than threshold of {} timesteps "\
-                           # "before trajectory ended, so adding _truncated suffix".format(self.max_bins)  # TODO: DOCUMENT
-                           for i in range(self.max_bins - tsi):
-                                V['behavior_state'][tsi+i] = (str(V['behavior_state'][tsi])+'_truncated')
-
-                else: # state is still "plume exit" because we haven't re-entered the plume
-                    if V['inPlume'] is False:  # plume not found :'( better luck next time, Roboskeeter.
-                        pass
-                    else:  # found the plume again!
-                        V['behavior_state'][tsi:] = None  # reset memory
-                        V['behavior_state'][tsi] = 'entering'
-
-        return V
+    #
+    # def _calc_current_behavioral_state(self, tsi, V):
+    #     if tsi == 0:  # always start searching
+    #         V['behavior_state'][tsi] = 'searching'
+    #     else:
+    #         if self.plume_obj.condition is None:  # hack for no plume condition FIXME
+    #             V['behavior_state'][tsi] = 'searching'
+    #         else:
+    #             if V['behavior_state'][tsi] is None: # need to find state
+    #                 V['behavior_state'][tsi] = self._check_crossing_state(tsi, V['inPlume'], V['velocity_y'][tsi-1])
+    #                 if V['behavior_state'][tsi] in (
+    #                         'Left_plume Exit leftLeft_plume Exit rightRight_plume Exit leftRight_plume Exit right'):
+    #                     try:
+    #                         for i in range(PLUME_TRIGGER_TIME): # store experience for the following timeperiod
+    #                             V['behavior_state'][tsi+i] = str(V['behavior_state'][tsi])
+    #                     except IndexError: # can't store whole snapshot, so save 'truncated' label instead
+    #                        # print "plume trigger turn lasted less than threshold of {} timesteps "\
+    #                        # "before trajectory ended, so adding _truncated suffix".format(self.max_bins)  # TODO: DOCUMENT
+    #                        for i in range(self.max_bins - tsi):
+    #                             V['behavior_state'][tsi+i] = (str(V['behavior_state'][tsi])+'_truncated')
+    #
+    #             else: # state is still "plume exit" because we haven't re-entered the plume
+    #                 if V['inPlume'] is False:  # plume not found :'( better luck next time, Roboskeeter.
+    #                     pass
+    #                 else:  # found the plume again!
+    #                     V['behavior_state'][tsi:] = None  # reset memory
+    #                     V['behavior_state'][tsi] = 'entering'
+    #
+    #     return V
 
     def _calc_forces(self, position, velocity, behavior_state, tsi):
         ################################################
@@ -397,63 +367,61 @@ class Agent():
         walls = self.windtunnel_obj.walls
         xpos, ypos, zpos = candidate_pos
         xvelo, yvelo, zvelo = candidate_velo
-
+        teleport_distance = 0.02
         crash = False
 
         # x dim
-        if xpos > walls.upwind:  # reached far (upwind) wall (end)
-#                    self.metadata['target_found'][0]  = False
-#                    self.metadata['time_to_target_find'][0] = np.nan
-#            return None, None  # this is needed to end at end
-xpos = walls.upwind - 0.02  # teleport back inside
-if self.collision_type == 'elastic':
-    xvelo *= -1.
-elif self.collision_type == 'crash':
-    xvelo *= -1.
-    crash = True
         if xpos < walls.downwind:  # too far behind
-            xpos = walls.downwind + 0.02  # teleport back inside
+            xpos = walls.downwind + teleport_distance  # teleport back inside
             if self.collision_type == 'elastic':
                 xvelo *= -1.
             elif self.collision_type == 'crash':
+                # xvelo *= -1.
+                crash = True
+        if xpos > walls.upwind:  # reached far (upwind) wall (end)
+            xpos = walls.upwind - teleport_distance  # teleport back inside
+            if self.collision_type == 'elastic':
                 xvelo *= -1.
+            elif self.collision_type == 'crash':
+                # xvelo *= -1.
                 crash = True
 
         #y dim
         if ypos < walls.left:  # too left
+            ypos = walls.left + teleport_distance
             if self.collision_type == 'elastic':
                 yvelo *= -1.
             elif self.collision_type == "crash":
-                yvelo *= -1.
+                # yvelo *= -1.
                 crash = True
         if ypos > walls.right:  # too far right
-            ypos = walls.right - 0.01
+            ypos = walls.right - teleport_distance
             if self.collision_type == 'elastic':
                 yvelo *= -1.
             elif self.collision_type == 'crash':
-                yvelo *= -1.
+                # yvelo *= -1.
                 crash = True
 
         # z dim
         if zpos > walls.ceiling:  # too far above
-            zpos = walls.ceiling - 0.01
+            zpos = walls.ceiling - teleport_distance
             if self.collision_type == 'elastic':
                 zvelo *= -1.
             elif self.collision_type == "crash":
-                zvelo *= -1.
+                # zvelo *= -1.
                 crash = True
         if zpos < walls.floor:  # too far below
-            zpos = walls.floor + 0.01
+            zpos = walls.floor + teleport_distance
             if self.collision_type == 'elastic':
                 zvelo *= -1.
             elif self.collision_type == 'crash':
-                zvelo *= -1.
+                # zvelo *= -1.
                 crash = True
 
         candidate_pos, candidate_velo = np.array([xpos, ypos, zpos]), np.array([xvelo, yvelo, zvelo])
 
-        if crash is True:
-            candidate_velo *= 0.2
+        if crash is True and self.collision_type is 'crash':
+            candidate_velo *= self.crash_coeff
 
 
         return candidate_pos, candidate_velo
@@ -474,38 +442,18 @@ elif self.collision_type == 'crash':
 
 
 def gen_objects_and_fly(N_TRAJECTORIES,
-                        TEST_CONDITION,
-                        BETA,
-                        RANDF_STRENGTH,
-                        Fwind_strength,
-                        F_stim_scale,
-                        K,
-                        initial_position_selection,
-                        bounded=True,
+                        kwargs,
                         verbose=True,
-                        collision_type='crash'
                         ):
     """
     Params fitted using scipy.optimize
 
     """
     # instantiate a Roboskeeter
-    skeeter = Agent(
-        initial_position_selection=initial_position_selection,
-        windF_strength=Fwind_strength,
-        randomF_strength=RANDF_STRENGTH,
-        experimental_condition=TEST_CONDITION,
-        stimF_stength=F_stim_scale,
-        spring_const=K,
-        damping_coeff=BETA,
-        time_max=15.,
-        dt=0.01,
-        bounded=bounded,
-        collision_type=collision_type)
 
-    # make the skeeter fly. this updates the trajectory_obj
-    skeeter.fly(total_trajectories=N_TRAJECTORIES, verbose=verbose)
-    
+
+
+
     return skeeter.trajectory_obj, skeeter
     
    
