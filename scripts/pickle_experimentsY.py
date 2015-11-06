@@ -14,7 +14,7 @@ EXPERIMENT_PATH = i_o.get_directory('EXPERIMENT_PATH')
 
 def store_mosquito_pickle():
     MOSQUITOES = trajectory.Experimental_Trajectory()
-    MOSQUITOES.load_experiments(selection='CONTROL_EXP_PATH')  # load the experimental data
+    MOSQUITOES.load_experiments(experimental_condition='CONTROL_EXP_PATH')  # load the experimental data
     pickle.dump(MOSQUITOES, open(os.path.join(EXPERIMENT_PATH, "controlsY.p"), "wb"))
 
     ref_data = score_y.get_data(MOSQUITOES)
