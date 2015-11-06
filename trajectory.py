@@ -26,7 +26,6 @@ from scripts import i_o
 from scripts import plotting
 # from scripts.correlation_matrices import trajectory_DF
 from scripts.math_sorcery import calculate_curvature, calculate_xy_heading_angle, calculate_xy_magnitude
-import score
 
 
 #def T_find_stats(t_targfinds):
@@ -48,13 +47,14 @@ import score
 
 
 class Trajectory():
-    def __init__(self):
+    def __init__(self, experiment):
         self.reload_data()
         self.agent_obj = None
         self.velo_kernel = None
         self.accel_kernel = None
         self.curvature_kernel = None
         self.is_agent = None
+        self.experiment = experiment
 
     def reload_data(self):
         self.data = pd.DataFrame()
@@ -301,7 +301,7 @@ class Trajectory():
             print token, extract_digits(token)
 
     def get_trajectory_i_df(self, index):
-        return self.data.loc[index]
+        return self.data.loc[self.data.trajectory_num == index]
 
     def _trim_df_endzones(self):
         return self.data.loc[(self.data['position_x'] > 0.05) & (self.data['position_x'] < 0.95)]
@@ -320,7 +320,7 @@ class Trajectory():
     # a.xs(0, level='trajectory_num')
 
     def get_trajectory_numbers(self):
-        return self.data.index.get_level_values('trajectory_num').unique()
+        return self.data.trajectory_num.unique()
 
     def plot_vector_cloud(self, kinematic='acceleration', i=None):
         plotting.plot_vector_cloud(self, kinematic, i)
@@ -340,8 +340,9 @@ class Trajectory():
 
 
 class Agent_Trajectory(Trajectory):
-    def __init__(self):
+    def __init__(self, experiment):
         self.is_agent = "Agent"
+        self.experiment = experiment
 
     def visualize_forces(self):
         """like plot_vector_cloud, but with all of the kinematics at once"""
@@ -361,8 +362,8 @@ class Experimental_Trajectory(Trajectory):
         self.is_agent = "Mosquito"
         self.agent_obj = None
 
-    def load_experiments(self, selection=None):
-        directory = i_o.get_directory(selection=selection)
+    def load_experiments(self, experimental_condition):
+        directory = i_o.get_directory(experimental_condition)
 
         self.agent_obj = None
 
@@ -399,7 +400,6 @@ class Experimental_Trajectory(Trajectory):
             dataframe['trajectory_num'] = [fname_num] * df_len
             dataframe['tsi'] = np.arange(df_len)
 
-            dataframe = dataframe.set_index(['trajectory_num'])
             df_list.append(dataframe)
 
         self.load_ensemble_and_analyze(data=df_list)
