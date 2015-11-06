@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 
 import numpy as np
-from scipy.optimize import basinhopping
+from scipy.optimize import minimize_scalar
 
 import agent
 from scripts.pickle_experimentsY import load_mosquito_kde_data_dicts
@@ -24,6 +24,7 @@ def fly_wrapper(BOUNCE_COEFF, *args):
     ##############################################################
     BOUNCE_COEFF: {}
     ##############################################################""".format(BOUNCE_COEFF)
+    N_TRAJECTORIES = 100
 
     agent_kwargs = {'initial_position_selection': 'downwind_high',
                     'windF_strength': 0.,
@@ -37,7 +38,7 @@ def fly_wrapper(BOUNCE_COEFF, *args):
                     'collision_type': 'crash',
                     'crash_coeff': BOUNCE_COEFF}
 
-    N_TRAJECTORIES, PLOTTER, (EXP_BINS, EXP_VALS) = args
+    (EXP_BINS, EXP_VALS) = args
 
     # import pdb; pdb.set_trace()
 
@@ -109,45 +110,17 @@ def main(x_0=None):
     global BEST_BOUNCE_COEFF
     BEST_BOUNCE_COEFF = None
 
-    OPTIM_ALGORITHM = 'SLSQP'
-    PLOTTER = False
-    # ACF_THRESH = 0.5
     BOUNCE_COEFF_PARAMS = "BOUNCE_COEFF"  # , F_WIND_SCALE]"  # [5e-6, 4.12405e-6, 5e-7]
-    if x_0 is None:
-        INITIAL_BOUNCE_COEFF = 0.9
-    else:
-        INITIAL_BOUNCE_COEFF = x_0
-    N_TRAJECTORIES = 100
 
     print "Starting optimizer."
 
-    logging.info("""\n ############################################################
-        ############################################################
-        {} Start optimization with {} algorithm
-        # trajectories = {}
-        Params = {}
-        Initial BOUNCE_COEFF = {}
-        ############################################################""".format(
-        datetime.now(), OPTIM_ALGORITHM, N_TRAJECTORIES, BOUNCE_COEFF_PARAMS, INITIAL_BOUNCE_COEFF))
-
     mybounds = MyBounds()
 
-    result = basinhopping(
+    result = minimize_scalar(
         fly_wrapper,
-        INITIAL_BOUNCE_COEFF,
-        stepsize=1e-1,
-        T=5e-1,
-        niter=5,  # number of basin hopping iterations, default 100
-        niter_success=3,  # Stop the run if the global minimum candidate remains the same for this number of iterations
-        minimizer_kwargs={
-            "args": (N_TRAJECTORIES, PLOTTER, (load_mosquito_kde_data_dicts())),
-            'method': OPTIM_ALGORITHM,
-            "bounds": [(5e-7, 1.)],
-            "tol": 0.1  # tolerance for considering a basin minimized, set to about the difference between re-scoring
-            # same simulation
-        },
-        disp=True,
-        accept_test=mybounds
+        bounds=(5e-7, 1.),
+        method='bounded',
+        args=(load_mosquito_kde_data_dicts())
     )
 
     return BEST_BOUNCE_COEFF, HIGH_SCORE, result
