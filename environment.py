@@ -1,6 +1,10 @@
 __author__ = 'richard'
 
+import numpy as np
 import pandas as pd
+
+import scripts.plotting
+
 
 class Windtunnel():
     def __init__(self, experimental_condition):
@@ -19,6 +23,10 @@ class Windtunnel():
 
         self.heater = Heater(self.experimental_condition)
         self.heater.turn_on()
+
+    def show(self):
+        scripts.plotting.draw_wintunnel(self)
+
 
 
 class Walls():
@@ -114,22 +122,20 @@ class Plume():
         self.data = self.load_plume_data()
 
     def load_plume_data(self):
+        col_names = ['x_position', 'z_position', 'small_radius']
+
         if self.condition in 'controlControlCONTROL':
             return None  # TODO: make plume that's 0 everywhere
+        elif self.condition in 'lLleftLeft':
+            df = pd.read_csv('data/experiments/plume_data/left_plume_bounds.csv', names=col_names)
+        elif self.condition in 'rightRight':
+            df = pd.read_csv('data/experiments/plume_data/right_plume_bounds.csv', names=col_names)
         else:
-            col_names = ['x_position', 'z_position', 'radius']
-            # col_names = ['x_position', 'y_position', 'radius']
-            if self.condition in 'lLleftLeft':
-                df = pd.read_csv('data/experiments/plume_data/left_plume_bounds.csv', names=col_names)
+            raise Exception('problem with loading plume data {}'.format(self.condition))
 
-            elif self.condition in 'rightRight':
-                df = pd.read_csv('data/experiments/plume_data/right_plume_bounds.csv', names=col_names)
-            else:
-                raise Exception('problem with loading plume data')
+        df['y_position'] = self.heater.y_position
 
-            df['y_position'] = self.heater.y_position
-
-            return df
+        return df
 
     def in_plume(self, position):
         in_bounds, _ = self.walls.in_bounds(position)
@@ -141,7 +147,8 @@ class Plume():
             plume_plane = self._get_nearest_plume_plane(x)
 
             # divide by 3 to transform the ellipsoid space to a circle
-            distance_from_center = ((y - plume_plane.y) ** 2 + (1 / 3 * (z - plume_plane.z)) ** 2) ** 0.5
+            distance_from_center = ((y - plume_plane.y_position) ** 2 + (
+            1 / 3 * (z - plume_plane.z_position)) ** 2) ** 0.5
 
             if distance_from_center <= plume_plane.small_radius:
                 inplume = 1
@@ -152,16 +159,13 @@ class Plume():
 
     def _get_nearest_plume_plane(self, x_position):
         """given x position, find nearest plan"""
-        closest_plume_index = (np.abs(self.data['position_x'] - x_position)).argmin()
+        closest_plume_index = (np.abs(self.data['x_position'] - x_position)).argmin()
         plume_plane = self.data.loc[closest_plume_index]
 
         return plume_plane
 
     def show(self):
-        ''' show a plot of the plume object
-        '''
-
-        raise NotImplementedError
+        scripts.plotting.draw_plume(self)
 
 if __name__ == '__main__':
     windtunnel = Windtunnel('left')
