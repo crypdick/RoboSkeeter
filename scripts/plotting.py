@@ -16,6 +16,9 @@ import seaborn as sns
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
+from scripts import i_o
+
+
 # register Axes3D class with matplotlib by importing Axes3D
 from mpl_toolkits.mplot3d import Axes3D
 
@@ -34,9 +37,10 @@ CM = colormaps.ListedColormap(colormaps.viridis.colors[::-1])
 # use colormaps.viridis for color maps
 
 
-PROJECT_PATH = os.path.dirname(environment.__file__)
-MODEL_FIG_PATH = os.path.join(PROJECT_PATH, 'data', 'model')
-EXPERIMENT_FIG_PATH = os.path.join(PROJECT_PATH, 'data', 'experiments')
+PROJECT_PATH = i_o.get_directory('PROJECT_PATH')
+MODEL_FIG_PATH = i_o.get_directory('MODEL_PATH')
+EXPERIMENT_PATH = i_o.get_directory('EXPERIMENT_PATH')
+
 
 X_AXIS_POSITION_LABEL = "Upwind/$x$ (meters)"
 Y_AXIS_POSITION_LABEL = "Crosswind/$y$ (meters)"
@@ -62,7 +66,7 @@ def get_agent_info(agent_obj):
         is_agent = 'Agent'
     else:
         titleappend = ''
-        path = EXPERIMENT_FIG_PATH
+        path = EXPERIMENT_PATH
         is_agent = 'Mosquito'
 
     return titleappend, path, is_agent
