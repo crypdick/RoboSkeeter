@@ -367,7 +367,7 @@ class Agent():
         walls = self.windtunnel_obj.walls
         xpos, ypos, zpos = candidate_pos
         xvelo, yvelo, zvelo = candidate_velo
-        teleport_distance = 0.02
+        teleport_distance = 0.005
         crash = False
 
         # x dim
@@ -439,22 +439,6 @@ class Agent():
 
         return candidate_velo
 
-
-
-def gen_objects_and_fly(N_TRAJECTORIES,
-                        kwargs,
-                        verbose=True,
-                        ):
-    """
-    Params fitted using scipy.optimize
-
-    """
-    # instantiate a Roboskeeter
-
-
-
-
-    return skeeter.trajectory_obj, skeeter
     
    
 #    trajectories.describe(plot_kwargs = {'trajectories':False, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_scatter':True, 'force_violin':True})
