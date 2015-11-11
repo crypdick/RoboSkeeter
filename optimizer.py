@@ -7,7 +7,7 @@ from scipy.optimize import basinhopping
 import numpy as np
 
 from scripts.pickle_experiments import load_mosquito_kde_data_dicts
-import agent
+import experiment
 
 
 # wrapper func for agent 3D
@@ -25,29 +25,28 @@ def fly_wrapper(GUESS, *args):
     Guess: {}
     ##############################################################""".format(GUESS)
 
-    beta, F_rand_strength = GUESS
-    windF_strength = 0.
-    TEST_CONDITION = None
-    K = 0  # no wall force for optimization
-    F_STIM_SCALE = 0
-
+    beta_guess, F_rand_guess = GUESS
     N_TRAJECTORIES, PLOTTER, (EXP_BINS, EXP_VALS) = args
-    # import pdb; pdb.set_trace()
 
-    simulation, skeeter = agent.gen_objects_and_fly(
-        N_TRAJECTORIES,
-        TEST_CONDITION,
-        beta,
-        F_rand_strength,
-        windF_strength,
-        F_STIM_SCALE,
-        K,
-        'downwind_high',
-        bounded=False,
-        verbose=False
-    )
+    experiment_kwargs = {'initial_position_selection': 'downwind_high',
+                         'condition': 'Control',  # {'Left', 'Right', 'Control'}
+                         'time_max': 15.,
+                         'bounded': True,
+                         'number_trajectories': N_TRAJECTORIES
+                         }
 
-    combined_score, score_components, _ = simulation.calc_score(ref_ensemble=(EXP_BINS, EXP_VALS))
+    agent_kwargs = {'windF_strength': 0.,
+                    'randomF_strength': F_rand_guess,
+                    'stimF_strength': 0.,
+                    'spring_const': 0,
+                    'damping_coeff': beta_guess,
+                    'collision_type': 'crash',
+                    'crash_coeff': 0.0
+                    }
+
+    simulation, trajectory_s, windtunnel, plume, agent = experiment.run_simulation(agent_kwargs, experiment_kwargs)
+
+    combined_score, score_components, _ = trajectory_s.calc_score(ref_ensemble=(EXP_BINS, EXP_VALS))
 
     global HIGH_SCORE
     global BEST_GUESS
@@ -140,8 +139,8 @@ def main(x_0=None):
         INITIAL_GUESS,
         stepsize=1e-6,
         T=1e-5,
-        niter=100,  # number of basin hopping iterations, default 100
-        niter_success=20,  # Stop the run if the global minimum candidate remains the same for this number of iterations
+        niter=50,  # number of basin hopping iterations, default 100
+        niter_success=8,  # Stop the run if the global minimum candidate remains the same for this number of iterations
         minimizer_kwargs={
             "args": (N_TRAJECTORIES, PLOTTER, (load_mosquito_kde_data_dicts())),
             'method': OPTIM_ALGORITHM,
