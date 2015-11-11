@@ -25,22 +25,23 @@ class Simulation(Base_Experiment):
         self.skeeter.fly(total_trajectories=self.number_trajectories)
 
 
-def run_simulation():
-    experiment_kwargs = {'initial_position_selection': 'downwind_high',
-                         'condition': 'Control',  # {'Left', 'Right', 'Control'}
-                         'time_max': 15.,
-                         'bounded': True,
-                         'number_trajectories': 15
-                         }
-
-    agent_kwargs = {'windF_strength': 0.,
-                    'randomF_strength': 6.55599224e-06,
-                    'stimF_strength': 0.,
-                    'spring_const': 0,
-                    'damping_coeff': 3.63674551e-07,
-                    'collision_type': 'crash',
-                    'crash_coeff': 0.8
-                    }
+def run_simulation(agent_kwargs, experiment_kwargs):
+    if experiment_kwargs is None:
+        experiment_kwargs = {'initial_position_selection': 'downwind_high',
+                             'condition': 'Left',  # {'Left', 'Right', 'Control'}
+                             'time_max': 6.,
+                             'bounded': True,
+                             'number_trajectories': 1
+                             }
+    if agent_kwargs is None:
+        agent_kwargs = {'windF_strength': 0.,
+                        'randomF_strength': 6.55599224e-06,
+                        'stimF_strength': 0.,
+                        'spring_const': 0,
+                        'damping_coeff': 3.63674551e-07,
+                        'collision_type': 'elastic',
+                        'crash_coeff': 0.0  # 0.8
+                        }
 
     simulation = Simulation(agent_kwargs, **experiment_kwargs)
     # make the skeeter fly. this updates the trajectory_obj
@@ -71,9 +72,8 @@ def get_experiment():
     return experiment, trajectory, windtunnel, plume
 
 
-# simulation, trajectory, windtunnel, plume, agent = run_simulation()
-
-experiment, trajectory, windtunnel, plume = get_experiment()
+simulation, trajectory_s, windtunnel, plume, agent = run_simulation(None, None)
+# experiment, trajectory_e, windtunnel, plume = get_experiment()
 
 
 
