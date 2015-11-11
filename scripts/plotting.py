@@ -15,13 +15,20 @@ import numpy as np
 import seaborn as sns
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+# register Axes3D class with matplotlib by importing Axes3D
 from mpl_toolkits.mplot3d import Axes3D
 
-import environment
+# for drawing plume
+from matplotlib.patches import Ellipse
+import mpl_toolkits.mplot3d.art3d as art3d
+
+from custom_color import colormaps  # custom color maps
+
+# just used to get proper paths
 
 stopdeletingmeplease = Axes3D
 
-from custom_color import colormaps
 
 CM = colormaps.ListedColormap(colormaps.viridis.colors[::-1])
 # use colormaps.viridis for color maps
@@ -78,6 +85,32 @@ def draw_heater(heater_position, detect_thresh=0.02):  # FIXME detect thresh = 2
                               linestyle='dashed')
 
     return heaterCircle, detectCircle
+
+
+def draw_wintunnel(windtunnel):
+    pass
+
+
+def draw_plume(plume):
+    # xy is actually the yz plane
+    # v index: [u'x_position', u'z_position', u'small_radius', u'y_position']
+    ells = [Ellipse(xy=(v[3], v[1]), width=v[2], height=v[2] * 3, angle=0)
+            for i, v in plume.data.iterrows()]
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    for i, v in plume.data['x_position'].iteritems():
+        ell = ells[i]
+        ax.add_patch(ell)
+        art3d.patch_2d_to_3d(ell, z=v, zdir="x")
+
+    ax.set_xlabel('X axis')
+    ax.set_ylabel('Y axis')
+    ax.set_zlabel('Z axis')
+
+    plt.show()
+
 
 
 def plot_position_heatmaps(trajectories_obj):
@@ -451,7 +484,6 @@ def plot_start(ensemble):
 def plot_timeseries(ensemble, agent_obj, kinematic=None):
     #    traj_numbers = [int(i) for i in ensemble.index.get_level_values('trajectory_num').unique()]
     data_dict = {}
-    times_dict = {}
 
     # for each kinematic, slice out each trajectory, append to data_dict
     if kinematic is None:
@@ -483,12 +515,14 @@ def plot_timeseries(ensemble, agent_obj, kinematic=None):
 
     # k is kinematic v is a list of trajectories
     for k, v in data_dict.iteritems():
+        # print k
+        # print v
         print "plotting {}".format(k)
         plt.figure()
         #        for i, trial in enumerate(v):
         #            plt.plot(trial.index, trial, alpha=0.3)
         # print v
-        # sns.tsplot(data=v, times=times_dict[k], err_style=None) #"unit_traces")
+        sns.tsplot(data=v, times='tsi', value=k, err_style=None)  # "unit_traces")  FIXME
         format_title = titlebase.format(kinematic=k)
         plt.suptitle(format_title + numbers, fontsize=14)
         plt.xlabel("Timestep index")
