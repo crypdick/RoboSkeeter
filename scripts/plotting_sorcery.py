@@ -10,28 +10,26 @@ https://github.com/isomerase/
 import os
 from math import ceil
 
+from scripts import i_o
+from custom_color import colormaps  # custom color maps
+
+
+# plotting stuff
 import matplotlib.gridspec as gridspec
 import numpy as np
 import seaborn as sns
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-
-from scripts import i_o
-
-
 # register Axes3D class with matplotlib by importing Axes3D
 from mpl_toolkits.mplot3d import Axes3D
-
-# for drawing plume
-from matplotlib.patches import Ellipse
+from matplotlib.patches import Ellipse, Rectangle
 import mpl_toolkits.mplot3d.art3d as art3d
 
-from custom_color import colormaps  # custom color maps
+
+
 
 # just used to get proper paths
-
 stopdeletingmeplease = Axes3D
-
 
 CM = colormaps.ListedColormap(colormaps.viridis.colors[::-1])
 # use colormaps.viridis for color maps
@@ -40,7 +38,6 @@ CM = colormaps.ListedColormap(colormaps.viridis.colors[::-1])
 PROJECT_PATH = i_o.get_directory('PROJECT_PATH')
 MODEL_FIG_PATH = i_o.get_directory('MODEL_PATH')
 EXPERIMENT_PATH = i_o.get_directory('EXPERIMENT_PATH')
-
 
 X_AXIS_POSITION_LABEL = "Upwind/$x$ (meters)"
 Y_AXIS_POSITION_LABEL = "Crosswind/$y$ (meters)"
@@ -61,7 +58,7 @@ def get_agent_info(agent_obj):
             total_trajectories=agent_obj.total_trajectories,
             K=agent_obj.spring_const,
             m=agent_obj.mass
-            )
+        )
         path = MODEL_FIG_PATH
         is_agent = 'Agent'
     else:
@@ -70,6 +67,7 @@ def get_agent_info(agent_obj):
         is_agent = 'Mosquito'
 
     return titleappend, path, is_agent
+
 
 def draw_cage():
     # makes a little box where the cage is
@@ -91,30 +89,59 @@ def draw_heater(heater_position, detect_thresh=0.02):  # FIXME detect thresh = 2
     return heaterCircle, detectCircle
 
 
-def draw_wintunnel(windtunnel):
-    pass
+def set_windtunnel_bounds(ax):
+    ax.set_xlim(0, 1)
+    ax.set_ylim(-0.5, 0.5)
+    ax.set_zlim(-0.5, 0.5)
+
+    ax.set_ylabel("Crosswind/$y$ (meters)", fontsize=14)  # remember! x,y switched in plot() above!
+    ax.set_xlabel("Upwind/$x$ (meters)", fontsize=14)
+    ax.set_zlabel("Elevation/$z$ (meters)", fontsize=14)
+
+    ax.grid(False)
+    for a in (ax.w_xaxis, ax.w_yaxis, ax.w_zaxis):
+        a.pane.set_visible(False)
 
 
-def draw_plume(plume):
+def draw_windtunnel(ax):
+    x_min = 0
+    x_max = 1
+    z_min = 0
+    z_max = 0.254
+    y_min = -0.127
+    y_max = 0.127
+    draw_rectangular_prism(ax, x_min, x_max, y_min, y_max, z_min, z_max)
+
+
+def draw_rectangular_prism(ax, x_min, x_max, y_min, y_max, z_min, z_max):
+    alpha = 1
+    back = Rectangle((y_min, z_min), y_max - y_min, z_max, alpha=alpha, fill=None, linestyle='dotted')
+    ax.add_patch(back)
+    art3d.pathpatch_2d_to_3d(back, z=x_min, zdir="x")
+
+    front = Rectangle((y_min, z_min), y_max - y_min, z_max, alpha=alpha, fill=None, linestyle='dotted')
+    ax.add_patch(front)
+    art3d.pathpatch_2d_to_3d(front, z=x_max, zdir="x")
+
+    floor = Rectangle((x_min, y_min), x_max, z_max, alpha=alpha, fill=None, linestyle='dotted')
+    ax.add_patch(floor)
+    art3d.pathpatch_2d_to_3d(floor, z=z_min, zdir="z")
+
+    ceiling = Rectangle((x_min, y_min), x_max, z_max, alpha=alpha, fill=None, linestyle='dotted')
+    ax.add_patch(ceiling)
+    art3d.pathpatch_2d_to_3d(ceiling, z=z_max, zdir="z")
+
+
+def draw_plume(ax, plume):
     # xy is actually the yz plane
     # v index: [u'x_position', u'z_position', u'small_radius', u'y_position']
     ells = [Ellipse(xy=(v[3], v[1]), width=v[2], height=v[2] * 3, angle=0)
             for i, v in plume.data.iterrows()]
 
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-
     for i, v in plume.data['x_position'].iteritems():
         ell = ells[i]
         ax.add_patch(ell)
         art3d.patch_2d_to_3d(ell, z=v, zdir="x")
-
-    ax.set_xlabel('X axis')
-    ax.set_ylabel('Y axis')
-    ax.set_zlabel('Z axis')
-
-    plt.show()
-
 
 
 def plot_position_heatmaps(trajectories_obj):
@@ -259,7 +286,7 @@ def plot_kinematic_histograms(
                    alpha=0.1)
     if type(upw_ensemble) != str:
         xpos_counts, xpos_bins = np.histogram(upw_ensemble['position_x'], bins=np.linspace(xpos_min, xpos_max, (
-        xpos_max - xpos_min) / pos_binwidth))
+            xpos_max - xpos_min) / pos_binwidth))
         xpos_counts = xpos_counts.astype(float)
         xpos_counts_norm = xpos_counts / xpos_counts.sum()
         axs[0].plot(xpos_bins[:-1] + pos_binwidth / 2, xpos_counts_norm, lw=2, label="Upwind")
@@ -282,7 +309,7 @@ def plot_kinematic_histograms(
     axs[1].fill_between(ypos_bins[:-1] + pos_binwidth / 2, 0, ypos_counts_norm, facecolor='blue', alpha=0.1)
     if type(downw_ensemble) != str:  # TODO: is this alright with 3D flights?
         ypos_counts, ypos_bins = np.histogram(downw_ensemble['position_y'], bins=np.linspace(ypos_min, ypos_max, (
-        ypos_max - ypos_min) / pos_binwidth))
+            ypos_max - ypos_min) / pos_binwidth))
         ypos_counts = ypos_counts.astype(float)
         ypos_counts_norm = ypos_counts / ypos_counts.sum()
         axs[1].plot(ypos_bins[:-1] + pos_binwidth / 2, ypos_counts_norm, lw=2, label="Full")
@@ -290,7 +317,7 @@ def plot_kinematic_histograms(
         axs[1].fill_between(ypos_bins[:-1] + pos_binwidth / 2, 0, ypos_counts_norm, facecolor='blue', alpha=0.1)
     if type(upw_ensemble) != str:
         ypos_counts, ypos_bins = np.histogram(upw_ensemble['position_y'], bins=np.linspace(ypos_min, ypos_max, (
-        ypos_max - ypos_min) / pos_binwidth))
+            ypos_max - ypos_min) / pos_binwidth))
         ypos_counts = ypos_counts.astype(float)
         ypos_counts_norm = ypos_counts / ypos_counts.sum()
         axs[1].plot(ypos_bins[:-1] + pos_binwidth / 2, ypos_counts_norm, lw=2, label="Full")
@@ -312,7 +339,7 @@ def plot_kinematic_histograms(
     axs[2].fill_between(zpos_bins[:-1] + pos_binwidth / 2, 0, zpos_counts_norm, facecolor='blue', alpha=0.1)
     if type(downw_ensemble) != str:
         zpos_counts, zpos_bins = np.histogram(downw_ensemble['position_y'], bins=np.linspace(zpos_min, zpos_max, (
-        zpos_max - zpos_min) / pos_binwidth))
+            zpos_max - zpos_min) / pos_binwidth))
         zpos_counts = zpos_counts.astype(float)
         zpos_counts_norm = zpos_counts / zpos_counts.sum()
         axs[2].plot(zpos_bins[:-1] + pos_binwidth / 2, zpos_counts_norm, lw=2, label="Full")
@@ -320,7 +347,7 @@ def plot_kinematic_histograms(
         axs[2].fill_between(zpos_bins[:-1] + pos_binwidth / 2, 0, zpos_counts_norm, facecolor='blue', alpha=0.1)
     if type(upw_ensemble) != str:
         zpos_counts, zpos_bins = np.histogram(upw_ensemble['position_y'], bins=np.linspace(zpos_min, zpos_max, (
-        zpos_max - zpos_min) / pos_binwidth))
+            zpos_max - zpos_min) / pos_binwidth))
         zpos_counts = zpos_counts.astype(float)
         zpos_counts_norm = zpos_counts / zpos_counts.sum()
         axs[2].plot(zpos_bins[:-1] + pos_binwidth / 2, zpos_counts_norm, lw=2, label="Full")
@@ -402,7 +429,8 @@ def plot_kinematic_histograms(
     axs[4].plot(az_bins[:-1], az_counts_n, label="$\ddot{z}$", lw=2)
     axs[4].fill_between(az_bins[:-1], 0, az_counts_n, facecolor='red', alpha=0.1)
     # |a|
-    accel_stack = np.vstack((ensemble.acceleration_x.values, ensemble.acceleration_y.values, ensemble.acceleration_z.values))
+    accel_stack = np.vstack(
+        (ensemble.acceleration_x.values, ensemble.acceleration_y.values, ensemble.acceleration_z.values))
     accel_all_magn = np.linalg.norm(accel_stack, axis=0)
     # abs_accel_vectors = np.array(
     #     [ensemble.acceleration_x.values, ensemble.acceleration_y.values, ensemble.acceleration_z.values]).T
@@ -539,11 +567,11 @@ def plot_timeseries(ensemble, agent_obj, kinematic=None):
 def plot_forces_violinplots(ensemble, agent_obj):
     ensembleF = ensemble.loc[
         (ensemble['position_x'] > 0.25) & (ensemble['position_x'] < 0.95),
-            ['totalF_x', 'totalF_y', 'totalF_z',
-             'randomF_x', 'randomF_y', 'randomF_z',
-            'upwindF_x',
-            'wallRepulsiveF_x', 'wallRepulsiveF_y', 'wallRepulsiveF_z',
-            'stimF_x', 'stimF_y']] #, 'stimF_z']]== Nans
+        ['totalF_x', 'totalF_y', 'totalF_z',
+         'randomF_x', 'randomF_y', 'randomF_z',
+         'upwindF_x',
+         'wallRepulsiveF_x', 'wallRepulsiveF_y', 'wallRepulsiveF_z',
+         'stimF_x', 'stimF_y']]  # , 'stimF_z']]== Nans
     # plot Forces
     #    f, axes = plt.subplots(2, 2, figsize=(9, 9), sharex=True, sharey=True)
     ##    forcefig = plt.figure(5, figsize=(9, 8))
@@ -602,7 +630,6 @@ def plot_velocity_compassplot(ensemble, agent_obj, kind):
 
         plt.savefig(os.path.join(path, "Velocity compass" + fileappend + FIG_FORMAT))
         plt.show()
-
 
     if kind == 'bin_average':
         """for each bin, we want the average magnitude
@@ -675,7 +702,7 @@ def plot_compass_histogram(vector_name, ensemble, agent_obj, kind='avg_mag_per_b
         # switch to radian labels
         x_tix = plt.xticks()[0]
         x_labels = ['0', r'$\frac{\pi}{4}$', r'$\frac{\pi}{2}$', r'$\frac{3\pi}{4}$', \
-              r'$\pi$', r'$\frac{5\pi}{4}$', r'$\frac{3\pi}{2}$', r'$\frac{7\pi}{4}$']
+                    r'$\pi$', r'$\frac{5\pi}{4}$', r'$\frac{3\pi}{2}$', r'$\frac{7\pi}{4}$']
         plt.xticks(x_tix, x_labels, size=20)
         plt.title(title)
 
@@ -721,11 +748,9 @@ def draw_cylinder(center_x, center_y, z_min, z_max, r=0.01905, n=5):
 def plot3D_trajectory(trajectory, plot_kwargs=None):
     '''plotting without coloring
     '''
+    threedee = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
 
-    fig3D = plt.figure()
-    threedee = fig3D.gca(projection='3d')
-    # threedee.auto_scale_xyz([0., 1.], [0., 0.3], [0., 0.254])
-    # threedee.set_aspect('equal')
     threedee.plot(trajectory.position_y, trajectory.position_x, trajectory.position_z)
 
     # # Cylinder
@@ -734,18 +759,18 @@ def plot3D_trajectory(trajectory, plot_kwargs=None):
     # threedee.plot_wireframe(cx, cy, zmax)
 
     # Note! I set the y axis to be the X data and vice versa
-    threedee.set_ylim(0., 1.)
-    threedee.set_xlim(0.127, -0.127)
-    threedee.invert_xaxis()  # fix for y convention
-    threedee.set_zlim(0., 0.254)
-    threedee.set_xlabel("Crosswind/$y$ (meters)", fontsize=14)  # remember! x,y switched in plot() above!
-    threedee.set_ylabel("Upwind/$x$ (meters)", fontsize=14)
-    threedee.set_zlabel("Elevation/$z$ (meters)", fontsize=14)
+    # threedee.set_ylim(0., 1.)
+    # threedee.set_xlim(0.127, -0.127)
+    # threedee.invert_xaxis()  # fix for y convention
+    # threedee.set_zlim(0., 0.254)
+    # threedee.set_xlabel("Crosswind/$y$ (meters)", fontsize=14)  # remember! x,y switched in plot() above!
+    # threedee.set_ylabel("Upwind/$x$ (meters)", fontsize=14)
+    # threedee.set_zlabel("Elevation/$z$ (meters)", fontsize=14)
     threedee.set_title(plot_kwargs['title'], fontsize=20)
-
-    # plt.savefig("./correlation_figs/Trajectory.svg"., format="svg")
-
-    plt.show()
+    #
+    # # plt.savefig("./correlation_figs/Trajectory.svg"., format="svg")
+    #
+    # plt.show()
 
     # todo: plot cylinder, detect circle, cage
 
@@ -755,7 +780,6 @@ def plot_vector_cloud(trajectories_obj, kinematic, i=None):
     if trajectories_obj.agent_obj is None:
         if kinematic not in ['velocity', 'acceleration']:
             raise TypeError("we don't know the mosquito drivers")
-
 
     labels = []
     for dim in ['x', 'y', 'z']:
@@ -986,7 +1010,6 @@ def vector_cloud_pairgrid(trajectories_obj, kinematic, i=None):
     # color_axis = the_divider.append_axes("right", size="5%", pad=0.1)
     # cbar2 = plt.colorbar(heatmap_yz, cax=color_axis)
     # # cbar2.ax.set_ylabel(PROBABILITY_LABEL)
-
 
 
 def plot_all_force_clouds(ensemble):
