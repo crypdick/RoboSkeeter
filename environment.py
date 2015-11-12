@@ -25,13 +25,8 @@ class Windtunnel():
         self.heater.turn_on()
 
     def show(self):
-        import matplotlib.pyplot as plt
-        ax = pwt.mk_3Dfig()
-        pwt.set_windtunnel_bounds(ax)
-        # scripts.plot_windtunnel.draw_windtunnel(ax)
-        print ax
-        plt.show()
-
+        ax = pwt.plot_windtunnel()
+        return ax
 
 class Walls():
     def __init__(self):
