@@ -3,7 +3,7 @@ __author__ = 'richard'
 import numpy as np
 import pandas as pd
 
-import scripts.plotting
+import scripts.plot_windtunnel as pwt
 
 
 class Windtunnel():
@@ -25,8 +25,12 @@ class Windtunnel():
         self.heater.turn_on()
 
     def show(self):
-        scripts.plotting.draw_wintunnel(self)
-
+        import matplotlib.pyplot as plt
+        ax = pwt.mk_3Dfig()
+        pwt.set_windtunnel_bounds(ax)
+        # scripts.plot_windtunnel.draw_windtunnel(ax)
+        print ax
+        plt.show()
 
 
 class Walls():
@@ -165,7 +169,9 @@ class Plume():
         return plume_plane
 
     def show(self):
-        scripts.plotting.draw_plume(self)
+        ax = scripts.plot_windtunnel.mk_3Dfig()
+        scripts.plot_windtunnel.draw_windtunnel(ax)
+
 
 if __name__ == '__main__':
     windtunnel = Windtunnel('left')
