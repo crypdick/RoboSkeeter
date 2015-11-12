@@ -31,7 +31,7 @@ def run_simulation(agent_kwargs, experiment_kwargs):
                              'condition': 'Left',  # {'Left', 'Right', 'Control'}
                              'time_max': 6.,
                              'bounded': True,
-                             'number_trajectories': 100
+                             'number_trajectories': 3
                              }
     if agent_kwargs is None:
         agent_kwargs = {'randomF_strength': 6.55599224e-06,
