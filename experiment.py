@@ -19,7 +19,7 @@ class Simulation(Base_Experiment):
         Base_Experiment.__init__(self, **experiment_kwargs)
 
         self.trajectories = trajectory.Agent_Trajectory(self)
-        self.skeeter = agent.Agent(self, **agent_kwargs)
+        self.skeeter = agent.Agent(self, agent_kwargs)
         self.trajectories.add_agent_info(self.skeeter)
 
         self.skeeter.fly(total_trajectories=self.number_trajectories)
@@ -31,16 +31,16 @@ def run_simulation(agent_kwargs, experiment_kwargs):
                              'condition': 'Left',  # {'Left', 'Right', 'Control'}
                              'time_max': 6.,
                              'bounded': True,
-                             'number_trajectories': 1
+                             'number_trajectories': 100
                              }
     if agent_kwargs is None:
-        agent_kwargs = {'windF_strength': 0.,
-                        'randomF_strength': 6.55599224e-06,
+        agent_kwargs = {'randomF_strength': 6.55599224e-06,
                         'stimF_strength': 0.,
-                        'spring_const': 0,
                         'damping_coeff': 3.63674551e-07,
-                        'collision_type': 'elastic',
-                        'crash_coeff': 0.0  # 0.8
+                        'collision_type': 'crash',
+                        'crash_coeff': 0.0,  # 0.8
+                        'stimulus_memory': 100,
+                        'decision_policy': 'surge_only'
                         }
 
     simulation = Simulation(agent_kwargs, **experiment_kwargs)
