@@ -15,17 +15,6 @@ import pandas as pd
 import forces
 
 
-# def fly_wrapper(agent_obj, args, traj_count):
-#     """wrapper fxn for fly_single to use for multithreading
-#     """
-#     vectors_object = agent_obj._fly_single(*args)
-#     setattr(vectors_object, 'trajectory_num', traj_count)
-#     df = pd.DataFrame(vars(vectors_object))
-#
-#
-#     return df
-
-
 class Agent():
     """Generate agent (our simulated mosquito) which can fly.
 
@@ -69,7 +58,7 @@ class Agent():
 
     """
 
-    def __init__(self, experiment, **agent_kwargs):
+    def __init__(self, experiment, agent_kwargs):
         """generate the agent"""
         # defaults
         self.mass = 2.88e-6  # avg. mass of our colony (kg) =2.88 mg,
@@ -77,14 +66,15 @@ class Agent():
         self.dt = 0.01
         self.max_bins = int(np.ceil(self.time_max / self.dt))  # N bins
         self.initial_velocity_stdev = 0.01
-        self.forces = forces.Forces()
 
         for key in agent_kwargs:
             setattr(self, key, agent_kwargs[key])
 
         self.kinematics_list = ['position', 'velocity', 'acceleration']
-        self.forces_list = ['totalF', 'randomF', 'wallRepulsiveF', 'upwindF', 'stimF']
-
+        self.forces_list = ['totalF', 'randomF', 'stimF']
+        self.other_list = ['tsi', 'times', 'inPlume', 'plume_interaction', 'turning', 'heading_angle',
+                           'velocity_angular']
+        
         # things fed to the class
         self.experiment = experiment
 
@@ -94,6 +84,10 @@ class Agent():
         self.boundary = self.windtunnel_obj.boundary
         self.plume_obj = self.experiment.plume
         self.trajectory_obj = self.experiment.trajectories
+
+        # mk forces
+        self.forces = forces.Forces(self.randomF_strength, self.stimF_strength, self.stimulus_memory,
+                                    self.decision_policy)
 
         # turn thresh, in units deg s-1.
         # From Sharri:
@@ -157,12 +151,16 @@ class Agent():
 
         position[0], velocity[0] = self._set_init_pos_and_velo()
 
+        tsi_plume_last_sighted = -10000000  # a long time ago
+
         for tsi in V['tsi']:
             inPlume[tsi] = self.plume_obj.in_plume(position[tsi])
-            # V = self._calc_current_behavioral_state(tsi, V)
-            behavior_state[tsi] = 'searching'  # FIXME, get function working again
-            stimF[tsi], randomF[tsi], upwindF[tsi], wallRepulsiveF[tsi], totalF[tsi] =\
-                self._calc_forces(position[tsi], velocity[tsi], behavior_state[tsi], tsi)
+
+            plume_interaction[tsi] = self._plume_interaction(tsi, inPlume, velocity[tsi][1])
+            if plume_interaction[tsi] is 'inside':
+                tsi_plume_last_sighted = tsi
+            stimF[tsi], randomF[tsi], totalF[tsi] = \
+                self._calc_forces(tsi, velocity[tsi], plume_interaction, tsi_plume_last_sighted)
 
 
             # calculate current acceleration
@@ -198,120 +196,24 @@ class Agent():
             position[tsi + 1] = candidate_pos
             velocity[tsi + 1] = candidate_velo
 
-        # TODO: put in "fix dict" func
-        # prepare dict for loading into pandas (dataframe only accepts 1D vectors)
-        # split xyz arrays into separate x, y, z vectors for dataframe
-        V2 = {'tsi': V['tsi'], 'times': V['times']}
-        for kinematic in self.kinematics_list+self.forces_list:
-            V2[kinematic+'_x'], V2[kinematic+'_y'], V2[kinematic+'_z'] = np.split(V[kinematic], 3, axis=1)
-
-        # fix pandas bug when trying to load (R,1) arrays when it expects (R,) arrays
-        for key, array in V2.iteritems():
-            V2[key] = V2[key].reshape(len(array))
-            if V2[key].size == 0:
-                V2[key] = np.array([0.])  # hack so that kde calculation doesn't freeze on empty arrays
-
-
-        return V2
-
-
-    def _initialize_vectors(self):
-        """
-        # initialize np arrays, store in dictionary
-        """
-        V = {}
-
-        for name in self.kinematics_list+self.forces_list:
-            V[name] = np.full((self.max_bins, 3), np.nan)
-
-        V['tsi'] = np.arange(self.max_bins)
-        V['times'] = np.linspace(0, self.time_max, self.max_bins)
-        V['inPlume'] = np.full(self.max_bins, -1, dtype=np.uint8)
-        V['behavior_state'] = np.array([None]*self.max_bins)
-        V['turning'] = np.array([None]*self.max_bins)
-        V['heading_angle'] = np.full(self.max_bins, np.nan)
-        V['velocity_angular'] = np.full(self.max_bins, np.nan)
+        V = self._fix_vector_dict(V)
 
         return V
 
-    def _set_init_pos_and_velo(self):
-        ''' puts the agent in an initial position, usually within the bounds of the
-        cage
-
-        Options: [the cage] door, or anywhere in the plane at x=.1 meters
-
-        set initial velocity from fitted distribution
-        '''
-
-        # generate random intial velocity condition using normal distribution fitted to experimental data
-        initial_velocity = np.random.normal(0, self.initial_velocity_stdev, 3)
-        selection = self.experiment.initial_position_selection
-
-        if type(selection) is list:
-            initial_position = np.array(selection)
-        if selection == "door":  # start trajectories as they exit the front door
-            initial_position = np.array([0.1909, np.random.uniform(-0.0381, 0.0381), np.random.uniform(0., 0.1016)])
-            # FIXME cage is actually suspending above floor
-        if selection == 'downwind_plane':
-            initial_position =  np.array([0.1, np.random.uniform(-0.127, 0.127), np.random.uniform(0., 0.254)])
-        if selection == 'downwind_high':
-            initial_position = np.array(
-                [0.05, np.random.uniform(-0.127, 0.127), 0.2373])  # 0.2373 is mode of z pos distribution
-        else:
-            raise Exception('invalid agent position specified: {}'.format(selection))
-
-
-        return initial_position, initial_velocity
-
-    #
-    # def _calc_current_behavioral_state(self, tsi, V):
-    #     if tsi == 0:  # always start searching
-    #         V['behavior_state'][tsi] = 'searching'
-    #     else:
-    #         if self.plume_obj.condition is None:  # hack for no plume condition FIXME
-    #             V['behavior_state'][tsi] = 'searching'
-    #         else:
-    #             if V['behavior_state'][tsi] is None: # need to find state
-    #                 V['behavior_state'][tsi] = self._check_crossing_state(tsi, V['inPlume'], V['velocity_y'][tsi-1])
-    #                 if V['behavior_state'][tsi] in (
-    #                         'Left_plume Exit leftLeft_plume Exit rightRight_plume Exit leftRight_plume Exit right'):
-    #                     try:
-    #                         for i in range(PLUME_TRIGGER_TIME): # store experience for the following timeperiod
-    #                             V['behavior_state'][tsi+i] = str(V['behavior_state'][tsi])
-    #                     except IndexError: # can't store whole snapshot, so save 'truncated' label instead
-    #                        # print "plume trigger turn lasted less than threshold of {} timesteps "\
-    #                        # "before trajectory ended, so adding _truncated suffix".format(self.max_bins)  # TODO: DOCUMENT
-    #                        for i in range(self.max_bins - tsi):
-    #                             V['behavior_state'][tsi+i] = (str(V['behavior_state'][tsi])+'_truncated')
-    #
-    #             else: # state is still "plume exit" because we haven't re-entered the plume
-    #                 if V['inPlume'] is False:  # plume not found :'( better luck next time, Roboskeeter.
-    #                     pass
-    #                 else:  # found the plume again!
-    #                     V['behavior_state'][tsi:] = None  # reset memory
-    #                     V['behavior_state'][tsi] = 'entering'
-    #
-    #     return V
-
-    def _calc_forces(self, position, velocity, behavior_state, tsi):
+    def _calc_forces(self, tsi, velocity_now, plume_interaction_history, tsi_plume_last_sighted):
         ################################################
         # Calculate driving forces at this timestep
         ################################################
-        stimF = self.forces.stimF(behavior_state, self.stimF_strength)
-
         randomF = self.forces.randomF(self.randomF_strength)
-
-        upwindF = self.forces.upwindBiasF(self.windF_strength)
-
-        wallRepulsiveF = self.forces.attraction_basin(self.spring_const, position)
+        stimF = self.forces.stimF((tsi, tsi_plume_last_sighted, plume_interaction_history))
 
         ################################################
         # calculate total force
         ################################################
-        totalF = -self.damping_coeff * velocity +  randomF + upwindF + wallRepulsiveF + stimF
+        totalF = -self.damping_coeff * velocity_now + randomF + stimF
         ###############################
 
-        return stimF, randomF, upwindF, wallRepulsiveF, totalF
+        return stimF, randomF, totalF
 
 
     def _land(self, tsi, V):
@@ -324,12 +226,10 @@ class Agent():
             for k, array in V.iteritems():
                 V[k] = array[:tsi - 1]
                 V[k] = array[:tsi - 1]
-
         
         return V
-        
-        
-    def _check_crossing_state(self, tsi, inPlume, velocity_y):
+
+    def _plume_interaction(self, tsi, inPlume, velocity_y_now):
         """
         out2out - searching
          (or orienting, but then this func shouldn't be called)
@@ -341,29 +241,29 @@ class Agent():
         TODO: export to trajectory class
         """
         current_state, past_state = inPlume[tsi], inPlume[tsi-1]
-        if current_state == 0 and past_state == 0:
+        if tsi == 0:  # always start searching
+            state = 'outside'
+        elif current_state == 0 and past_state == 0:
             # we are not in plume and weren't in last ts
-            return 'searching'
-        if current_state == 1 and past_state == 0:
+            state = 'outside'
+        elif current_state == 1 and past_state == 0:
             # entering plume
-            return 'entering'
-        if current_state == 1 and past_state == 1:
+            state = 'inside'
+        elif current_state == 1 and past_state == 1:
             # we stayed in the plume
-            return 'staying'
-        if current_state == 0 and past_state == 1:
+            state = 'inside'
+        elif current_state == 0 and past_state == 1:
             # exiting the plume
-            if self.experimental_condition[5] == 'left':
-                if velocity_y <= 0:
-                    return 'Left_plume Exit left'
-                else:
-                    return 'Left_plume Exit right'
+            if velocity_y_now <= 0:
+                state = 'Exit left'
             else:
-                if velocity_y <= 0:
-                    return "Right_plume Exit left"
-                else:
-                    return "Right_plume Exit right"
+                state = 'Exit right'
+
+        return state
+
 
     def _collide_with_wall(self, candidate_pos, candidate_velo):
+        # TODO: move to wall
         walls = self.windtunnel_obj.walls
         xpos, ypos, zpos = candidate_pos
         xvelo, yvelo, zvelo = candidate_velo
@@ -426,6 +326,52 @@ class Agent():
 
         return candidate_pos, candidate_velo
 
+    def _initialize_vectors(self):
+        """
+        initialize np arrays, store in dictionary
+        """
+        V = {}
+
+        for name in self.kinematics_list + self.forces_list:
+            V[name] = np.full((self.max_bins, 3), np.nan)
+
+        V['tsi'] = np.arange(self.max_bins)
+        V['times'] = np.linspace(0, self.time_max, self.max_bins)
+        V['inPlume'] = np.full(self.max_bins, -1, dtype=np.uint8)
+        V['plume_interaction'] = np.array([None] * self.max_bins)
+        V['turning'] = np.array([None] * self.max_bins)
+        V['heading_angle'] = np.full(self.max_bins, np.nan)
+        V['velocity_angular'] = np.full(self.max_bins, np.nan)
+
+        return V
+
+    def _set_init_pos_and_velo(self):
+        ''' puts the agent in an initial position, usually within the bounds of the
+        cage
+
+        Options: [the cage] door, or anywhere in the plane at x=.1 meters
+
+        set initial velocity from fitted distribution
+        '''
+
+        # generate random intial velocity condition using normal distribution fitted to experimental data
+        initial_velocity = np.random.normal(0, self.initial_velocity_stdev, 3)
+        selection = self.experiment.initial_position_selection
+
+        if type(selection) is list:
+            initial_position = np.array(selection)
+        if selection == "door":  # start trajectories as they exit the front door
+            initial_position = np.array([0.1909, np.random.uniform(-0.0381, 0.0381), np.random.uniform(0., 0.1016)])
+            # FIXME cage is actually suspending above floor
+        if selection == 'downwind_plane':
+            initial_position = np.array([0.1, np.random.uniform(-0.127, 0.127), np.random.uniform(0., 0.254)])
+        if selection == 'downwind_high':
+            initial_position = np.array(
+                [0.05, np.random.uniform(-0.127, 0.127), 0.2373])  # 0.2373 is mode of z pos distribution
+        else:
+            raise Exception('invalid agent position specified: {}'.format(selection))
+
+        return initial_position, initial_velocity
 
     def _velocity_ceiling(self, candidate_velo):
         """check if we're seeing enormous velocities, which sometimes happens when running the optimization
@@ -438,6 +384,27 @@ class Agent():
                 candidate_velo[i] = -20.
 
         return candidate_velo
+
+    def _fix_vector_dict(self, dct):
+        # prepare dict for loading into pandas (dataframe only accepts 1D vectors)
+        # split xyz dicts into separate x, y, z vectors for dataframe
+
+        fixed_dct = {}
+        for kinematic in self.kinematics_list + self.forces_list:
+            fixed_dct[kinematic + '_x'], fixed_dct[kinematic + '_y'], fixed_dct[kinematic + '_z'] = np.split(
+                dct[kinematic], 3, axis=1)
+
+        # migrate rest of dict
+        for v in self.other_list:
+            fixed_dct[v] = dct[v]
+
+        # fix pandas bug when trying to load (R,1) arrays when it expects (R,) arrays
+        for key, dct in fixed_dct.iteritems():
+            fixed_dct[key] = fixed_dct[key].reshape(len(dct))
+            if fixed_dct[key].size == 0:
+                fixed_dct[key] = np.array([0.])  # hack so that kde calculation doesn't freeze on empty arrays
+
+        return fixed_dct
 
     
    
