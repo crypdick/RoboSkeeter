@@ -22,10 +22,11 @@ import string
 import numpy as np
 import pandas as pd
 
+import scripts.plot_windtunnel as pwt
 from scripts import i_o
-from scripts import plotting
 # from scripts.correlation_matrices import trajectory_DF
 from scripts.math_sorcery import calculate_curvature, calculate_xy_heading_angle, calculate_xy_magnitude
+import score
 
 
 #def T_find_stats(t_targfinds):
@@ -65,29 +66,33 @@ class Trajectory():
             self.data.append(trajectory)  # this should be avoided b/c lots of overhead (slow)
             self.run_analysis()
         elif type(data) is list:
-            try:
-                self.data = pd.concat(data)  # fast
+            #            try:
+            self.data = pd.concat(data)  # fast
             #                self.data = self.data.sort_index()
-            except ValueError:  # sometimes happens when running optimizer FIXME
-                self.data = pd.DataFrame({'velocity_x': np.zeros(1),
-                                          'velocity_y': np.zeros(1),
-                                          'velocity_z': np.zeros(1),
-                                          'acceleration_x': np.zeros(1),
-                                          'acceleration_y': np.zeros(1),
-                                          'acceleration_z': np.zeros(1),
-                                          'curvature': np.zeros(1)
-                                          })
-
-            try:
-                self.run_analysis()
-            except Exception:
-                print "Trajectory.run_analysis() failed"
-        else:
-            raise Exception
-
-    def run_analysis(self):  # FIXME: this seems obsolete
-        self.test_if_agent()
-        self.calc_kinematic_vals()  # evaluates kinematics
+            #            except ValueError:  # sometimes happens when running optimizer FIXME
+            #                self.data = pd.DataFrame({'velocity_x': np.zeros(1),
+            #                                          'velocity_y': np.zeros(1),
+            #                                          'velocity_z': np.zeros(1),
+            #                                          'acceleration_x': np.zeros(1),
+            #                                          'acceleration_y': np.zeros(1),
+            #                                          'acceleration_z': np.zeros(1),
+            #                                          'curvature': np.zeros(1)
+            #                                          })
+            #            except:
+            #                import sys
+            #                print "Unexpected error:", sys.exc_info()[0]
+            self.calc_kinematic_vals
+        #            try:
+        #                self.run_analysis()
+        #            except:
+        #                import sys
+        #                print "Unexpected error:", sys.exc_info()[0]
+        #        else:
+        #            raise Exception
+        #
+        #    def run_analysis(self):  # FIXME: this seems obsolete
+        #        self.test_if_agent()
+        #        self.calc_kinematic_vals()  # evaluates kinematics
 
 
     def calc_kinematic_vals(self):
@@ -114,28 +119,32 @@ class Trajectory():
 
 
     def plot_position_heatmaps(self):
-        plotting.plot_position_heatmaps(self)
+        import scripts.plotting_sorcery
+        scripts.plotting_sorcery.plot_position_heatmaps(self)
         
     
     def plot_kinematic_hists(self, ensemble='none', titleappend=''):
+        import scripts.plotting_sorcery
         if type(ensemble) is str:
             ensemble = self.data
             ensemble = ensemble.loc[(ensemble['position_x'] >0.25) & (ensemble['position_x'] <0.95)]
-        plotting.plot_kinematic_histograms(ensemble, self.agent_obj, titleappend=titleappend)
+        scripts.plotting_sorcery.plot_kinematic_histograms(ensemble, self.agent_obj, titleappend=titleappend)
         
         
     def plot_door_velocity_compass(self, region='door', kind='avg_mag_per_bin'):
+        import scripts.plotting_sorcery
         
         if region == 'door':
             """plot the area """
             ensemble = self.data.loc[((self.data['position_x']>0.25) & (self.data['position_x']<0.5)), ['velocity_x', 'velocity_y']]
         else:
             ensemble = self.data
-            
-        plotting.plot_velocity_compassplot(ensemble, self.agent_obj, kind)
+
+        scripts.plotting_sorcery.plot_velocity_compassplot(ensemble, self.agent_obj, kind)
     
 
     def plot_kinematic_compass(self, kind='avg_mag_per_bin', data=None, flags='', title_append=''):
+        import scripts.plotting_sorcery
         if data is None: # TODO: wtf?
             data = self.data
         # TODO: add heading angle plot
@@ -150,9 +159,8 @@ class Trajectory():
             flag=flags, titeappend=title_append)
             fname = "{flag} Avg mag distribution of {name}_xy compass _".format(\
             name=vector_name, flag=flags)
-  
-            
-            plotting.plot_compass_histogram(vector_name, df, self.agent_obj, title=title, fname=fname)
+
+            scripts.plotting_sorcery.plot_compass_histogram(vector_name, df, self.agent_obj, title=title, fname=fname)
 #            magnitudes, thetas = getattr(self.data, name+).values, getattr(V, name+'_xy_theta').values
 #            plotting_funcs3D.compass_histogram(force, magnitudes, thetas, self.agent_obj)
 
@@ -169,25 +177,31 @@ class Trajectory():
                 self.plot_kinematic_compass(data=ensemble, flags='Plume Triggered {}'.format(behavior))
 
     def plot_heading_compass(self):
-        pass # TODO
+        raise NotImplementedError
 
-    def plot_3Dtrajectory(self, trajectory_i=None):
+    def plot_3Dtrajectory(self, trajectory_i=None, plume=False):
         if trajectory_i is None:
             trajectory_i = self.get_trajectory_numbers().min()
+
+        ax = pwt.plot_windtunnel()
+        if plume:
+            pwt.draw_plume(ax, self.experiment.plume)
 
         if type(trajectory_i) is np.int64 or int:
             selected_trajectory_df = self.get_trajectory_i_df(trajectory_i)  # get data
             plot_kwargs = {'title': "{type} trajectory #{N}".format(type=self.is_agent, N=trajectory_i)}
-            plotting.plot3D_trajectory(selected_trajectory_df, plot_kwargs)
+            pwt.draw_trajectory(ax, selected_trajectory_df, **plot_kwargs)
 
         elif trajectory_i is "ALL":
-            all = self.data.trajectory_num.unique()
-            for i in all:
+            index = self.data.trajectory_num.unique()
+            for i in index:
                 selected_trajectory_df = self.get_trajectory_i_df(i)
                 plot_kwargs = {'title': "{type} trajectory #{N}".format(type=self.is_agent, N=i)}
-                plotting.plot3D_trajectory(selected_trajectory_df, plot_kwargs)
+                pwt.draw_trajectory(ax, selected_trajectory_df)
+
 
     def plot_sliced_hists(self):
+        import scripts.plotting_sorcery
         """Plot histograms from 0.25 < x < 0.95, as well as that same space
         divided into 4 equal 0.15 m segments 
         """
@@ -229,22 +243,26 @@ class Trajectory():
 #        self.plot_kinematic_hists(data=ensemble4, titleappend=' {} < x <= {}'.format(x_edges[3], x_edges[4]))
 #        
         print "full- + up- + down-wind"
-        plotting.plot_kinematic_histograms(full_ensemble, self.agent_obj, titleappend = '', upw_ensemble = upwind_ensemble, downw_ensemble = downwind_ensemble)
+        scripts.plotting_sorcery.plot_kinematic_histograms(full_ensemble, self.agent_obj, titleappend='',
+                                                           upw_ensemble=upwind_ensemble,
+                                                           downw_ensemble=downwind_ensemble)
 
     def plot_score_comparison(self):
-        plotting.plot_score_comparison(self)
+        import scripts.plotting_sorcery
+        scripts.plotting_sorcery.plot_score_comparison(self)
 
     def plot_timeseries(self, kinematic=None):
         """
 
         """
-        ensemble = self.data.loc[:,
-                   ['tsi', 'position_x', 'position_y', 'position_z', 'velocity_x', 'velocity_y', 'velocity_z',
-                    'acceleration_x',
-                    'acceleration_y', 'acceleration_z', 'curvature']]
+        # ensemble = self.data.loc[:,
+        #            ['tsi', 'position_x', 'position_y', 'position_z', 'velocity_x', 'velocity_y', 'velocity_z',
+        #             'acceleration_x',
+        #             'acceleration_y', 'acceleration_z', 'curvature']]
         #        ensemble['trajectory_num'] = ensemble.index
-        ensemble.reset_index(level=0, inplace=True)
-        plotting.plot_timeseries(ensemble, self.agent_obj, kinematic=kinematic)
+        # ensemble.reset_index(level=0, inplace=True)
+        import scripts.plotting_sorcery
+        scripts.plotting_sorcery.plot_timeseries(self.data, self.agent_obj, kinematic=kinematic)
 
 
     def plume_stats(self):
@@ -306,15 +324,15 @@ class Trajectory():
     def _trim_df_endzones(self):
         return self.data.loc[(self.data['position_x'] > 0.05) & (self.data['position_x'] < 0.95)]
 
-    def test_if_agent(self):
-        """Voight-Kampff test to test whether real mosquito or a robot
-        Todo: is necessary?"""
-        if self.agent_obj is None:
-            type = "Mosquito"
-        else:
-            type = "Agent"
-
-        self.is_agent = type
+    #    def test_if_agent(self):
+    #        """Voight-Kampff test to test whether real mosquito or a robot
+    #        Todo: is necessary?"""
+    #        if self.agent_obj is None:
+    #            type = "Mosquito"
+    #        else:
+    #            type = "Agent"
+    #
+    #        self.is_agent = type
 
     #     def mk_iterator_from_col(self, col):
     # a.xs(0, level='trajectory_num')
@@ -323,19 +341,24 @@ class Trajectory():
         return self.data.trajectory_num.unique()
 
     def plot_vector_cloud(self, kinematic='acceleration', i=None):
-        plotting.plot_vector_cloud(self, kinematic, i)
+        import scripts.plotting_sorcery
+        scripts.plotting_sorcery.plot_vector_cloud(self, kinematic, i)
 
     def plot_vector_cloud_heatmap(self, kinematic='acceleration', i=None):
-        plotting.vector_cloud_heatmap(self, kinematic, i)
+        import scripts.plotting_sorcery
+        scripts.plotting_sorcery.vector_cloud_heatmap(self, kinematic, i)
 
     def plot_vector_cloud_kde(self, kinematic='acceleration', i=None):
-        plotting.vector_cloud_kde(self, kinematic, i=None)
+        import scripts.plotting_sorcery
+        scripts.plotting_sorcery.vector_cloud_kde(self, kinematic, i=None)
 
     def plot_vector_cloud_pairgrid(self, kinematic='acceleration', i=None):
-        plotting.vector_cloud_pairgrid(self, kinematic, i=None)
+        import scripts.plotting_sorcery
+        scripts.plotting_sorcery.vector_cloud_pairgrid(self, kinematic, i=None)
 
     def plot_start_postiions(self):
-        plotting.plot_start(self.data)
+        import scripts.plotting_sorcery
+        scripts.plotting_sorcery.plot_start(self.data)
 
 
 
@@ -346,12 +369,14 @@ class Agent_Trajectory(Trajectory):
 
     def visualize_forces(self):
         """like plot_vector_cloud, but with all of the kinematics at once"""
-        plotting.plot_all_force_clouds(self.data)
+        import scripts.plotting_sorcery
+        scripts.plotting_sorcery.plot_all_force_clouds(self.data)
 
     def plot_force_violin(self):
+        import scripts.plotting_sorcery
         if self.agent_obj is None:
             raise TypeError('can\'t plot force violin for experimental data')
-        plotting.plot_forces_violinplots(self.data, self.agent_obj)
+        scripts.plotting_sorcery.plot_forces_violinplots(self.data, self.agent_obj)
 
     def add_agent_info(self, agent_obj):
         self.agent_obj = agent_obj
