@@ -1,23 +1,11 @@
-import matplotlib
-
-reload(matplotlib)  # seaborn bugs
-matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+# import matplotlib
+#
+# reload(matplotlib)  # seaborn bugs
+# matplotlib.rcParams.update(matplotlib.rcParamsDefault)
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle, Ellipse
 # register Axes3D class with matplotlib by importing Axes3D
-# from mpl_toolkits.mplot3d import Axes3D
-# from mpl_toolkits.mplot3d import m3d.art3d, Axes3D
-import mpl_toolkits
-
-reload(mpl_toolkits)
-import mpl_toolkits.mplot3d as m3d
-
-
-def mk_3Dfig():
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-
-    return ax
+from mpl_toolkits.mplot3d import art3d
 
 
 def set_windtunnel_bounds(ax):
@@ -35,7 +23,7 @@ def set_windtunnel_bounds(ax):
         a.pane.set_visible(False)
 
 
-def draw_windtunnel(ax):
+def draw_windtunnel_border(ax):
     x_min = 0
     x_max = 1
     z_min = 0
@@ -43,30 +31,30 @@ def draw_windtunnel(ax):
     y_min = -0.127
     y_max = 0.127
     draw_rectangular_prism(ax, x_min, x_max, y_min, y_max, z_min, z_max)
+    plt.draw()
 
 
 def draw_rectangular_prism(ax, x_min, x_max, y_min, y_max, z_min, z_max):
     alpha = 1
     back = Rectangle((y_min, z_min), y_max - y_min, z_max, alpha=alpha, fill=None, linestyle='dotted')
     ax.add_patch(back)
-    m3d.art3d.pathpatch_2d_to_3d(back, z=x_min, zdir="x")
+    art3d.pathpatch_2d_to_3d(back, z=x_min, zdir="x")
 
     front = Rectangle((y_min, z_min), y_max - y_min, z_max, alpha=alpha, fill=None, linestyle='dotted')
     ax.add_patch(front)
-    m3d.art3d.pathpatch_2d_to_3d(front, z=x_max, zdir="x")
+    art3d.pathpatch_2d_to_3d(front, z=x_max, zdir="x")
 
     floor = Rectangle((x_min, y_min), x_max, z_max, alpha=alpha, fill=None, linestyle='dotted')
     ax.add_patch(floor)
-    m3d.art3d.pathpatch_2d_to_3d(floor, z=z_min, zdir="z")
+    art3d.pathpatch_2d_to_3d(floor, z=z_min, zdir="z")
 
     ceiling = Rectangle((x_min, y_min), x_max, z_max, alpha=alpha, fill=None, linestyle='dotted')
     ax.add_patch(ceiling)
-    m3d.art3d.pathpatch_2d_to_3d(ceiling, z=z_max, zdir="z")
+    art3d.pathpatch_2d_to_3d(ceiling, z=z_max, zdir="z")
 
 
 def draw_trajectory(ax, trajectory, **kwargs):
     ax.plot(trajectory.position_x, trajectory.position_y, trajectory.position_z)
-    plt.show()
 
 
 def draw_plume(ax, plume):
@@ -80,16 +68,23 @@ def draw_plume(ax, plume):
     for i, v in plume.data['x_position'].iteritems():
         ell = ells[i]
         ax.add_patch(ell)
-        m3d.art3d.patch_2d_to_3d(ell, z=v, zdir="x")
+        art3d.patch_2d_to_3d(ell, z=v, zdir="x")
 
     plt.show()
 
 
+def plot_windtunnel():
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    set_windtunnel_bounds(ax)
+    draw_windtunnel_border(ax)
+    return ax
+
+
 if __name__ is '__main__':
-    ax = mk_3Dfig()
-    draw_windtunnel(ax)
+    ax = plot_windtunnel()
 
-    import experiment
-
-    simulation, trajectory_s, windtunnel, plume, agent = experiment.run_simulation(None, None)
-    draw_trajectory(ax, trajectory_s.data)
+    # import experiment
+    #
+    # simulation, trajectory_s, windtunnel, plume, agent = experiment.run_simulation(None, None)
+    # draw_trajectory(ax, trajectory_s.data)
