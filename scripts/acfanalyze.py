@@ -5,11 +5,10 @@ import numpy as np
 from statsmodels.tsa.stattools import acf
 
 # import statsmodels.graphics.tsaplots
-import matplotlib.pyplot as plt
 from scripts import i_o
 import trajectory
 
-plt.style.use('ggplot')
+# plt.style.use('ggplot')
 
 ACF_THRESH = 0.5
 NLAGS = 70
