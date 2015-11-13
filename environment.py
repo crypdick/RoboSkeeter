@@ -25,7 +25,7 @@ class Windtunnel():
         self.heater.turn_on()
 
     def show(self):
-        ax = pwt.plot_windtunnel()
+        ax = pwt.plot_windtunnel(heater=self.heater)
         return ax
 
 class Walls():
@@ -77,21 +77,20 @@ class Heater():
         returns [x,y, zmin, zmax, diam]
         '''
         self.experimental_condition = experimental_condition
+        self.x_position, self.y_position = self._set_xy_coords()
 
         if self.experimental_condition not in 'controlControlCONTROL':
             self.zmin = 0.03800
             self.zmax = 0.11340
-            self.diam = 0.01905
+            self.diam = 0.00635
 
             self.is_on = False
-
-        self.x_position, self.y_position = self._set_xy_coords()
 
     def turn_on(self):
         self.is_on = True
 
     def _set_xy_coords(self):
-        x_coord = -0.0507
+        x_coord = 0.864
 
         if self.experimental_condition in "leftLeftLEFT":
             y_coord = -0.0507
@@ -164,8 +163,7 @@ class Plume():
         return plume_plane
 
     def show(self):
-        ax = scripts.plot_windtunnel.mk_3Dfig()
-        scripts.plot_windtunnel.draw_windtunnel(ax)
+        pwt.draw_plume(self, self.heater)
 
 
 if __name__ == '__main__':
