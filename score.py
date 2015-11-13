@@ -1,9 +1,8 @@
 __author__ = 'richard'
 
-from scipy.stats import entropy
 import numpy as np
+from scipy.stats import entropy
 # from scipy.stats import gaussian_kde as kde
-import scripts.acfanalyze
 import scripts.pickle_experiments
 from scripts.math_sorcery import calculate_1Dkde, evaluate_kde
 
