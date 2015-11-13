@@ -10,23 +10,16 @@ https://github.com/isomerase/
 import os
 from math import ceil
 
-from scripts import i_o
 from custom_color import colormaps  # custom color maps
-
-
+from scripts import i_o
 # plotting stuff
 import matplotlib.gridspec as gridspec
 import numpy as np
-import seaborn as sns
+import seaborn.apionly as sns
 from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 # register Axes3D class with matplotlib by importing Axes3D
 from mpl_toolkits.mplot3d import Axes3D
-from matplotlib.patches import Ellipse, Rectangle
-import mpl_toolkits.mplot3d.art3d as art3d
-
-
-
 
 # just used to get proper paths
 stopdeletingmeplease = Axes3D
@@ -77,7 +70,7 @@ def draw_cage():
                          facecolor='none')  # FIXME get rid of hardcoded number
 
 
-def draw_heater(heater_position, detect_thresh=0.02):  # FIXME detect thresh = 2cm + diam
+def draw_2d_heater(heater_position, detect_thresh=0.02):  # FIXME detect thresh = 2cm + diam
     """ draws a circle where the heater_position is
     heater_position vector is [x,y, zmin, zmax, diam]
     DEPRECIATED in 3D
@@ -87,61 +80,6 @@ def draw_heater(heater_position, detect_thresh=0.02):  # FIXME detect thresh = 2
                               linestyle='dashed')
 
     return heaterCircle, detectCircle
-
-
-def set_windtunnel_bounds(ax):
-    ax.set_xlim(0, 1)
-    ax.set_ylim(-0.5, 0.5)
-    ax.set_zlim(-0.5, 0.5)
-
-    ax.set_ylabel("Crosswind/$y$ (meters)", fontsize=14)  # remember! x,y switched in plot() above!
-    ax.set_xlabel("Upwind/$x$ (meters)", fontsize=14)
-    ax.set_zlabel("Elevation/$z$ (meters)", fontsize=14)
-
-    ax.grid(False)
-    for a in (ax.w_xaxis, ax.w_yaxis, ax.w_zaxis):
-        a.pane.set_visible(False)
-
-
-def draw_windtunnel(ax):
-    x_min = 0
-    x_max = 1
-    z_min = 0
-    z_max = 0.254
-    y_min = -0.127
-    y_max = 0.127
-    draw_rectangular_prism(ax, x_min, x_max, y_min, y_max, z_min, z_max)
-
-
-def draw_rectangular_prism(ax, x_min, x_max, y_min, y_max, z_min, z_max):
-    alpha = 1
-    back = Rectangle((y_min, z_min), y_max - y_min, z_max, alpha=alpha, fill=None, linestyle='dotted')
-    ax.add_patch(back)
-    art3d.pathpatch_2d_to_3d(back, z=x_min, zdir="x")
-
-    front = Rectangle((y_min, z_min), y_max - y_min, z_max, alpha=alpha, fill=None, linestyle='dotted')
-    ax.add_patch(front)
-    art3d.pathpatch_2d_to_3d(front, z=x_max, zdir="x")
-
-    floor = Rectangle((x_min, y_min), x_max, z_max, alpha=alpha, fill=None, linestyle='dotted')
-    ax.add_patch(floor)
-    art3d.pathpatch_2d_to_3d(floor, z=z_min, zdir="z")
-
-    ceiling = Rectangle((x_min, y_min), x_max, z_max, alpha=alpha, fill=None, linestyle='dotted')
-    ax.add_patch(ceiling)
-    art3d.pathpatch_2d_to_3d(ceiling, z=z_max, zdir="z")
-
-
-def draw_plume(ax, plume):
-    # xy is actually the yz plane
-    # v index: [u'x_position', u'z_position', u'small_radius', u'y_position']
-    ells = [Ellipse(xy=(v[3], v[1]), width=v[2], height=v[2] * 3, angle=0)
-            for i, v in plume.data.iterrows()]
-
-    for i, v in plume.data['x_position'].iteritems():
-        ell = ells[i]
-        ax.add_patch(ell)
-        art3d.patch_2d_to_3d(ell, z=v, zdir="x")
 
 
 def plot_position_heatmaps(trajectories_obj):
@@ -476,7 +414,7 @@ def plot_kinematic_histograms(
 
 #    return xpos_counts_norm, ypos_bins, ypos_counts, ypos_counts_norm, vx_counts_n
 
-def plot_start(ensemble):
+def plot_starting_points(ensemble):
     positions_at_timestep_0 = ensemble.loc[(ensemble.tsi == 0), ['position_x', 'position_y', 'position_z']]
 
     f1 = plt.figure()
@@ -713,66 +651,6 @@ def plot_compass_histogram(vector_name, ensemble, agent_obj, kind='avg_mag_per_b
 
         # plt.savefig("./figs/Compass {fname}{append}.svg".format(fname=fname, append=titleappend + FIG_FORMAT))
 
-
-def draw_cylinder(center_x, center_y, z_min, z_max, r=0.01905, n=5):
-    '''
-    Returns the unit cylinder that corresponds to the curve r.
-    INPUTS:  r - a vector of radii
-             n - number of coordinates to return for each element in r
-             TODO: update with new params
-
-    OUTPUTS: x,y,z - coordinates of points
-    
-    modified from http://python4econ.blogspot.com/2013/03/matlabs-cylinder-command-in-python.html
-    '''
-    # TODO: FIXME cylinder not plotting in correct place
-    # ensure that r is a column vector
-    r = np.atleast_2d(r)
-    r_rows, r_cols = r.shape
-
-    if r_cols > r_rows:
-        r = r.T
-
-    # find points along x and y axes
-    points = np.linspace(0., 2. * np.pi, n + 1)  # generate evenly spaced rads
-    x = np.cos(points) * r + center_x
-    y = np.sin(points) * r + center_y
-
-    # find points along z axis
-    rpoints = np.atleast_2d(np.linspace(z_min, z_max, len(r)))
-    z = np.ones((1, n + 1)) * rpoints.T
-
-    return x, y, z
-
-
-def plot3D_trajectory(trajectory, plot_kwargs=None):
-    '''plotting without coloring
-    '''
-    threedee = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-
-    threedee.plot(trajectory.position_y, trajectory.position_x, trajectory.position_z)
-
-    # # Cylinder
-    # # get points from cylinder and plot
-    # cx, cy, zmin, zmax, diam, label = cylinder(*agent_obj['heater_position'])
-    # threedee.plot_wireframe(cx, cy, zmax)
-
-    # Note! I set the y axis to be the X data and vice versa
-    # threedee.set_ylim(0., 1.)
-    # threedee.set_xlim(0.127, -0.127)
-    # threedee.invert_xaxis()  # fix for y convention
-    # threedee.set_zlim(0., 0.254)
-    # threedee.set_xlabel("Crosswind/$y$ (meters)", fontsize=14)  # remember! x,y switched in plot() above!
-    # threedee.set_ylabel("Upwind/$x$ (meters)", fontsize=14)
-    # threedee.set_zlabel("Elevation/$z$ (meters)", fontsize=14)
-    threedee.set_title(plot_kwargs['title'], fontsize=20)
-    #
-    # # plt.savefig("./correlation_figs/Trajectory.svg"., format="svg")
-    #
-    # plt.show()
-
-    # todo: plot cylinder, detect circle, cage
 
 
 def plot_vector_cloud(trajectories_obj, kinematic, i=None):
@@ -1088,26 +966,6 @@ def plot_all_force_clouds(ensemble):
     plt.savefig('F_stim_cloud.png')
     plt.show()
 
-    ##############################################################################################
-    # F_upwind
-    ##############################################################################################
-
-
-    fig = plt.figure(5)
-    ax = fig.add_subplot(111, projection='3d')
-    x = ensemble.upwindF_x
-    y = ensemble.upwindF_y
-    z = ensemble.upwindF_z
-
-    ax.scatter(x[:20], y[:20], z[:20], marker='.', s=80, linewidths=0, c=ensemble_cmap)
-    ax.scatter(0, 0, 0, c='r', marker='o', s=50)
-
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Z')
-    plt.title("Visualization of F_upwind")
-    plt.savefig('F_upwind_cloud.png')
-    plt.show()
 
     ##############################################################################################
     # F_random
@@ -1130,19 +988,6 @@ def plot_all_force_clouds(ensemble):
     plt.savefig('F_random_cloud.png')
     plt.show()
 
-
-    ##############################################################################################
-    # F_wall repulsion
-    ##############################################################################################
-
-    fig = plt.figure(7)
-    ax = fig.add_subplot(111, projection='3d')
-    x = ensemble.wallRepulsiveF_x
-    y = ensemble.wallRepulsiveF_y
-    z = ensemble.wallRepulsiveF_z
-
-    ax.scatter(x, y, z, marker='.', s=80, linewidths=0, c=ensemble_cmap)
-    ax.scatter(0, 0, 0, c='r', marker='o', s=50)
 
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
