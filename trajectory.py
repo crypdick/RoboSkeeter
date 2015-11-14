@@ -22,11 +22,10 @@ import string
 import numpy as np
 import pandas as pd
 
+import score
 import scripts.plot_windtunnel as pwt
 from scripts import i_o
-# from scripts.correlation_matrices import trajectory_DF
-from scripts.math_sorcery import calculate_curvature, calculate_xy_heading_angle, calculate_xy_magnitude
-import score
+from scripts.math_sorcery import calculate_curvature, distance_from_wall
 
 
 #def T_find_stats(t_targfinds):
@@ -64,57 +63,40 @@ class Trajectory():
         if type(data) is dict:
             trajectory = pd.DataFrame(data)
             self.data.append(trajectory)  # this should be avoided b/c lots of overhead (slow)
-            self.run_analysis()
+            self.self.calc_kinematic_vals
         elif type(data) is list:
-            #            try:
             self.data = pd.concat(data)  # fast
-            #                self.data = self.data.sort_index()
-            #            except ValueError:  # sometimes happens when running optimizer FIXME
-            #                self.data = pd.DataFrame({'velocity_x': np.zeros(1),
-            #                                          'velocity_y': np.zeros(1),
-            #                                          'velocity_z': np.zeros(1),
-            #                                          'acceleration_x': np.zeros(1),
-            #                                          'acceleration_y': np.zeros(1),
-            #                                          'acceleration_z': np.zeros(1),
-            #                                          'curvature': np.zeros(1)
-            #                                          })
-            #            except:
-            #                import sys
-            #                print "Unexpected error:", sys.exc_info()[0]
+            print "fast"
             self.calc_kinematic_vals
-        #            try:
-        #                self.run_analysis()
-        #            except:
-        #                import sys
-        #                print "Unexpected error:", sys.exc_info()[0]
-        #        else:
-        #            raise Exception
-        #
-        #    def run_analysis(self):  # FIXME: this seems obsolete
-        #        self.test_if_agent()
-        #        self.calc_kinematic_vals()  # evaluates kinematics
 
 
     def calc_kinematic_vals(self):
-        ensemble = self.data
-        # TODO: make wrapper function that iterates through trajectories in order to solve kinematics individually
-        ensemble['curvature'] = calculate_curvature(ensemble)
+        print "aslkfjas"
+        self.data['curvature'] = calculate_curvature(self.data)
         # absolute magnitude of velocity, accel vectors in 3D
-        ensemble['velocity_magn'] = np.linalg.norm(ensemble.loc[:,('velocity_x', 'velocity_y', 'velocity_z')], axis=1)
-        ensemble['acceleration_magn'] = np.linalg.norm(ensemble.loc[:,('acceleration_x', 'acceleration_y', 'acceleration_z')], axis=1)
-        self._calc_polar_kinematics()
+        self.data['velocity_magn'] = np.linalg.norm(self.data.loc[:, ('velocity_x', 'velocity_y', 'velocity_z')],
+                                                    axis=1)
+        self.data['acceleration_magn'] = np.linalg.norm(
+            self.data.loc[:, ('acceleration_x', 'acceleration_y', 'acceleration_z')], axis=1)
+        self.data['dist_to_wall'] = distance_from_wall(self.data, self.experiment.windtunnel.boundary)
 
-
-    def _calc_polar_kinematics(self):
-        """append polar kinematics to vectors dictionary TODO: export to trajectory class"""
-        kinematics = ['velocity', 'acceleration']
-        if self.agent_obj is not None:  # we don't want to calculate the polar versions of these for experiments
-            kinematics += ['randomF', 'wallRepulsiveF', 'upwindF', 'stimF']
-
-        for name in kinematics:
-            x_component, y_component = self.data[name+'_x'], self.data[name+'_y']
-            self.data[name+'_xy_theta'] = calculate_xy_heading_angle(x_component, y_component)
-            self.data[name+'_xy_mag'] = calculate_xy_magnitude(x_component, y_component)
+    #     self._calc_polar_kinematics()
+    #
+    #
+    # def _calc_polar_kinematics(self):
+    #     """append polar kinematics to vectors dictionary"""
+    #     kinematics = ['velocity', 'acceleration']
+    #     if self.agent_obj is not None:  # we don't want to calculate the polar versions of these for experiments
+    #         kinematics += ['randomF', 'wallRepulsiveF', 'upwindF', 'stimF']
+    #
+    #     for name in kinematics:
+    #         x_component, y_component = self.data[name+'_x'], self.data[name+'_y']
+    #         self.data[name+'_xy_theta'] = calculate_xy_heading_angle(x_component, y_component)
+    #         self.data[name+'_xy_mag'] = calculate_xy_magnitude(x_component, y_component)
+    #
+    #        self.data['turning'] = np.array([None] * self.max_bins)
+    #     self.data['heading_angle'] = np.full(self.max_bins, np.nan) TODO!
+    #     self.data['velocity_angular'] = np.full(self.max_bins, np.nan)
 
 
 
@@ -358,7 +340,7 @@ class Trajectory():
 
     def plot_start_postiions(self):
         import scripts.plotting_sorcery
-        scripts.plotting_sorcery.plot_start(self.data)
+        scripts.plotting_sorcery.plot_starting_points(self.data)
 
 
 

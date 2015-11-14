@@ -37,7 +37,6 @@ def draw_heaters(ax, heater):
         pass
 
     x_center, y_center = heater.x_position, heater.y_position
-    print x_center
     elevation, height = heater.zmin, heater.zmax - heater.zmin
     radius = heater.diam / 2
     resolution = 101
@@ -82,8 +81,10 @@ def draw_plume(plume, heater, ax=None):
         draw_windtunnel_border(ax)
         draw_heaters(ax, heater)
 
-    ells = [Ellipse(xy=(v[3], v[1]), width=v[2], height=v[2] * 3, angle=0, alpha=0.1)
-            for i, v in plume.data.iterrows()]
+    ells = [
+        Ellipse(xy=(v[3], v[1]), width=v[2], height=v[2] * 3, angle=0, linestyle='dotted', facecolor='none', alpha=0.05,
+                edgecolor='r')
+        for i, v in plume.data.iterrows()]
 
     for i, v in plume.data['x_position'].iteritems():
         ell = ells[i]
@@ -112,13 +113,15 @@ def plot_3D_cylinder(ax, radius, height, elevation=0, resolution=200, color='r',
     art3d.pathpatch_2d_to_3d(ceiling, z=elevation + height, zdir="z")
 
 
-def plot_windtunnel(heater=None):
+def plot_windtunnel(heater=None, title=''):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     set_windtunnel_bounds(ax)
     draw_windtunnel_border(ax)
+    ax.set_title(title, fontsize=20)  # FIXME parent functions aren't passing titles yet
     if heater is not None:
         draw_heaters(ax, heater)
+
     return ax
 
 

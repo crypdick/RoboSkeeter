@@ -339,9 +339,6 @@ class Agent():
         V['times'] = np.linspace(0, self.time_max, self.max_bins)
         V['inPlume'] = np.full(self.max_bins, -1, dtype=np.uint8)
         V['plume_interaction'] = np.array([None] * self.max_bins)
-        V['turning'] = np.array([None] * self.max_bins)
-        V['heading_angle'] = np.full(self.max_bins, np.nan)
-        V['velocity_angular'] = np.full(self.max_bins, np.nan)
 
         return V
 
