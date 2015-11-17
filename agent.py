@@ -72,8 +72,8 @@ class Agent():
 
         self.kinematics_list = ['position', 'velocity', 'acceleration']
         self.forces_list = ['totalF', 'randomF', 'stimF']
-        self.other_list = ['tsi', 'times', 'inPlume', 'plume_interaction', 'turning', 'heading_angle',
-                           'velocity_angular']
+        self.other_list = ['tsi', 'times', 'inPlume', 'plume_interaction']  # , 'turning', 'heading_angle',
+        #    'velocity_angular']  # FIXME
         
         # things fed to the class
         self.experiment = experiment
@@ -268,6 +268,7 @@ class Agent():
         xpos, ypos, zpos = candidate_pos
         xvelo, yvelo, zvelo = candidate_velo
         teleport_distance = 0.005
+        restitution_coeff = 0.1
         crash = False
 
         # x dim
@@ -275,6 +276,8 @@ class Agent():
             xpos = walls.downwind + teleport_distance  # teleport back inside
             if self.collision_type == 'elastic':
                 xvelo *= -1.
+            elif self.collision_type == 'part_elastic':
+                xvelo *= -restitution_coeff
             elif self.collision_type == 'crash':
                 # xvelo *= -1.
                 crash = True
@@ -282,6 +285,8 @@ class Agent():
             xpos = walls.upwind - teleport_distance  # teleport back inside
             if self.collision_type == 'elastic':
                 xvelo *= -1.
+            elif self.collision_type == 'part_elastic':
+                xvelo *= -restitution_coeff
             elif self.collision_type == 'crash':
                 # xvelo *= -1.
                 crash = True
@@ -291,6 +296,8 @@ class Agent():
             ypos = walls.left + teleport_distance
             if self.collision_type == 'elastic':
                 yvelo *= -1.
+            elif self.collision_type == 'part_elastic':
+                yvelo *= -restitution_coeff
             elif self.collision_type == "crash":
                 # yvelo *= -1.
                 crash = True
@@ -298,6 +305,8 @@ class Agent():
             ypos = walls.right - teleport_distance
             if self.collision_type == 'elastic':
                 yvelo *= -1.
+            if self.collision_type == 'part_elastic':
+                yvelo *= -restitution_coeff
             elif self.collision_type == 'crash':
                 # yvelo *= -1.
                 crash = True
@@ -307,6 +316,8 @@ class Agent():
             zpos = walls.ceiling - teleport_distance
             if self.collision_type == 'elastic':
                 zvelo *= -1.
+            if self.collision_type == 'part_elastic':
+                zvelo *= -restitution_coeff
             elif self.collision_type == "crash":
                 # zvelo *= -1.
                 crash = True
@@ -314,6 +325,8 @@ class Agent():
             zpos = walls.floor + teleport_distance
             if self.collision_type == 'elastic':
                 zvelo *= -1.
+            if self.collision_type == 'part_elastic':
+                zvelo *= -restitution_coeff
             elif self.collision_type == 'crash':
                 # zvelo *= -1.
                 crash = True
@@ -353,7 +366,7 @@ class Agent():
 
         # generate random intial velocity condition using normal distribution fitted to experimental data
         initial_velocity = np.random.normal(0, self.initial_velocity_stdev, 3)
-        selection = self.experiment.initial_position_selection
+        selection = self.initial_position_selection
 
         if type(selection) is list:
             initial_position = np.array(selection)
