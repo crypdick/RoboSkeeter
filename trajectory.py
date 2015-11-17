@@ -46,7 +46,7 @@ from scripts.math_sorcery import calculate_curvature, distance_from_wall
 #        return Tfind_avg
 
 
-class Trajectory():
+class Trajectory(object):
     def __init__(self, experiment):
         self.reload_data()
         self.agent_obj = None
@@ -66,19 +66,18 @@ class Trajectory():
             self.self.calc_kinematic_vals
         elif type(data) is list:
             self.data = pd.concat(data)  # fast
-            print "fast"
-            self.calc_kinematic_vals
+            self.calc_kinematic_vals()
 
 
     def calc_kinematic_vals(self):
-        print "aslkfjas"
         self.data['curvature'] = calculate_curvature(self.data)
         # absolute magnitude of velocity, accel vectors in 3D
         self.data['velocity_magn'] = np.linalg.norm(self.data.loc[:, ('velocity_x', 'velocity_y', 'velocity_z')],
                                                     axis=1)
         self.data['acceleration_magn'] = np.linalg.norm(
             self.data.loc[:, ('acceleration_x', 'acceleration_y', 'acceleration_z')], axis=1)
-        self.data['dist_to_wall'] = distance_from_wall(self.data, self.experiment.windtunnel.boundary)
+        self.data['dist_to_wall'] = distance_from_wall(self.data[['position_x', 'position_y', 'position_z']],
+                                                       self.experiment.windtunnel.boundary)
 
     #     self._calc_polar_kinematics()
     #
@@ -98,7 +97,11 @@ class Trajectory():
     #     self.data['heading_angle'] = np.full(self.max_bins, np.nan) TODO!
     #     self.data['velocity_angular'] = np.full(self.max_bins, np.nan)
 
-
+    #
+    #
+    # dist to wall vs velocity
+    # ax = plt.hexbin(trajectory_s.data.dist_to_wall, trajectory_s.data.velocity_magn, cmap=plt.cm.RdBu, vmax=150) ; plt.colorbar(ax)
+    # ax = plt.hexbin(trajectory_e.data.dist_to_wall, trajectory_e.data.velocity_magn, cmap=plt.cm.RdBu) ; plt.colorbar(ax)
 
     def plot_position_heatmaps(self):
         import scripts.plotting_sorcery
@@ -161,13 +164,13 @@ class Trajectory():
     def plot_heading_compass(self):
         raise NotImplementedError
 
-    def plot_3Dtrajectory(self, trajectory_i=None, plume=False):
+    def plot_3Dtrajectory(self, trajectory_i=None, highlight_inside_plume=False, show_plume=False):
         if trajectory_i is None:
             trajectory_i = self.get_trajectory_numbers().min()
 
         ax = pwt.plot_windtunnel()
-        if plume:
-            pwt.draw_plume(ax, self.experiment.plume)
+        if show_plume:
+            pwt.draw_plume(self.experiment.plume, self.experiment.windtunnel.heater, ax=ax)
 
         if type(trajectory_i) is np.int64 or int:
             selected_trajectory_df = self.get_trajectory_i_df(trajectory_i)  # get data
@@ -346,8 +349,9 @@ class Trajectory():
 
 class Agent_Trajectory(Trajectory):
     def __init__(self, experiment):
-        self.is_agent = "Agent"
-        self.experiment = experiment
+        super(Agent_Trajectory, self).__init__(experiment)
+        # self.is_agent = "Agent"
+        # self.experiment = experiment
 
     def visualize_forces(self):
         """like plot_vector_cloud, but with all of the kinematics at once"""
@@ -365,12 +369,16 @@ class Agent_Trajectory(Trajectory):
 
 
 class Experimental_Trajectory(Trajectory):
-    def __init__(self):
-        self.is_agent = "Mosquito"
-        self.agent_obj = None
+    def __init__(self, experiment):
+        super(Experimental_Trajectory, self).__init__(experiment)
+        # self.is_agent = "Mosquito"
+        # self.agent_obj = None
+
 
     def load_experiments(self, experimental_condition):
-        directory = i_o.get_directory(experimental_condition)
+        dir_labels = {
+            'Control': 'CONTROL_EXP_PATH'}  # TODO: add rest of directories when we get other experimental dirs
+        directory = i_o.get_directory(dir_labels[experimental_condition])
 
         self.agent_obj = None
 
