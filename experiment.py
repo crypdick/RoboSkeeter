@@ -6,9 +6,13 @@ import trajectory
 
 
 class Base_Experiment(object):
-    def __init__(self, **experiment_kwargs):
-        for key in experiment_kwargs:
-            setattr(self, key, experiment_kwargs[key])
+    def __init__(self, **kwargs):
+        self.condition = kwargs.get("condition")
+        self.time_max = kwargs.get("time_max")
+        self.bounded = kwargs.get('bounded', 6.)
+
+        for key in kwargs:
+            setattr(self, key, kwargs[key])
 
         self.windtunnel = environment.Windtunnel(self.condition)
         self.plume = environment.Plume(self)
@@ -16,7 +20,7 @@ class Base_Experiment(object):
 
 class Simulation(Base_Experiment):
     def __init__(self, agent_kwargs, **experiment_kwargs):
-        Base_Experiment.__init__(self, **experiment_kwargs)
+        super(Simulation, self).__init__(**experiment_kwargs)
 
         self.trajectories = trajectory.Agent_Trajectory(self)
         self.skeeter = agent.Agent(self, agent_kwargs)
@@ -27,8 +31,7 @@ class Simulation(Base_Experiment):
 
 def run_simulation(agent_kwargs, experiment_kwargs):
     if experiment_kwargs is None:
-        experiment_kwargs = {'initial_position_selection': 'downwind_high',
-                             'condition': 'Left',  # {'Left', 'Right', 'Control'}
+        experiment_kwargs = {'condition': 'Left',  # {'Left', 'Right', 'Control'}
                              'time_max': 6.,
                              'bounded': True,
                              'number_trajectories': 3
@@ -37,10 +40,11 @@ def run_simulation(agent_kwargs, experiment_kwargs):
         agent_kwargs = {'randomF_strength': 6.55599224e-06,
                         'stimF_strength': 0.,
                         'damping_coeff': 3.63674551e-07,
-                        'collision_type': 'crash',
+                        'collision_type': 'part_elastic',
                         'crash_coeff': 0.0,  # 0.8
                         'stimulus_memory': 100,
-                        'decision_policy': 'surge_only'
+                        'decision_policy': 'surge_only',
+                        'initial_position_selection': 'downwind_high'
                         }
 
     simulation = Simulation(agent_kwargs, **experiment_kwargs)
@@ -56,24 +60,20 @@ def run_simulation(agent_kwargs, experiment_kwargs):
 
 class Experiment(Base_Experiment):
     def __init__(self, experimental_condition):
-        Base_Experiment.__init__(self, condition=experimental_condition)
-        # self.condition = experimental_condition
-        # self.windtunnel = environment.Windtunnel(self.condition)
-        # self.plume = environment.Plume(self)
-        self.trajectories = trajectory.Experimental_Trajectory()
+        super(Experiment, self).__init__(condition=experimental_condition)
 
+        self.trajectories = trajectory.Experimental_Trajectory(self)
         self.trajectories.load_experiments(experimental_condition=self.condition)
 
 
-def get_experiment():
-    condition = 'Control'
+def get_experiment(condition='Control'):
     experiment = Experiment(condition)
     trajectory, windtunnel, plume = experiment.trajectories, experiment.windtunnel, experiment.plume
     return experiment, trajectory, windtunnel, plume
 
 
-simulation, trajectory_s, windtunnel, plume, agent = run_simulation(None, None)
-# experiment, trajectory_e, windtunnel, plume = get_experiment()
+# simulation, trajectory_s, windtunnel, plume, agent = run_simulation(None, None)
+experiment, trajectory_e, windtunnel, plume = get_experiment(condition='Control')
 
 
 
