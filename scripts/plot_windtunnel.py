@@ -66,7 +66,13 @@ def draw_rectangular_prism(ax, x_min, x_max, y_min, y_max, z_min, z_max):
 
 
 def draw_trajectory(ax, trajectory, **kwargs):
+    """TODO: red inside windtunnel"""
+    highlight = kwargs.get("highlight_inside_plume")
     ax.plot(trajectory.position_x, trajectory.position_y, trajectory.position_z)
+    if highlight:
+        inside_pts = trajectory.loc[trajectory['inPlume'] == True]
+        ax.scatter(inside_pts.position_x, inside_pts.position_y, inside_pts.position_z, c='r')
+
 
 
 def draw_plume(plume, heater, ax=None):
@@ -74,6 +80,10 @@ def draw_plume(plume, heater, ax=None):
 
     # xy is actually the yz plane
     # v index: [u'x_position', u'z_position', u'small_radius', u'y_position']
+    if plume.condition in 'controlControlCONTROL':
+        print "No plume in ", plume.condition
+        return
+
     if ax is None:
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
@@ -82,7 +92,8 @@ def draw_plume(plume, heater, ax=None):
         draw_heaters(ax, heater)
 
     ells = [
-        Ellipse(xy=(v[3], v[1]), width=v[2], height=v[2] * 3, angle=0, linestyle='dotted', facecolor='none', alpha=0.05,
+        Ellipse(xy=(v[3], v[1]), width=2 * v[2], height=2 * v[2] * 3, angle=0, linestyle='dotted', facecolor='none',
+                alpha=0.05,
                 edgecolor='r')
         for i, v in plume.data.iterrows()]
 
@@ -116,6 +127,7 @@ def plot_3D_cylinder(ax, radius, height, elevation=0, resolution=200, color='r',
 def plot_windtunnel(heater=None, title=''):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
+    ax.set_aspect('equal')
     set_windtunnel_bounds(ax)
     draw_windtunnel_border(ax)
     ax.set_title(title, fontsize=20)  # FIXME parent functions aren't passing titles yet

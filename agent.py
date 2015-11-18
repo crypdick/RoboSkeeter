@@ -350,7 +350,7 @@ class Agent():
 
         V['tsi'] = np.arange(self.max_bins)
         V['times'] = np.linspace(0, self.time_max, self.max_bins)
-        V['inPlume'] = np.full(self.max_bins, -1, dtype=np.uint8)
+        V['inPlume'] = np.zeros(self.max_bins, dtype=bool)
         V['plume_interaction'] = np.array([None] * self.max_bins)
 
         return V

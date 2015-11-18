@@ -1,8 +1,9 @@
-__author__ = 'richard'
 from __future__ import print_function, division
 
 import numpy as np
 from sklearn.neighbors import KernelDensity
+
+__author__ = 'richard'
 
 
 def norm(vectors, shape='1darray'):
@@ -181,14 +182,12 @@ def distance_from_wall(positions, wall_bounds):
     :return: 1D array of distances from wall
     """
 
-    print
-    "elksef"
-    above_x = positions['positions_x'] - wall_bounds[0]
-    below_x = wall_bounds[1] - positions['positions_x']
-    above_y = positions['positions_y'] - wall_bounds[2]
-    below_y = wall_bounds[3] - positions['positions_y']
-    above_z = positions['positions_z'] - wall_bounds[4]
-    below_z = wall_bounds[5] - positions['positions_z']
+    above_x = positions['position_x'] - wall_bounds[0]
+    below_x = wall_bounds[1] - positions['position_x']
+    above_y = positions['position_y'] - wall_bounds[2]
+    below_y = wall_bounds[3] - positions['position_y']
+    above_z = positions['position_z'] - wall_bounds[4]
+    below_z = wall_bounds[5] - positions['position_z']
 
     dist_all_walls = np.array([above_x, below_x,
                                above_y, below_y,

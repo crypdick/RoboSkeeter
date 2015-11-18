@@ -118,6 +118,7 @@ class Plume():
         self.walls = experiment.windtunnel.walls
 
         self.data = self.load_plume_data()
+        self.resolution = abs(self.data.x_position.diff()[1])
 
     def load_plume_data(self):
         col_names = ['x_position', 'z_position', 'small_radius']
@@ -137,23 +138,31 @@ class Plume():
 
     def in_plume(self, position):
         in_bounds, _ = self.walls.in_bounds(position)
+        x, y, z = position
+
         if in_bounds is False or self.condition in 'controlControlCONTROL':
-            # print("WARNING: sniffing outside of windtunnel bounds") #FIXME shouldn't be getting tripped
-            inplume = 0
+            print("WARNING: sniffing outside of windtunnel bounds")  # FIXME shouldn't be getting tripped
+            inPlume = False
+        elif np.abs(self.data['x_position'] - x).min() > self.resolution:
+            # too far from the plume in the upwind/downwind direction
+            inPlume = False
         else:
-            x, y, z = position
             plume_plane = self._get_nearest_plume_plane(x)
+            minor_axis = plume_plane.small_radius
+            minor_ax_major_ax_ratio = 3
+            major_axis = minor_axis * minor_ax_major_ax_ratio
 
-            # divide by 3 to transform the ellipsoid space to a circle
-            distance_from_center = ((y - plume_plane.y_position) ** 2 + (
-            1 / 3 * (z - plume_plane.z_position)) ** 2) ** 0.5
+            # implementation of http://math.stackexchange.com/a/76463/291217
 
-            if distance_from_center <= plume_plane.small_radius:
-                inplume = 1
+            value = (((y - plume_plane.y_position) ** 2) / minor_axis ** 2) + \
+                    (((z - plume_plane.z_position) ** 2) / major_axis ** 2)
+
+            if value <= 1:
+                inPlume = True
             else:
-                inplume = 0
+                inPlume = False
 
-        return inplume
+        return inPlume
 
     def _get_nearest_plume_plane(self, x_position):
         """given x position, find nearest plan"""

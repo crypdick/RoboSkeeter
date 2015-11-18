@@ -174,7 +174,8 @@ class Trajectory(object):
 
         if type(trajectory_i) is np.int64 or int:
             selected_trajectory_df = self.get_trajectory_i_df(trajectory_i)  # get data
-            plot_kwargs = {'title': "{type} trajectory #{N}".format(type=self.is_agent, N=trajectory_i)}
+            plot_kwargs = {'title': "{type} trajectory #{N}".format(type=self.is_agent, N=trajectory_i),
+                           'highlight_inside_plume': highlight_inside_plume}
             pwt.draw_trajectory(ax, selected_trajectory_df, **plot_kwargs)
 
         elif trajectory_i is "ALL":
