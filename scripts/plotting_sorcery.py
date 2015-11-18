@@ -42,14 +42,12 @@ FIG_FORMAT = ".png"
 
 def get_agent_info(agent_obj):
     if agent_obj is not None:
-        titleappend = " cond{condition}|damp{damp}|rF{rf}|wF{wtf}|stmF{stim}|N{total_trajectories}|K{K}|m{m}".format(
+        titleappend = " cond{condition}|damp{damp}|rF{rf}|stmF{stim}|N{total_trajectories}|m{m}".format(
             condition=agent_obj.experiment.condition,
             damp=agent_obj.damping_coeff,
             rf=agent_obj.randomF_strength,
-            wtf=agent_obj.windF_strength,
             stim=agent_obj.stimF_strength,
             total_trajectories=agent_obj.total_trajectories,
-            K=agent_obj.spring_const,
             m=agent_obj.mass
         )
         path = MODEL_FIG_PATH
@@ -107,11 +105,11 @@ def plot_position_heatmaps(trajectories_obj):
 
     # reduce dimensionality for the different plots
     probs_xy = np.sum(probs, axis=0)
-    probs_xy = np.ma.masked_array(probs_xy, probs_xy < 1e-7)
+    # probs_xy = np.ma.masked_array(probs_xy, probs_xy < 1e-7)
     probs_yz = np.sum(probs, axis=2)
-    probs_yz = np.ma.masked_array(probs_yz, probs_yz < 1e-7)
+    # probs_yz = np.ma.masked_array(probs_yz), probs_yz < 1e-7)
     probs_xz = np.sum(probs, axis=1)
-    probs_xz = np.ma.masked_array(probs_xz, probs_xz < 1e-7)
+    # probs_xz = np.ma.masked_array(probs_xz), probs_xz < 1e-7)
     # max_probability = np.max([np.max(probs_xy), np.max(probs_xz), np.max(probs_yz)])
     max_probability = np.max(probs_xy)
 
@@ -123,7 +121,7 @@ def plot_position_heatmaps(trajectories_obj):
 
     #### XY
     fig0, ax0 = plt.subplots(1)
-    heatmap_xy = ax0.pcolormesh(x_bins, y_bins, probs_xy, cmap=CM, vmin=0., vmax=max_probability)
+    heatmap_xy = ax0.pcolormesh(x_bins, y_bins, probs_xy, cmap=CM, vmin=0.)  # , vmax=max_probability)
     ax0.set_aspect('equal')
     ax0.invert_yaxis()  # hack to match y axis convention
     # overwrite previous plot schwag
@@ -138,6 +136,7 @@ def plot_position_heatmaps(trajectories_obj):
     cbar0 = plt.colorbar(heatmap_xy, cax=color_axis)
     cbar0.ax.set_ylabel(PROBABILITY_LABEL)
     plt.savefig(os.path.join(path, title1 + fileappend + FIG_FORMAT))
+
 
     #### XZ
     fig1, ax1 = plt.subplots(1)
@@ -172,6 +171,8 @@ def plot_position_heatmaps(trajectories_obj):
     cbar2 = plt.colorbar(heatmap_yz, cax=color_axis)
     cbar2.ax.set_ylabel(PROBABILITY_LABEL)
     plt.savefig(os.path.join(path, title3 + fileappend + FIG_FORMAT))
+
+    plt.show()
 
 
     # if windtunnel_object.test_condition is not None:
@@ -337,7 +338,8 @@ def plot_kinematic_histograms(
     axs[3].set_title("Velocity Distributions")
     axs[3].set_xlabel("Velocity ($m/s$)", fontsize=12)
     axs[3].set_ylabel(PROBABILITY_LABEL, fontsize=12)
-    axs[3].legend(fontsize=14)
+    lg = axs[3].legend(fontsize=14)
+    lg.draw_frame(False)
 
     ## Acceleration distributions
     #    accel_all = np.concatenate(accels, axis=0)
@@ -383,7 +385,8 @@ def plot_kinematic_histograms(
     axs[4].set_title("Acceleration Distribution")
     axs[4].set_xlabel("Acceleration ($m^s/s$)")
     axs[4].set_ylabel(PROBABILITY_LABEL)
-    axs[4].legend(fontsize=14)
+    lg = axs[4].legend(fontsize=14)
+    lg.draw_frame(False)
 
     ## Curvatures
 
@@ -397,7 +400,8 @@ def plot_kinematic_histograms(
     axs[5].set_title("Curvature Distribution")
     axs[5].set_xlabel("Curvature")
     axs[5].set_ylabel(PROBABILITY_LABEL)
-    axs[5].legend(fontsize=14)
+    lg = axs[5].legend(fontsize=14)
+    lg.draw_frame(False)
 
     ####################
 
