@@ -31,19 +31,19 @@ class Simulation(Base_Experiment):
 
 def run_simulation(agent_kwargs, experiment_kwargs):
     if experiment_kwargs is None:
-        experiment_kwargs = {'condition': 'Left',  # {'Left', 'Right', 'Control'}
+        experiment_kwargs = {'condition': 'Right',  # {'Left', 'Right', 'Control'}
                              'time_max': 6.,
                              'bounded': True,
-                             'number_trajectories': 3
+                             'number_trajectories': 1
                              }
     if agent_kwargs is None:
         agent_kwargs = {'randomF_strength': 6.55599224e-06,
-                        'stimF_strength': 0.,
+                        'stimF_strength': 5.0e-06,
                         'damping_coeff': 3.63674551e-07,
                         'collision_type': 'part_elastic',
-                        'crash_coeff': 0.0,  # 0.8
+                        'restitution_coeff': 0.1,  # 0.8
                         'stimulus_memory': 100,
-                        'decision_policy': 'surge_only',
+                        'decision_policy': 'cast_only',
                         'initial_position_selection': 'downwind_high'
                         }
 
@@ -72,8 +72,8 @@ def get_experiment(condition='Control'):
     return experiment, trajectory, windtunnel, plume
 
 
-# simulation, trajectory_s, windtunnel, plume, agent = run_simulation(None, None)
-experiment, trajectory_e, windtunnel, plume = get_experiment(condition='Control')
+simulation, trajectory_s, windtunnel, plume, agent = run_simulation(None, None)
+# experiment, trajectory_e, windtunnel, plume = get_experiment(condition='Control')
 
 
 
