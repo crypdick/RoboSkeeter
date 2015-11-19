@@ -92,7 +92,12 @@ def draw_plume(plume, heater, ax=None):
         draw_heaters(ax, heater)
 
     ells = [
-        Ellipse(xy=(v[3], v[1]), width=2 * v[2], height=2 * v[2] * 3, angle=0, linestyle='dotted', facecolor='none',
+        Ellipse(xy=(v[3], v[1]),
+                width=2 * v[2],
+                height=2 * v[2] * 3,
+                angle=0,
+                # linestyle='dotted',
+                facecolor='none',
                 alpha=0.05,
                 edgecolor='r')
         for i, v in plume.data.iterrows()]
