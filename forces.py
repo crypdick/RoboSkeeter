@@ -45,9 +45,7 @@ class Forces():
 
     def stimF(self, args):
         """given force direction and strength, return a force vector
-        Args:
-        experience, tsi, tsi_last_stighted
-        TODO: if less than last_sighted, keep on  
+        decision policies: 'cast_only', 'surge_only', 'cast+surge'
         """
         if self.decision_policy is 'cast_only':
             force = self._stimF_cast_only(*args)
@@ -56,34 +54,56 @@ class Forces():
         elif self.decision_policy is 'cast+surge':
             raise NotImplementedError
         else:
-            print "stimF error", kind
+            print "stimF error", self.decision_policy
             force = np.array([0., 0., 0.])
 
         return force
 
-    def _stimF_cast_only(self, tsi, tsi_plume_last_sighted, plume_interaction_history):
-        memory = plume_interaction_history[tsi - self.stimulus_memory:tsi]
-        if tsi - tsi_last_sighted >= self.stimulus_memory:  # no stimulus recently
-            force = np.array([0., 0., 0.])
-        else:
-            memory = np.fliplr([memory])[0]
-            for experience in nd.iter(memory):
-                if experience is 'outside':
-                    pass
-                if experience is 'inside':
-                    pass
-        if experience is 'outside':
-            return np.array
-        elif experience in 'staying':
-            return np.array([self.stimF_strength, 0., 0.])  # surge while in plume
-        elif "Exit left" in experience:
-            return np.array([0., self.stimF_strength, 0.])
-        elif "Exit right" in experience:
-            return np.array([0., -self.stimF_strength, 0.])
+    def _stimF_cast_only(self, tsi, plume_interaction_history, last_triggered):
+        """
+        :param tsi:
+        :param tsi_plume_last_sighted:
+        :param plume_interaction_history: timestep at w hich
+        :return:
+        """
+        empty = np.array([0., 0., 0.])
+        exit_ago = abs(tsi - last_triggered['exit'])
+        if tsi == 0:
+            return empty
+        elif exit_ago <= self.stimulus_memory:  # stimulus encountered recently
+            # print "we have a memory!"
+            # print "currently {tsi}, last {last}, difference {diff}".format(tsi=tsi, last=last_triggered['exit'], diff=exit_ago)
+            experience = plume_interaction_history[tsi - exit_ago]
+            # if experience in 'outside':
+            #     pass # keep going back
+            # elif experience is 'inside':
+            #     pass # keep going back
+            if experience == 'Exit left':
+                return np.array([0., self.stimF_strength, 0.])  # cast right
+            elif experience == 'Exit right':
+                return np.array([0., -self.stimF_strength, 0.])  # cast left
+            else:
+                # print "valueerror! experience", experience, "tsi", tsi
+                # print experience == 'Exit right', experience
+                raise ValueError('no such experience known: {}'.format(experience))
+                # except ValueError:
+                #     print "tsi", tsi, "memory", memory[:tsi], plume_interaction_history
+                # except TypeError:
+                #     print "memory type", memory, type(memory)
 
-        return force
 
-    def _stimF_surge_only(self, tsi, tsi_plume_last_sighted, plume_interaction_history):
+        else:  # no recent memory of stimulus
+            current_experience = plume_interaction_history[tsi]
+            if current_experience in ['outside', 'inside']:
+                force = empty
+            else:
+                print "plume_interaction_history", plume_interaction_history, plume_interaction_history[:tsi]
+                print "current_experience", current_experience
+                raise ValueError("no such experience {} at tsi {}".format(current_experience, tsi))
+
+            return force
+
+    def _stimF_surge_only(self, tsi, plume_interaction_history, _):
         if plume_interaction_history[tsi] is 'inside':
             force = np.array([self.stimF_strength, 0., 0.])
         else:
