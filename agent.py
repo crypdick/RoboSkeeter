@@ -59,7 +59,8 @@ class Agent():
     """
 
     def __init__(self, experiment, agent_kwargs):
-        """generate the agent"""
+        """generate the agent
+        TODO: add behavior class"""
         # defaults
         self.mass = 2.88e-6  # avg. mass of our colony (kg) =2.88 mg,
         self.time_max = 15.
@@ -268,7 +269,6 @@ class Agent():
         xpos, ypos, zpos = candidate_pos
         xvelo, yvelo, zvelo = candidate_velo
         teleport_distance = 0.005
-        restitution_coeff = 0.1
         crash = False
 
         # x dim
@@ -277,7 +277,7 @@ class Agent():
             if self.collision_type == 'elastic':
                 xvelo *= -1.
             elif self.collision_type == 'part_elastic':
-                xvelo *= -restitution_coeff
+                xvelo *= -self.restitution_coeff
             elif self.collision_type == 'crash':
                 # xvelo *= -1.
                 crash = True
@@ -286,7 +286,7 @@ class Agent():
             if self.collision_type == 'elastic':
                 xvelo *= -1.
             elif self.collision_type == 'part_elastic':
-                xvelo *= -restitution_coeff
+                xvelo *= -self.restitution_coeff
             elif self.collision_type == 'crash':
                 # xvelo *= -1.
                 crash = True
@@ -297,7 +297,7 @@ class Agent():
             if self.collision_type == 'elastic':
                 yvelo *= -1.
             elif self.collision_type == 'part_elastic':
-                yvelo *= -restitution_coeff
+                yvelo *= -self.restitution_coeff
             elif self.collision_type == "crash":
                 # yvelo *= -1.
                 crash = True
@@ -306,7 +306,7 @@ class Agent():
             if self.collision_type == 'elastic':
                 yvelo *= -1.
             if self.collision_type == 'part_elastic':
-                yvelo *= -restitution_coeff
+                yvelo *= -self.restitution_coeff
             elif self.collision_type == 'crash':
                 # yvelo *= -1.
                 crash = True
@@ -317,7 +317,7 @@ class Agent():
             if self.collision_type == 'elastic':
                 zvelo *= -1.
             if self.collision_type == 'part_elastic':
-                zvelo *= -restitution_coeff
+                zvelo *= -self.restitution_coeff
             elif self.collision_type == "crash":
                 # zvelo *= -1.
                 crash = True
@@ -326,7 +326,7 @@ class Agent():
             if self.collision_type == 'elastic':
                 zvelo *= -1.
             if self.collision_type == 'part_elastic':
-                zvelo *= -restitution_coeff
+                zvelo *= -self.restitution_coeff
             elif self.collision_type == 'crash':
                 # zvelo *= -1.
                 crash = True
@@ -416,6 +416,10 @@ class Agent():
 
         return fixed_dct
 
+
+class Behavior():
+    def __init__(self):
+        pass  # TODO
     
    
 #    trajectories.describe(plot_kwargs = {'trajectories':False, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_scatter':True, 'force_violin':True})
