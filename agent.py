@@ -152,16 +152,16 @@ class Agent():
 
         position[0], velocity[0] = self._set_init_pos_and_velo()
 
-        tsi_plume_last_sighted = -10000000  # a long time ago
+        triggered_tsi = {'sighted': -10000000, 'exit': -10000000}  # a long time ago
 
         for tsi in V['tsi']:
             inPlume[tsi] = self.plume_obj.in_plume(position[tsi])
 
-            plume_interaction[tsi] = self._plume_interaction(tsi, inPlume, velocity[tsi][1])
-            if plume_interaction[tsi] is 'inside':
-                tsi_plume_last_sighted = tsi
+            plume_interaction[tsi], triggered_tsi = self._plume_interaction(tsi, inPlume, velocity[tsi][1],
+                                                                            triggered_tsi)
+
             stimF[tsi], randomF[tsi], totalF[tsi] = \
-                self._calc_forces(tsi, velocity[tsi], plume_interaction, tsi_plume_last_sighted)
+                self._calc_forces(tsi, velocity[tsi], plume_interaction, triggered_tsi)
 
 
             # calculate current acceleration
@@ -206,7 +206,7 @@ class Agent():
         # Calculate driving forces at this timestep
         ################################################
         randomF = self.forces.randomF(self.randomF_strength)
-        stimF = self.forces.stimF((tsi, tsi_plume_last_sighted, plume_interaction_history))
+        stimF = self.forces.stimF((tsi, plume_interaction_history, tsi_plume_last_sighted))
 
         ################################################
         # calculate total force
@@ -230,7 +230,7 @@ class Agent():
         
         return V
 
-    def _plume_interaction(self, tsi, inPlume, velocity_y_now):
+    def _plume_interaction(self, tsi, inPlume, velocity_y_now, last_triggered):
         """
         out2out - searching
          (or orienting, but then this func shouldn't be called)
@@ -241,26 +241,36 @@ class Agent():
             Right_plume Exit left, Right_plume Exit right}
         TODO: export to trajectory class
         """
-        current_state, past_state = inPlume[tsi], inPlume[tsi-1]
+        current_inPlume, past_inPlume = inPlume[tsi], inPlume[tsi - 1]
+
         if tsi == 0:  # always start searching
             state = 'outside'
-        elif current_state == 0 and past_state == 0:
+        elif current_inPlume == False and past_inPlume == False:
             # we are not in plume and weren't in last ts
             state = 'outside'
-        elif current_state == 1 and past_state == 0:
+        elif current_inPlume == True and past_inPlume == False:
             # entering plume
             state = 'inside'
-        elif current_state == 1 and past_state == 1:
+        elif current_inPlume == 1 and past_inPlume == True:
             # we stayed in the plume
             state = 'inside'
-        elif current_state == 0 and past_state == 1:
+        elif current_inPlume == False and past_inPlume == True:
             # exiting the plume
             if velocity_y_now <= 0:
                 state = 'Exit left'
             else:
                 state = 'Exit right'
+        else:
+            raise Exception("This error shouldn't ever run")
 
-        return state
+        if state is 'outside':
+            pass
+        elif state is 'inside':
+            last_triggered['sighted'] = tsi
+        elif 'Exit' in state:
+            last_triggered['exit'] = tsi
+
+        return state, last_triggered
 
 
     def _collide_with_wall(self, candidate_pos, candidate_velo):
@@ -281,6 +291,8 @@ class Agent():
             elif self.collision_type == 'crash':
                 # xvelo *= -1.
                 crash = True
+            else:
+                raise ValueError("unknown collision type {}".format(self.collision_type))
         if xpos > walls.upwind:  # reached far (upwind) wall (end)
             xpos = walls.upwind - teleport_distance  # teleport back inside
             if self.collision_type == 'elastic':
