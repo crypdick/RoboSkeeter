@@ -152,7 +152,7 @@ class Agent():
 
         position[0], velocity[0] = self._set_init_pos_and_velo()
 
-        triggered_tsi = {'sighted': -10000000, 'exit': -10000000}  # a long time ago
+        triggered_tsi = {'stimulus': -10000000, 'exit': -10000000}  # a long time ago
 
         for tsi in V['tsi']:
             inPlume[tsi] = self.plume_obj.in_plume(position[tsi])
@@ -201,12 +201,12 @@ class Agent():
 
         return V
 
-    def _calc_forces(self, tsi, velocity_now, plume_interaction_history, tsi_plume_last_sighted):
+    def _calc_forces(self, tsi, velocity_now, plume_interaction_history, triggered_tsi):
         ################################################
         # Calculate driving forces at this timestep
         ################################################
         randomF = self.forces.randomF(self.randomF_strength)
-        stimF = self.forces.stimF((tsi, plume_interaction_history, tsi_plume_last_sighted))
+        stimF = self.forces.stimF((tsi, plume_interaction_history, triggered_tsi))
 
         ################################################
         # calculate total force
@@ -266,7 +266,7 @@ class Agent():
         if state is 'outside':
             pass
         elif state is 'inside':
-            last_triggered['sighted'] = tsi
+            last_triggered['stimulus'] = tsi
         elif 'Exit' in state:
             last_triggered['exit'] = tsi
 
