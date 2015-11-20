@@ -32,15 +32,17 @@ def draw_windtunnel_border(ax):
     plt.draw()
 
 
-def draw_heaters(ax, heater):
-    if heater.experimental_condition in 'controlControlCONTROL':
-        pass
+def draw_heaters(ax, windtunnel):
+    draw_heater(ax, windtunnel.heater_l)
+    draw_heater(ax, windtunnel.heater_r)
 
+
+def draw_heater(ax, heater):
     x_center, y_center = heater.x_position, heater.y_position
     elevation, height = heater.zmin, heater.zmax - heater.zmin
     radius = heater.diam / 2
     resolution = 101
-    color = 'r'
+    color = heater.color
 
     plot_3D_cylinder(ax, radius, height, elevation=elevation, resolution=resolution, color=color, x_center=x_center,
                      y_center=y_center)
@@ -65,17 +67,7 @@ def draw_rectangular_prism(ax, x_min, x_max, y_min, y_max, z_min, z_max):
     art3d.pathpatch_2d_to_3d(ceiling, z=z_max, zdir="z")
 
 
-def draw_trajectory(ax, trajectory, **kwargs):
-    """TODO: red inside windtunnel"""
-    highlight = kwargs.get("highlight_inside_plume")
-    ax.plot(trajectory.position_x, trajectory.position_y, trajectory.position_z)
-    if highlight:
-        inside_pts = trajectory.loc[trajectory['inPlume'] == True]
-        ax.scatter(inside_pts.position_x, inside_pts.position_y, inside_pts.position_z, c='r')
-
-
-
-def draw_plume(plume, heater, ax=None):
+def draw_plume(plume, windtunnel, ax=None):
     # FIXME: switch to http://matplotlib.org/api/collections_api.html#matplotlib.collections.EllipseCollection
 
     # xy is actually the yz plane
@@ -89,7 +81,7 @@ def draw_plume(plume, heater, ax=None):
         ax = fig.add_subplot(111, projection='3d')
         set_windtunnel_bounds(ax)
         draw_windtunnel_border(ax)
-        draw_heaters(ax, heater)
+        draw_heaters(ax, windtunnel)
 
     ells = [
         Ellipse(xy=(v[3], v[1]),
@@ -129,17 +121,29 @@ def plot_3D_cylinder(ax, radius, height, elevation=0, resolution=200, color='r',
     art3d.pathpatch_2d_to_3d(ceiling, z=elevation + height, zdir="z")
 
 
-def plot_windtunnel(heater=None, title=''):
+def plot_windtunnel(windtunnel, title=''):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     ax.set_aspect('equal')
+    # ax.axis('off')
     set_windtunnel_bounds(ax)
     draw_windtunnel_border(ax)
     ax.set_title(title, fontsize=20)  # FIXME parent functions aren't passing titles yet
-    if heater is not None:
-        draw_heaters(ax, heater)
+    draw_heaters(ax, windtunnel)
 
-    return ax
+    return fig, ax
+
+
+def draw_trajectory(ax, trajectory, **kwargs):
+    """TODO: red inside windtunnel"""
+    highlight = kwargs.get("highlight_inside_plume")
+    ax.plot(trajectory.position_x, trajectory.position_y, trajectory.position_z)
+    if highlight:
+        inside_pts = trajectory.loc[trajectory['inPlume'] == True]
+        ax.scatter(inside_pts.position_x, inside_pts.position_y, inside_pts.position_z, c='r')
+
+
+
 
 
 if __name__ is '__main__':
