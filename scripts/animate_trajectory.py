@@ -3,17 +3,20 @@ from matplotlib import pyplot as plt
 
 import scripts.plot_windtunnel as pwt
 
+sim_or_exp = 'simulation'
 trajectory_i = None
 highlight_inside_plume = False
-show_plume = False
+show_plume = True
+
+experiment = eval(sim_or_exp)
 
 if trajectory_i is None:
     trajectory_i = trajectory_s.get_trajectory_numbers().min()
 
-fig, ax = pwt.plot_windtunnel()
-# ax.axis('off')
+fig, ax = pwt.plot_windtunnel(experiment.windtunnel)
+ax.axis('off')
 if show_plume:
-    pwt.draw_plume(experiment.plume, experiment.windtunnel.heater, ax=ax)
+    pwt.draw_plume(experiment, ax=ax)
 
 p = trajectory_s.data[['position_x', 'position_y', 'position_z']].values
 x_t = p.reshape((trajectory_s.data.trajectory_num.unique().__len__(), len(p), 3))
