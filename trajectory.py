@@ -172,18 +172,22 @@ class Trajectory(object):
         if show_plume:
             pwt.draw_plume(self.experiment, ax=ax)  # FIXME just experiment
 
-        if type(trajectory_i) is np.int64 or int:
+        if trajectory_i is "ALL":
+            index = self.get_trajectory_numbers()
+            for i in index:
+                selected_trajectory_df = self.get_trajectory_i_df(i)
+                plot_kwargs = {'title': "{type} trajectory #{N}".format(type=self.is_agent, N=i),
+                               'highlight_inside_plume': highlight_inside_plume}
+                pwt.draw_trajectory(ax, selected_trajectory_df)
+        elif type(trajectory_i) is np.int64 or int:
             selected_trajectory_df = self.get_trajectory_i_df(trajectory_i)  # get data
             plot_kwargs = {'title': "{type} trajectory #{N}".format(type=self.is_agent, N=trajectory_i),
                            'highlight_inside_plume': highlight_inside_plume}
             pwt.draw_trajectory(ax, selected_trajectory_df, **plot_kwargs)
+        else:
+            raise TypeError("wrong kind of trajectory_i {}".format(type(trajectory_i)))
 
-        elif trajectory_i is "ALL":
-            index = self.data.trajectory_num.unique()
-            for i in index:
-                selected_trajectory_df = self.get_trajectory_i_df(i)
-                plot_kwargs = {'title': "{type} trajectory #{N}".format(type=self.is_agent, N=i)}
-                pwt.draw_trajectory(ax, selected_trajectory_df)
+
 
 
     def plot_sliced_hists(self):
@@ -305,7 +309,8 @@ class Trajectory(object):
             print token, extract_digits(token)
 
     def get_trajectory_i_df(self, index):
-        return self.data.loc[self.data.trajectory_num == index]
+        return self.data.loc[self.data.trajectory_num == int(index)]
+
 
     def _trim_df_endzones(self):
         return self.data.loc[(self.data['position_x'] > 0.05) & (self.data['position_x'] < 0.95)]
