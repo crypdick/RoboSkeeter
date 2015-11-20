@@ -3,11 +3,11 @@ __author__ = 'richard'
 import logging
 from datetime import datetime
 
-from scipy.optimize import basinhopping
 import numpy as np
+from scipy.optimize import basinhopping
 
-from scripts.pickle_experiments import load_mosquito_kde_data_dicts
 import experiment
+from scripts.pickle_experiments import load_mosquito_kde_data_dicts
 
 
 # wrapper func for agent 3D
@@ -25,23 +25,23 @@ def fly_wrapper(GUESS, *args):
     Guess: {}
     ##############################################################""".format(GUESS)
 
-    beta_guess, F_rand_guess = GUESS
+    restitution_guess = GUESS
     N_TRAJECTORIES, PLOTTER, (EXP_BINS, EXP_VALS) = args
 
-    experiment_kwargs = {'initial_position_selection': 'downwind_high',
-                         'condition': 'Control',  # {'Left', 'Right', 'Control'}
-                         'time_max': 15.,
+    experiment_kwargs = {'condition': 'Control',
+                         'time_max': 6.,
                          'bounded': True,
                          'number_trajectories': N_TRAJECTORIES
                          }
 
-    agent_kwargs = {'windF_strength': 0.,
-                    'randomF_strength': F_rand_guess,
+    agent_kwargs = {'randomF_strength': 6.55599224e-06,
                     'stimF_strength': 0.,
-                    'spring_const': 0,
-                    'damping_coeff': beta_guess,
-                    'collision_type': 'crash',
-                    'crash_coeff': 0.0
+                    'damping_coeff': 3.63674551e-07,
+                    'collision_type': 'part_elastic',
+                    'restitution_coeff': restitution_guess,
+                    'stimulus_memory': 100,
+                    'decision_policy': 'cast_only',  # 'surge_only', 'cast_only', 'cast+surge', 'ignore'
+                    'initial_position_selection': 'downwind_high'
                     }
 
     simulation, trajectory_s, windtunnel, plume, agent = experiment.run_simulation(agent_kwargs, experiment_kwargs)
