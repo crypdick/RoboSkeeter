@@ -68,6 +68,7 @@ class Forces():
         """
         empty = np.array([0., 0., 0.])
         exit_ago = abs(tsi - last_triggered['exit'])
+        cast_strength = self.stimF_strength / 10
         if tsi == 0:
             return empty
         elif exit_ago <= self.stimulus_memory:  # stimulus encountered recently
@@ -79,9 +80,9 @@ class Forces():
             # elif experience is 'inside':
             #     pass # keep going back
             if experience == 'Exit left':
-                return np.array([0., self.stimF_strength, 0.])  # cast right
+                return np.array([0., cast_strength, 0.])  # cast right
             elif experience == 'Exit right':
-                return np.array([0., -self.stimF_strength, 0.])  # cast left
+                return np.array([0., -cast_strength, 0.])  # cast left
             else:
                 # print "valueerror! experience", experience, "tsi", tsi
                 # print experience == 'Exit right', experience
