@@ -87,12 +87,10 @@ class Heater():
         colors = {False: 'black', True: 'red'}
         self.color = colors[self.is_on]
 
-        self.x_position, self.y_position = self._set_xy_coords()
-
-        if self.experimental_condition not in 'controlControlCONTROL':
-            self.zmin = 0.03800
-            self.zmax = 0.11340
-            self.diam = 0.00635
+        self.zmin = 0.03800
+        self.zmax = 0.11340
+        self.diam = 0.00635
+        (self.x_position, self.y_position) = self._set_xy_coords()
 
     def _set_xy_coords(self):
         x_coord = 0.864
@@ -106,7 +104,7 @@ class Heater():
         else:
             raise Exception('invalid location type specified')
 
-        return x_coord, y_coord
+        return (x_coord, y_coord)
 
 
 class Plume():
@@ -123,7 +121,10 @@ class Plume():
         self.walls = experiment.windtunnel.walls
 
         self.data = self.load_plume_data()
-        self.resolution = abs(self.data.x_position.diff()[1])
+        try:
+            self.resolution = abs(self.data.x_position.diff()[1])
+        except AttributeError:  # if no plume, can't take diff() of no data
+            self.resolution = None
 
     def load_plume_data(self):
         col_names = ['x_position', 'z_position', 'small_radius']
