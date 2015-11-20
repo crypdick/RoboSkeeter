@@ -21,11 +21,11 @@ class Windtunnel():
         self.boundary = self.walls.boundary
         self.experimental_condition = experimental_condition
 
-        self.heater = Heater(self.experimental_condition)
-        self.heater.turn_on()
+        self.heater_l = Heater("Left", self.experimental_condition)
+        self.heater_r = Heater("Right", self.experimental_condition)
 
     def show(self):
-        ax = pwt.plot_windtunnel(heater=self.heater)
+        ax = pwt.plot_windtunnel(self)
         return ax
 
 class Walls():
@@ -68,7 +68,7 @@ class Walls():
 
 
 class Heater():
-    def __init__(self, experimental_condition):
+    def __init__(self, side, experimental_condition):
         ''' given {left, right, none, custom coords} place heater in the windtunnel
 
         Args:
@@ -76,7 +76,17 @@ class Heater():
 
         returns [x,y, zmin, zmax, diam]
         '''
+        self.side = side
         self.experimental_condition = experimental_condition
+
+        if side == experimental_condition:
+            self.is_on = True
+        else:
+            self.is_on = False
+
+        colors = {False: 'black', True: 'red'}
+        self.color = colors[self.is_on]
+
         self.x_position, self.y_position = self._set_xy_coords()
 
         if self.experimental_condition not in 'controlControlCONTROL':
@@ -84,19 +94,14 @@ class Heater():
             self.zmax = 0.11340
             self.diam = 0.00635
 
-            self.is_on = False
-
-    def turn_on(self):
-        self.is_on = True
-
     def _set_xy_coords(self):
         x_coord = 0.864
 
-        if self.experimental_condition in "leftLeftLEFT":
+        if self.side in "leftLeftLEFT":
             y_coord = -0.0507
-        elif self.experimental_condition in "rightRightRIGHT":
+        elif self.side in "rightRightRIGHT":
             y_coord = 0.0507
-        elif self.experimental_condition in 'controlControlCONTROL':
+        elif self.side in 'controlControlCONTROL':
             x_coord, y_coord = None, None
         else:
             raise Exception('invalid location type specified')
@@ -113,8 +118,8 @@ class Plume():
 
     def __init__(self, experiment):
         # useful aliases
+        self.experiment = experiment
         self.condition = experiment.condition
-        self.heater = experiment.windtunnel.heater
         self.walls = experiment.windtunnel.walls
 
         self.data = self.load_plume_data()
@@ -127,12 +132,12 @@ class Plume():
             return None  # TODO: make plume that's 0 everywhere
         elif self.condition in 'lLleftLeft':
             df = pd.read_csv('data/experiments/plume_data/left_plume_bounds.csv', names=col_names)
+            df['y_position'] = self.experiment.windtunnel.heater_l.y_position
         elif self.condition in 'rightRight':
             df = pd.read_csv('data/experiments/plume_data/right_plume_bounds.csv', names=col_names)
+            df['y_position'] = self.experiment.windtunnel.heater_r.y_position
         else:
             raise Exception('problem with loading plume data {}'.format(self.condition))
-
-        df['y_position'] = self.heater.y_position
 
         return df
 
@@ -172,7 +177,7 @@ class Plume():
         return plume_plane
 
     def show(self):
-        pwt.draw_plume(self, self.heater)
+        pwt.draw_plume(self, self.experiment.windtunnel)
 
 
 if __name__ == '__main__':
