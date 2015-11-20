@@ -168,9 +168,9 @@ class Trajectory(object):
         if trajectory_i is None:
             trajectory_i = self.get_trajectory_numbers().min()
 
-        ax = pwt.plot_windtunnel()
+        fig, ax = pwt.plot_windtunnel(self.experiment.windtunnel)
         if show_plume:
-            pwt.draw_plume(self.experiment.plume, self.experiment.windtunnel.heater, ax=ax)
+            pwt.draw_plume(self.experiment, ax=ax)  # FIXME just experiment
 
         if type(trajectory_i) is np.int64 or int:
             selected_trajectory_df = self.get_trajectory_i_df(trajectory_i)  # get data
@@ -324,7 +324,7 @@ class Trajectory(object):
     # a.xs(0, level='trajectory_num')
 
     def get_trajectory_numbers(self):
-        return self.data.trajectory_num.unique()
+        return sorted(self.data.trajectory_num.unique())
 
     def plot_vector_cloud(self, kinematic='acceleration', i=None):
         import scripts.plotting_sorcery
