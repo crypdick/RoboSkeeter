@@ -67,13 +67,13 @@ def draw_rectangular_prism(ax, x_min, x_max, y_min, y_max, z_min, z_max):
     art3d.pathpatch_2d_to_3d(ceiling, z=z_max, zdir="z")
 
 
-def draw_plume(plume, windtunnel, ax=None):
+def draw_plume(experiment, ax=None):
     # FIXME: switch to http://matplotlib.org/api/collections_api.html#matplotlib.collections.EllipseCollection
 
     # xy is actually the yz plane
     # v index: [u'x_position', u'z_position', u'small_radius', u'y_position']
-    if plume.condition in 'controlControlCONTROL':
-        print "No plume in ", plume.condition
+    if experiment.condition in 'controlControlCONTROL':
+        print "No plume in ", experiment.condition
         return
 
     if ax is None:
@@ -81,7 +81,7 @@ def draw_plume(plume, windtunnel, ax=None):
         ax = fig.add_subplot(111, projection='3d')
         set_windtunnel_bounds(ax)
         draw_windtunnel_border(ax)
-        draw_heaters(ax, windtunnel)
+        draw_heaters(ax, experiment.windtunnel)
 
     ells = [
         Ellipse(xy=(v[3], v[1]),
@@ -92,9 +92,9 @@ def draw_plume(plume, windtunnel, ax=None):
                 facecolor='none',
                 alpha=0.05,
                 edgecolor='r')
-        for i, v in plume.data.iterrows()]
+        for i, v in experiment.plume.data.iterrows()]
 
-    for i, v in plume.data['x_position'].iteritems():
+    for i, v in experiment.plume.data['x_position'].iteritems():
         ell = ells[i]
         ax.add_patch(ell)
         art3d.patch_2d_to_3d(ell, z=v, zdir="x")
