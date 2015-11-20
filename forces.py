@@ -53,13 +53,15 @@ class Forces():
             force = self._stimF_surge_only(*args)
         elif self.decision_policy is 'cast+surge':
             raise NotImplementedError
+        elif self.decision_policy is 'ignore':
+            force = np.array([0., 0., 0.])
         else:
             print "stimF error", self.decision_policy
             force = np.array([0., 0., 0.])
 
         return force
 
-    def _stimF_cast_only(self, tsi, plume_interaction_history, last_triggered):
+    def _stimF_cast_only(self, tsi, plume_interaction_history, triggered_tsi):
         """
         :param tsi:
         :param tsi_plume_last_sighted:
@@ -67,9 +69,12 @@ class Forces():
         :return:
         """
         empty = np.array([0., 0., 0.])
-        exit_ago = abs(tsi - last_triggered['exit'])
+        inside_ago = abs(tsi - triggered_tsi['stimulus'])
+        exit_ago = abs(tsi - triggered_tsi['exit'])
         cast_strength = self.stimF_strength / 10
         if tsi == 0:
+            return empty
+        elif inside_ago < exit_ago:  # if we re-encounter the plume, stop casting
             return empty
         elif exit_ago <= self.stimulus_memory:  # stimulus encountered recently
             # print "we have a memory!"
