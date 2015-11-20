@@ -43,7 +43,7 @@ def run_simulation(agent_kwargs, experiment_kwargs):
                         'collision_type': 'part_elastic',
                         'restitution_coeff': 0.1,  # 0.8
                         'stimulus_memory': 100,
-                        'decision_policy': 'cast_only',
+                        'decision_policy': 'cast_only',  # 'surge_only', 'cast_only', 'cast+surge', 'ignore'
                         'initial_position_selection': 'downwind_high'
                         }
 
@@ -72,21 +72,9 @@ def get_experiment(condition='Control'):
     return experiment, trajectory, windtunnel, plume
 
 
-simulation, trajectory_s, windtunnel, plume, agent = run_simulation(None, None)
-# experiment, trajectory_e, windtunnel, plume = get_experiment(condition='Control')
+# simulation, trajectory_s, windtunnel, plume, agent = run_simulation(None, None)
+experiment, trajectory_e, windtunnel, plume = get_experiment(condition='Control')
 
-
-
-
-######################### plotting methods
-# simulation.plot_3Dtrajectory(0)  # plot ith trajectory in the ensemble of trajectories
-
-# print pd.isnull(simulation.data).any().nonzero()[0]
-# print
-
-# simulation.plot_kinematic_hists()
-# simulation.plot_position_heatmaps()
-# simulation.plot_force_violin()  # TODO: fix Nans in arrays
 
 ######################### dump data for csv for Sharri
 # print "dumping to csvs"
@@ -104,31 +92,5 @@ simulation, trajectory_s, windtunnel, plume, agent = run_simulation(None, None)
 # # # for plume stats
 # # g = e.loc[e['behavior_state'].isin(['Left_plume Exit left', 'Left_plume Exit right', 'Right_plume Exit left', 'Right_plume Exit right'])]
 
-#
-# ######################### manual scoring
-# from score import *
-# import scripts
-#
-# experimental_bins, experimental_vals = scripts.pickle_experiments.load_mosquito_kdes()
-#
-# targ_ensemble = simulation
-#
-# targ_data = get_data(targ_ensemble)
-# targ_KDEs = calc_kde(targ_data)
-# targ_vals = evaluate_kdes(targ_KDEs, experimental_bins)  # we evaluate targ KDE at experimental vins for comparison
-#
-#
-# # solve DKL b/w target and reference trajectories
-# dkl_v_x = entropy(targ_vals['v_x'], qk=experimental_vals['v_x'])
-# dkl_v_y = entropy(targ_vals['v_y'], qk=experimental_vals['v_y'])
-# dkl_v_z = entropy(targ_vals['v_z'], qk=experimental_vals['v_z'])
-# dkl_a_x = entropy(targ_vals['a_x'], qk=experimental_vals['a_x'])
-# dkl_a_y = entropy(targ_vals['a_y'], qk=experimental_vals['a_y'])
-# dkl_a_z = entropy(targ_vals['a_z'], qk=experimental_vals['a_z'])
-# dkl_c = entropy(targ_vals['c'], qk=experimental_vals['c']) * 6.  # scaled up by 6 to increase relative importance
-#
-# dkl_scores = [dkl_v_x, dkl_v_y, dkl_v_z, dkl_a_x, dkl_a_y, dkl_a_z, dkl_c]
-# for i, val in enumerate(dkl_scores):
-#     if val > 20:
-#         dkl_scores[i] = 20.
-# dkl_score = sum(dkl_scores)
+# experiments
+# [1, 2, 4, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 31, 32, 33, 34, 36, 37, 38, 40, 41, 43, 44, 47, 48, 49, 50, 51, 53, 54, 55, 56, 57, 58, 59, 101, 102, 103, 104, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149]
