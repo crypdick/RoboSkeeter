@@ -146,11 +146,13 @@ class Plume():
         in_bounds, _ = self.walls.in_bounds(position)
         x, y, z = position
 
-        if in_bounds is False or self.condition in 'controlControlCONTROL':
-            print("WARNING: sniffing outside of windtunnel bounds")  # FIXME shouldn't be getting tripped
+        if self.condition in 'controlControlCONTROL':
             inPlume = False
         elif np.abs(self.data['x_position'] - x).min() > self.resolution:
             # too far from the plume in the upwind/downwind direction
+            inPlume = False
+        elif in_bounds is False:
+            print("WARNING: sniffing outside of windtunnel bounds")
             inPlume = False
         else:
             plume_plane = self._get_nearest_plume_plane(x)
@@ -178,7 +180,9 @@ class Plume():
         return plume_plane
 
     def show(self):
-        pwt.draw_plume(self, self.experiment.windtunnel)
+        fig, ax = pwt.plot_windtunnel(self.experiment.windtunnel)
+        ax.axis('off')
+        pwt.draw_plume(self, ax=ax)
 
 
 if __name__ == '__main__':
