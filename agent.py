@@ -68,8 +68,8 @@ class Agent():
         self.max_bins = int(np.ceil(self.time_max / self.dt))  # N bins
         self.initial_velocity_stdev = 0.01
 
-        for key in agent_kwargs:
-            setattr(self, key, agent_kwargs[key])
+        for key, value in agent_kwargs.iteritems():
+            setattr(self, key, value)
 
         self.kinematics_list = ['position', 'velocity', 'acceleration']
         self.forces_list = ['totalF', 'randomF', 'stimF']
@@ -99,15 +99,13 @@ class Agent():
         # # create repulsion landscape
         # self._repulsion_funcs = repulsion_landscape3D.landscape(boundary=self.boundary)
 
-
-
-    def fly(self, total_trajectories=1, verbose=True):
+    def fly(self, total_trajectories=1):
         ''' iterates self._fly_single() total_trajectories times
         '''
         df_list = []
         traj_i = 0
         while traj_i < total_trajectories:
-            if verbose is True:
+            if self.verbose:
                 sys.stdout.write("\rTrajectory {}/{}".format(traj_i + 1, total_trajectories))
                 sys.stdout.flush()
 
@@ -128,7 +126,7 @@ class Agent():
 
             traj_i += 1
             if traj_i == total_trajectories:
-                if verbose is True:
+                if self.verbose:
                     sys.stdout.write("\rSimulations finished. Performing deep magic.")
                     sys.stdout.flush()
 
