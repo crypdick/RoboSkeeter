@@ -3,11 +3,10 @@ __author__ = 'richard'
 import logging
 from datetime import datetime
 
-import numpy as np
 from scipy.optimize import minimize_scalar
 
-import agent
-from scripts.pickle_experimentsY import load_mosquito_kde_data_dicts
+from experiment import run_simulation
+from scripts.pickle_experiments import load_mosquito_kde_data_dicts
 
 
 # wrapper func for agent 3D
@@ -21,30 +20,33 @@ def fly_wrapper(BOUNCE_COEFF, *args):
     :return:
     """
     print """
-    ##############################################################
+    ####a##########################################################
     BOUNCE_COEFF: {}
     ##############################################################""".format(BOUNCE_COEFF)
     N_TRAJECTORIES = 100
 
-    agent_kwargs = {'initial_position_selection': 'downwind_high',
-                    'windF_strength': 0.,
-                    'randomF_strength': 6.55599224e-06,
-                    'experimental_condition': None,  # {'Left', 'Right', None}
-                    'stimF_stength': 0.,
-                    'spring_const': 0,
+    experiment_kwargs = {'condition': 'Control',
+                         'time_max': 6.,
+                         'bounded': True,
+                         'number_trajectories': N_TRAJECTORIES
+                         }
+
+    agent_kwargs = {'randomF_strength': 6.55599224e-06,
+                    'stimF_strength': 0.,
                     'damping_coeff': 3.63674551e-07,
-                    'time_max': 15.,
-                    'bounded': True,
-                    'collision_type': 'crash',
-                    'crash_coeff': BOUNCE_COEFF}
+                    'collision_type': 'part_elastic',
+                    'restitution_coeff': BOUNCE_COEFF,
+                    'stimulus_memory': 100,
+                    'decision_policy': 'cast_only',  # 'surge_only', 'cast_only', 'cast+surge', 'ignore'
+                    'initial_position_selection': 'downwind_high',
+                    'verbose': False
+                    }
 
     (EXP_BINS, EXP_VALS) = args
 
-    # import pdb; pdb.set_trace()
+    simulation, trajectory_s, windtunnel, plume, agent = run_simulation(agent_kwargs, experiment_kwargs)
 
-    simulation, skeeter = agent.gen_objects_and_fly(N_TRAJECTORIES, agent_kwargs, verbose=False)
-
-    combined_score, score_components, _ = simulation.calc_score(ref_ensemble=(EXP_BINS, EXP_VALS))
+    combined_score, score_components, _ = trajectory_s.calc_score(ref_ensemble=(EXP_BINS, EXP_VALS))
 
     global HIGH_SCORE
     global BEST_BOUNCE_COEFF
@@ -57,52 +59,13 @@ def fly_wrapper(BOUNCE_COEFF, *args):
         print(string)
         logging.info(string)
 
-    # if PLOTTER is True:
-    #     error_plotter(ensemble, BOUNCE_COEFF, dkl_scores, acf_score, aabs_bins, a_counts_n, vabs_bins, v_counts_n, v_observed, a_observed)
-    #
-    # if np.any(np.isinf(dkl_scores)):
-    #     error_plotter(ensemble, BOUNCE_COEFF, dkl_scores, acf_score, aabs_bins, a_counts_n, vabs_bins, v_counts_n, v_observed, a_observed)
-
     return combined_score
 
 
-# def error_plotter(ensemble, BOUNCE_COEFF, dkl_scores, acf_score, aabs_bins, a_counts_n, vabs_bins, v_counts_n, v_observed, a_observed):
-#
-#
-#
-#     print "{} New high score: {}. BOUNCE_COEFF: {}. DKL score = {}. ACF score = {}".format(datetime.now(), HIGH_SCORE, BOUNCE_COEFF, dkl_scores, acf_score)
-#     logging.info("{} New high score: {}. BOUNCE_COEFF: {}. DKL score = {}. ACF score = {}".format(datetime.now(), HIGH_SCORE, BOUNCE_COEFF, dkl_scores, acf_score))
-#
-#     plt.ioff()
-#     f, axarr = plt.subplots(2, sharex=False)
-#     axarr[0].plot(aabs_bins[:-1], a_counts_n, label='RoboSkeeter')
-#     axarr[0].plot(aabs_bins[:-1], a_observed, c='r', label='experiment')
-#     axarr[0].set_title('accel score=> {}. High score = DKL(a)+DKL(v) = {}'.format(dkl_scores[1], HIGH_SCORE))
-#     axarr[0].legend()
-#
-#     axarr[1].plot(vabs_bins[:-1], v_counts_n, label='RoboSkeeter')
-#     axarr[1].plot(vabs_bins[:-1], v_observed, c='r', label='experiment')
-#     axarr[1].set_title('velocity score=> {}. High score = DKL(a)+DKL(v) = {}'.format(dkl_scores[0], HIGH_SCORE))
-#     axarr[1].legend()
-#     plt.suptitle('Parameter BOUNCE_COEFF: {}'.format(BOUNCE_COEFF))
-#     plt.show()
-#     plt.close()
-
-
-class MyBounds(object):
-    def __init__(self, xmax=[1.], xmin=[1e-7]):  # , 1e08]):
-        self.xmax = np.array(xmax)
-        self.xmin = np.array(xmin)
-
-    def __call__(self, **kwargs):
-        x = kwargs["x_new"]
-        tmax = bool(np.all(x <= self.xmax))
-        tmin = bool(np.all(x >= self.xmin))
-        return tmax and tmin
 
 
 def main(x_0=None):
-    logging.basicConfig(filename='basin_hoppingY.log', level=logging.DEBUG)
+    logging.basicConfig(filename='optimize_restitution_coeff.log', level=logging.DEBUG)
 
     global HIGH_SCORE
     HIGH_SCORE = 1e10
@@ -110,15 +73,12 @@ def main(x_0=None):
     global BEST_BOUNCE_COEFF
     BEST_BOUNCE_COEFF = None
 
-    BOUNCE_COEFF_PARAMS = "BOUNCE_COEFF"  # , F_WIND_SCALE]"  # [5e-6, 4.12405e-6, 5e-7]
-
     print "Starting optimizer."
 
-    mybounds = MyBounds()
 
     result = minimize_scalar(
         fly_wrapper,
-        bounds=(5e-7, 1.),
+        bounds=(0., 1.),
         method='bounded',
         args=(load_mosquito_kde_data_dicts())
     )
