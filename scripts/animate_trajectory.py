@@ -1,28 +1,33 @@
 from matplotlib import animation
-from matplotlib import pyplot as plt
 
 import scripts.plot_windtunnel as pwt
 
-sim_or_exp = 'experiment'  # 'experiment', 'simulation'
-trajectory_i = 8  # None
+# Params
+sim_or_exp = 'simulation'  # 'experiment', 'simulation'
+experiment = eval(sim_or_exp)
 highlight_inside_plume = False
 show_plume = False
+trajectory_i = None
 
-experiment = eval(sim_or_exp)
 
 if trajectory_i is None:
     trajectory_i = experiment.trajectories.get_trajectory_numbers().min()
 
+# get df
 df = experiment.trajectories.get_trajectory_i_df(trajectory_i)
 
 p = df[['position_x', 'position_y', 'position_z']].values
-x_t = p.reshape((1, len(p), 3))
+x_t = p.reshape((1, len(p), 3))  # make into correct shape for Jake vdp's code
 
 
 fig, ax = pwt.plot_windtunnel(experiment.windtunnel)
 ax.axis('off')
+
 if show_plume:
     pwt.draw_plume(experiment, ax=ax)
+
+# # choose a different color for each trajectory
+# colors = plt.cm.jet(np.linspace(0, 1, N_trajectories))
 
 # set up lines and points
 lines = sum([ax.plot([], [], [], '-', c='gray')
@@ -64,17 +69,19 @@ def animate(i):
         pt.set_3d_properties(z[-1:])
 
     # ax.view_init(30, 0.3 * i)
+    ax.view_init(90, 0 * i)
     fig.canvas.draw()
     return lines + pts
 
 
 # instantiate the animator.
 anim = animation.FuncAnimation(fig, animate, init_func=init,
-                               interval=1, blit=False, repeat_delay=8000, frames=len(p))
+                               interval=1, blit=False, repeat_delay=8000,
+                               frames=len(p))  # original:  frames=500, interval=30, blit=True)
 
-# Save as mp4. This requires mplayer or ffmpeg to be installed
+# added writer b/c original func didn't work
 Writer = animation.writers['ffmpeg']
-writer = Writer(fps=100, metadata=dict(artist='Me'), bitrate=1000)
+writer = Writer(fps=100, metadata=dict(artist='Richard'), bitrate=1000)
 anim.save('{}-{}.mp4'.format(sim_or_exp, trajectory_i), writer=writer)
 
-plt.show()
+# plt.show()
