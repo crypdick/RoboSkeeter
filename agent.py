@@ -73,8 +73,7 @@ class Agent():
 
         self.kinematics_list = ['position', 'velocity', 'acceleration']
         self.forces_list = ['totalF', 'randomF', 'stimF']
-        self.other_list = ['tsi', 'times', 'inPlume', 'plume_interaction']  # , 'turning', 'heading_angle',
-        #    'velocity_angular']  # FIXME
+        self.other_list = ['tsi', 'times', 'inPlume', 'plume_interaction']
         
         # things fed to the class
         self.experiment = experiment
@@ -93,7 +92,7 @@ class Agent():
         # turn thresh, in units deg s-1.
         # From Sharri:
         # it is the stdevof the broader of two Gaussians that fit the distribution of angular velocity
-        self.turn_threshold = 433.5  # TODO: move this to trajectories       
+        self.turn_threshold = 433.5
 
         
         # # create repulsion landscape
@@ -427,9 +426,6 @@ class Agent():
         return fixed_dct
 
 
-class Behavior():
-    def __init__(self):
-        pass  # TODO
     
    
 #    trajectories.describe(plot_kwargs = {'trajectories':False, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_scatter':True, 'force_violin':True})
