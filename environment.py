@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 
 import scripts.plot_windtunnel as pwt
+from scripts.i_o import get_directory
 
 
 class Windtunnel():
@@ -174,16 +175,18 @@ class Boolean_Plume(Plume):
 
         return plume_plane
 
-    def load_plume_data(self):
+    def _load_plume_data(self):
         col_names = ['x_position', 'z_position', 'small_radius']
 
         if self.condition in 'controlControlCONTROL':
             return None
         elif self.condition in 'lLleftLeft':
-            df = pd.read_csv('data/experiments/plume_data/left_plume_bounds.csv', names=col_names)
+            plume_dir = get_directory('BOOL_LEFT_CSV')
+            df = pd.read_csv(plume_dir, names=col_names)
             df['y_position'] = self.experiment.windtunnel.heater_l.y_position
         elif self.condition in 'rightRight':
-            df = pd.read_csv('data/experiments/plume_data/right_plume_bounds.csv', names=col_names)
+            plume_dir = get_directory('BOOL_RIGHT_CSV')
+            df = pd.read_csv(plume_dir, names=col_names)
             df['y_position'] = self.experiment.windtunnel.heater_r.y_position
         else:
             raise Exception('problem with loading plume data {}'.format(self.condition))
