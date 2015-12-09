@@ -67,37 +67,33 @@ def draw_rectangular_prism(ax, x_min, x_max, y_min, y_max, z_min, z_max):
     art3d.pathpatch_2d_to_3d(ceiling, z=z_max, zdir="z")
 
 
-def draw_plume(experiment, ax=None):
-    # FIXME: switch to http://matplotlib.org/api/collections_api.html#matplotlib.collections.EllipseCollection
+def draw_plume(plume, ax=None):
+    """Note: tried  to add ells to Pathcollection and then plot that, but kept having a ValueError
+    Also tried using an EclipseCollection but the patchcollection_2d_to_3d function does not work on it
 
     # xy is actually the yz plane
-    # v index: [u'x_position', u'z_position', u'small_radius', u'y_position']
-    if experiment.condition in 'controlControlCONTROL':
-        print "No plume in ", experiment.condition
+    # val headers: [u'x_position', u'z_position', u'small_radius', u'y_position']
+    """
+    if plume.condition in 'controlControlCONTROL':
+        print "No plume in ", plume.condition
         return
 
-    if ax is None:
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        set_windtunnel_bounds(ax)
-        draw_windtunnel_border(ax)
-        draw_heaters(ax, experiment.windtunnel)
-
-    ells = [
-        Ellipse(xy=(v[3], v[1]),
-                width=2 * v[2],
-                height=2 * v[2] * 3,
-                angle=0,
-                # linestyle='dotted',
+    ells = [Ellipse(xy=(val[3], val[1]),
+                    width=2 * val[2],
+                    height=2 * val[2] * 3,
+                    angle=0,
+                    # linestyle='dotted',
                 facecolor='none',
-                alpha=0.05,
-                edgecolor='r')
-        for i, v in experiment.plume.data.iterrows()]
+                    alpha=0.05,
+                    edgecolor='r')
+            for i, val in plume.data.iterrows()]
 
-    for i, v in experiment.plume.data['x_position'].iteritems():
+    for i, val in plume.data['x_position'].iteritems():
         ell = ells[i]
         ax.add_patch(ell)
-        art3d.patch_2d_to_3d(ell, z=v, zdir="x")
+        art3d.patch_2d_to_3d(ell, z=val, zdir="x")
+
+    art3d.patch_collection_2d_to_3d(ells)
 
     plt.show()
 
