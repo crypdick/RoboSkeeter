@@ -1,8 +1,8 @@
 __author__ = 'richard'
 
-import agent
 import environment
 import trajectory
+from agent import Agent
 
 
 class Base_Experiment(object):
@@ -15,36 +15,49 @@ class Base_Experiment(object):
             setattr(self, key, kwargs[key])
 
         self.windtunnel = environment.Windtunnel(self.condition)
-        self.plume = environment.Plume(self)
+
+        if self.plume_type == "Boolean":
+            self.plume = environment.Boolean_Plume(self)
+        else:
+            raise NotImplementedError("no such plume type {}".format(self.plume_type))
 
 
 class Simulation(Base_Experiment):
     def __init__(self, agent_kwargs, **experiment_kwargs):
-        super(Simulation, self).__init__(**experiment_kwargs)
+        super(self.__class__, self).__init__(**experiment_kwargs)
 
         self.trajectories = trajectory.Agent_Trajectory(self)
-        self.skeeter = agent.Agent(self, agent_kwargs)
+        self.skeeter = Agent(self, agent_kwargs)
         self.trajectories.add_agent_info(self.skeeter)
 
         self.skeeter.fly(total_trajectories=self.number_trajectories)
 
 
+class Experiment(Base_Experiment):
+    def __init__(self, experimental_condition):
+        super(self.__class__, self).__init__(condition=experimental_condition)
+
+        self.trajectories = trajectory.Experimental_Trajectory(self)
+        self.trajectories.load_experiments(experimental_condition=self.condition)
+
 def run_simulation(agent_kwargs, experiment_kwargs):
     if experiment_kwargs is None:
-        experiment_kwargs = {'condition': 'Right',  # {'Left', 'Right', 'Control'}
+        experiment_kwargs = {'condition': 'Left',  # {'Left', 'Right', 'Control'}
                              'time_max': 6.,
                              'bounded': True,
-                             'number_trajectories': 1
+                             'number_trajectories': 1,
+                             'plume_type': "Boolean"
                              }
     if agent_kwargs is None:
         agent_kwargs = {'randomF_strength': 6.55599224e-06,
                         'stimF_strength': 5.0e-06,
                         'damping_coeff': 3.63674551e-07,
-                        'collision_type': 'part_elastic',
+                        'collision_type': 'part_elastic',  # 'elastic', 'part_elastic'
                         'restitution_coeff': 0.1,  # 0.8
                         'stimulus_memory': 100,
                         'decision_policy': 'cast_only',  # 'surge_only', 'cast_only', 'cast+surge', 'ignore'
-                        'initial_position_selection': 'downwind_high'
+                        'initial_position_selection': 'downwind_high',
+                        'verbose': True
                         }
 
     simulation = Simulation(agent_kwargs, **experiment_kwargs)
@@ -58,22 +71,15 @@ def run_simulation(agent_kwargs, experiment_kwargs):
     return simulation, trajectory, windtunnel, plume, agent
 
 
-class Experiment(Base_Experiment):
-    def __init__(self, experimental_condition):
-        super(Experiment, self).__init__(condition=experimental_condition)
-
-        self.trajectories = trajectory.Experimental_Trajectory(self)
-        self.trajectories.load_experiments(experimental_condition=self.condition)
-
-
 def get_experiment(condition='Control'):
     experiment = Experiment(condition)
     trajectory, windtunnel, plume = experiment.trajectories, experiment.windtunnel, experiment.plume
     return experiment, trajectory, windtunnel, plume
 
 
-# simulation, trajectory_s, windtunnel, plume, agent = run_simulation(None, None)
-experiment, trajectory_e, windtunnel, plume = get_experiment(condition='Control')
+if __name__ is '__main__':
+    simulation, trajectory_s, windtunnel, plume, agent = run_simulation(None, None)
+    # experiment, trajectory_e, windtunnel, plume = get_experiment(condition='Control')
 
 
 ######################### dump data for csv for Sharri
