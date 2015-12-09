@@ -111,11 +111,37 @@ def get_directory(selection=None):
     EXPERIMENTS_PATH = os.path.join(PROJECT_PATH, 'data', 'experiments')
     MODEL_PATH = os.path.join(PROJECT_PATH, 'data', 'model')
 
+    EXPERIMENTAL_TRAJECTORIES = os.path.join(EXPERIMENTS_PATH, 'trajectories')
+    EXP_TRAJECTORIES_CONTROL = os.path.join(EXPERIMENTAL_TRAJECTORIES, 'control')
+    EXP_TRAJECTORIES_LEFT = os.path.join(EXPERIMENTAL_TRAJECTORIES, 'left')
+    EXP_TRAJECTORIES_RIGHT = os.path.join(EXPERIMENTAL_TRAJECTORIES, 'right')
+
+    PLUME_PATH = os.path.join(EXPERIMENTS_PATH, 'plume_data')
+    THERMOCOUPLE = os.path.join(PLUME_PATH, 'thermocouple')
+    THERMOCOUPLE_RAW_LEFT = os.path.join(THERMOCOUPLE, 'raw_left')
+    THERMOCOUPLE_RAW_RIGHT = os.path.join(THERMOCOUPLE, 'raw_right')
+    THERMOCOUPLE_TIMEAVG_LEFT = os.path.join(THERMOCOUPLE, 'timeavg_left')
+    THERMOCOUPLE_TIMEAVG_RIGHT = os.path.join(THERMOCOUPLE, 'timeavg_right')
+    BOOL_LEFT_CSV = os.path.join(PLUME_PATH, 'left', 'left_plume_bounds.csv')
+    BOOL_RIGHT_CSV = os.path.join(PLUME_PATH, 'right', 'right_plume_bounds.csv')
+
+
+
     dirs = {
         'PROJECT_PATH': PROJECT_PATH,
         'MODEL_PATH': MODEL_PATH,
-        'EXPERIMENT_PATH': os.path.join(PROJECT_PATH, 'data', 'experiments'),
-        'CONTROL_EXP_PATH': os.path.join(EXPERIMENTS_PATH, 'control_pooled')
+        'EXPERIMENT_PATH': EXPERIMENTS_PATH,
+        'EXPERIMENTAL_TRAJECTORIES': EXPERIMENTAL_TRAJECTORIES,
+        'EXP_TRAJECTORIES_CONTROL': EXP_TRAJECTORIES_CONTROL,
+        'EXP_TRAJECTORIES_LEFT': EXP_TRAJECTORIES_LEFT,
+        'EXP_TRAJECTORIES_RIGHT': EXP_TRAJECTORIES_RIGHT,
+        'THERMOCOUPLE': THERMOCOUPLE,
+        'THERMOCOUPLE_RAW_LEFT': THERMOCOUPLE_RAW_LEFT,
+        'THERMOCOUPLE_RAW_RIGHT': THERMOCOUPLE_RAW_RIGHT,
+        'THERMOCOUPLE_TIMEAVG_LEFT': THERMOCOUPLE_TIMEAVG_LEFT,
+        'THERMOCOUPLE_TIMEAVG_RIGHT': THERMOCOUPLE_TIMEAVG_RIGHT,
+        'BOOL_LEFT_CSV': BOOL_LEFT_CSV,
+        'BOOL_RIGHT_CSV': BOOL_RIGHT_CSV
     }
 
 
