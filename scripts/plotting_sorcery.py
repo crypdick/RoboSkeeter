@@ -123,14 +123,15 @@ def plot_position_heatmaps(trajectories_obj):
     fig0, ax0 = plt.subplots(1)
     heatmap_xy = ax0.pcolormesh(x_bins, y_bins, probs_xy, cmap=CM, vmin=0.)  # , vmax=max_probability)
     ax0.set_aspect('equal')
-    ax0.invert_yaxis()  # hack to match y axis convention
+    ax0.invert_yaxis()  # hack to match y axis convention  FIXME
+    # ax.set_ylim(ax.get_ylim()[::-1])  THIS DOESN"T WORK
     # overwrite previous plot schwag
     title1 = titlebase.format(type=type) + " - XY projection" + numbers
     plt.title(title1)
     plt.xlabel(X_AXIS_POSITION_LABEL)
     plt.ylabel(Y_AXIS_POSITION_LABEL)
     plt.xlim((x_min, x_max))
-    plt.ylim((y_min, y_max))
+    plt.ylim((y_max, y_min))
     the_divider = make_axes_locatable(ax0)
     color_axis = the_divider.append_axes("right", size="5%", pad=0.1)
     cbar0 = plt.colorbar(heatmap_xy, cax=color_axis)
@@ -212,24 +213,28 @@ def plot_kinematic_histograms(
                                                            ceil(xpos_max - xpos_min) / pos_binwidth))
     xpos_counts = xpos_counts.astype(float)
     xpos_counts_norm = xpos_counts / xpos_counts.sum()
-    axs[0].plot(xpos_bins[:-1] + pos_binwidth / 2, xpos_counts_norm, lw=2, label="Full")
-    axs[0].bar(xpos_bins[:-1], xpos_counts_norm, xpos_bins[1] - xpos_bins[0], facecolor='blue', linewidth=0, alpha=0.1)
+    axs[0].plot(xpos_bins[:-1] + pos_binwidth / 2, xpos_counts_norm, lw=3, label="Full",
+                color=sns.xkcd_rgb["denim blue"])
+    axs[0].fill_between(xpos_bins[:-1] + pos_binwidth / 2, 0, xpos_counts_norm, facecolor=sns.xkcd_rgb["denim blue"],
+                        alpha=0.1)
     if type(downw_ensemble) != str:
         xpos_counts, xpos_bins = np.histogram(downw_ensemble['position_x'],
                                               bins=np.linspace(xpos_min, xpos_max,
                                                                (xpos_max - xpos_min) / pos_binwidth))
         xpos_counts = xpos_counts.astype(float)
         xpos_counts_norm = xpos_counts / xpos_counts.sum()
-        axs[0].plot(xpos_bins[:-1] + pos_binwidth / 2, xpos_counts_norm, lw=2, label="Downwind")
-        axs[0].bar(xpos_bins[:-1], xpos_counts_norm, xpos_bins[1] - xpos_bins[0], facecolor='blue', linewidth=0,
+        axs[0].plot(xpos_bins[:-1] + pos_binwidth / 2, xpos_counts_norm, lw=3, label="Downwind")
+        axs[0].bar(xpos_bins[:-1], xpos_counts_norm, xpos_bins[1] - xpos_bins[0], facecolor=sns.xkcd_rgb["denim blue"],
+                   linewidth=0,
                    alpha=0.1)
     if type(upw_ensemble) != str:
         xpos_counts, xpos_bins = np.histogram(upw_ensemble['position_x'], bins=np.linspace(xpos_min, xpos_max, (
             xpos_max - xpos_min) / pos_binwidth))
         xpos_counts = xpos_counts.astype(float)
         xpos_counts_norm = xpos_counts / xpos_counts.sum()
-        axs[0].plot(xpos_bins[:-1] + pos_binwidth / 2, xpos_counts_norm, lw=2, label="Upwind")
-        axs[0].bar(xpos_bins[:-1], xpos_counts_norm, xpos_bins[1] - xpos_bins[0], facecolor='blue', linewidth=0,
+        axs[0].plot(xpos_bins[:-1] + pos_binwidth / 2, xpos_counts_norm, lw=3, label="Upwind")
+        axs[0].bar(xpos_bins[:-1], xpos_counts_norm, xpos_bins[1] - xpos_bins[0], facecolor=sns.xkcd_rgb["denim blue"],
+                   linewidth=0,
                    alpha=0.1)
         axs[0].legend()
     axs[0].set_title("Upwind ($x$) Position Distributions", fontsize=12)
@@ -243,25 +248,29 @@ def plot_kinematic_histograms(
                                           bins=np.linspace(ypos_min, ypos_max, (ypos_max - ypos_min) / pos_binwidth))
     ypos_counts = ypos_counts.astype(float)
     ypos_counts_norm = ypos_counts / ypos_counts.sum()
-    axs[1].plot(ypos_bins[:-1] + pos_binwidth / 2, ypos_counts_norm, lw=2, label="Full")
+    axs[1].plot(ypos_bins[:-1] + pos_binwidth / 2, ypos_counts_norm, lw=3, label="Full",
+                color=sns.xkcd_rgb["light olive green"])
     axs[1].set_xlim(ypos_min + pos_binwidth / 2, ypos_max - pos_binwidth / 2)  # hack to hide gaps
-    axs[1].fill_between(ypos_bins[:-1] + pos_binwidth / 2, 0, ypos_counts_norm, facecolor='blue', alpha=0.1)
+    axs[1].fill_between(ypos_bins[:-1] + pos_binwidth / 2, 0, ypos_counts_norm,
+                        facecolor=sns.xkcd_rgb["light olive green"], alpha=0.1)
     if type(downw_ensemble) != str:  # TODO: is this alright with 3D flights?
         ypos_counts, ypos_bins = np.histogram(downw_ensemble['position_y'], bins=np.linspace(ypos_min, ypos_max, (
             ypos_max - ypos_min) / pos_binwidth))
         ypos_counts = ypos_counts.astype(float)
         ypos_counts_norm = ypos_counts / ypos_counts.sum()
-        axs[1].plot(ypos_bins[:-1] + pos_binwidth / 2, ypos_counts_norm, lw=2, label="Full")
+        axs[1].plot(ypos_bins[:-1] + pos_binwidth / 2, ypos_counts_norm, lw=3, label="Full")
         axs[1].set_xlim(ypos_min + pos_binwidth / 2, ypos_max - pos_binwidth / 2)  # hack to hide gaps
-        axs[1].fill_between(ypos_bins[:-1] + pos_binwidth / 2, 0, ypos_counts_norm, facecolor='blue', alpha=0.1)
+        axs[1].fill_between(ypos_bins[:-1] + pos_binwidth / 2, 0, ypos_counts_norm,
+                            facecolor=sns.xkcd_rgb["denim blue"], alpha=0.1)
     if type(upw_ensemble) != str:
         ypos_counts, ypos_bins = np.histogram(upw_ensemble['position_y'], bins=np.linspace(ypos_min, ypos_max, (
             ypos_max - ypos_min) / pos_binwidth))
         ypos_counts = ypos_counts.astype(float)
         ypos_counts_norm = ypos_counts / ypos_counts.sum()
-        axs[1].plot(ypos_bins[:-1] + pos_binwidth / 2, ypos_counts_norm, lw=2, label="Full")
+        axs[1].plot(ypos_bins[:-1] + pos_binwidth / 2, ypos_counts_norm, lw=3, label="Full")
         axs[1].set_xlim(ypos_min + pos_binwidth / 2, ypos_max - pos_binwidth / 2)  # hack to hide gaps
-        axs[1].fill_between(ypos_bins[:-1] + pos_binwidth / 2, 0, ypos_counts_norm, facecolor='blue', alpha=0.1)
+        axs[1].fill_between(ypos_bins[:-1] + pos_binwidth / 2, 0, ypos_counts_norm,
+                            facecolor=sns.xkcd_rgb["denim blue"], alpha=0.1)
         axs[1].legend()
     axs[1].set_title("Cross-wind ($y$) Position Distributions")
     axs[1].set_xlabel(Y_AXIS_POSITION_LABEL)
@@ -273,25 +282,28 @@ def plot_kinematic_histograms(
                                           bins=np.linspace(zpos_min, zpos_max, (zpos_max - zpos_min) / pos_binwidth))
     zpos_counts = zpos_counts.astype(float)
     zpos_counts_norm = zpos_counts / zpos_counts.sum()
-    axs[2].plot(zpos_bins[:-1] + pos_binwidth / 2, zpos_counts_norm, lw=2, label="Full")
+    axs[2].plot(zpos_bins[:-1] + pos_binwidth / 2, zpos_counts_norm, lw=3, label="Full", color=sns.xkcd_rgb["amber"])
     axs[2].set_xlim(zpos_min + pos_binwidth / 2, zpos_max - pos_binwidth / 2)  # hack to hide gaps
-    axs[2].fill_between(zpos_bins[:-1] + pos_binwidth / 2, 0, zpos_counts_norm, facecolor='blue', alpha=0.1)
+    axs[2].fill_between(zpos_bins[:-1] + pos_binwidth / 2, 0, zpos_counts_norm, facecolor=sns.xkcd_rgb["amber"],
+                        alpha=0.1)
     if type(downw_ensemble) != str:
         zpos_counts, zpos_bins = np.histogram(downw_ensemble['position_y'], bins=np.linspace(zpos_min, zpos_max, (
             zpos_max - zpos_min) / pos_binwidth))
         zpos_counts = zpos_counts.astype(float)
         zpos_counts_norm = zpos_counts / zpos_counts.sum()
-        axs[2].plot(zpos_bins[:-1] + pos_binwidth / 2, zpos_counts_norm, lw=2, label="Full")
+        axs[2].plot(zpos_bins[:-1] + pos_binwidth / 2, zpos_counts_norm, lw=3, label="Full")
         axs[2].set_xlim(zpos_min + pos_binwidth / 2, zpos_max - pos_binwidth / 2)  # hack to hide gaps
-        axs[2].fill_between(zpos_bins[:-1] + pos_binwidth / 2, 0, zpos_counts_norm, facecolor='blue', alpha=0.1)
+        axs[2].fill_between(zpos_bins[:-1] + pos_binwidth / 2, 0, zpos_counts_norm,
+                            facecolor=sns.xkcd_rgb["denim blue"], alpha=0.1)
     if type(upw_ensemble) != str:
         zpos_counts, zpos_bins = np.histogram(upw_ensemble['position_y'], bins=np.linspace(zpos_min, zpos_max, (
             zpos_max - zpos_min) / pos_binwidth))
         zpos_counts = zpos_counts.astype(float)
         zpos_counts_norm = zpos_counts / zpos_counts.sum()
-        axs[2].plot(zpos_bins[:-1] + pos_binwidth / 2, zpos_counts_norm, lw=2, label="Full")
+        axs[2].plot(zpos_bins[:-1] + pos_binwidth / 2, zpos_counts_norm, lw=3, label="Full")
         axs[2].set_xlim(zpos_min + pos_binwidth / 2, zpos_max - pos_binwidth / 2)  # hack to hide gaps
-        axs[2].fill_between(zpos_bins[:-1] + pos_binwidth / 2, 0, zpos_counts_norm, facecolor='blue', alpha=0.1)
+        axs[2].fill_between(zpos_bins[:-1] + pos_binwidth / 2, 0, zpos_counts_norm,
+                            facecolor=sns.xkcd_rgb["denim blue"], alpha=0.1)
         axs[2].legend()
     axs[2].set_title("Elevation ($z$) Position Distributions")
     axs[2].set_xlabel(Z_AXIS_POSITION_LABEL)
@@ -306,22 +318,22 @@ def plot_kinematic_histograms(
                                       bins=np.linspace(vmin, vmax, (vmax - vmin) / velo_bindwidth))
     vx_counts = vx_counts.astype(float)
     vx_counts_n = vx_counts / vx_counts.sum()
-    axs[3].plot(vx_bins[:-1], vx_counts_n, label="$\dot{x}$")
-    axs[3].fill_between(vx_bins[:-1], 0, vx_counts_n, facecolor='blue', alpha=0.1)
+    axs[3].plot(vx_bins[:-1], vx_counts_n, label="$\dot{x}$", lw=3, color=sns.xkcd_rgb["denim blue"])
+    axs[3].fill_between(vx_bins[:-1], 0, vx_counts_n, facecolor=sns.xkcd_rgb["denim blue"], alpha=0.1)
     # vy component
     vy_counts, vy_bins = np.histogram(ensemble['velocity_y'],
                                       bins=np.linspace(vmin, vmax, (vmax - vmin) / velo_bindwidth))
     vy_counts = vy_counts.astype(float)
     vy_counts_n = vy_counts / vy_counts.sum()
-    axs[3].plot(vy_bins[:-1], vy_counts_n, label="$\dot{y}$")
-    axs[3].fill_between(vy_bins[:-1], 0, vy_counts_n, facecolor='green', alpha=0.1)
+    axs[3].plot(vy_bins[:-1], vy_counts_n, label="$\dot{y}$", lw=3, color=sns.xkcd_rgb["light olive green"])
+    axs[3].fill_between(vy_bins[:-1], 0, vy_counts_n, facecolor=sns.xkcd_rgb["light olive green"], alpha=0.1)
     # vz component
     vz_counts, vz_bins = np.histogram(ensemble['velocity_z'],
                                       bins=np.linspace(vmin, vmax, (vmax - vmin) / velo_bindwidth))
     vz_counts = vz_counts.astype(float)
     vz_counts_n = vz_counts / vz_counts.sum()
-    axs[3].plot(vz_bins[:-1], vz_counts_n, label="$\dot{z}$")
-    axs[3].fill_between(vz_bins[:-1], 0, vz_counts_n, facecolor='red', alpha=0.1)
+    axs[3].plot(vz_bins[:-1], vz_counts_n, label="$\dot{z}$", lw=3, color=sns.xkcd_rgb["amber"])
+    axs[3].fill_between(vz_bins[:-1], 0, vz_counts_n, facecolor=sns.xkcd_rgb["amber"], alpha=0.1)
     # |v|
     velo_stack = np.vstack((ensemble.velocity_x.values, ensemble.velocity_y.values, ensemble.velocity_z.values))
     velo_all_magn = np.linalg.norm(velo_stack, axis=0)
@@ -332,7 +344,7 @@ def plot_kinematic_histograms(
     vabs_counts, vabs_bins = np.histogram(velo_all_magn, bins=np.linspace(vmin, vmax, (vmax - vmin) / velo_bindwidth))
     vabs_counts = vabs_counts.astype(float)
     vabs_counts_n = vabs_counts / vabs_counts.sum()
-    axs[3].plot(vabs_bins[:-1], vabs_counts_n, label='$|\mathbf{v}|$', color=sns.desaturate("black", .4), lw=2)
+    axs[3].plot(vabs_bins[:-1], vabs_counts_n, label='$|\mathbf{v}|$', color=sns.desaturate("black", .4), lw=3)
     axs[3].fill_between(vabs_bins[:-1], 0, vabs_counts_n, facecolor='yellow', alpha=0.1)
 
     axs[3].set_title("Velocity Distributions")
@@ -352,22 +364,22 @@ def plot_kinematic_histograms(
                                       bins=np.linspace(amin, amax, (amax - amin) / accel_binwidth))
     ax_counts = ax_counts.astype(float)
     ax_counts_n = ax_counts / ax_counts.sum()
-    axs[4].plot(ax_bins[:-1], ax_counts_n, label="$\ddot{x}$", lw=2)
-    axs[4].fill_between(ax_bins[:-1], 0, ax_counts_n, facecolor='blue', alpha=0.1)
+    axs[4].plot(ax_bins[:-1], ax_counts_n, label="$\ddot{x}$", lw=3, color=sns.xkcd_rgb["denim blue"])
+    axs[4].fill_between(ax_bins[:-1], 0, ax_counts_n, facecolor=sns.xkcd_rgb["denim blue"], alpha=0.1)
     # ay component
     ay_counts, ay_bins = np.histogram(ensemble['acceleration_y'],
                                       bins=np.linspace(amin, amax, (amax - amin) / accel_binwidth))
     ay_counts = ay_counts.astype(float)
     ay_counts_n = ay_counts / ay_counts.sum()
-    axs[4].plot(ay_bins[:-1], ay_counts_n, label="$\ddot{y}$", lw=2)
-    axs[4].fill_between(ay_bins[:-1], 0, ay_counts_n, facecolor='green', alpha=0.1)
+    axs[4].plot(ay_bins[:-1], ay_counts_n, label="$\ddot{y}$", lw=3, color=sns.xkcd_rgb["light olive green"])
+    axs[4].fill_between(ay_bins[:-1], 0, ay_counts_n, facecolor=sns.xkcd_rgb["light olive green"], alpha=0.1)
     # az component
     az_counts, az_bins = np.histogram(ensemble['acceleration_z'],
                                       bins=np.linspace(amin, amax, (amax - amin) / accel_binwidth))
     az_counts = az_counts.astype(float)
     az_counts_n = az_counts / az_counts.sum()
-    axs[4].plot(az_bins[:-1], az_counts_n, label="$\ddot{z}$", lw=2)
-    axs[4].fill_between(az_bins[:-1], 0, az_counts_n, facecolor='red', alpha=0.1)
+    axs[4].plot(az_bins[:-1], az_counts_n, label="$\ddot{z}$", lw=3, color=sns.xkcd_rgb["amber"])
+    axs[4].fill_between(az_bins[:-1], 0, az_counts_n, facecolor=sns.xkcd_rgb["amber"], alpha=0.1)
     # |a|
     accel_stack = np.vstack(
         (ensemble.acceleration_x.values, ensemble.acceleration_y.values, ensemble.acceleration_z.values))
@@ -380,7 +392,7 @@ def plot_kinematic_histograms(
     aabs_counts, aabs_bins = np.histogram(accel_all_magn, bins=np.linspace(amin, amax, (amax - amin) / accel_binwidth))
     aabs_counts = aabs_counts.astype(float)
     aabs_counts_n = aabs_counts / aabs_counts.sum()
-    axs[4].plot(aabs_bins[:-1], aabs_counts_n, label='$|\mathbf{a}|$', color=sns.desaturate("black", .4), lw=2)
+    axs[4].plot(aabs_bins[:-1], aabs_counts_n, label='$|\mathbf{a}|$', color=sns.desaturate("black", .4), lw=3)
     axs[4].fill_between(aabs_bins[:-1], 0, aabs_counts_n, facecolor='yellow', alpha=0.1)
     axs[4].set_title("Acceleration Distribution")
     axs[4].set_xlabel("Acceleration ($m^s/s$)")
@@ -390,16 +402,17 @@ def plot_kinematic_histograms(
 
     ## Curvatures
 
-    c_counts, c_bins = np.histogram(ensemble['curvature'])
+    c_counts, c_bins = np.histogram(ensemble['curvature'], bins=10000)
     c_counts = c_counts.astype(float)
     c_counts_n = c_counts / c_counts.sum()
-    axs[5].plot(c_bins[:-1], c_counts_n, label="curvature", lw=2)
-    axs[5].fill_between(c_bins[:-1], 0, c_counts_n, facecolor='blue', linewidth=0,
+    axs[5].plot(c_bins[:-1], c_counts_n, label="curvature", lw=3, color='purple')
+    axs[5].fill_between(c_bins[:-1], 0, c_counts_n, facecolor='purple', linewidth=0,
                         alpha=0.1)
 
     axs[5].set_title("Curvature Distribution")
     axs[5].set_xlabel("Curvature")
     axs[5].set_ylabel(PROBABILITY_LABEL)
+    axs[5].set_xlim((0, 4))
     lg = axs[5].legend(fontsize=14)
     lg.draw_frame(False)
 
@@ -522,7 +535,7 @@ def plot_forces_violinplots(ensemble, agent_obj):
     forcefig = plt.figure()
     #    Faxs1 = forcefig.add_subplot(211)
     #    Faxs2 = forcefig.add_subplot(212)
-    sns.violinplot(ensembleF, lw=2, alpha=0.7, palette="Set2")
+    sns.violinplot(ensembleF, lw=3, alpha=0.7, palette="Set2")
     #    tF = sns.jointplot('totalF_x', 'totalF_y', ensemble, kind="hex", size=10)
     plt.suptitle("Force distributions")
     #    plt.xticks(range(4,((len(alignments.keys())+1)*4),4), [i[1] for i in medians_sgc], rotation=90, fontsize = 4)
@@ -687,6 +700,7 @@ def plot_vector_cloud(trajectories_obj, kinematic, i=None):
     # Attaching 3D axis to the figure
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
+    ax.axis('off')
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
     ax.set_zlabel('Z')
@@ -702,7 +716,7 @@ def plot_vector_cloud(trajectories_obj, kinematic, i=None):
 
     ax.plot(xs, ys, zs)
     ax.scatter(0, 0, 0, c='r', marker='o', s=50)  # mark origin
-    ax.scatter(xs, ys, zs, '.', s=20, linewidths=0, c=ensemble_cmap, alpha=0.2)
+    ax.scatter(xs, ys, zs, '.', s=20, linewidths=0, c=ensemble_cmap, alpha=0.1)
 
 
 def vector_cloud_heatmap(trajectories_obj, kinematic, i=None):
