@@ -107,7 +107,7 @@ class Heater():
         return (x_coord, y_coord)
 
 
-class Plume():
+class Plume(object):
     ''' Instantiates a plume object.
 
     Args:
@@ -120,27 +120,17 @@ class Plume():
         self.condition = experiment.condition
         self.walls = experiment.windtunnel.walls
 
-        self.data = self.load_plume_data()
+
+class Boolean_Plume(Plume):
+    def __init__(self, experiment):
+        super(self.__class__, self).__init__(experiment)
+
+        self.data = self._load_plume_data()
+
         try:
             self.resolution = abs(self.data.x_position.diff()[1])
         except AttributeError:  # if no plume, can't take diff() of no data
             self.resolution = None
-
-    def load_plume_data(self):
-        col_names = ['x_position', 'z_position', 'small_radius']
-
-        if self.condition in 'controlControlCONTROL':
-            return None  # TODO: make plume that's 0 everywhere
-        elif self.condition in 'lLleftLeft':
-            df = pd.read_csv('data/experiments/plume_data/left_plume_bounds.csv', names=col_names)
-            df['y_position'] = self.experiment.windtunnel.heater_l.y_position
-        elif self.condition in 'rightRight':
-            df = pd.read_csv('data/experiments/plume_data/right_plume_bounds.csv', names=col_names)
-            df['y_position'] = self.experiment.windtunnel.heater_r.y_position
-        else:
-            raise Exception('problem with loading plume data {}'.format(self.condition))
-
-        return df
 
     def in_plume(self, position):
         in_bounds, _ = self.walls.in_bounds(position)
@@ -172,6 +162,11 @@ class Plume():
 
         return inPlume
 
+    def show(self):
+        fig, ax = pwt.plot_windtunnel(self.experiment.windtunnel)
+        ax.axis('off')
+        pwt.draw_plume(self, ax=ax)
+
     def _get_nearest_plume_plane(self, x_position):
         """given x position, find nearest plan"""
         closest_plume_index = (np.abs(self.data['x_position'] - x_position)).argmin()
@@ -179,10 +174,37 @@ class Plume():
 
         return plume_plane
 
+    def load_plume_data(self):
+        col_names = ['x_position', 'z_position', 'small_radius']
+
+        if self.condition in 'controlControlCONTROL':
+            return None
+        elif self.condition in 'lLleftLeft':
+            df = pd.read_csv('data/experiments/plume_data/left_plume_bounds.csv', names=col_names)
+            df['y_position'] = self.experiment.windtunnel.heater_l.y_position
+        elif self.condition in 'rightRight':
+            df = pd.read_csv('data/experiments/plume_data/right_plume_bounds.csv', names=col_names)
+            df['y_position'] = self.experiment.windtunnel.heater_r.y_position
+        else:
+            raise Exception('problem with loading plume data {}'.format(self.condition))
+
+        return df
+
+
+class Timeavg_Plume(Plume):
+    def __init__(self, experiment):
+        super(Plume, self).__init__(experiment)
+
+        self.data = self._load_plume_data()
+
+    def in_plume(self, position):
+        pass
+
     def show(self):
-        fig, ax = pwt.plot_windtunnel(self.experiment.windtunnel)
-        ax.axis('off')
-        pwt.draw_plume(self, ax=ax)
+        pass
+
+    def _load_plume_data(self):
+        raise NotImplementedError
 
 
 if __name__ == '__main__':
