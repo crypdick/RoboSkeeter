@@ -22,9 +22,9 @@ import string
 import numpy as np
 import pandas as pd
 
-import score
 import scripts.plot_windtunnel as pwt
-from scripts import i_o
+from score import Scoring
+from scripts import i_o, animate_trajectory_callable
 from scripts.math_sorcery import calculate_curvature, distance_from_wall
 
 
@@ -170,10 +170,11 @@ class Trajectory(object):
 
         fig, ax = pwt.plot_windtunnel(self.experiment.windtunnel)
         if show_plume:
-            pwt.draw_plume(self.experiment, ax=ax)  # FIXME just experiment
+            pwt.draw_plume(self.experiment.plume, ax=ax)
 
         if trajectory_i is "ALL":
             index = self.get_trajectory_numbers()
+            ax.axis('off')
             for i in index:
                 selected_trajectory_df = self.get_trajectory_i_df(i)
                 plot_kwargs = {'title': "{type} trajectory #{N}".format(type=self.is_agent, N=i),
@@ -293,11 +294,12 @@ class Trajectory(object):
             np.savetxt(str(trajectory_i) + ".csv", temp_array, delimiter=",")
 
     def calc_score(self, ref_ensemble='pickle'):
-        total_score, scores, targ_vals = score.score(self)
-        print "Trajectory score: ", total_score
-        self.total_score, self.scores, self.targ_vals = total_score, scores, targ_vals
+        scorer = Scoring()
 
-        return total_score, scores, targ_vals
+        self.total_score = scorer.score_ensemble(self)
+        print "Trajectory score: ", self.total_score
+
+        return self.total_score
 
     def _extract_number_from_fname(self, token):
         extract_digits = lambda stng: "".join(char for char in stng if char in string.digits + ".")
@@ -329,7 +331,7 @@ class Trajectory(object):
     # a.xs(0, level='trajectory_num')
 
     def get_trajectory_numbers(self):
-        return sorted(self.data.trajectory_num.unique())
+        return np.sort(self.data.trajectory_num.unique())
 
     def plot_vector_cloud(self, kinematic='acceleration', i=None):
         import scripts.plotting_sorcery
@@ -350,6 +352,26 @@ class Trajectory(object):
     def plot_start_postiions(self):
         import scripts.plotting_sorcery
         scripts.plotting_sorcery.plot_starting_points(self.data)
+
+    def animate_trajectory(self, trajectory_i=None, highlight_inside_plume=False, show_plume=False):
+        if trajectory_i is None:
+            trajectory_i = self.get_trajectory_numbers().min()
+
+        # get data
+        selected_trajectory_df = self.get_trajectory_i_df(trajectory_i)
+
+        p = selected_trajectory_df[['position_x', 'position_y', 'position_z']].values
+        x_t = p.reshape((1, len(p), 3))  # make into correct shape for Jake vdp's code: 1 x T x 3
+
+        fig, ax = pwt.plot_windtunnel(self.experiment.windtunnel)
+        ax.axis('off')
+
+        if show_plume:
+            pwt.draw_plume(self.experiment.plume, ax=ax)
+
+        animate_trajectory_callable.wrapper(fig, ax, x_t)
+
+
 
 
 
@@ -383,7 +405,9 @@ class Experimental_Trajectory(Trajectory):
 
     def load_experiments(self, experimental_condition):
         dir_labels = {
-            'Control': 'CONTROL_EXP_PATH'}  # TODO: add rest of directories when we get other experimental dirs
+            'Control': 'EXP_TRAJECTORIES_CONTROL',
+            'Left': 'EXP_TRAJECTORIES_LEFT',
+            'Right': 'EXP_TRAJECTORIES_RIGHT'}
         directory = i_o.get_directory(dir_labels[experimental_condition])
 
         self.agent_obj = None
@@ -407,7 +431,7 @@ class Experimental_Trajectory(Trajectory):
         ]
 
         for fname in [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]:  # list files
-            print "Loading " + fname
+            print "Loading {} from {}".format(fname, directory)
             file_path = os.path.join(directory, fname)
             # base_name = os.path.splitext(file_path)[0]
 
@@ -417,7 +441,13 @@ class Experimental_Trajectory(Trajectory):
             df_len = len(dataframe.position_x)
 
             # take fname number (slice out "control_" and ".csv")
-            fname_num = int(fname[8:-4])
+            fname_num = int(fname[:-4])
+
+            # ensure that csv fname is just an int
+            if type(fname_num) is not int:
+                raise ValueError('''we are expecting csv files to be integers.
+                    instead, we found type {}. culprit: {}'''.format(type(fname_num), fname))
+
             dataframe['trajectory_num'] = [fname_num] * df_len
             dataframe['tsi'] = np.arange(df_len)
 
