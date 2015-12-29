@@ -106,7 +106,6 @@ def get_directory(selection=None):
     Out:
     directory path
     """
-    # basic paths
     PROJECT_PATH = os.path.dirname(unit_tests.__file__)
     EXPERIMENTS_PATH = os.path.join(PROJECT_PATH, 'data', 'experiments')
     MODEL_PATH = os.path.join(PROJECT_PATH, 'data', 'model')
@@ -122,8 +121,9 @@ def get_directory(selection=None):
     THERMOCOUPLE_RAW_RIGHT = os.path.join(THERMOCOUPLE, 'raw_right')
     THERMOCOUPLE_TIMEAVG_LEFT = os.path.join(THERMOCOUPLE, 'timeavg_left')
     THERMOCOUPLE_TIMEAVG_RIGHT = os.path.join(THERMOCOUPLE, 'timeavg_right')
-    BOOL_LEFT_CSV = os.path.join(PLUME_PATH, 'left', 'left_plume_bounds.csv')
-    BOOL_RIGHT_CSV = os.path.join(PLUME_PATH, 'right', 'right_plume_bounds.csv')
+    BOOL_LEFT_CSV = os.path.join(PLUME_PATH, 'boolean', 'left', 'left_plume_bounds.csv')
+    BOOL_RIGHT_CSV = os.path.join(PLUME_PATH, 'boolean', 'right', 'right_plume_bounds.csv')
+
 
 
 
@@ -141,7 +141,7 @@ def get_directory(selection=None):
         'THERMOCOUPLE_TIMEAVG_LEFT': THERMOCOUPLE_TIMEAVG_LEFT,
         'THERMOCOUPLE_TIMEAVG_RIGHT': THERMOCOUPLE_TIMEAVG_RIGHT,
         'BOOL_LEFT_CSV': BOOL_LEFT_CSV,
-        'BOOL_RIGHT_CSV': BOOL_RIGHT_CSV
+        'BOOL_RIGHT_CSV': BOOL_RIGHT_CSV,
     }
 
 
