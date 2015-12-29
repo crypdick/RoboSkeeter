@@ -39,7 +39,8 @@ class Scoring():
                           'accelerations': ['a_x', 'a_y', 'a_z'],
                           'curvature': ['c'],
                           'positions': ['p_x', 'p_y', 'p_z'],
-                          'crosswind_position': ['p_y']}
+                          'crosswind_position': ['p_y'],
+                          'crosswind_velocity': ['v_y']}
 
         kinematic_tokens = []
         for kin in kinematics_list:
