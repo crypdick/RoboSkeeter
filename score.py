@@ -7,59 +7,53 @@ import scripts.pickle_experiments
 from scripts.math_sorcery import calculate_1Dkde, evaluate_kde
 
 
-def score(targ_ensemble, ref_bins_vals='pickle'):
-    if ref_bins_vals is 'pickle':  # load already calculated KDEs
-        experimental_bins, experimental_vals = scripts.pickle_experiments.load_mosquito_kde_data_dicts()
-    else:  # provided
-        experimental_bins, experimental_vals = ref_bins_vals
+class Scoring():
+    def __init__(self, ref_bins_vals='pickle'):
+
+        if ref_bins_vals is 'pickle':  # load already calculated KDEs
+            print "loading re-calculated scoring data as reference. make sure this pickle is up-to-date!"
+            self.experimental_bins, self.experimental_vals = scripts.pickle_experiments.load_mosquito_kde_data_dicts()
+        else:  # provided
+            self.experimental_bins, self.experimental_vals = ref_bins_vals
+
+        self.targ_data, self.targ_KDEs, self.targ_vals = None, None, None
+        self.dkls, self.dkl_sum = None, None
+
+    def score_ensemble(self, ensemble, kinematics_list=['velocities', 'curvature']):
+        self.targ_vals = self._get_target_data(ensemble)
+        self.dkls = self._calc_dkls(kinematics_list)
+        self.dkl_sum = sum(self.dkls)
+
+        return self.dkl_sum
+
+    def _get_target_data(self, ensemble):
+        targ_data = get_data(ensemble)
+        targ_KDEs = calc_kde(targ_data)
+        targ_vals = evaluate_kdes(targ_KDEs,
+                                  self.experimental_bins)  # we evaluate targ KDE at experimental bins for comparison
+
+        return targ_vals
+
+    def _calc_dkls(self, kinematics_list):
+        kinematic_dict = {'velocities': ['v_x', 'v_y', 'v_z'],
+                          'accelerations': ['a_x', 'a_y', 'a_z'],
+                          'curvature': ['c'],
+                          'positions': ['p_x', 'p_y', 'p_z'],
+                          'crosswind_position': ['p_y']}
+
+        kinematic_tokens = []
+        for kin in kinematics_list:
+            kinematic_tokens.extend(kinematic_dict[kin])
+
+        dkls = []
+        for token in kinematic_tokens:
+            exp_distribution = self.experimental_vals[token]
+            targ_distribution = self.targ_vals[token]
+            dkls.append(entropy(targ_distribution, qk=exp_distribution))
+
+        return dkls
 
 
-
-    targ_data = get_data(targ_ensemble)
-    targ_KDEs = calc_kde(targ_data)
-    targ_vals = evaluate_kdes(targ_KDEs, experimental_bins)  # we evaluate targ KDE at experimental bins for comparison
-
-
-    # solve DKL b/w target and reference trajectories
-    dkl_v_x = entropy(targ_vals['v_x'], qk=experimental_vals['v_x'])
-    dkl_v_y = entropy(targ_vals['v_y'], qk=experimental_vals['v_y'])
-    dkl_v_z = entropy(targ_vals['v_z'], qk=experimental_vals['v_z'])
-#    dkl_a_x = entropy(targ_vals['a_x'], qk=experimental_vals['a_x'])
-#    dkl_a_y = entropy(targ_vals['a_y'], qk=experimental_vals['a_y'])
-#    dkl_a_z = entropy(targ_vals['a_z'], qk=experimental_vals['a_z'])
-    dkl_c = entropy(targ_vals['c'], qk=experimental_vals['c']) * 3  # scaled up by 6 to increase relative importance
-
-    dkl_scores = [dkl_v_x, dkl_v_y, dkl_v_z, dkl_c]
-
-    # for i, val in enumerate(dkl_scores):
-    #     if val > 20:
-    #         dkl_scores[i] = 20.
-
-    dkl_score = sum(dkl_scores)
-
-
-    # ################ ACF metrics############
-    # # TODO: switch to RMSE of ACFs
-    # N_TRAJECTORIES = ensemble.trajectory_num.max()
-    #
-    # acf_distances = []
-    # for i in range(N_TRAJECTORIES):
-    #     df = ensemble.loc[ensemble['trajectory_num']==i]
-    #     acf_threshcross_index = scripts.acfanalyze.index_drop(df, thresh=ACF_THRESH, verbose=False)
-    #     if acf_threshcross_index is 'explosion':  # bad trajectory!
-    #         acf_distances.append(300)
-    #     else:
-    #         acf_distances.append(np.mean(acf_threshcross_index))
-    #
-    # acf_mean = np.mean(acf_distances)
-    # rmse_ACF = abs(acf_mean-16.)
-    # # acf_score = np.log(acf_score+1)/20.
-    # rmse_ACF /= 20.  #shrink influence
-    # print "acf score", rmse_ACF
-    # print "dkl_score", dkl_score
-    # combined_score = dkl_score + rmse_ACF
-
-    return dkl_score, dkl_scores, targ_vals
 
 
 def get_data(trajectory):
@@ -88,6 +82,7 @@ def calc_bins(data):
 
 
 def calc_kde(data):
+    '''takes a dictionary of vectors and returns a kernel density function of each vector '''
     kdes_dict = {}
 
     for k, v in data.items():
@@ -97,6 +92,7 @@ def calc_kde(data):
 
 
 def evaluate_kdes(kdes_dict, bins_dict):
+    '''given a KDE function and positions, it will evaluate the KDE function at those locations '''
     vals_dict = {}
 
     for kinem, kde in kdes_dict.items():
