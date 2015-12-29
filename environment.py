@@ -207,7 +207,22 @@ class Timeavg_Plume(Plume):
         pass
 
     def _load_plume_data(self):
-        raise NotImplementedError
+
+        col_names = ['x', 'y', 'z', 'temperature']
+
+        if self.condition in 'controlControlCONTROL':
+            return None
+        elif self.condition in 'lLleftLeft':
+            plume_dir = get_directory('THERMOCOUPLE_TIMEAVG_LEFT')
+            df = pd.read_csv(plume_dir, names=col_names)
+        elif self.condition in 'rightRight':
+            plume_dir = get_directory('THERMOCOUPLE_TIMEAVG_RIGHT')
+            df = pd.read_csv(plume_dir, names=col_names)
+        else:
+            raise Exception('problem with loading plume data {}'.format(self.condition))
+
+        return df
+
 
 
 if __name__ == '__main__':
