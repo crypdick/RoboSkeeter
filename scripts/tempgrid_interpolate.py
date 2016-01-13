@@ -5,6 +5,7 @@ Created on Wed Dec 09 12:22:56 2015
 @author: Sharri
 """
 
+from mpl_toolkits.mplot3d import axes3d
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
@@ -15,20 +16,22 @@ tempdata = np.genfromtxt(tempdata_fname, delimiter=',')
 
 # TODO: unique along axis
 # unique positions of recorded temperature
-x_coords = np.sort(np.unique(tempdata[:, 0]))
-y_coords = np.sort(np.unique(tempdata[:, 1]))
-z_coords = np.sort(np.unique(tempdata[:, 2]))
+x_coords = np.sort(np.unique(tempdata[:, 0])) # 14
+y_coords = np.sort(np.unique(tempdata[:, 1])) # 18
+z_coords = np.sort(np.unique(tempdata[:, 2]))  # len 8
+temps = tempdata[:, 3]  # len 1382
 
 grid_x, grid_y, grid_z = np.meshgrid(x_coords, y_coords, z_coords)
 
 # time averaged temperature in grid shape (18,14,8 for right data, which is what i'm building this with)
+# This file is missing
 grid_temp = np.genfromtxt(
     'C:/Users/Sharri/Dropbox/Le grand dossier du Sharri/Data/Temperature Data/grid_right_plume.csv',
     delimiter=',')
 grid_temp = np.reshape(grid_temp, (18, 14, 8))
 
 # create function to interpolate new data points
-interp_func = RegularGridInterpolator((y_coords, x_coords, z_coords), grid_temp)
+interp_func = RegularGridInterpolator((y_coords, x_coords, z_coords), grid_temp)  # todo: should y come before x?
 
 # Before interpolating, get rid of NaNs. (This is the problem)
 
@@ -42,9 +45,11 @@ grid_temp[nan_truthtable] = interp_func(nan_locations(nan_truthtable), nan_locat
                                         grid_temp[~nan_truthtable])
 
 # Create finer mesh of regularly spaced points at which we'll interpolate, roughly 1" volume
+# TODO: make actual min max bounds of windtunnel
 finemesh_x = np.linspace(np.min(x_coords), np.max(x_coords), 40)
 finemesh_y = np.linspace(np.min(y_coords), np.max(y_coords), 25)
 finemesh_z = np.linspace(np.min(z_coords), np.max(z_coords), 20)
+# TODO: wtf Nones?
 uniform_x, uniform_y, uniform_z = interp_func(finemesh_x[:, None, None],
                                               finemesh_y[None, :, None],
                                               finemesh_z[None, None, :])
@@ -63,7 +68,7 @@ spatial_grad_x, spatial_grad_y, spatial_grad_z = np.gradient(interp_grid,
 
 # Image spatial gradient
 fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
+ax = fig.gca(projection='3d')
 
 ax.quiver(finemesh_x, finemesh_y, finemesh_z, spatial_grad_x, spatial_grad_y, spatial_grad_z)
 
