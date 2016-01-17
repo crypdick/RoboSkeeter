@@ -369,8 +369,8 @@ class Trajectory(object):
         if show_plume:
             pwt.draw_plume(self.experiment.plume, ax=ax)
 
-        animate_trajectory_callable.wrapper(fig, ax, x_t)
-
+        anim = animate_trajectory_callable.Windtunnel_animation(fig, ax, x_t)
+        anim.start_animation()
 
 
 
