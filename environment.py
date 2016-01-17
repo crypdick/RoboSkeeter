@@ -10,12 +10,7 @@ from scripts.i_o import get_directory
 class Windtunnel():
     def __init__(self, experimental_condition):
         """
-        boundary: (array)
-            specify where walls are  (minx, maxx, miny, maxy)
-        collision type:
-            'elastic', 'crash'
-
-        TODO: class  Wall. left wall right wall
+        experimental_condition
 
         """
         self.walls = Walls()
