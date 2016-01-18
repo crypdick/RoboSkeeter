@@ -46,6 +46,8 @@ class Forces():
     def stimF(self, args):
         """given force direction and strength, return a force vector
         decision policies: 'cast_only', 'surge_only', 'cast+surge'
+
+        FIXME: if cast in decision_policy
         """
         if self.decision_policy is 'cast_only':
             force = self._stimF_cast_only(*args)
@@ -53,6 +55,8 @@ class Forces():
             force = self._stimF_surge_only(*args)
         elif self.decision_policy is 'cast+surge':
             raise NotImplementedError
+        elif self.decision_policy is 'temp_gradient':
+            force = self._stimF_temp_gradient(*args)
         elif self.decision_policy is 'ignore':
             force = np.array([0., 0., 0.])
         else:
@@ -116,3 +120,7 @@ class Forces():
             force = np.array([0., 0., 0.])
 
         return force
+
+    def _stimF_temp_gradient(self, gradient):
+        """gradient vector * stimFstrength"""
+        FIXME
