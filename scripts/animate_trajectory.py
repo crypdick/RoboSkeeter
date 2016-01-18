@@ -59,9 +59,11 @@ def init():
 def animate(i):
     # we'll step two time-steps per frame.  This leads to nice results.
     i = (2 * i) % x_t.shape[1]
+    print i
 
     for line, pt, xi in zip(lines, pts, x_t):
         x, y, z = xi[:i].T
+        print xi.shape
         line.set_data(x, y)
         line.set_3d_properties(z)
 
@@ -80,7 +82,7 @@ anim = animation.FuncAnimation(fig, animate, init_func=init,
                                frames=len(p))  # original:  frames=500, interval=30, blit=True)
 
 # added writer b/c original func didn't work
-Writer = animation.writers['ffmpeg']
+Writer = animation.writers['mencoder']
 writer = Writer(fps=100, metadata=dict(artist='Richard'), bitrate=1000)
 anim.save('{}-{}.mp4'.format(sim_or_exp, trajectory_i), writer=writer)
 
