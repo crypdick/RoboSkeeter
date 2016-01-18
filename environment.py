@@ -6,6 +6,7 @@ import pandas as pd
 import scripts.plot_windtunnel as pwt
 from scripts.i_o import get_directory
 from scipy.interpolate import griddata
+from scipy.spatial import cKDTree as kdt
 
 class Windtunnel():
     def __init__(self, experimental_condition):
@@ -196,16 +197,18 @@ class Timeavg_Plume(Plume):
         super(self.__class__, self).__init__(experiment)
 
         # initialize vals
-        self.interpolated_data = pd.DataFrame()
+        self.data = pd.DataFrame()
         self._grid_x, self._grid_y, self.grid_z, self._interpolated_temps = None, None, None, None
         self._gradient_x, self._gradient_y, self._gradient_z = None, None, None
 
-        # number of x, y, z positions to interpolate the data
-        resolution = (100j, 25j, 25j) # stored as complex numbers for mgrid to work properly
+        # number of x, y, z positions to interpolate the data. numbers chosen to reflect the spacing at which the measurements
+        # were taken to avoid gradient values of 0 due to undersampling
+        resolution = (50j, 25j, 8j) # stored as complex numbers for mgrid to work properly
 
-        self.data = self._load_plume_data()
+        self._raw_data = self._load_plume_data()
         self._interpolate_data(resolution)
         self._calc_gradient()
+        self.tree = self._calc_kdtree()
 
     def in_plume(self, position):
         pass
@@ -221,6 +224,14 @@ class Timeavg_Plume(Plume):
 
         plt.show()
 
+    def get_nearest(self, location):
+        """given x,y,z return nearest
+
+        query() returns """
+
+        _, index = self.tree.query(location)
+        print index
+        print self.data.iloc[index]
 
     def _load_plume_data(self):
 
@@ -237,25 +248,25 @@ class Timeavg_Plume(Plume):
         else:
             raise Exception('problem with loading plume data {}'.format(self.condition))
 
-        return df
+
+        return df.dropna()
 
     def _interpolate_data(self, resolution):
         self._grid_x, self._grid_y, self._grid_z = np.mgrid[0.:1.:resolution[0], -0.127:0.127:resolution[1], 0:0.254:resolution[2]]
         print self._grid_x.shape
         # grid_x, grid_y, grid_z = np.mgrid[0.:1.:100j, -0.127:0.127:25j, 0:0.254:25j]
-        points = self.data[['x', 'y', 'z']].values  # (1382, 3)
-        temps = self.data.temperature.values  # len 1382
+        points = self._raw_data[['x', 'y', 'z']].values  # (1382, 3)
+        temps = self._raw_data.temperature.values  # len 1382
 
         self._interpolated_temps = griddata(points,
                                       temps,
                                       (self._grid_x, self._grid_y, self._grid_z),
                                       method='nearest')
-        print self._interpolated_temps.ravel().shape
 
-        self.interpolated_data['x'] = self._grid_x.ravel()
-        self.interpolated_data['y'] = self._grid_y.ravel()
-        self.interpolated_data['z'] = self._grid_z.ravel()
-        self.interpolated_data['avg_temp'] = self._interpolated_temps.ravel()
+        self.data['x'] = self._grid_x.ravel()
+        self.data['y'] = self._grid_y.ravel()
+        self.data['z'] = self._grid_z.ravel()
+        self.data['avg_temp'] = self._interpolated_temps.ravel()
 
 
     def _calc_gradient(self):
@@ -265,10 +276,15 @@ class Timeavg_Plume(Plume):
                                                              self._grid_y,
                                                              self._grid_z)
 
-        self.interpolated_data['gradient_x'] = self._gradient_x.ravel()
-        self.interpolated_data['gradient_y'] = self._gradient_y.ravel()
-        self.interpolated_data['gradient_z'] = self._gradient_z.ravel()
-        self.interpolated_data['gradient_mag'] = np.linalg.norm(self.interpolated_data[['gradient_x', 'gradient_y', 'gradient_z']])
+        self.data['gradient_x'] = self._gradient_x.ravel()
+        self.data['gradient_y'] = self._gradient_y.ravel()
+        self.data['gradient_z'] = self._gradient_z.ravel()
+        self.data.replace([np.inf, -np.inf], np.nan).fillna(0, inplace=True)  # replace NaNs, infs before calculating norm
+        self.data['gradient_mag'] = np.linalg.norm(self.data[['gradient_x', 'gradient_y', 'gradient_z']], axis=1)
+
+    def _calc_kdtree(self):
+        data = zip(self.data.x, self.data.y, self.data.z)
+        return kdt(data)
 
 
 
