@@ -203,7 +203,7 @@ class Timeavg_Plume(Plume):
 
         # number of x, y, z positions to interpolate the data. numbers chosen to reflect the spacing at which the measurements
         # were taken to avoid gradient values of 0 due to undersampling
-        resolution = (50j, 25j, 8j) # stored as complex numbers for mgrid to work properly
+        resolution = (14j, 17j, 7j) # stored as complex numbers for mgrid to work properly
 
         self._raw_data = self._load_plume_data()
         self._interpolate_data(resolution)
@@ -213,25 +213,26 @@ class Timeavg_Plume(Plume):
     def in_plume(self, position):
         pass
 
-    def show_gradient(self):
+    def show_gradient(self, thresh = 10):
         from mpl_toolkits.mplot3d import axes3d
         import matplotlib.pyplot as plt
 
         fig = plt.figure()
         ax = fig.gca(projection='3d')
 
-        ax.quiver(self._grid_x, self._grid_y, self._grid_z, self._gradient_x, self._gradient_y, self._gradient_z, length=0.01)
+        filt = self.data[self.data.gradient_mag > thresh]
+
+        ax.quiver(filt.x, filt.y, filt.z, filt.gradient_x, filt.gradient_y, filt.gradient_z, length=0.01)
 
         plt.show()
 
     def get_nearest(self, location):
-        """given x,y,z return nearest
+        """given [x,y,z] return nearest
 
         query() returns """
 
         _, index = self.tree.query(location)
-        print index
-        print self.data.iloc[index]
+        return self.data.iloc[index]
 
     def _load_plume_data(self):
 
