@@ -197,17 +197,30 @@ class Timeavg_Plume(Plume):
 
         # initialize vals
         self.interpolated_data = pd.DataFrame()
+        self._grid_x, self._grid_y, self.grid_z, self._interpolated_temps = None, None, None, None
+        self._gradient_x, self._gradient_y, self._gradient_z = None, None, None
+
+        # number of x, y, z positions to interpolate the data
+        Nx, Ny, Nz = 100, 25, 25
 
         self.data = self._load_plume_data()
-        print self.data.columns
-        self._interpolate_data()
+        self._interpolate_data((Nx, Ny, Nz))
         self._calc_gradient()
 
     def in_plume(self, position):
         pass
 
-    def show(self):
-        pass
+    def show_gradient(self):
+        from mpl_toolkits.mplot3d import axes3d
+        import matplotlib.pyplot as plt
+
+        fig = plt.figure()
+        ax = fig.gca(projection='3d')
+
+        ax.quiver(self._grid_x, self._grid_y, self._grid_z, self._gradient_x, self._gradient_y, self._gradient_z, length=0.01)
+
+        plt.show()
+
 
     def _load_plume_data(self):
 
@@ -226,33 +239,35 @@ class Timeavg_Plume(Plume):
 
         return df
 
-    def _interpolate_data(self):
-        grid_x, grid_y, grid_z = np.mgrid[0.:1.:10j, -0.127:0.127:6j, 0:0.254:3j]
+    def _interpolate_data(self, resolution):
+        self._grid_x, self._grid_y, self._grid_z = np.mgrid[0.:1.:resolution[0], -0.127:0.127:resolution[1], 0:0.254:resolution[2]]
+        print self._grid_x
         # grid_x, grid_y, grid_z = np.mgrid[0.:1.:100j, -0.127:0.127:25j, 0:0.254:25j]
         points = self.data[['x', 'y', 'z']].values  # (1382, 3)
         temps = self.data.temperature.values  # len 1382
 
-        interpolated_temps = griddata(points,
+        self._interpolated_temps = griddata(points,
                                       temps,
-                                      (self.grid_x, self.grid_y, self.grid_z),
+                                      (self._grid_x, self._grid_y, self._grid_z),
                                       method='nearest')
+        print self._interpolated_temps.ravel().shape
 
-        self.interpolated_data['x'] = self.grid_x.ravel()
-        self.interpolated_data['y'] = self.grid_y.ravel()
-        self.interpolated_data['z'] = self.grid_z.ravel()
-        self.interpolated_data['avg_temp'] = self.interpolated_temps.ravel()
+        self.interpolated_data['x'] = self._grid_x.ravel()
+        self.interpolated_data['y'] = self._grid_y.ravel()
+        self.interpolated_data['z'] = self._grid_z.ravel()
+        self.interpolated_data['avg_temp'] = self._interpolated_temps.ravel()
 
 
     def _calc_gradient(self):
         # Solve for the spatial gradient
-        gradient_x, gradient_y, gradient_z = np.gradient(self.interpolated_data.avg_temp,
-                                                             self.interpolated_data.x,
-                                                             self.interpolated_data.y,
-                                                             self.interpolated_data.z)
+        self._gradient_x, self._gradient_y, self._gradient_z = np.gradient(self._interpolated_temps,
+                                                             self._grid_x,
+                                                             self._grid_y,
+                                                             self._grid_z)
 
-        self.interpolated_data['gradient_x'] = gradient_x.ravel()
-        self.interpolated_data['gradient_y'] = gradient_y.ravel()
-        self.interpolated_data['gradient_z'] = gradient_z.ravel()
+        self.interpolated_data['gradient_x'] = self._gradient_x.ravel()
+        self.interpolated_data['gradient_y'] = self._gradient_y.ravel()
+        self.interpolated_data['gradient_z'] = self._gradient_z.ravel()
 
 
 
