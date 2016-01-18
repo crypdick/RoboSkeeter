@@ -201,10 +201,10 @@ class Timeavg_Plume(Plume):
         self._gradient_x, self._gradient_y, self._gradient_z = None, None, None
 
         # number of x, y, z positions to interpolate the data
-        Nx, Ny, Nz = 100, 25, 25
+        resolution = (100j, 25j, 25j) # stored as complex numbers for mgrid to work properly
 
         self.data = self._load_plume_data()
-        self._interpolate_data((Nx, Ny, Nz))
+        self._interpolate_data(resolution)
         self._calc_gradient()
 
     def in_plume(self, position):
@@ -241,7 +241,7 @@ class Timeavg_Plume(Plume):
 
     def _interpolate_data(self, resolution):
         self._grid_x, self._grid_y, self._grid_z = np.mgrid[0.:1.:resolution[0], -0.127:0.127:resolution[1], 0:0.254:resolution[2]]
-        print self._grid_x
+        print self._grid_x.shape
         # grid_x, grid_y, grid_z = np.mgrid[0.:1.:100j, -0.127:0.127:25j, 0:0.254:25j]
         points = self.data[['x', 'y', 'z']].values  # (1382, 3)
         temps = self.data.temperature.values  # len 1382
@@ -268,6 +268,7 @@ class Timeavg_Plume(Plume):
         self.interpolated_data['gradient_x'] = self._gradient_x.ravel()
         self.interpolated_data['gradient_y'] = self._gradient_y.ravel()
         self.interpolated_data['gradient_z'] = self._gradient_z.ravel()
+        self.interpolated_data['gradient_mag'] = np.linalg.norm(self.interpolated_data[['gradient_x', 'gradient_y', 'gradient_z']])
 
 
 
