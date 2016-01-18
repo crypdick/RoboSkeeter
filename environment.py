@@ -5,7 +5,7 @@ import pandas as pd
 
 import scripts.plot_windtunnel as pwt
 from scripts.i_o import get_directory
-
+from scipy.interpolate import griddata
 
 class Windtunnel():
     def __init__(self, experimental_condition):
@@ -104,7 +104,7 @@ class Heater():
 
 
 class Plume(object):
-    ''' Instantiates a plume object.
+    ''' The Plume superclass
 
     Args:
     condition: {left|right|None}
@@ -118,6 +118,7 @@ class Plume(object):
 
 
 class Boolean_Plume(Plume):
+    """Are you in the plume Y/N"""
     def __init__(self, experiment):
         super(self.__class__, self).__init__(experiment)
 
@@ -190,10 +191,17 @@ class Boolean_Plume(Plume):
 
 
 class Timeavg_Plume(Plume):
+    """time-averaged temperature readings taken inside the windtunnel"""
     def __init__(self, experiment):
-        super(Plume, self).__init__(experiment)
+        super(self.__class__, self).__init__(experiment)
+
+        # initialize vals
+        self.interpolated_data = pd.DataFrame()
 
         self.data = self._load_plume_data()
+        print self.data.columns
+        self._interpolate_data()
+        self._calc_gradient()
 
     def in_plume(self, position):
         pass
@@ -208,15 +216,44 @@ class Timeavg_Plume(Plume):
         if self.condition in 'controlControlCONTROL':
             return None
         elif self.condition in 'lLleftLeft':
-            plume_dir = get_directory('THERMOCOUPLE_TIMEAVG_LEFT')
+            plume_dir = get_directory('THERMOCOUPLE_TIMEAVG_LEFT_CSV')
             df = pd.read_csv(plume_dir, names=col_names)
         elif self.condition in 'rightRight':
-            plume_dir = get_directory('THERMOCOUPLE_TIMEAVG_RIGHT')
+            plume_dir = get_directory('THERMOCOUPLE_TIMEAVG_RIGHT_CSV')
             df = pd.read_csv(plume_dir, names=col_names)
         else:
             raise Exception('problem with loading plume data {}'.format(self.condition))
 
         return df
+
+    def _interpolate_data(self):
+        grid_x, grid_y, grid_z = np.mgrid[0.:1.:10j, -0.127:0.127:6j, 0:0.254:3j]
+        # grid_x, grid_y, grid_z = np.mgrid[0.:1.:100j, -0.127:0.127:25j, 0:0.254:25j]
+        points = self.data[['x', 'y', 'z']].values  # (1382, 3)
+        temps = self.data.temperature.values  # len 1382
+
+        interpolated_temps = griddata(points,
+                                      temps,
+                                      (self.grid_x, self.grid_y, self.grid_z),
+                                      method='nearest')
+
+        self.interpolated_data['x'] = self.grid_x.ravel()
+        self.interpolated_data['y'] = self.grid_y.ravel()
+        self.interpolated_data['z'] = self.grid_z.ravel()
+        self.interpolated_data['avg_temp'] = self.interpolated_temps.ravel()
+
+
+    def _calc_gradient(self):
+        # Solve for the spatial gradient
+        gradient_x, gradient_y, gradient_z = np.gradient(self.interpolated_data.avg_temp,
+                                                             self.interpolated_data.x,
+                                                             self.interpolated_data.y,
+                                                             self.interpolated_data.z)
+
+        self.interpolated_data['gradient_x'] = gradient_x.ravel()
+        self.interpolated_data['gradient_y'] = gradient_y.ravel()
+        self.interpolated_data['gradient_z'] = gradient_z.ravel()
+
 
 
 
