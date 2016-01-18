@@ -18,6 +18,8 @@ class Base_Experiment(object):
 
         if self.plume_type == "Boolean":
             self.plume = environment.Boolean_Plume(self)
+        elif self.plume_type == "timeavg":
+            self.plume = environment.Timeavg_Plume(self)
         else:
             raise NotImplementedError("no such plume type {}".format(self.plume_type))
 
@@ -46,7 +48,7 @@ def run_simulation(agent_kwargs, experiment_kwargs):
                              'time_max': 6.,
                              'bounded': True,
                              'number_trajectories': 1,
-                             'plume_type': "Boolean"
+                             'plume_type': "timeavg"#"Boolean"
                              }
     if agent_kwargs is None:
         agent_kwargs = {'randomF_strength': 6.55599224e-06,
