@@ -7,10 +7,6 @@ from agent import Agent
 
 class Base_Experiment(object):
     def __init__(self, **kwargs):
-        self.condition = kwargs.get("condition")
-        self.time_max = kwargs.get("time_max")
-        self.bounded = kwargs.get('bounded', 6.)
-
         for key in kwargs:
             setattr(self, key, kwargs[key])
 
@@ -20,6 +16,8 @@ class Base_Experiment(object):
             self.plume = environment.Boolean_Plume(self)
         elif self.plume_type == "timeavg":
             self.plume = environment.Timeavg_Plume(self)
+        elif self.plume_type == "None":
+            self.plume = None
         else:
             raise NotImplementedError("no such plume type {}".format(self.plume_type))
 
@@ -36,8 +34,8 @@ class Simulation(Base_Experiment):
 
 
 class Experiment(Base_Experiment):
-    def __init__(self, experimental_condition):
-        super(self.__class__, self).__init__(condition=experimental_condition)
+    def __init__(self, **experiment_kwargs):
+        super(self.__class__, self).__init__(**experiment_kwargs)
 
         self.trajectories = trajectory.Experimental_Trajectory(self)
         self.trajectories.load_experiments(experimental_condition=self.condition)
@@ -47,7 +45,7 @@ def run_simulation(agent_kwargs, experiment_kwargs):
         experiment_kwargs = {'condition': 'Left',  # {'Left', 'Right', 'Control'}
                              'time_max': 6.,
                              'bounded': True,
-                             'number_trajectories': 1,
+                             'number_trajectories': 100,
                              'plume_type': "timeavg"#"Boolean"
                              }
     if agent_kwargs is None:
@@ -57,7 +55,7 @@ def run_simulation(agent_kwargs, experiment_kwargs):
                         'collision_type': 'part_elastic',  # 'elastic', 'part_elastic'
                         'restitution_coeff': 0.1,  # 0.8
                         'stimulus_memory': 100,
-                        'decision_policy': 'cast_only',  # 'surge_only', 'cast_only', 'cast+surge', 'ignore'
+                        'decision_policy': 'gradient',  # 'surge_only', 'cast_only', 'cast+surge', 'gradient', 'ignore'
                         'initial_position_selection': 'downwind_high',
                         'verbose': True
                         }
@@ -73,15 +71,19 @@ def run_simulation(agent_kwargs, experiment_kwargs):
     return simulation, trajectory, windtunnel, plume, agent
 
 
-def get_experiment(condition='Control'):
-    experiment = Experiment(condition)
+def get_experiment():
+    experiment_kwargs = {'condition': 'Control',  # {'Left', 'Right', 'Control'}
+                         'plume_type': "None"#"Boolean"
+                         }
+
+    experiment = Experiment(**experiment_kwargs)
     trajectory, windtunnel, plume = experiment.trajectories, experiment.windtunnel, experiment.plume
     return experiment, trajectory, windtunnel, plume
 
 
 if __name__ is '__main__':
-    simulation, trajectory_s, windtunnel, plume, agent = run_simulation(None, None)
-    # experiment, trajectory_e, windtunnel, plume = get_experiment(condition='Control')
+    # simulation, trajectory_s, windtunnel, plume, agent = run_simulation(None, None)
+    experiment, trajectory_e, windtunnel, plume = get_experiment()
 
 
 ######################### dump data for csv for Sharri
