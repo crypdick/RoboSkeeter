@@ -301,6 +301,17 @@ class Trajectory(object):
 
         return self.total_score
 
+    def calc_side_ratio_score(self):
+        """upwind left vs right ratio"""
+        upwind_half = self.data.loc[self.data.position_x > 0.5]
+        total_pts = len(upwind_half)
+
+        left_upwind_pts = len(self.data.loc[(self.data.position_x > 0.5) & (self.data.position_y < 0)])
+        right_upwind_pts = total_pts - left_upwind_pts
+        print "seconds extra on left side: ", (left_upwind_pts - right_upwind_pts)/ 100.
+        ratio = float(left_upwind_pts)/right_upwind_pts
+        print ratio
+
     def _extract_number_from_fname(self, token):
         extract_digits = lambda stng: "".join(char for char in stng if char in string.digits + ".")
         to_float = lambda x: float(x) if x.count(".") <= 1 else None
