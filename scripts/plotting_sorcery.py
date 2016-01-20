@@ -526,7 +526,7 @@ def plot_forces_violinplots(ensemble, agent_obj):
          'randomF_x', 'randomF_y', 'randomF_z',
          'upwindF_x',
          'wallRepulsiveF_x', 'wallRepulsiveF_y', 'wallRepulsiveF_z',
-         'stimF_x', 'stimF_y']]  # , 'stimF_z']]== Nans
+         'stimF_x', 'stimF_y', 'stimF_z']] #== Nans
     # plot Forces
     #    f, axes = plt.subplots(2, 2, figsize=(9, 9), sharex=True, sharey=True)
     ##    forcefig = plt.figure(5, figsize=(9, 8))
