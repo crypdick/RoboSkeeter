@@ -129,12 +129,14 @@ class Forces():
         """gradient vector * stimFstrength"""
         df = kwargs['gradient']
 
-        scalar = self.stimF_strength * 1e-5
+        scalar = self.stimF_strength
         vector = df[['gradient_x', "gradient_y", "gradient_z"]].values
-        force = self.stimF_strength * vector
+        force = scalar * vector
+        norm = np.linalg.norm(force)
+        if norm > 1e-5:
+            force *= 1e-5/norm
         if np.isnan(force).any():
             raise ValueError("Nans in stimF!! {} {}".format(force, vector))
         if np.isinf(force).any():
             raise ValueError("infs in stimF! {} {}".format(force, vector))
-
         return force
