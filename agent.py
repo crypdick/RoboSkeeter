@@ -103,31 +103,38 @@ class Agent():
         '''
         df_list = []
         traj_i = 0
-        while traj_i < total_trajectories:
-            if self.verbose:
-                sys.stdout.write("\rTrajectory {}/{}".format(traj_i + 1, total_trajectories))
-                sys.stdout.flush()
+        try:
+            print 'Starting simulations. If you run out of patience, hit <CTL>-C to end the loop early.'
 
-            array_dict = self._generate_flight()
-
-            # if len(array_dict['velocity_x']) < 5:  # hack to catch when optimizer makes trajectories explode
-            #     print "catching explosion"
-            #     break
-
-            # add label column to enumerate the trajectories
-            array_len = len(array_dict['tsi'])
-            array_dict['trajectory_num'] = [traj_i] * array_len
-
-            # mk df, add to list of dfs
-            df = pd.DataFrame(array_dict)
-            # df = df.set_index(['trajectory_num'])
-            df_list.append(df)
-
-            traj_i += 1
-            if traj_i == total_trajectories:
+            while traj_i < total_trajectories:
                 if self.verbose:
-                    sys.stdout.write("\rSimulations finished. Performing deep magic.")
+                    sys.stdout.write("\rTrajectory {}/{}".format(traj_i + 1, total_trajectories))
                     sys.stdout.flush()
+
+                array_dict = self._generate_flight()
+
+                # if len(array_dict['velocity_x']) < 5:  # hack to catch when optimizer makes trajectories explode
+                #     print "catching explosion"
+                #     break
+
+                # add label column to enumerate the trajectories
+                array_len = len(array_dict['tsi'])
+                array_dict['trajectory_num'] = [traj_i] * array_len
+
+                # mk df, add to list of dfs
+                df = pd.DataFrame(array_dict)
+                # df = df.set_index(['trajectory_num'])
+                df_list.append(df)
+
+                traj_i += 1
+                if traj_i == total_trajectories:
+                    if self.verbose:
+                        sys.stdout.write("\rSimulations finished. Performing deep magic.")
+                        sys.stdout.flush()
+
+        except KeyboardInterrupt:
+            print "\n Simulations interupted at iteration {}. Continuing...".format(traj_i)
+            pass
 
         self.total_trajectories = total_trajectories
         self.trajectory_obj.load_ensemble_and_analyze(df_list)  # concatinate all the dataframes at once instead of one at a
@@ -431,9 +438,17 @@ class Agent():
 
         return fixed_dct
 
+class Experience():
+    def __init__(self):
+        pass
 
-    
-   
-#    trajectories.describe(plot_kwargs = {'trajectories':False, 'heatmap':True, 'states':True, 'singletrajectories':False, 'force_scatter':True, 'force_violin':True})
-    #trajectories.plot_single_3Dtrajectory()
-#    
+class Behavior():
+    def __init__(self, decision_policy):
+        self.decision_policy = decision_policy
+        """TODO:
+        plume bound interactions
+        plume memory
+
+                """
+
+def Gradient_Following()
