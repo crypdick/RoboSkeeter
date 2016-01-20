@@ -1,7 +1,6 @@
 __author__ = 'richard'
 
 import numpy as np
-
 from scripts import math_sorcery
 
 
@@ -43,20 +42,20 @@ class Forces():
 
         return force
 
-    def stimF(self, args):
+    def stimF(self, kwargs):
         """given force direction and strength, return a force vector
         decision policies: 'cast_only', 'surge_only', 'cast+surge'
 
         FIXME: if cast in decision_policy
         """
         if self.decision_policy is 'cast_only':
-            force = self._stimF_cast_only(*args)
+            force = self._stimF_cast_only(kwargs)
         elif self.decision_policy is 'surge_only':
-            force = self._stimF_surge_only(*args)
+            force = self._stimF_surge_only(kwargs)
         elif self.decision_policy is 'cast+surge':
             raise NotImplementedError
-        elif self.decision_policy is 'temp_gradient':
-            force = self._stimF_temp_gradient(*args)
+        elif self.decision_policy is 'gradient':
+            force = self._stimF_temp_gradient(kwargs)
         elif self.decision_policy is 'ignore':
             force = np.array([0., 0., 0.])
         else:
@@ -65,13 +64,14 @@ class Forces():
 
         return force
 
-    def _stimF_cast_only(self, tsi, plume_interaction_history, triggered_tsi):
+    def _stimF_cast_only(self, kwargs):
         """
-        :param tsi:
-        :param tsi_plume_last_sighted:
-        :param plume_interaction_history: timestep at w hich
         :return:
         """
+        tsi = kwargs['tsi']
+        plume_interaction_history = kwargs['plume_interaction_history']
+        triggered_tsi = kwargs['triggered_tsi']
+
         empty = np.array([0., 0., 0.])
         inside_ago = abs(tsi - triggered_tsi['stimulus'])
         exit_ago = abs(tsi - triggered_tsi['exit'])
@@ -113,7 +113,11 @@ class Forces():
 
             return force
 
-    def _stimF_surge_only(self, tsi, plume_interaction_history, _):
+    def _stimF_surge_only(self, kwargs):
+        tsi = kwargs['tsi']
+        plume_interaction_history = kwargs['plume_interaction_history']
+        triggered_tsi = kwargs['triggered_tsi']
+
         if plume_interaction_history[tsi] is 'inside':
             force = np.array([self.stimF_strength, 0., 0.])
         else:
@@ -121,6 +125,16 @@ class Forces():
 
         return force
 
-    def _stimF_temp_gradient(self, gradient):
+    def _stimF_temp_gradient(self, kwargs):
         """gradient vector * stimFstrength"""
-        FIXME
+        df = kwargs['gradient']
+
+        scalar = self.stimF_strength * 1e-5
+        vector = df[['gradient_x', "gradient_y", "gradient_z"]].values
+        force = self.stimF_strength * vector
+        if np.isnan(force).any():
+            raise ValueError("Nans in stimF!! {} {}".format(force, vector))
+        if np.isinf(force).any():
+            raise ValueError("infs in stimF! {} {}".format(force, vector))
+
+        return force
