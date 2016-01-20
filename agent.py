@@ -158,8 +158,7 @@ class Agent():
                                                                             triggered_tsi)
 
             stimF[tsi], randomF[tsi], totalF[tsi] = \
-                self._calc_forces(tsi, velocity[tsi], plume_interaction, triggered_tsi)
-
+                self._calc_forces(tsi, velocity[tsi], plume_interaction, triggered_tsi, position[tsi])
 
             # calculate current acceleration
             acceleration[tsi] = totalF[tsi] / m
@@ -198,12 +197,19 @@ class Agent():
 
         return V
 
-    def _calc_forces(self, tsi, velocity_now, plume_interaction_history, triggered_tsi):
+    def _calc_forces(self, tsi, velocity_now, plume_interaction_history, triggered_tsi, position_now):
         ################################################
         # Calculate driving forces at this timestep
         ################################################
         randomF = self.forces.randomF(self.randomF_strength)
-        stimF = self.forces.stimF((tsi, plume_interaction_history, triggered_tsi))
+        if "gradient" in self.decision_policy:
+            kwargs = {"gradient" : self.plume_obj.get_nearest(position_now)}
+        elif "surge" in self.decision_policy or "cast" in self.decision_policy:
+            kwargs = {"tsi":tsi,
+                      "plume_interaction_history": plume_interaction_history,
+                      "triggered_tsi": triggered_tsi,
+                      "position_now": position_now}
+        stimF = self.forces.stimF(kwargs)
 
         ################################################
         # calculate total force
