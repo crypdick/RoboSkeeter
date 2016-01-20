@@ -209,9 +209,12 @@ class Timeavg_Plume(Plume):
         self._interpolate_data(resolution)
         self._calc_gradient()
         self.tree = self._calc_kdtree()
+        print """Warning: we don't know the plume bounds for the Timeavg plume, so the in_plume() method \n
+                always returns False"""
 
     def in_plume(self, position):
-        pass
+        """we don't know the plume bounds for the Timeavg plume, so we're returning False always as a dummy value """
+        return False
 
     def show_gradient(self, thresh = 10):
         from mpl_toolkits.mplot3d import axes3d
@@ -223,6 +226,11 @@ class Timeavg_Plume(Plume):
         filt = self.data[self.data.gradient_mag > thresh]
 
         ax.quiver(filt.x, filt.y, filt.z, filt.gradient_x, filt.gradient_y, filt.gradient_z, length=0.01)
+
+        plt.title("Temperature gradient of interpolated time-averaged thermocouple recordings")
+        plt.xlabel("Upwind/downwind")
+        plt.ylabel("Crosswind")
+        plt.clabel("Elevation")
 
         plt.show()
 
@@ -249,15 +257,18 @@ class Timeavg_Plume(Plume):
         else:
             raise Exception('problem with loading plume data {}'.format(self.condition))
 
-
+        # print "raw data nans", df.isnull().sum()
+        print "raw data nans", np.isinf(df.values).sum()
         return df.dropna()
 
     def _interpolate_data(self, resolution):
         self._grid_x, self._grid_y, self._grid_z = np.mgrid[0.:1.:resolution[0], -0.127:0.127:resolution[1], 0:0.254:resolution[2]]
-        print self._grid_x.shape
+        # print self._grid_x.shape
         # grid_x, grid_y, grid_z = np.mgrid[0.:1.:100j, -0.127:0.127:25j, 0:0.254:25j]
         points = self._raw_data[['x', 'y', 'z']].values  # (1382, 3)
         temps = self._raw_data.temperature.values  # len 1382
+
+        # print "raw data dropped nans", self._raw_data.isnull().sum()
 
         self._interpolated_temps = griddata(points,
                                       temps,
@@ -268,6 +279,8 @@ class Timeavg_Plume(Plume):
         self.data['y'] = self._grid_y.ravel()
         self.data['z'] = self._grid_z.ravel()
         self.data['avg_temp'] = self._interpolated_temps.ravel()
+
+        # print "interpolated nans", self.data.isnull().sum()
 
 
     def _calc_gradient(self):
@@ -280,8 +293,12 @@ class Timeavg_Plume(Plume):
         self.data['gradient_x'] = self._gradient_x.ravel()
         self.data['gradient_y'] = self._gradient_y.ravel()
         self.data['gradient_z'] = self._gradient_z.ravel()
-        self.data.replace([np.inf, -np.inf], np.nan).fillna(0, inplace=True)  # replace NaNs, infs before calculating norm
+
+        self.data.fillna(0, inplace=True)  # replace NaNs, infs before calculating norm
+        self.data.replace([np.inf, -np.inf], 0, inplace=True)
+
         self.data['gradient_mag'] = np.linalg.norm(self.data[['gradient_x', 'gradient_y', 'gradient_z']], axis=1)
+
 
     def _calc_kdtree(self):
         data = zip(self.data.x, self.data.y, self.data.z)
