@@ -1,9 +1,10 @@
 __author__ = 'richard'
-import pickle
+import cPickle as pickle
 import os
 
 from scripts import i_o
 import trajectory
+import experiment
 import score
 
 reload(score)
@@ -13,11 +14,10 @@ EXPERIMENT_PATH = i_o.get_directory('EXPERIMENT_PATH')
 
 
 def store_mosquito_pickle():
-    MOSQUITOES = trajectory.Experimental_Trajectory()
-    MOSQUITOES.load_experiments(selection='CONTROL_EXP_PATH')  # load the experimental data
-    pickle.dump(MOSQUITOES, open(os.path.join(EXPERIMENT_PATH, "controls.p"), "wb"))
+    exper = experiment.Experiment(**{'condition': 'Control', 'plume_type': "None"})
+    pickle.dump(exper, open(os.path.join(EXPERIMENT_PATH, "controls.p"), "wb"))
 
-    ref_data = score.get_data(MOSQUITOES)
+    ref_data = score.get_data(exper.trajectories)
     experimental_bins_dict = score.calc_bins(ref_data)
     experimental_KDEs_dict = score.calc_kde(ref_data)
     experimental_vals_dict = score.evaluate_kdes(experimental_KDEs_dict, experimental_bins_dict)
