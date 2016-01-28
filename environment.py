@@ -5,7 +5,7 @@ import pandas as pd
 
 import scripts.plot_windtunnel as pwt
 from scripts.i_o import get_directory
-from scipy.interpolate import griddata
+from scipy.interpolate import Rbf
 from scipy.spatial import cKDTree as kdt
 
 class Windtunnel():
@@ -196,6 +196,15 @@ class Timeavg_Plume(Plume):
     def __init__(self, experiment):
         super(self.__class__, self).__init__(experiment)
 
+        # useful references
+        self.left = -0.127
+        self.right = 0.127
+        self.upwind = 1.0
+        self.downwind = 0.0
+        self.ceiling = 0.254
+        self.floor = 0.
+        self.boundary = [self.downwind, self.upwind, self.left, self.right, self.floor, self.ceiling]
+
         # initialize vals
         self.data = pd.DataFrame()
         self._grid_x, self._grid_y, self.grid_z, self._interpolated_temps = None, None, None, None
@@ -203,20 +212,20 @@ class Timeavg_Plume(Plume):
 
         # number of x, y, z positions to interpolate the data. numbers chosen to reflect the spacing at which the measurements
         # were taken to avoid gradient values of 0 due to undersampling
-        resolution = (14j, 17j, 7j) # stored as complex numbers for mgrid to work properly
+        resolution = (100j, 25j, 25j) # stored as complex numbers for mgrid to work properly
 
         self._raw_data = self._load_plume_data()
         self._interpolate_data(resolution)
         self._calc_gradient()
         self.tree = self._calc_kdtree()
-        print """Warning: we don't know the plume bounds for the Timeavg plume, so the in_plume() method \n
+        print """Warning: we don't know the plume bounds for the Timeavg plume, so the in_plume() method
                 always returns False"""
 
     def in_plume(self, position):
         """we don't know the plume bounds for the Timeavg plume, so we're returning False always as a dummy value """
         return False
 
-    def show_gradient(self, thresh = 10):
+    def show_gradient(self, thresh = 0):
         from mpl_toolkits.mplot3d import axes3d
         import matplotlib.pyplot as plt
 
@@ -226,6 +235,9 @@ class Timeavg_Plume(Plume):
         filt = self.data[self.data.gradient_mag > thresh]
 
         ax.quiver(filt.x, filt.y, filt.z, filt.gradient_x, filt.gradient_y, filt.gradient_z, length=0.01)
+        # ax.set_xlim3d(0, 1)
+        ax.set_ylim3d(-0.127, 0.127)
+        ax.set_zlim3d(0, 0.254)
 
         plt.title("Temperature gradient of interpolated time-averaged thermocouple recordings")
         plt.xlabel("Upwind/downwind")
@@ -257,42 +269,98 @@ class Timeavg_Plume(Plume):
         else:
             raise Exception('problem with loading plume data {}'.format(self.condition))
 
-        # print "raw data nans", df.isnull().sum()
-        print "raw data nans", np.isinf(df.values).sum()
         return df.dropna()
 
+    def _pad_plume_data(self):
+        xmin = self._raw_data.x.min()
+        xmax = self._raw_data.x.max()
+        ymin = self._raw_data.y.min()
+        ymax = self._raw_data.y.max()
+        zmin = self._raw_data.z.min()
+        zmax = self._raw_data.z.max()
+
+        self.downwind
+
     def _interpolate_data(self, resolution):
-        self._grid_x, self._grid_y, self._grid_z = np.mgrid[0.:1.:resolution[0], -0.127:0.127:resolution[1], 0:0.254:resolution[2]]
-        # print self._grid_x.shape
+        if self.condition in 'controlControlCONTROL':
+            return None
+
+        # self._grid_x, self._grid_y, self._grid_z = np.mgrid[0.:1.:resolution[0], -0.127:0.127:resolution[1], 0:0.254:resolution[2]]
         # grid_x, grid_y, grid_z = np.mgrid[0.:1.:100j, -0.127:0.127:25j, 0:0.254:25j]
-        points = self._raw_data[['x', 'y', 'z']].values  # (1382, 3)
+        print len(np.unique(self._raw_data.x)),len(np.unique(self._raw_data.y)), len(np.unique(self._raw_data.z))
+        # self._raw_data['x'] = self._raw_data.x / 5.
+        # self._grid_x = self._grid_x / 5.
+        # points = self._raw_data[['x', 'y', 'z']].values  # (1382, 3)
+        # points = (self._raw_data.x.values, self._raw_data.y.values, self._raw_data.z.values)  # (1382, 3)
+        x,y,z = (self._raw_data.x.values, self._raw_data.y.values, self._raw_data.z.values)  # (1382, 3)
+        print "pts", len(self._raw_data.x.values), np.shape(self._raw_data.x.values)
         temps = self._raw_data.temperature.values  # len 1382
+        print "temps", temps.shape
+        epsilon = 3
+        print "epsilon", epsilon
+        rbfi = Rbf(x,y,z, temps, function='gaussian', smooth=1e-8, epsilon=epsilon)
 
-        # print "raw data dropped nans", self._raw_data.isnull().sum()
+        xi = np.linspace(0, 1, 50)  # xmin * .8
+        yi = np.linspace(-.127, .127, 15)
+        zi = np.linspace(0, .254, 15)
+        print "array shapes", xi.shape, yi.shape, zi.shape
+        self._grid_x, self._grid_y, self._grid_z = np.meshgrid(xi,yi,zi, indexing='ij')
+        xxi = self._grid_x.ravel()  # FIXME flip here
+        yyi = self._grid_y.ravel()
+        zzi = self._grid_z.ravel()
+        print "xxi shape", np.shape(xxi), np.shape(yyi), np.shape(zzi)
+        print "grid shapes", np.shape(self._grid_x)
+        di = rbfi(xxi,yyi,zzi)
+        print "shape di", di.shape
+        self._interpolated_temps = di.reshape((len(xi), len(yi), len(zi)))
+        # print self._interpolated_temps
 
-        self._interpolated_temps = griddata(points,
-                                      temps,
-                                      (self._grid_x, self._grid_y, self._grid_z),
-                                      method='nearest')
 
-        self.data['x'] = self._grid_x.ravel()
-        self.data['y'] = self._grid_y.ravel()
-        self.data['z'] = self._grid_z.ravel()
-        self.data['avg_temp'] = self._interpolated_temps.ravel()
+        # self._interpolated_temps = griddata(points,
+        #                               temps,
+        #                               (self._grid_x, self._grid_y, self._grid_z),
+        #                               method='linear')
+        #
+        # self._interpolated_temps = interpn(points,
+        #                               temps,
+        #                               (self._grid_x, self._grid_y, self._grid_z),
+        #                               method='linear')
 
-        # print "interpolated nans", self.data.isnull().sum()
+        # self.data['x'] = self._grid_x.ravel()
+        # self.data['y'] = self._grid_y.ravel()
+        # self.data['z'] = self._grid_z.ravel()
+        # self.data['avg_temp'] = self._interpolated_temps.ravel()
+        self.data['x'] = xxi
+        self.data['y'] = yyi
+        self.data['z'] = zzi
+        self.data['avg_temp'] = di
+
+        # FIXME: set out of bounds temp to room temp
 
 
     def _calc_gradient(self):
+        if self.condition in 'controlControlCONTROL':
+            return None
+
+
         # Solve for the spatial gradient
         self._gradient_x, self._gradient_y, self._gradient_z = np.gradient(self._interpolated_temps,
                                                              self._grid_x,
                                                              self._grid_y,
                                                              self._grid_z)
 
+
+
         self.data['gradient_x'] = self._gradient_x.ravel()
         self.data['gradient_y'] = self._gradient_y.ravel()
         self.data['gradient_z'] = self._gradient_z.ravel()
+
+        print """raw min {}
+                raw max {}
+                interp min {}
+                interp max {}
+                """.format(self._raw_data.temperature.min(),self._raw_data.temperature.max(),
+                           self.data.avg_temp.min(),self.data.avg_temp.max())
 
         self.data.fillna(0, inplace=True)  # replace NaNs, infs before calculating norm
         self.data.replace([np.inf, -np.inf], 0, inplace=True)
@@ -301,6 +369,9 @@ class Timeavg_Plume(Plume):
 
 
     def _calc_kdtree(self):
+        if self.condition in 'controlControlCONTROL':
+            return None
+
         data = zip(self.data.x, self.data.y, self.data.z)
         return kdt(data)
 
