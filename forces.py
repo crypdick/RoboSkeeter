@@ -139,4 +139,6 @@ class Forces():
             raise ValueError("Nans in stimF!! {} {}".format(force, vector))
         if np.isinf(force).any():
             raise ValueError("infs in stimF! {} {}".format(force, vector))
+
+
         return force

@@ -42,11 +42,11 @@ class Experiment(Base_Experiment):
 
 def run_simulation(agent_kwargs, experiment_kwargs):
     if experiment_kwargs is None:
-        experiment_kwargs = {'condition': 'Left',  # {'Left', 'Right', 'Control'}
+        experiment_kwargs = {'condition': 'Right',  # {'Left', 'Right', 'Control'}
                              'time_max': 6.,
                              'bounded': True,
-                             'number_trajectories': 100,
-                             'plume_type': "timeavg"#"Boolean"
+                             'number_trajectories': 1,
+                             'plume_type': "timeavg"  # "Boolean", "timeavg"
                              }
     if agent_kwargs is None:
         agent_kwargs = {'randomF_strength': 6.55599224e-06,
@@ -54,7 +54,7 @@ def run_simulation(agent_kwargs, experiment_kwargs):
                         'damping_coeff': 3.63674551e-07,
                         'collision_type': 'part_elastic',  # 'elastic', 'part_elastic'
                         'restitution_coeff': 0.1,  # 0.8
-                        'stimulus_memory': 100,
+                        'stimulus_memory': 1,
                         'decision_policy': 'gradient',  # 'surge_only', 'cast_only', 'cast+surge', 'gradient', 'ignore'
                         'initial_position_selection': 'downwind_high',
                         'verbose': True
@@ -72,8 +72,9 @@ def run_simulation(agent_kwargs, experiment_kwargs):
 
 
 def get_experiment():
+    # pick which data to retrieve
     experiment_kwargs = {'condition': 'Control',  # {'Left', 'Right', 'Control'}
-                         'plume_type': "None"#"Boolean"
+                         'plume_type': "None"#"Boolean" "None, "
                          }
 
     experiment = Experiment(**experiment_kwargs)
@@ -82,8 +83,8 @@ def get_experiment():
 
 
 if __name__ is '__main__':
-    # simulation, trajectory_s, windtunnel, plume, agent = run_simulation(None, None)
-    experiment, trajectory_e, windtunnel, plume = get_experiment()
+    simulation, trajectory_s, windtunnel, plume, agent = run_simulation(None, None)
+    # experiment, trajectory_e, windtunnel, plume = get_experiment()
 
 
 ######################### dump data for csv for Sharri
