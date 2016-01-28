@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 
 import numpy as np
-from scipy.optimize import basinhopping
+from scipy.optimize import basinhopping, minimize_scalar
 
 import experiment
 from scripts.pickle_experiments import load_mosquito_kde_data_dicts
@@ -26,22 +26,26 @@ def fly_wrapper(GUESS, *args):
     ##############################################################""".format(GUESS)
 
     restitution_guess = GUESS
-    N_TRAJECTORIES, PLOTTER, (EXP_BINS, EXP_VALS) = args
+    (EXP_BINS, EXP_VALS) = args
+    N_TRAJECTORIES = 20
+    # N_TRAJECTORIES, PLOTTER, (EXP_BINS, EXP_VALS) = args
 
     experiment_kwargs = {'condition': 'Control',
                          'time_max': 6.,
                          'bounded': True,
-                         'number_trajectories': N_TRAJECTORIES
+                         'number_trajectories': N_TRAJECTORIES,
+                         'plume_type': "timeavg"#"Boolean"
                          }
 
     agent_kwargs = {'randomF_strength': 6.55599224e-06,
                     'stimF_strength': 0.,
                     'damping_coeff': 3.63674551e-07,
                     'collision_type': 'part_elastic',
-                    'restitution_coeff': restitution_guess,
+                    'restitution_coeff': restitution_guess,  # Optimizing this
                     'stimulus_memory': 100,
-                    'decision_policy': 'cast_only',  # 'surge_only', 'cast_only', 'cast+surge', 'ignore'
-                    'initial_position_selection': 'downwind_high'
+                    'decision_policy': 'cast_only',  # 'surge_only', 'cast_only', 'cast+surge', 'gradient', 'ignore'
+                    'initial_position_selection': 'downwind_high',
+                    'verbose': False
                     }
 
     simulation, trajectory_s, windtunnel, plume, agent = experiment.run_simulation(agent_kwargs, experiment_kwargs)
@@ -91,7 +95,7 @@ def fly_wrapper(GUESS, *args):
 
 
 class MyBounds(object):
-    def __init__(self, xmax=[1e-4, 1e-4], xmin=[1e-7, 1e-7]):  # , 1e08]):
+    def __init__(self, xmax = [1], xmin = [0]):  #xmax=[1e-4, 1e-4], xmin=[1e-7, 1e-7]):  # , 1e08]):
         self.xmax = np.array(xmax)
         self.xmin = np.array(xmin)
 
@@ -111,15 +115,15 @@ def main(x_0=None):
     global BEST_GUESS
     BEST_GUESS = None
 
-    OPTIM_ALGORITHM = 'SLSQP'
+    OPTIM_ALGORITHM = 'SLSQP'  # for multiple vars,
     PLOTTER = False
     # ACF_THRESH = 0.5
-    GUESS_PARAMS = "[beta, F_rand_strength]"  #, F_WIND_SCALE]"  # [5e-6, 4.12405e-6, 5e-7]
+    GUESS_PARAMS = "[resitution]"  #, F_WIND_SCALE]"  # [5e-6, 4.12405e-6, 5e-7]
     if x_0 is None:
-        INITIAL_GUESS = [3.63674551e-07, 6.55599224e-06]
+        INITIAL_GUESS = [0.1]
     else:
         INITIAL_GUESS = x_0
-    N_TRAJECTORIES = 100
+    N_TRAJECTORIES = 10
 
     print "Starting optimizer."
 
@@ -134,22 +138,31 @@ def main(x_0=None):
 
     mybounds = MyBounds()
 
-    result = basinhopping(
+    # # if minimizing multiple inputs
+    # result = basinhopping(
+    #     fly_wrapper,
+    #     INITIAL_GUESS,
+    #     stepsize=1e-6,
+    #     T=1e-5,
+    #     niter=50,  # number of basin hopping iterations, default 100
+    #     niter_success=8,  # Stop the run if the global minimum candidate remains the same for this number of iterations
+    #     minimizer_kwargs={
+    #         "args": (N_TRAJECTORIES, PLOTTER, (load_mosquito_kde_data_dicts())),
+    #         'method': OPTIM_ALGORITHM,
+    #         "bounds": [0,1], #[(5e-7, 1e-3), (5e-7, 1e-2)],
+    #         "tol": 0.02  # tolerance for considering a basin minimized, set to about the difference between re-scoring
+    #         # same simulation
+    #     },
+    #     disp=True,
+    #     accept_test=mybounds
+    # )
+
+    # if minimizing a scalar
+    result = minimize_scalar(
         fly_wrapper,
-        INITIAL_GUESS,
-        stepsize=1e-6,
-        T=1e-5,
-        niter=50,  # number of basin hopping iterations, default 100
-        niter_success=8,  # Stop the run if the global minimum candidate remains the same for this number of iterations
-        minimizer_kwargs={
-            "args": (N_TRAJECTORIES, PLOTTER, (load_mosquito_kde_data_dicts())),
-            'method': OPTIM_ALGORITHM,
-            "bounds": [(5e-7, 1e-3), (5e-7, 1e-2)],
-            "tol": 0.02  # tolerance for considering a basin minimized, set to about the difference between re-scoring
-            # same simulation
-        },
-        disp=True,
-        accept_test=mybounds
+        bounds=(0., 1.),
+        method='bounded',
+        args=(load_mosquito_kde_data_dicts())
     )
 
     return BEST_GUESS, HIGH_SCORE, result
