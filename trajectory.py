@@ -294,9 +294,9 @@ class Trajectory(object):
             np.savetxt(str(trajectory_i) + ".csv", temp_array, delimiter=",")
 
     def calc_score(self, ref_ensemble='pickle'):
-        scorer = Scoring()
+        scorer = Scoring(ref_bins_vals='pickle')
 
-        self.total_score = scorer.score_ensemble(self)
+        self.total_score = scorer.score_ensemble(self, kinematics_list=['velocities', 'curvature'])
         print "Trajectory score: ", self.total_score
 
         return self.total_score
