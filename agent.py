@@ -104,7 +104,8 @@ class Agent():
         df_list = []
         traj_i = 0
         try:
-            print 'Starting simulations. If you run out of patience, hit <CTL>-C to end the loop early.'
+            if self.verbose:
+                print 'Starting simulations. If you run out of patience, hit <CTL>-C to end the loop early.'
 
             while traj_i < total_trajectories:
                 if self.verbose:
@@ -216,7 +217,11 @@ class Agent():
                       "plume_interaction_history": plume_interaction_history,
                       "triggered_tsi": triggered_tsi,
                       "position_now": position_now}
-        stimF = self.forces.stimF(kwargs)
+
+        if self.experiment.condition in 'controlControlCONTROL':
+            stimF = np.array([0.,0.,0.])  # FIXME
+        else:
+            stimF = self.forces.stimF(kwargs)
 
         ################################################
         # calculate total force
@@ -291,6 +296,8 @@ class Agent():
         teleport_distance = 0.005
         crash = False
 
+        # print "test", candidate_velo
+
         # x dim
         if xpos < walls.downwind:  # too far behind
             xpos = walls.downwind + teleport_distance  # teleport back inside
@@ -353,7 +360,10 @@ class Agent():
                 # zvelo *= -1.
                 crash = True
 
-        candidate_pos, candidate_velo = np.array([xpos, ypos, zpos]), np.array([xvelo, yvelo, zvelo])
+        try:
+            candidate_pos, candidate_velo = np.array([xpos, ypos, zpos]), np.array([xvelo, yvelo, zvelo])
+        except:
+            print " cand velo", [xvelo, yvelo, zvelo], "before", candidate_velo
 
         if crash is True and self.collision_type is 'crash':
             candidate_velo *= self.crash_coeff
@@ -451,4 +461,5 @@ class Behavior():
 
                 """
 
-def Gradient_Following()
+class Gradient_Following(Behavior):
+    pass
