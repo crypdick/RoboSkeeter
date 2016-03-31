@@ -1,0 +1,10 @@
+# TODO add top level doc strings to all scripts
+# TODO go line by line through all scripts, figure out what everything does. make descriptive notes, add TODOs
+# TODO make unit tests
+# TODO make sure everything in LaTeX document is correct
+# TODO redo basinhopping for all params. add how they were optimized into table
+# TODO integrate all of Sharri's data into environment
+    #
+# TODO make sensors to sense all of environment
+# TODO clean all TODOs
+#
