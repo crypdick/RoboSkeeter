@@ -22,23 +22,9 @@ class Forces():
         Returns:
             random force x and y components (array)
         """
-        if kind is 'lognorm':
-            MAG_THRESH = 3e-4
-
-            ends = math_sorcery.gen_symm_vecs(3)
-            # following params were fitted from the Dickinson fligt data
-            mu = 0.600023812816
-            sigma = 0.719736466122
-            # scale = 1.82216219069
-            mag = np.random.lognormal(mean=mu, sigma=sigma, size=1)
-            if mag * self.randomF_strength > MAG_THRESH:  # filter out huge magnitudes
-                force = ends * MAG_THRESH
-            else:
-                force = mag * self.randomF_strength * ends
-
-        elif kind is 'constant':
-            ends = math_sorcery.gen_symm_vecs(3)
-            force = self.randomF_strength * ends
+        # TODO: make randomF draw from the canonical eqn for random draws Rich taught you
+        ends = math_sorcery.gen_symm_vecs(3)
+        force = self.randomF_strength * ends
 
         return force
 
