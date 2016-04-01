@@ -10,7 +10,7 @@ from scipy.spatial import cKDTree as kdt
 
 
 class Environment(object):
-    def __init__(self, experiment_conditions):
+    def __init__(self, experiment):
         """Generate environmental objects
 
             experiment_kwargs = {'condition': 'Control',  # {'Left', 'Right', 'Control'}
@@ -19,9 +19,10 @@ class Environment(object):
                          'bounded': True,
                          }
         """
-        for key in experiment_conditions:
-            setattr(self, key, experiment_conditions[key])
+        self.experiment_conditions = experiment.experiment_conditions
 
+        for key in self.experiment_conditions:
+            setattr(self, key, self.experiment_conditions[key])
 
         # Load windtunnel
         self.windtunnel = Windtunnel(self.condition)
@@ -37,7 +38,7 @@ class Environment(object):
             raise NotImplementedError("no such plume type {}".format(self.plume_model))
 
 
-class Windtunnel():
+class Windtunnel:
     def __init__(self, experimental_condition):
         """
         experimental_condition
@@ -54,7 +55,7 @@ class Windtunnel():
         ax = pwt.plot_windtunnel(self)
         return ax
 
-class Walls():
+class Walls:
     def __init__(self):
         # these are real dims of our wind tunnel
         self.left = -0.127
@@ -93,7 +94,7 @@ class Walls():
 
 
 
-class Heater():
+class Heater:
     def __init__(self, side, experimental_condition):
         ''' given {left, right, none, custom coords} place heater in the windtunnel
 
