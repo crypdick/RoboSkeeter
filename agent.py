@@ -34,15 +34,17 @@ class Agent:
             setattr(self, key, value)
 
         # useful aliases
-        self.kinematics_list = ['position', 'velocity', 'acceleration']
+        self.experiment = experiment
+        self.windtunnel = self.experiment.environment.windtunnel
+        self.bounded = self.experiment.experiment_conditions['bounded']
+        self.boundary = self.windtunnel.boundary
+        self.plume = self.experiment.environment.plume
+        self.kinematics = self.experiment.kinematics
+
+        # useful lists TODO: get rid of?
+        self.kinematics_list = ['position', 'velocity', 'acceleration']  # curviture?
         self.forces_list = ['totalF', 'randomF', 'stimF']
         self.other_list = ['tsi', 'times', 'inPlume', 'plume_interaction']
-        self.experiment = experiment
-        self.windtunnel = self.experiment.windtunnel
-        self.bounded = self.experiment.bounded
-        self.boundary = self.windtunnel.boundary
-        self.plume = self.experiment.plume
-        self.kinematics = self.experiment.kinematics
 
         # mk forces
         self.forces = Forces(self.randomF_strength,
@@ -179,7 +181,7 @@ class Agent:
                       "triggered_tsi": triggered_tsi,
                       "position_now": position_now}
 
-        if self.experiment.condition in 'controlControlCONTROL':
+        if self.experiment.experiment_conditions['condition'] in 'controlControlCONTROL':
             stimF = np.array([0.,0.,0.])  # FIXME
         else:
             stimF = self.forces.stimF(kwargs)
