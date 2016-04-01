@@ -8,6 +8,35 @@ from scripts.i_o import get_directory
 from scipy.interpolate import Rbf
 from scipy.spatial import cKDTree as kdt
 
+
+class Environment(object):
+    def __init__(self, experiment_conditions):
+        """Generate environmental objects
+
+            experiment_kwargs = {'condition': 'Control',  # {'Left', 'Right', 'Control'}
+                         'plume_model': "None" #"Boolean" "None, "Timeavg",
+                         'time_max': "N/A (experiment)",
+                         'bounded': True,
+                         }
+        """
+        for key in experiment_conditions:
+            setattr(self, key, experiment_conditions[key])
+
+
+        # Load windtunnel
+        self.windtunnel = Windtunnel(self.condition)
+
+        # Load correct plume
+        if self.plume_model == "Boolean":
+            self.plume = Boolean_Plume(self)
+        elif self.plume_model == "timeavg":
+            self.plume = Timeavg_Plume(self)
+        elif self.plume_model == "None":
+            self.plume = Plume(self)
+        else:
+            raise NotImplementedError("no such plume type {}".format(self.plume_model))
+
+
 class Windtunnel():
     def __init__(self, experimental_condition):
         """
