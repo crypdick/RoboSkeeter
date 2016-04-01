@@ -8,59 +8,20 @@ TODO: implemement unit tests with nose
 """
 
 import sys
-
 import numpy as np
 import pandas as pd
 
-import forces
+from forces import Forces
 
 
-class Agent():
-    """Generate agent (our simulated mosquito) which can fly.
-
-    TODO: separate windtunnel environment into its own class
-
-    Args:
-        Trajectory_object: (trajectory object)
-            pandas dataframe which we store all our simulated trajectories and their data
-        Plume_object: (plume object)
-            the temperature data for our thermal, convective plume
-        windtunnel_obj: (windtunnel object)
-            our virtual wind tunnel
-        agent_position: (list/array, "cage", "center")
-            how to pick the initial position coordinates of a flight
-        v0_stdev: (float)
-            stdev of initial velocity distribution (default: experimentally observed v0, fit to a normal distribution)
-        heater: (list/array, "left", "right", or "None")
-            the heater condition: left/right heater turned on (set to None if no heater is on)
-        Tmax: (float)
-            max time an agent is allowed to fly
-            (data: <control flight duration> = 4.4131 +- 4.4096)  # TODO: recheck when Sharri's new data comes in
-        dt: (float)
-            width of our time steps
-        k: (float)
-            spring constant for our wall attraction flow
-        beta: (float)
-            damping force (kg/s). Undamped = 0, Critical damping = 1,t
-            NOTE: if beta is too big, the agent accelerates to infinity!
-        randomF_scale: (float)
-            parameter to scale the main driving force
-        wtf: (float)
-            magnitude of upwind bias force   # TODO units
-        
-
-    All args are in SI units and based on behavioral data:
-
-    
-
-    Returns:
-        Agent object
-
+class Agent:
+    """Our simulated mosquito.
     """
 
     def __init__(self, experiment, agent_kwargs):
-        """generate the agent
-        TODO: add behavior class"""
+        """ Load params
+        """
+
         # defaults
         self.mass = 2.88e-6  # avg. mass of our colony (kg) =2.88 mg,
         self.time_max = 15.
@@ -68,26 +29,26 @@ class Agent():
         self.max_bins = int(np.ceil(self.time_max / self.dt))  # N bins
         self.initial_velocity_stdev = 0.01
 
+        # dump kwarg dictionary into the agent object
         for key, value in agent_kwargs.iteritems():
             setattr(self, key, value)
 
+        # useful aliases
         self.kinematics_list = ['position', 'velocity', 'acceleration']
         self.forces_list = ['totalF', 'randomF', 'stimF']
         self.other_list = ['tsi', 'times', 'inPlume', 'plume_interaction']
-        
-        # things fed to the class
         self.experiment = experiment
-
-        # useful aliases
-        self.windtunnel_obj = self.experiment.windtunnel
+        self.windtunnel = self.experiment.windtunnel
         self.bounded = self.experiment.bounded
-        self.boundary = self.windtunnel_obj.boundary
-        self.plume_obj = self.experiment.plume
-        self.trajectory_obj = self.experiment.trajectories
+        self.boundary = self.windtunnel.boundary
+        self.plume = self.experiment.plume
+        self.kinematics = self.experiment.kinematics
 
         # mk forces
-        self.forces = forces.Forces(self.randomF_strength, self.stimF_strength, self.stimulus_memory,
-                                    self.decision_policy)
+        self.forces = Forces(self.randomF_strength,
+                             self.stimF_strength,
+                             self.stimulus_memory_N_timesteps,
+                             self.decision_policy)
 
         # turn thresh, in units deg s-1.
         # From Sharri:
@@ -138,7 +99,7 @@ class Agent():
             pass
 
         self.total_trajectories = total_trajectories
-        self.trajectory_obj.load_ensemble_and_analyze(df_list)  # concatinate all the dataframes at once instead of one at a
+        self.kinematics.load_observations_and_analyze(df_list)  # concatinate all the dataframes at once instead of one at a
                                                           # time for performance boost.
         # add agent to trajectory object for plotting funcs
 
@@ -160,7 +121,7 @@ class Agent():
         triggered_tsi = {'stimulus': -10000000, 'exit': -10000000}  # a long time ago
 
         for tsi in V['tsi']:
-            inPlume[tsi] = self.plume_obj.in_plume(position[tsi])
+            inPlume[tsi] = self.plume.in_plume(position[tsi])
 
             plume_interaction[tsi], triggered_tsi = self._plume_interaction(tsi, inPlume, velocity[tsi][1],
                                                                             triggered_tsi)
@@ -211,7 +172,7 @@ class Agent():
         ################################################
         randomF = self.forces.randomF(self.randomF_strength)
         if "gradient" in self.decision_policy:
-            kwargs = {"gradient" : self.plume_obj.get_nearest(position_now)}
+            kwargs = {"gradient" : self.plume.get_nearest(position_now)}
         elif "surge" in self.decision_policy or "cast" in self.decision_policy:
             kwargs = {"tsi":tsi,
                       "plume_interaction_history": plume_interaction_history,
@@ -290,7 +251,7 @@ class Agent():
 
     def _collide_with_wall(self, candidate_pos, candidate_velo):
         # TODO: move to wall
-        walls = self.windtunnel_obj.walls
+        walls = self.windtunnel.walls
         xpos, ypos, zpos = candidate_pos
         xvelo, yvelo, zvelo = candidate_velo
         teleport_distance = 0.005
@@ -448,18 +409,13 @@ class Agent():
 
         return fixed_dct
 
-class Experience():
-    def __init__(self):
-        pass
-
 class Behavior():
+    # TODO: implement behavior class
+    # TODO: implement plume boundary interaction
+    # TODO: implement plume memory
     def __init__(self, decision_policy):
         self.decision_policy = decision_policy
-        """TODO:
-        plume bound interactions
-        plume memory
 
-                """
 
 class Gradient_Following(Behavior):
-    pass
+    pass # TODO implement gradient following
