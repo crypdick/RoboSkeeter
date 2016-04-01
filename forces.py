@@ -12,7 +12,7 @@ class Forces():
         self.stimulus_memory = stimulus_memory
         self.decision_policy = decision_policy
 
-    def randomF(self, dim=3, kind='constant'):
+    def randomF(self, dim=3):
         """Generate random-direction force vector at each timestep from double-
         exponential distribution given exponent term rf.
 
