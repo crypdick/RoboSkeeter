@@ -7,7 +7,7 @@ import unittest
 
 import numpy as np
 
-from scripts import math_sorcery
+from analysis import math_sorcery
 
 
 class TruismsTestCase(unittest.TestCase):

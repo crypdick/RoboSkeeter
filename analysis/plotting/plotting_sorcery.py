@@ -12,6 +12,7 @@ from math import ceil
 
 from custom_color import colormaps  # custom color maps
 from scripts import i_o
+
 # plotting stuff
 import matplotlib.gridspec as gridspec
 import numpy as np
@@ -909,7 +910,7 @@ def vector_cloud_pairgrid(trajectories_obj, kinematic, i=None):
 
 
 def plot_all_force_clouds(ensemble):
-    import math_sorcery
+    from analysis import math_sorcery
 
     # visualize direction selection
     fig = plt.figure(1)

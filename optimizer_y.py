@@ -5,7 +5,7 @@ from datetime import datetime
 
 from scipy.optimize import minimize_scalar
 
-from experiment import run_simulation
+from experiment import start_simulation
 from scripts.pickle_experiments import load_mosquito_kde_data_dicts
 
 
@@ -44,7 +44,7 @@ def fly_wrapper(BOUNCE_COEFF, *args):
 
     (EXP_BINS, EXP_VALS) = args
 
-    simulation, trajectory_s, windtunnel, plume, agent = run_simulation(agent_kwargs, experiment_kwargs)
+    simulation, trajectory_s, windtunnel, plume, agent = start_simulation(agent_kwargs, experiment_kwargs)
 
     combined_score, score_components, _ = trajectory_s.calc_score(ref_ensemble=(EXP_BINS, EXP_VALS))
 

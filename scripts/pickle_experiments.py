@@ -1,11 +1,7 @@
 __author__ = 'richard'
 import cPickle as pickle
 import os
-
 from scripts import i_o
-
-reload(score)
-reload(kinematics)
 
 EXPERIMENT_PATH = i_o.get_directory('EXPERIMENT_PATH')
 

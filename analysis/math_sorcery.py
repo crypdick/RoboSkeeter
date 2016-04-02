@@ -140,6 +140,7 @@ def calculate_xy_magnitude(x_component, y_component):
 
 def is_turning():
     pass
+    # TODO: implement turning test
 """            # # turning state
             # if tsi in [0, 1]:
             #     V['turning'][tsi] = 0

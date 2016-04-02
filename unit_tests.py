@@ -2,7 +2,7 @@ __author__ = 'richard'
 
 import unittest
 
-from scripts.math_sorcery import *
+from analysis.math_sorcery import *
 
 
 class SampleTest(unittest.TestCase):

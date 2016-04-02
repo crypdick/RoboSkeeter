@@ -1,7 +1,8 @@
 __author__ = 'richard'
 
 import numpy as np
-from scripts import math_sorcery
+
+from analysis import math_sorcery
 
 
 class Forces():

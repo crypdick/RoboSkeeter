@@ -48,7 +48,7 @@ def fly_wrapper(GUESS, *args):
                     'verbose': False
                     }
 
-    simulation, trajectory_s, windtunnel, plume, agent = experiment.run_simulation(agent_kwargs, experiment_kwargs)
+    simulation, trajectory_s, windtunnel, plume, agent = experiment.start_simulation(agent_kwargs, experiment_kwargs)
 
     combined_score, score_components, _ = trajectory_s.calc_score(ref_ensemble=(EXP_BINS, EXP_VALS))
 
