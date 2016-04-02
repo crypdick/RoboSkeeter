@@ -5,6 +5,7 @@ __author__ = 'richard'
 from environment import Environment
 from kinematics import Kinematics
 from agent import Agent
+import analysis
 
 
 class Experiment(object):
@@ -15,23 +16,30 @@ class Experiment(object):
     """
     def __init__(self, agent_kwargs, experiment_conditions):
         # save metadata
-        self.is_simulation = experiment_conditions['is_simulation']
+        self.experiment_conditions = experiment_conditions
+        self.is_simulation = agent_kwargs['is_simulation']
 
-        # init kinematics and agent objects
+        # init objects
+        self.environment = Environment(self)
         self.kinematics = Kinematics(self)
         self.agent = Agent(self, agent_kwargs)
-        self.kinematics.add_agent_info(self.agent)
-        self.environment = Environment(experiment_conditions)
+
+        # these get mapped to the correct funcs after run() is ran
+        self.analysis = None
+        self.scoring = None
 
 
     def run(self, N=None):
-        if self.is_agent:
+        if self.is_simulation:
             if type(N) != int:
                 raise TypeError("Number of flights must be integer.")
             else:
-                self.agent.fly(total_trajectories=self.number_trajectories)
+                self.agent.fly(total_trajectories=N)
         else:
-            self.trajectories.load_experiments(experimental_condition=self.condition)
+            self.kinematics.load_experiments(experimental_condition=self.condition)
+
+        self.analysis = analysis
+        self.scoring = analysis.scoring
 
 
 
