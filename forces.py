@@ -2,7 +2,7 @@ __author__ = 'richard'
 
 import numpy as np
 
-from analysis import math_sorcery
+from analysis import math_toolbox
 
 
 class Forces():
@@ -24,7 +24,7 @@ class Forces():
             random force x and y components (array)
         """
         # TODO: make randomF draw from the canonical eqn for random draws Rich taught you
-        ends = math_sorcery.gen_symm_vecs(3)
+        ends = math_toolbox.gen_symm_vecs(3)
         force = self.randomF_strength * ends
 
         return force
