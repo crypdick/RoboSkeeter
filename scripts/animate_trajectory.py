@@ -1,6 +1,6 @@
 from matplotlib import animation
 
-import analysis.plotting.plot_windtunnel as pwt
+from analysis.plot_environment import plot_windtunnel as pwt
 
 # Params
 sim_or_exp = 'simulation'  # 'experiment', 'simulation'
