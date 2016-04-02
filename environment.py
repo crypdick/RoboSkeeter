@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import Rbf
 from scipy.spatial import cKDTree as kdt
-import analysis.plotting.plot_windtunnel as pwt
+from analysis.plot_environment import plot_windtunnel as pwt
 from scripts.i_o import get_directory
 
 
