@@ -7,7 +7,7 @@ import unittest
 
 import numpy as np
 
-from analysis import math_sorcery
+from kinematic_math import math_toolbox
 
 
 class TruismsTestCase(unittest.TestCase):
@@ -35,8 +35,8 @@ class HeadingTestCase(unittest.TestCase):
                               [90, 0, 90],
                               [0, 90, 90],
                               [0, 90, 90]])
-        self.assertFalse(np.any(np.isnan(math_sorcery.heading(v))))
-        np.testing.assert_array_almost_equal(math_sorcery.heading(v), h_correct)
+        self.assertFalse(np.any(np.isnan(math_toolbox.heading(v))))
+        np.testing.assert_array_almost_equal(math_toolbox.heading(v), h_correct)
 
         v = np.array([[-1, 1, 0], [-1, -1, 0], [-1, 0, 1], [-1, 0, -1], [-1, 1, 1], [-1, -1, -1]])
         h_correct = np.array([[45, 0, 45],
@@ -45,20 +45,20 @@ class HeadingTestCase(unittest.TestCase):
                               [0, 45, 45],
                               [45, 45, 54.735610317245346],
                               [45, 45, 54.735610317245346]])
-        self.assertFalse(np.any(np.isnan(math_sorcery.heading(v))))
-        np.testing.assert_array_almost_equal(math_sorcery.heading(v), h_correct)
+        self.assertFalse(np.any(np.isnan(math_toolbox.heading(v))))
+        np.testing.assert_array_almost_equal(math_toolbox.heading(v), h_correct)
 
         v = np.array([[1, -1, 0], [1, 0, 1], [1, 1, 1]])
         h_correct = np.array([[135, 180, 135],
                               [180, 135, 135],
                               [135, 135, 125.26438968275465]])
-        self.assertFalse(np.any(np.isnan(math_sorcery.heading(v))))
-        np.testing.assert_array_almost_equal(math_sorcery.heading(v), h_correct)
+        self.assertFalse(np.any(np.isnan(math_toolbox.heading(v))))
+        np.testing.assert_array_almost_equal(math_toolbox.heading(v), h_correct)
 
     def test_all_headings_between_zero_and_180(self):
         # make random velocity vector
         v = np.random.normal(0, 10, (1000, 3))
-        h = math_sorcery.heading(v)
+        h = math_toolbox.heading(v)
         self.assertFalse(np.any(np.isnan(h)))
         np.testing.assert_array_less(-.00001 * np.ones(h.shape), h)
         np.testing.assert_array_less(h, 180.00001 * np.ones(h.shape))
@@ -75,7 +75,7 @@ class AngularVelocityTestCase(unittest.TestCase):
         v = np.array([[-1., 0, 0], [-1, 0, 0], [-1, 0, 0],
                       [-1, 1, 0], [0, 1, 0], [1, 1, 0],
                       [1, 0, 0], [1, 0, 0], [1, 0, 0]])
-        av = math_sorcery.angular_velocity(v, dt)
+        av = math_toolbox.angular_velocity(v, dt)
 
         self.assertFalse(np.any(np.isnan(av)))
         # make sure angular velocity in x-direction is zero
@@ -92,7 +92,7 @@ class AngularVelocityTestCase(unittest.TestCase):
         v = np.array([[-1., 0, 0], [-1, 0, 0], [-1, 0, 0],
                       [-1, -1, 0], [0, -1, 0], [1, -1, 0],
                       [1, 0, 0], [1, 0, 0], [1, 0, 0]])
-        av = math_sorcery.angular_velocity(v, dt)
+        av = math_toolbox.angular_velocity(v, dt)
 
         self.assertFalse(np.any(np.isnan(av)))
         # make sure angular velocity in x-direction is zero
@@ -109,7 +109,7 @@ class AngularVelocityTestCase(unittest.TestCase):
         v = np.array([[-1., 0, 0], [-1, 0, 0], [-1, 0, 0],
                       [-1, 0, 1], [0, 0, 1], [1, 0, 1],
                       [1, 0, 0], [1, 0, 0], [1, 0, 0]])
-        av = math_sorcery.angular_velocity(v, dt)
+        av = math_toolbox.angular_velocity(v, dt)
 
         self.assertFalse(np.any(np.isnan(av)))
         # make sure angular velocity in x-direction is zero
@@ -126,7 +126,7 @@ class AngularVelocityTestCase(unittest.TestCase):
         v = np.array([[-1., 0, 0], [-1, 0, 0], [-1, 0, 0],
                       [-1, 0, -1], [0, 0, -1], [1, 0, -1],
                       [1, 0, 0], [1, 0, 0], [1, 0, 0]])
-        av = math_sorcery.angular_velocity(v, dt)
+        av = math_toolbox.angular_velocity(v, dt)
 
         self.assertFalse(np.any(np.isnan(av)))
         # make sure angular velocity in x-direction is zero
@@ -154,7 +154,7 @@ class DistanceToWallTestCase(unittest.TestCase):
                               [-3, -0.5, 1]])
 
         d_correct = np.array([1, 0, 0, -1, -1])
-        d = math_sorcery.distance_from_wall(positions, wall_bounds)
+        d = math_toolbox.distance_from_wall(positions, wall_bounds)
         np.testing.assert_array_almost_equal(d, d_correct)
 
         positions = np.array([[0., 0, 0],
@@ -164,7 +164,7 @@ class DistanceToWallTestCase(unittest.TestCase):
                               [0, -2, -3]])
 
         d_correct = np.array([1., -1, 1, -1, -1])
-        d = math_sorcery.distance_from_wall(positions, wall_bounds)
+        d = math_toolbox.distance_from_wall(positions, wall_bounds)
         np.testing.assert_array_almost_equal(d, d_correct)
 
 
@@ -178,7 +178,7 @@ class NormTestCase(unittest.TestCase):
                       [5, 1, -1]])
 
         n_correct = np.array([np.sqrt(3), 5.3851648071345037, 5.196152422706632])
-        np.testing.assert_array_almost_equal(n_correct, math_sorcery.norm(v))
+        np.testing.assert_array_almost_equal(n_correct, math_toolbox.norm(v))
 
     def test_tiling_works_correctly(self):
         v = np.random.normal(0, 1, (100, 5))
