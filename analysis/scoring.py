@@ -3,36 +3,56 @@ __author__ = 'richard'
 import numpy as np
 from scipy.stats import entropy
 # from scipy.stats import gaussian_kde as kde
-import scripts.pickle_experiments
-from scripts.math_sorcery import calculate_1Dkde, evaluate_kde
+from kinematic_math.math_toolbox import calculate_1Dkde, evaluate_kde
+
 
 
 class Scoring():
-    def __init__(self, ref_bins_vals='pickle'):
+    def __init__(self, reference_experiment, target_experiment,
+                 scoring_kwargs={'kinematics_list' : ['velocities', 'curviture'], 'dimensions': ['x', 'y', 'z']}):
+        self.reference = reference_experiment
+        self.target = target_experiment
+        self.score = None
+        self.target_histograms = None
+        self.DKLs = None
 
-        if ref_bins_vals is 'pickle':  # load already calculated KDEs
-            print "loading re-calculated scoring data as reference. make sure this pickle is up-to-date!"
-            self.experimental_bins, self.experimental_vals = scripts.pickle_experiments.load_mosquito_kde_data_dicts()
-        else:  # provided
-            self.experimental_bins, self.experimental_vals = ref_bins_vals
-
-        self.targ_data, self.targ_KDEs, self.targ_vals = None, None, None
-        self.dkls, self.dkl_sum = None, None
-
-    def score_ensemble(self, ensemble, kinematics_list=['velocities', 'curvature']):
+    def score(self, ensemble, kinematics_list=['velocities', 'curvature']):
         self.targ_vals = self._get_target_data(ensemble)
         self.dkls = self._calc_dkls(kinematics_list)
         self.dkl_sum = sum(self.dkls)
 
         return self.dkl_sum
 
-    def _get_target_data(self, ensemble):
-        targ_data = get_data(ensemble)
+    def _select_data(self):
+        # TODO: make depend on self.scoring_kwargs
+        data = {'v_x': trajectory.data['velocity_x'].values,
+                'v_y': trajectory.data['velocity_y'].values,
+                'v_z': trajectory.data['velocity_z'].values,
+    #            'a_x': np.abs(trajectory.data['acceleration_x'].values),
+    #            'a_y': np.abs(trajectory.data['acceleration_y'].values),
+    #            'a_z': np.abs(trajectory.data['acceleration_z'].values),
+                'c': trajectory.data['curvature'].values
+                }
+        return data
+
+
+    def _evaluate_histograms(self):
+        self._pick_bins()
+        targ_data = self._select_data()
         targ_KDEs = calc_kde(targ_data)
         targ_vals = evaluate_kdes(targ_KDEs,
                                   self.experimental_bins)  # we evaluate targ KDE at experimental bins for comparison
 
         return targ_vals
+
+    def _pick_bins(self):
+        pad_coeff = 2.  # pad the distribution to properly penalize values above
+        bins_dict = {}
+        for k, vect in data.items():
+            lower, upper = vect.min(), vect.max()
+            if lower > 0:
+                lower = 0.
+            bins_dict[k] = np.linspace(lower * pad_coeff, upper * pad_coeff, 2000)
 
     def _calc_dkls(self, kinematics_list):
         kinematic_dict = {'velocities': ['v_x', 'v_y', 'v_z'],
@@ -55,28 +75,8 @@ class Scoring():
         return dkls
 
 
-
-
-def get_data(trajectory):
-    data = {'v_x': trajectory.data['velocity_x'].values,
-            'v_y': trajectory.data['velocity_y'].values,
-            'v_z': trajectory.data['velocity_z'].values,
-#            'a_x': np.abs(trajectory.data['acceleration_x'].values),
-#            'a_y': np.abs(trajectory.data['acceleration_y'].values),
-#            'a_z': np.abs(trajectory.data['acceleration_z'].values),
-            'c': trajectory.data['curvature'].values
-            }
-    return data
-
-
 def calc_bins(data):
-    pad_coeff = 2.  # pad the distribution to properly penalize values above
-    bins_dict = {}
-    for k, vect in data.items():
-        lower, upper = vect.min(), vect.max()
-        if lower > 0:
-            lower = 0.
-        bins_dict[k] = np.linspace(lower * pad_coeff, upper * pad_coeff, 2000)
+
 
 
     return bins_dict

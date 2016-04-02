@@ -9,6 +9,7 @@ https://github.com/isomerase/
 """
 import os
 from math import ceil
+from kinematic_math import math_toolbox
 
 from custom_color import colormaps  # custom color maps
 from scripts import i_o
@@ -61,7 +62,7 @@ def get_agent_info(agent_obj):
     return titleappend, path, is_agent
 
 
-def draw_cage():
+def draw_cage_2D():
     # makes a little box where the cage is
     # DEPRECIATED in 3D
     cage_midX, cage_midY = 0.1524, 0.  # TODO: turn to absolute boundaries and put in metadata
@@ -193,13 +194,12 @@ def plot_position_heatmaps(trajectories_obj):
     # plt.show()
 
 
-def plot_kinematic_histograms(
-        ensemble,
-        agent_obj=None,
+def plot_kinematic_histograms(experiment,
         plot_kwargs=None,
         titleappend='',
         upw_ensemble="none",
         downw_ensemble="none"):
+    ensemble = experiment.kinematics
     statefig = plt.figure()  # , figsize=(9, 8))
     gs1 = gridspec.GridSpec(2, 3)
     axs = [statefig.add_subplot(ss) for ss in gs1]
@@ -909,111 +909,114 @@ def vector_cloud_pairgrid(trajectories_obj, kinematic, i=None):
     # # cbar2.ax.set_ylabel(PROBABILITY_LABEL)
 
 
-def plot_all_force_clouds(ensemble):
-    from analysis import math_sorcery
+def plot_all_force_clouds(experiment):
+    #  TODO: break this up
+    if experiment.is_simulation is False:
+            raise TypeError("Can't visualize the forces for an experimental trajectory because we don't have that information.")
 
-    # visualize direction selection
-    fig = plt.figure(1)
-    ax = fig.add_subplot(111, projection='3d')
+    else:
+        # visualize direction selection
+        fig = plt.figure(1)
+        ax = fig.add_subplot(111, projection='3d')
 
-    Npoints = 1000
-    data = np.zeros((Npoints, 3))
+        Npoints = 1000
+        data = np.zeros((Npoints, 3))
 
-    for point in range(Npoints):
-        data[point] = math_sorcery.gen_symm_vecs(3)
+        for point in range(Npoints):
+            data[point] = math_toolbox.gen_symm_vecs(3)
 
-    x = data[:, 0]
-    y = data[:, 1]
-    z = data[:, 2]
+        x = data[:, 0]
+        y = data[:, 1]
+        z = data[:, 2]
 
-    ax.scatter(x, y, z, c=ensemble_cmap, marker='.', s=80, linewidths=0)
-    ax.scatter(0, 0, 0, c='r', marker='o', s=150, linewidths=0)
+        ax.scatter(x, y, z, c=ensemble_cmap, marker='.', s=80, linewidths=0)
+        ax.scatter(0, 0, 0, c='r', marker='o', s=150, linewidths=0)
 
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Z')
-    plt.title("Visualization of F_random direction selection")
-    plt.savefig('F_rand_direction_selection.png')
-    plt.show()
-
-
-
-
-    ##############################################################################################
-    # colors for rest of this funct
-    ##############################################################################################
-    colors = np.linspace(0, 1, len(ensemble))
-    ensemble_cmap = CM(colors)
-    ##############################################################################################
-    # F_total
-    ##############################################################################################
-
-    fig = plt.figure(3)
-    ax = fig.add_subplot(111, projection='3d')
-    x = ensemble.totalF_x
-    y = ensemble.totalF_y
-    z = ensemble.totalF_z
-
-    ax.scatter(x, y, z, marker='.', s=80, linewidths=0, c=ensemble_cmap)
-    ax.scatter(0, 0, 0, c='r', marker='o', s=150, linewidths=0)  # mark center
-
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Z')
-    plt.title("Visualization of F_total")
-    plt.savefig('F_total_cloud.png')
-    plt.show()
-
-    ##############################################################################################
-    # F_stim
-    ##############################################################################################
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
+        plt.title("Visualization of F_random direction selection")
+        plt.savefig('F_rand_direction_selection.png')
+        plt.show()
 
 
-    fig = plt.figure(4)
-    ax = fig.add_subplot(111, projection='3d')
-    x = ensemble.stimF_x
-    y = ensemble.stimF_y
-    z = ensemble.stimF_z
-
-    ax.scatter(x, y, z, marker='.', s=80, linewidths=0, c=ensemble_cmap)
-    ax.scatter(0, 0, 0, c='r', marker='o', s=50)
-
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Z')
-    plt.title("Visualization of F_stim")
-    plt.savefig('F_stim_cloud.png')
-    plt.show()
 
 
-    ##############################################################################################
-    # F_random
-    ##############################################################################################
+        ##############################################################################################
+        # colors for rest of this funct
+        ##############################################################################################
+        colors = np.linspace(0, 1, len(ensemble))
+        ensemble_cmap = CM(colors)
+        ##############################################################################################
+        # F_total
+        ##############################################################################################
 
-    fig = plt.figure(6)
-    ax = fig.add_subplot(111, projection='3d')
-    x = ensemble.randomF_x
-    y = ensemble.randomF_y
-    z = ensemble.randomF_z
-    i = range(len(ensemble))
+        fig = plt.figure(3)
+        ax = fig.add_subplot(111, projection='3d')
+        x = ensemble.totalF_x
+        y = ensemble.totalF_y
+        z = ensemble.totalF_z
 
-    ax.scatter(x, y, z, marker='.', s=80, linewidths=0, c=ensemble_cmap)
-    ax.scatter(0, 0, 0, c='r', marker='o', s=50)
+        ax.scatter(x, y, z, marker='.', s=80, linewidths=0, c=ensemble_cmap)
+        ax.scatter(0, 0, 0, c='r', marker='o', s=150, linewidths=0)  # mark center
 
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Z')
-    plt.title("Visualization of F_random")
-    plt.savefig('F_random_cloud.png')
-    plt.show()
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
+        plt.title("Visualization of F_total")
+        plt.savefig('F_total_cloud.png')
+        plt.show()
+
+        ##############################################################################################
+        # F_stim
+        ##############################################################################################
 
 
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Z')
-    plt.title("Visualization of F_wall repulsion")
-    plt.savefig('F_wall repulsion_cloud.png')
-    plt.show()
+        fig = plt.figure(4)
+        ax = fig.add_subplot(111, projection='3d')
+        x = ensemble.stimF_x
+        y = ensemble.stimF_y
+        z = ensemble.stimF_z
+
+        ax.scatter(x, y, z, marker='.', s=80, linewidths=0, c=ensemble_cmap)
+        ax.scatter(0, 0, 0, c='r', marker='o', s=50)
+
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
+        plt.title("Visualization of F_stim")
+        plt.savefig('F_stim_cloud.png')
+        plt.show()
+
+
+        ##############################################################################################
+        # F_random
+        ##############################################################################################
+
+        fig = plt.figure(6)
+        ax = fig.add_subplot(111, projection='3d')
+        x = ensemble.randomF_x
+        y = ensemble.randomF_y
+        z = ensemble.randomF_z
+        i = range(len(ensemble))
+
+        ax.scatter(x, y, z, marker='.', s=80, linewidths=0, c=ensemble_cmap)
+        ax.scatter(0, 0, 0, c='r', marker='o', s=50)
+
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
+        plt.title("Visualization of F_random")
+        plt.savefig('F_random_cloud.png')
+        plt.show()
+
+
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
+        plt.title("Visualization of F_wall repulsion")
+        plt.savefig('F_wall repulsion_cloud.png')
+        plt.show()
 
 
 def plot_score_comparison(trajectories_obj):
