@@ -10,7 +10,7 @@ TODO: implemement unit tests with nose
 import sys
 import numpy as np
 import pandas as pd
-
+from flights import Flights
 from forces import Forces
 
 
@@ -39,7 +39,6 @@ class Agent:
         self.bounded = self.experiment.experiment_conditions['bounded']
         self.boundary = self.windtunnel.boundary
         self.plume = self.experiment.environment.plume
-        self.kinematics = self.experiment.kinematics
 
         # useful lists TODO: get rid of?
         self.kinematics_list = ['position', 'velocity', 'acceleration']  # curviture?
@@ -101,9 +100,11 @@ class Agent:
             pass
 
         self.total_trajectories = total_trajectories
-        self.kinematics.load_observations_and_analyze(df_list)  # concatinate all the dataframes at once instead of one at a
+        kinematics = Flights()
+        kinematics.load_observations_and_analyze(df_list)  # concatinate all the dataframes at once instead of one at a
                                                           # time for performance boost.
         # add agent to trajectory object for plotting funcs
+        return kinematics
 
     def _generate_flight(self):
         """Generate a single trajectory using our model.
