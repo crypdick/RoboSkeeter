@@ -2,10 +2,12 @@ __author__ = 'richard'
 """
 """
 
-from environment import Environment
-from kinematics import Kinematics
-from agent import Agent
 import analysis
+from analysis.my_plotter import MyPlotter as plttr
+from analysis.kinematic_math import DoMath
+from agent import Agent
+from environment import Environment
+from flights import Flights
 
 
 class Experiment(object):
@@ -21,12 +23,12 @@ class Experiment(object):
 
         # init objects
         self.environment = Environment(self)
-        self.kinematics = Kinematics(self)
+        self.flights = None
         self.agent = Agent(self, agent_kwargs)
 
         # these get mapped to the correct funcs after run() is ran
-        self.analysis = None
-        self.scoring = None
+        self.plt = None
+        self.scored = False  # toggle to let analysis functions know whether it has been scored
 
 
     def run(self, N=None):
@@ -34,16 +36,21 @@ class Experiment(object):
             if type(N) != int:
                 raise TypeError("Number of flights must be integer.")
             else:
-                self.agent.fly(total_trajectories=N)
+                self.flights = self.agent.fly(total_trajectories=N)
         else:
-            self.kinematics.load_experiments(experimental_condition=self.condition)
+            self.flights = Flights()
+            self.flights.load_experiments(experimental_condition=self.condition)
 
-        self.analysis = analysis
-        self.scoring = analysis.scoring
+        # asign alias
+        self.plt = plttr(self)  # TODO: takes self, extracts metadata for files and titles, etc
 
+        # run analysis
+        dm = DoMath(self)
+        self.flights, self.percent_time_in_plume = dm.flights, dm.percent_time_in_plume
 
-
-
+    def score(self):
+        analysis.scoring(self)
+        self.scored = True
 
 def start_simulation(N_flights, agent_kwargs=None, experiment_conditions=None):
     if experiment_conditions is None:
@@ -102,7 +109,7 @@ if __name__ is '__main__':
     experiment = start_simulation(1, None, None)
 
     agent = experiment.agent
-    kinematics = experiment.agent.kinematics
+    kinematics = experiment.flights.kinematics
     windtunnel = experiment.environment.windtunnel
     plume = experiment.environment.plume
 
