@@ -62,8 +62,8 @@ def load_csv2DF(data_fname, rel_dir = "data/processed_trajectories/"):
     return dataframe
 
 def load_CSVdir_to_trajectory(relative_dir):
-    from kinematics import Kinematics
-    t = Kinematics()
+    from flights import Flights
+    t = Flights()
     t.load_experiments(relative_dir=relative_dir)
     return t
 
