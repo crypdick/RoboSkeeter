@@ -2,11 +2,10 @@ __author__ = 'richard'
 
 import numpy as np
 import pandas as pd
-
-import scripts.plot_windtunnel as pwt
-from scripts.i_o import get_directory
 from scipy.interpolate import Rbf
 from scipy.spatial import cKDTree as kdt
+import analysis.plotting.plot_windtunnel as pwt
+from scripts.i_o import get_directory
 
 
 class Environment(object):
