@@ -196,7 +196,7 @@ def load_csvs(filepath):
     if type(filepath) == unicode or type(filepath) == str:
         # load the csv
         debug = False
-        Data = i_o.load_experiment_csv(filepath)
+        Data = i_o.load_csv_to_df(filepath)
     else:  # (for debugging) if script is fed a dataframe instead of a path
         debug = True
         Data = filepath
@@ -229,3 +229,19 @@ def main(input_df=None):
 
 
     # trajectory_list = main(file_path)
+
+def save_processed_csv(trajectory_list, filepath):
+    """
+    This is an old function I wrote to help process Sharri's flight data. Keeping here just in case.
+
+    Outputs x,y,z coords at each timestep to a csv file. These trajectories
+    will still contain short NaN repeats, but Sharri will fix that downstream
+    using her interpolating code. She will also Kalman filter.
+    """
+    dir = os.path.dirname(filepath)
+    filename, extension = os.path.splitext ( os.path.basename(filepath) )
+    for i, trajectory in enumerate(trajectory_list):
+        trajectory = trajectory.fillna("NaN")  # hack to turn nan into string
+        # so that the csv doesn't have empty fields
+        file_path = os.path.join(dir, "Processed/", filename + "_SPLIT_" + str(i))
+        trajectory.to_csv(file_path, index=False)
