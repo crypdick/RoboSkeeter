@@ -1,5 +1,4 @@
-from analysis import plot_environment, plot_kinematics, plot_rainbow_trajectories
-
+from analysis import plot_environment, plot_kinematics, animate_trajectory_callable
 
 class MyPlotter:
     def __init__(self, experiment, trim_endzones=False):
@@ -17,7 +16,8 @@ class MyPlotter:
         self.experiment = experiment
         self.flights = self.experiment.flights
         if trim_endzones:
-            self.flights = self.flights.kinematics.loc[(self.flights.kinematics['position_x'] > 0.25) & (self.flights.kinematics['position_x'] < 0.95)]
+            self.flights = self.flights.kinematics.loc[(self.flights.kinematics['position_x'] > 0.25) & \
+                    (self.flights.kinematics['position_x'] < 0.95)]
 
 
     def visualize_forces(self):
@@ -47,7 +47,7 @@ class MyPlotter:
             trajectory_i = self.flights.get_trajectory_numbers().min()
 
         # get data
-        selected_trajectory_df = self.flights.get_trajectory_i_df(trajectory_i)
+        selected_trajectory_df = self.flights.get_trajectory_slice(trajectory_i)
 
         p = selected_trajectory_df[['position_x', 'position_y', 'position_z']].values
         x_t = p.reshape((1, len(p), 3))  # make into correct shape for Jake vdp's code: 1 x T x 3
@@ -56,15 +56,13 @@ class MyPlotter:
         ax.axis('off')
 
         if show_plume:
-            plot_environment.draw_plume(self.experiment.plume, ax=ax)
+            plot_environment.draw_bool_plume(self.experiment.plume, ax=ax)
 
         anim = animate_trajectory_callable.Windtunnel_animation(fig, ax, x_t)
         anim.start_animation()
 
-
     def plot_position_heatmaps(self):
         plot_kinematics.plot_position_heatmaps(self)
-
 
     def plot_kinematic_hists(self, ensemble='none', titleappend=''):
         if type(ensemble) is str:
@@ -128,12 +126,12 @@ class MyPlotter:
             index = self.flights.get_trajectory_numbers()
             ax.axis('off')
             for i in index:
-                selected_trajectory_df = self.flights.get_trajectory_i_df(i)
+                selected_trajectory_df = self.flights.get_trajectory_slice(i)
                 plot_kwargs = {'title': "{type} trajectory #{N}".format(type=self.is_experiment, N=i),
                                'highlight_inside_plume': highlight_inside_plume}
                 plot_environment.draw_trajectory(ax, selected_trajectory_df)
         elif type(trajectory_i) is np.int64 or int:
-            selected_trajectory_df = self.flights.get_trajectory_i_df(trajectory_i)  # get data
+            selected_trajectory_df = self.flights.get_trajectory_slice(trajectory_i)  # get data
             plot_kwargs = {'title': "{type} trajectory #{N}".format(type=self.is_experiment, N=trajectory_i),
                            'highlight_inside_plume': highlight_inside_plume}
             plot_environment.draw_trajectory(ax, selected_trajectory_df, **plot_kwargs)

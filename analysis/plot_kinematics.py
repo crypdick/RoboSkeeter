@@ -680,7 +680,7 @@ def plot_vector_cloud(experiment, kinematic, i=None):
     for dim in ['x', 'y', 'z']:
         labels.append(kinematic + '_' + dim)
 
-    ensemble = experiment.flights.get_trajectory_i_df(i)
+    ensemble = experiment.flights.get_trajectory_slice(i)
 
     # grab labels
     vecs = []
@@ -727,7 +727,7 @@ def vector_cloud_heatmap(experiment, kinematic, i=None):
     for dim in ['x', 'y', 'z']:
         labels.append(kinematic + '_' + dim)
 
-    ensemble = experiment.flights.get_trajectory_i_df(i)
+    ensemble = experiment.flights.get_trajectory_slice(i)
 
     # grab labels
     vecs = []
@@ -804,7 +804,7 @@ def vector_cloud_kde(experiment, kinematic, i=None):
     for dim in ['x', 'y', 'z']:
         labels.append(kinematic + '_' + dim)
 
-    ensemble = experiment.flights.get_trajectory_i_df(i)
+    ensemble = experiment.flights.get_trajectory_slice(i)
 
     # grab labels
     vecs = []
@@ -836,7 +836,7 @@ def vector_cloud_pairgrid(experiment, kinematic, i=None):
     for dim in ['x', 'y', 'z']:
         labels.append(kinematic + '_' + dim)
 
-    ensemble = experiment.flights.get_trajectory_i_df(i)
+    ensemble = experiment.flights.get_trajectory_slice(i)
 
     # grab labels
     vecs = []
