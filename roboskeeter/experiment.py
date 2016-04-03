@@ -2,12 +2,13 @@ __author__ = 'richard'
 """
 """
 
-import analysis
-from analysis.my_plotter import MyPlotter as plttr
-from analysis.kinematic_math import DoMath
+import roboskeeter.math as m
+from roboskeeter.math.kinematic_math import DoMath
+
 from agent import Agent
 from environment import Environment
 from flights import Flights
+from roboskeeter.plotting.my_plotter import MyPlotter as plttr
 
 
 class Experiment(object):
@@ -64,7 +65,7 @@ class Experiment(object):
         self.flights, self.percent_time_in_plume, self.side_ratio_score = dm.flights, dm.percent_time_in_plume, dm.side_ratio_score
 
     def score(self):
-        analysis.scoring(self)
+        math.scoring.scoring.score(self)
         self.is_scored = True
 
 def start_simulation(N_flights, agent_kwargs=None, experiment_conditions=None):

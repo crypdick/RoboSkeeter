@@ -1,4 +1,5 @@
-from analysis import plot_environment, plot_kinematics, animate_trajectory_callable
+from roboskeeter.plotting import plot_kinematics, animate_trajectory_callable, plot_environment
+
 
 class MyPlotter:
     def __init__(self, experiment, trim_endzones=False):
@@ -182,8 +183,8 @@ class MyPlotter:
         #
         print "full- + up- + down-wind"
         plot_kinematics.plot_kinematic_histograms(full_ensemble, self.experiment.agent, titleappend='',
-                                                               upw_ensemble=upwind_ensemble,
-                                                               downw_ensemble=downwind_ensemble)
+                                                  upw_ensemble=upwind_ensemble,
+                                                  downw_ensemble=downwind_ensemble)
 
     def plot_score_comparison(self):
         plot_kinematics.plot_score_comparison(self)

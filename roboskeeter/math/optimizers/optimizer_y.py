@@ -5,8 +5,8 @@ from datetime import datetime
 
 from scipy.optimize import minimize_scalar
 
-from experiment import start_simulation
-from scripts.pickle_experiments import load_mosquito_kde_data_dicts
+from roboskeeter.experiment import start_simulation
+from roboskeeter.scripts import load_mosquito_kde_data_dicts
 
 
 # wrapper func for agent 3D

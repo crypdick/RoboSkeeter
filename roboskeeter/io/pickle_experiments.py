@@ -1,7 +1,8 @@
 __author__ = 'richard'
 import cPickle as pickle
 import os
-from scripts import i_o
+
+from roboskeeter.io import i_o
 
 EXPERIMENT_PATH = i_o.get_directory('EXPERIMENT_PATH')
 

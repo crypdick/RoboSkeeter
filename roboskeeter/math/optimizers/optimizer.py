@@ -4,10 +4,10 @@ import logging
 from datetime import datetime
 
 import numpy as np
-from scipy.optimize import basinhopping, minimize_scalar
+from scipy.optimize import minimize_scalar
 
-import experiment
-from scripts.pickle_experiments import load_mosquito_kde_data_dicts
+import roboskeeter.experiment
+from roboskeeter.scripts import load_mosquito_kde_data_dicts
 
 
 # wrapper func for agent 3D
@@ -48,7 +48,7 @@ def fly_wrapper(GUESS, *args):
                     'verbose': False
                     }
 
-    simulation, trajectory_s, windtunnel, plume, agent = experiment.start_simulation(agent_kwargs, experiment_kwargs)
+    simulation, trajectory_s, windtunnel, plume, agent = roboskeeter.experiment.start_simulation(agent_kwargs, experiment_kwargs)
 
     combined_score, score_components, _ = trajectory_s.calc_score(ref_ensemble=(EXP_BINS, EXP_VALS))
 

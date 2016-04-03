@@ -2,7 +2,7 @@ __author__ = 'richard'
 
 import unittest
 
-from analysis.math_toolbox import *
+from roboskeeter.math.math_toolbox import *
 
 
 class SampleTest(unittest.TestCase):

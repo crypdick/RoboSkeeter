@@ -11,10 +11,10 @@ https://github.com/isomerase/
 """
 import os
 from math import ceil
-from analysis import math_toolbox
 
 from custom_color import colormaps  # custom color maps
-from scripts import i_o
+from roboskeeter.io import i_o
+from roboskeeter.math import math_toolbox
 
 # plotting stuff
 import matplotlib.gridspec as gridspec
@@ -1009,7 +1009,7 @@ def plot_all_force_clouds(experiment):
 
 
 def plot_score_comparison(trajectories_obj):
-    from scripts.pickle_experiments import load_mosquito_kde_data_dicts
+    from roboskeeter.scripts import load_mosquito_kde_data_dicts
 
     ref_bins_dict, ref_kde_vals_dict = load_mosquito_kde_data_dicts()
     total_score, scores, targ_kde_vals_dict = trajectories_obj.calc_score()

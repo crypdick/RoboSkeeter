@@ -1,5 +1,6 @@
 import numpy as np
-from analysis.math_toolbox import calculate_curvature, distance_from_wall
+
+from roboskeeter.math.math_toolbox import calculate_curvature, distance_from_wall
 
 
 class DoMath:
@@ -41,7 +42,8 @@ class DoMath:
         upwind_half = self.flights.kinematics.loc[self.flights.kinematics.position_x > 0.5]
         total_pts = len(upwind_half)
 
-        left_upwind_pts = len(self.flights.kinematics.loc[(self.flights.kinematics.position_x > 0.5) & (self.flights.kinematics.position_y < 0)])
+        left_upwind_pts = len(self.flights.kinematics.loc[(self.flights.kinematics.position_x > 0.5) & \
+                                                          (self.flights.kinematics.position_y < 0)])
         right_upwind_pts = total_pts - left_upwind_pts
         # print "seconds extra on left side: ", (left_upwind_pts - right_upwind_pts) / 100.
         self.side_ratio_score = float(left_upwind_pts) / right_upwind_pts

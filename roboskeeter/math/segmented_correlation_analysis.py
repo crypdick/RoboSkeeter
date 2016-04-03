@@ -11,18 +11,18 @@ fix colors
 fix data matrix
 """
 
-import os
-from glob import glob
 import csv
+import os
 import time
+from glob import glob
 
+import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from statsmodels.tsa.stattools import acf
 from statsmodels.tsa.stattools import pacf
-import matplotlib.pyplot as plt
-import pandas as pd
 
-from scripts import i_o
+from roboskeeter.io import i_o
 
 INTERESTED_VALS = ['velo_x', 'velo_y', 'velo_z', 'curve']
 

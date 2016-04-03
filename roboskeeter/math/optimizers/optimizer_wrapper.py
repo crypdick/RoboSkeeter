@@ -5,7 +5,7 @@ Created on Tue Oct 13 12:09:36 2015
 @author: fairhalladmin
 """
 
-import optimizer
+from roboskeeter.math.optimizers import optimizer
 
 guess = None
 score = 10000000

@@ -32,7 +32,7 @@ raw - 3D position of the trajectory. (n x 3, where n is the number of timesteps)
 
 import numpy as np
 
-import i_o
+from roboskeeter.io import i_o
 
 
 #def sanitychecks(full_trajectory):

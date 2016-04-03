@@ -2,7 +2,7 @@ __author__ = 'richard'
 
 import numpy as np
 
-from analysis import math_toolbox
+from roboskeeter.math import math_toolbox
 
 
 class Forces():

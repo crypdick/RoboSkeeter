@@ -16,12 +16,11 @@ trajectory.describe()
 
 trajectory.save
 """
-import os
 
 import numpy as np
 import pandas as pd
 
-from scripts import i_o
+from roboskeeter.io import i_o
 
 
 class Flights(object):

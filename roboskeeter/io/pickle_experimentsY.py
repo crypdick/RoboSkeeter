@@ -3,7 +3,8 @@ import os
 import pickle
 
 import score_y
-from scripts import i_o
+
+from roboskeeter.io import i_o
 
 reload(score_y)
 reload(kinematics)

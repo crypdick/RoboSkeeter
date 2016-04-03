@@ -4,14 +4,13 @@ Created on Mon Jun  1 17:00:47 2015
 
 @author: richard
 """
-import numpy as np
-
-from statsmodels.tsa.stattools import acf, pacf
 import matplotlib.pyplot as plt
+import numpy as np
+from statsmodels.tsa.stattools import acf, pacf
 
 #import seaborn as sns
 import pandas as pd
-from scripts import i_o
+from roboskeeter.io import i_o
 from sklearn.metrics.pairwise import pairwise_distances
 
 

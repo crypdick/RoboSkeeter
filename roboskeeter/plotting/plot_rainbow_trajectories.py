@@ -13,7 +13,7 @@ from glob import glob
 
 import matplotlib.pyplot as plt
 
-from scripts import i_o
+from roboskeeter.io import i_o
 
 
 def plot_trajectory_rainbow(xyz, csv_name, WINDOW_LEN):

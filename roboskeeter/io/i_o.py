@@ -5,12 +5,14 @@ Created on Tue Apr 21 17:21:42 2015
 @author: richard
 """
 import os
+import string
 from Tkinter import Tk
 from tkFileDialog import askdirectory
+
 import numpy as np
 import pandas as pd
-import string
-import unit_tests  # hack to get root dir
+
+import setup  # hack to get root dir
 
 
 def load_csv_to_df(data_fname, rel_dir ="data/processed_trajectories/"):
@@ -150,7 +152,7 @@ def get_directory(selection=None):
     Out:
     directory path
     """
-    PROJECT_PATH = os.path.dirname(unit_tests.__file__)
+    PROJECT_PATH = os.path.dirname(setup.__file__)
     EXPERIMENTS_PATH = os.path.join(PROJECT_PATH, 'data', 'experiments')
     MODEL_PATH = os.path.join(PROJECT_PATH, 'data', 'model')
 

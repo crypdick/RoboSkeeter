@@ -4,8 +4,9 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import Rbf
 from scipy.spatial import cKDTree as kdt
-from analysis.plot_environment import plot_windtunnel, plot_plume_gradient, draw_bool_plume
-from scripts.i_o import get_directory
+
+from roboskeeter.io.i_o import get_directory
+from roboskeeter.plotting.plot_environment import plot_windtunnel, plot_plume_gradient, draw_bool_plume
 
 
 class Environment(object):

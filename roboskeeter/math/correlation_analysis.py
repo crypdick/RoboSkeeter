@@ -9,11 +9,11 @@ Created on Thu May 14 13:12:15 2015
 
 import os
 
-import statsmodels.tsa
-import statsmodels.graphics.tsaplots
 import matplotlib.pyplot as plt
+import statsmodels.graphics.tsaplots
+import statsmodels.tsa
 
-from scripts import i_o
+from roboskeeter.io import i_o
 
 plt.style.use('ggplot')
 
