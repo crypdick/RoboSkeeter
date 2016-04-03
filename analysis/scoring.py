@@ -8,9 +8,15 @@ from kinematic_math.math_toolbox import calculate_1Dkde, evaluate_kde
 
 
 class Scoring():
-    def __init__(self, reference_experiment, target_experiment,
+    # TODO: when called from an experiment class, find out the relevant experiment from metadata, load that experiment, use as reference
+    def __init__(self,
+                 target_experiment,
+                 reference_experiment=None,
                  scoring_kwargs={'kinematics_list' : ['velocities', 'curviture'], 'dimensions': ['x', 'y', 'z']}):
-        self.reference = reference_experiment
+        if reference_experiment is None:
+            raise NotImplementedError
+        else:
+            self.reference = reference_experiment
         self.target = target_experiment
         self.score = None
         self.target_histograms = None

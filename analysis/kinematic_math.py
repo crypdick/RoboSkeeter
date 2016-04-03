@@ -1,8 +1,8 @@
-from analysis import math_toolbox
 import numpy as np
 from analysis.math_toolbox import calculate_curvature, distance_from_wall
 
-class DoMath():
+
+class DoMath:
     def __init__(self, experiment):
         self.experiment = experiment
         self.flights = experiment.flights
@@ -10,13 +10,16 @@ class DoMath():
         self.calc_kinematic_vals()
         self.percent_time_in_plume = self.calc_time_in_plume()
 
+        self.turn_threshold = 433.5
+
     def calc_kinematic_vals(self):
         k = self.flights.kinematics
 
         k['curvature'] = calculate_curvature(k)
         # absolute magnitude of velocity, accel vectors in 3D
         k['velocity_norm'] = np.linalg.norm(k.loc[:, ('velocity_x', 'velocity_y', 'velocity_z')], axis=1)
-        k['acceleration_norm'] = np.linalg.norm(k.loc[:, ('acceleration_x', 'acceleration_y', 'acceleration_z')], axis=1)
+        k['acceleration_norm'] = np.linalg.norm(k.loc[:, ('acceleration_x', 'acceleration_y', 'acceleration_z')],
+                                                axis=1)
         k['dist_to_wall'] = distance_from_wall(k[['position_x', 'position_y', 'position_z']],
                                                self.experiment.environment.windtunnel.boundary)
 
@@ -46,7 +49,7 @@ class DoMath():
         #         self.data[name+'_xy_mag'] = calculate_xy_magnitude(x_component, y_component)
         #
         #        self.data['turning'] = np.array([None] * self.max_bins)
-        #     self.data['heading_angle'] = np.full(self.max_bins, np.nan) TODO!
+        #     self.data['heading_angle'] = np.full(self.max_bins, np.nan)
         #     self.data['velocity_angular'] = np.full(self.max_bins, np.nan)
 
         #

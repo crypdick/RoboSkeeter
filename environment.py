@@ -160,6 +160,7 @@ class Boolean_Plume(Plume):
             self.resolution = None
 
     def in_plume(self, position):
+        # TODO: make work with experiments
         in_bounds, _ = self.walls.in_bounds(position)
         x, y, z = position
 
