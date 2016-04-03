@@ -4,40 +4,45 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import Rbf
 from scipy.spatial import cKDTree as kdt
-from analysis.plot_environment import plot_windtunnel as pwt
+from analysis.plot_environment import plot_windtunnel, plot_plume_gradient, draw_bool_plume
 from scripts.i_o import get_directory
 
 
 class Environment(object):
     def __init__(self, experiment):
-        """Generate environmental objects
-
-            experiment_kwargs = {'condition': 'Control',  # {'Left', 'Right', 'Control'}
-                         'plume_model': "None" #"Boolean" "None, "Timeavg",
-                         'time_max': "N/A (experiment)",
-                         'bounded': True,
-                         }
         """
-        self.experiment_conditions = experiment.experiment_conditions
+        Generate environmental objects
 
-        for key in self.experiment_conditions:
-            setattr(self, key, self.experiment_conditions[key])
+        Parameters
+        ----------
+        experiment
+            (object)
+        """
+        self.condition = experiment.experiment_conditions['condition']
+        self.bounded = experiment.experiment_conditions['bounded']
+        self.plume_model = experiment.experiment_conditions['plume_model']
 
-        # Load windtunnel
-        self.windtunnel = Windtunnel(self.condition)
+        if self.condition == 'Control' and self.plume_model != 'None':
+            print "{} plume model selected for control condition, setting instead to no plume.".format(self.plume_model)
+            self.plume_model = 'None'
 
-        # Load correct plume
+        self.windtunnel = WindTunnel(self.condition)
+        self.plume = self._load_plume()
+
+    def _load_plume(self):
         if self.plume_model == "Boolean":
-            self.plume = Boolean_Plume(self)
+            plume = BooleanPlume(self)
         elif self.plume_model == "timeavg":
-            self.plume = Timeavg_Plume(self)
+            plume = TimeAvgPlume(self)
         elif self.plume_model == "None":
-            self.plume = Plume(self)
+            plume = NoPlume()
         else:
             raise NotImplementedError("no such plume type {}".format(self.plume_model))
 
+        return plume
 
-class Windtunnel:
+
+class WindTunnel:
     def __init__(self, experimental_condition):
         """
         experimental_condition
@@ -51,8 +56,9 @@ class Windtunnel:
         self.heater_r = Heater("Right", self.experimental_condition)
 
     def show(self):
-        ax = pwt.plot_windtunnel(self)
+        ax = plot_windtunnel(self)
         return ax
+
 
 class Walls:
     def __init__(self):
@@ -65,7 +71,7 @@ class Walls:
         self.floor = 0.
         self.boundary = [self.downwind, self.upwind, self.left, self.right, self.floor, self.ceiling]
 
-    def in_bounds(self, position):
+    def check_in_bounds(self, position):
         xpos, ypos, zpos = position
         inside = True
         past_wall = []
@@ -92,34 +98,39 @@ class Walls:
         return inside, past_wall
 
 
-
 class Heater:
     def __init__(self, side, experimental_condition):
-        ''' given {left, right, none, custom coords} place heater in the windtunnel
+        """
+        given side, generate heater
 
-        Args:
-        location
-
-        returns [x,y, zmin, zmax, diam]
-        '''
+        Parameters
+        ----------
+        side
+            {left, right, none, custom coords}
+            Location of the heater
+        experimental_condition
+            determines whether the heater is on or off
+        Returns
+        -------
+        None
+        """
         self.side = side
         self.experimental_condition = experimental_condition
 
         if side == experimental_condition:
             self.is_on = True
+            self.color = 'red'
         else:
             self.is_on = False
+            self.color = 'black'
 
-        colors = {False: 'black', True: 'red'}
-        self.color = colors[self.is_on]
+        self.zmin, self.zmax, self.diam, self.x_position, self.y_position = self._set_coordinates()
 
-        self.zmin = 0.03800
-        self.zmax = 0.11340
-        self.diam = 0.00635
-        (self.x_position, self.y_position) = self._set_xy_coords()
-
-    def _set_xy_coords(self):
+    def _set_coordinates(self):
         x_coord = 0.864
+        zmin = 0.03800
+        zmax = 0.11340
+        diam = 0.00635
 
         if self.side in "leftLeftLEFT":
             y_coord = -0.0507
@@ -130,70 +141,78 @@ class Heater:
         else:
             raise Exception('invalid location type specified')
 
-        return (x_coord, y_coord)
+        return zmin, zmax, diam, x_coord, y_coord
 
 
 class Plume(object):
-    ''' The Plume superclass
+    def __init__(self, environment):
+        """
+        The plume base class
+        Parameters
+        ----------
+        environment
+            (object)
 
-    Args:
-    condition: {left|right|None}
-    '''
-
-    def __init__(self, experiment):
+        Returns
+        -------
+        """
         # useful aliases
-        self.experiment = experiment
-        self.condition = experiment.condition
-        self.walls = experiment.windtunnel.walls
+        self.environment = environment
+        self.condition = environment.condition
+        self.walls = environment.windtunnel.walls
 
 
-class Boolean_Plume(Plume):
+class NoPlume(Plume):
+    def __init__(self):
+        pass
+
+    def check_for_plume(self, _):
+        # always return false
+        return False
+
+
+class BooleanPlume(Plume):
     """Are you in the plume Y/N"""
-    def __init__(self, experiment):
-        super(self.__class__, self).__init__(experiment)
+    def __init__(self, environment):
+        super(self.__class__, self).__init__(environment)
 
         self.data = self._load_plume_data()
 
-        try:
-            self.resolution = abs(self.data.x_position.diff()[1])
-        except AttributeError:  # if no plume, can't take diff() of no data
-            self.resolution = None
+        self.resolution = self._calc_resolution()
 
-    def in_plume(self, position):
-        # TODO: make work with experiments
-        in_bounds, _ = self.walls.in_bounds(position)
+    def check_for_plume(self, position):
+        # TODO: make compatible with experiments
+        in_bounds, _ = self.walls.check_in_bounds(position)
         x, y, z = position
 
-        if self.condition in 'controlControlCONTROL':
-            inPlume = False
-        elif np.abs(self.data['x_position'] - x).min() > self.resolution:
-            # too far from the plume in the upwind/downwind direction
-            inPlume = False
+        if np.abs(self.data['x_position'] - x).min() > self.resolution:
+            # calcs distance to all points, if too far from the plume in the upwind/downwind direction returns false
+            in_plume = False
         elif in_bounds is False:
-            print("WARNING: sniffing outside of windtunnel bounds")
-            inPlume = False
+            print("WARNING: can't find plumes outside of windtunnel bounds")
+            in_plume = False
         else:
             plume_plane = self._get_nearest_plume_plane(x)
             minor_axis = plume_plane.small_radius
             minor_ax_major_ax_ratio = 3
             major_axis = minor_axis * minor_ax_major_ax_ratio
 
+            # check if position is within the elipsoid
             # implementation of http://math.stackexchange.com/a/76463/291217
-
             value = (((y - plume_plane.y_position) ** 2) / minor_axis ** 2) + \
                     (((z - plume_plane.z_position) ** 2) / major_axis ** 2)
 
             if value <= 1:
-                inPlume = True
+                in_plume = True
             else:
-                inPlume = False
+                in_plume = False
 
-        return inPlume
+        return in_plume
 
     def show(self):
-        fig, ax = pwt.plot_windtunnel(self.experiment.windtunnel)
+        fig, ax = plot_windtunnel(self.environment.windtunnel)
         ax.axis('off')
-        pwt.draw_plume(self, ax=ax)
+        draw_bool_plume(self, ax=ax)
 
     def _get_nearest_plume_plane(self, x_position):
         """given x position, find nearest plan"""
@@ -206,43 +225,51 @@ class Boolean_Plume(Plume):
         col_names = ['x_position', 'z_position', 'small_radius']
 
         if self.condition in 'controlControlCONTROL':
-            return None
+            raise Exception("This block shouldn't ever run.")
         elif self.condition in 'lLleftLeft':
             plume_dir = get_directory('BOOL_LEFT_CSV')
             df = pd.read_csv(plume_dir, names=col_names)
-            df['y_position'] = self.experiment.windtunnel.heater_l.y_position
+            df['y_position'] = self.environment.windtunnel.heater_l.y_position
         elif self.condition in 'rightRight':
             plume_dir = get_directory('BOOL_RIGHT_CSV')
             df = pd.read_csv(plume_dir, names=col_names)
-            df['y_position'] = self.experiment.windtunnel.heater_r.y_position
+            df['y_position'] = self.environment.windtunnel.heater_r.y_position
         else:
             raise Exception('problem with loading plume data {}'.format(self.condition))
 
         return df
 
+    def _calc_resolution(self):
+        """ use x data to calculate the resolution"""
+        try:
+            resolution = abs(self.data.x_position.diff()[1])
+        except AttributeError:  # if no plume, can't take diff() of no data
+            resolution = None
 
-class Timeavg_Plume(Plume):
+        return resolution
+
+
+class TimeAvgPlume(Plume):
     """time-averaged temperature readings taken inside the windtunnel"""
-    def __init__(self, experiment):
-        super(self.__class__, self).__init__(experiment)
+    def __init__(self, environment):
+        super(self.__class__, self).__init__(environment)
 
         # useful references
-        self.left = -0.127
-        self.right = 0.127
-        self.upwind = 1.0
-        self.downwind = 0.0
-        self.ceiling = 0.254
-        self.floor = 0.
-        self.boundary = [self.downwind, self.upwind, self.left, self.right, self.floor, self.ceiling]
+        self.left = self.walls.left
+        self.right = self.walls.right
+        self.upwind = self.walls.upwind
+        self.downwind = self.walls.downwind
+        self.ceiling = self.walls.ceiling
+        self.floor = self.walls.floor
 
         # initialize vals
         self.data = pd.DataFrame()
         self._grid_x, self._grid_y, self.grid_z, self._interpolated_temps = None, None, None, None
         self._gradient_x, self._gradient_y, self._gradient_z = None, None, None
 
-        # number of x, y, z positions to interpolate the data. numbers chosen to reflect the spacing at which the measurements
-        # were taken to avoid gradient values of 0 due to undersampling
-        resolution = (100j, 25j, 25j) # stored as complex numbers for mgrid to work properly
+        # number of x, y, z positions to interpolate the data. numbers chosen to reflect the spacing at which the
+        # measurements were taken to avoid gradient values of 0 due to undersampling
+        resolution = (100j, 25j, 25j)  # stored as complex numbers for mgrid to work properly
 
         self._raw_data = self._load_plume_data()
         self._interpolate_data(resolution)
@@ -251,41 +278,30 @@ class Timeavg_Plume(Plume):
         print """Warning: we don't know the plume bounds for the Timeavg plume, so the in_plume() method
                 always returns False"""
 
-    def in_plume(self, position):
-        """we don't know the plume bounds for the Timeavg plume, so we're returning False always as a dummy value """
-        return False
+    def check_for_plume(self, position):
+        raise NotImplementedError  # TODO
 
-    def show_gradient(self, thresh = 0):
-        from mpl_toolkits.mplot3d import axes3d
-        import matplotlib.pyplot as plt
+    def plot_gradient(self, thresh=0):
+        plot_plume_gradient(self, thresh)
 
-        fig = plt.figure()
-        ax = fig.gca(projection='3d')
+    def get_nearest_data(self, position):
+        """
+        Given [x,y,z] return nearest temperature data
+        Parameters
+        ----------
+        position
+            [x,y,z]
 
-        filt = self.data[self.data.gradient_mag > thresh]
+        Returns
+        -------
+        temperature
+        """
 
-        ax.quiver(filt.x, filt.y, filt.z, filt.gradient_x, filt.gradient_y, filt.gradient_z, length=0.01)
-        # ax.set_xlim3d(0, 1)
-        ax.set_ylim3d(-0.127, 0.127)
-        ax.set_zlim3d(0, 0.254)
-
-        plt.title("Temperature gradient of interpolated time-averaged thermocouple recordings")
-        plt.xlabel("Upwind/downwind")
-        plt.ylabel("Crosswind")
-        plt.clabel("Elevation")
-
-        plt.show()
-
-    def get_nearest(self, location):
-        """given [x,y,z] return nearest
-
-        query() returns """
-
-        _, index = self.tree.query(location)
-        return self.data.iloc[index]
+        _, index = self.tree.query(position)
+        temperature = self.data.iloc[index]
+        return temperature
 
     def _load_plume_data(self):
-
         col_names = ['x', 'y', 'z', 'temperature']
 
         if self.condition in 'controlControlCONTROL':
@@ -302,6 +318,10 @@ class Timeavg_Plume(Plume):
         return df.dropna()
 
     def _pad_plume_data(self):
+        """
+        We are assuming that far away from the plume envelope the air will be room temperature. We are padding the
+        recorded area with room temperature data points
+        """
         xmin = self._raw_data.x.min()
         xmax = self._raw_data.x.max()
         ymin = self._raw_data.y.min()
@@ -309,31 +329,34 @@ class Timeavg_Plume(Plume):
         zmin = self._raw_data.z.min()
         zmax = self._raw_data.z.max()
 
-        self.downwind
+        self.downwind # FIXME
+
+        raise NotImplementedError
 
     def _interpolate_data(self, resolution):
+        # TODO: review this function
         if self.condition in 'controlControlCONTROL':
             return None
 
         # self._grid_x, self._grid_y, self._grid_z = np.mgrid[0.:1.:resolution[0], -0.127:0.127:resolution[1], 0:0.254:resolution[2]]
         # grid_x, grid_y, grid_z = np.mgrid[0.:1.:100j, -0.127:0.127:25j, 0:0.254:25j]
-        print len(np.unique(self._raw_data.x)),len(np.unique(self._raw_data.y)), len(np.unique(self._raw_data.z))
+        #print len(np.unique(self._raw_data.x)),len(np.unique(self._raw_data.y)), len(np.unique(self._raw_data.z))
         # self._raw_data['x'] = self._raw_data.x / 5.
         # self._grid_x = self._grid_x / 5.
         # points = self._raw_data[['x', 'y', 'z']].values  # (1382, 3)
         # points = (self._raw_data.x.values, self._raw_data.y.values, self._raw_data.z.values)  # (1382, 3)
         x,y,z = (self._raw_data.x.values, self._raw_data.y.values, self._raw_data.z.values)  # (1382, 3)
-        print "pts", len(self._raw_data.x.values), np.shape(self._raw_data.x.values)
+        #print "pts", len(self._raw_data.x.values), np.shape(self._raw_data.x.values)
         temps = self._raw_data.temperature.values  # len 1382
-        print "temps", temps.shape
+        #print "temps", temps.shape
         epsilon = 3
-        print "epsilon", epsilon
+        #print "epsilon", epsilon
         rbfi = Rbf(x,y,z, temps, function='gaussian', smooth=1e-8, epsilon=epsilon)
 
         xi = np.linspace(0, 1, 50)  # xmin * .8
         yi = np.linspace(-.127, .127, 15)
         zi = np.linspace(0, .254, 15)
-        print "array shapes", xi.shape, yi.shape, zi.shape
+        #print "array shapes", xi.shape, yi.shape, zi.shape
         self._grid_x, self._grid_y, self._grid_z = np.meshgrid(xi,yi,zi, indexing='ij')
         xxi = self._grid_x.ravel()  # FIXME flip here
         yyi = self._grid_y.ravel()
@@ -369,15 +392,16 @@ class Timeavg_Plume(Plume):
 
 
     def _calc_gradient(self):
+        # TODO: review this function
         if self.condition in 'controlControlCONTROL':
             return None
 
 
         # Solve for the spatial gradient
         self._gradient_x, self._gradient_y, self._gradient_z = np.gradient(self._interpolated_temps,
-                                                             self._grid_x,
-                                                             self._grid_y,
-                                                             self._grid_z)
+                                                                           self._grid_x,
+                                                                           self._grid_y,
+                                                                           self._grid_z)
 
 
 
@@ -397,7 +421,6 @@ class Timeavg_Plume(Plume):
 
         self.data['gradient_mag'] = np.linalg.norm(self.data[['gradient_x', 'gradient_y', 'gradient_z']], axis=1)
 
-
     def _calc_kdtree(self):
         if self.condition in 'controlControlCONTROL':
             return None
@@ -406,7 +429,5 @@ class Timeavg_Plume(Plume):
         return kdt(data)
 
 
-
-
 if __name__ == '__main__':
-    windtunnel = Windtunnel('left')
+    windtunnel = WindTunnel('left')
