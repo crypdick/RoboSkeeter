@@ -14,7 +14,7 @@ if trajectory_i is None:
     trajectory_i = experiment.trajectories.get_trajectory_numbers().min()
 
 # get df
-df = experiment.trajectories.get_trajectory_i_df(trajectory_i)
+df = experiment.trajectories.get_trajectory_slice(trajectory_i)
 
 p = df[['position_x', 'position_y', 'position_z']].values
 x_t = p.reshape((1, len(p), 3))  # make into correct shape for Jake vdp's code
