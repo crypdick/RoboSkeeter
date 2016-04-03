@@ -34,7 +34,7 @@ csv_list = make_csv_name_list()
 for csv_fname in csv_list:
     print csv_fname
     os.chdir(os.path.dirname(__file__))
-    df = i_o.load_csv2DF(csv_fname)
+    df = i_o.load_csv_to_df(csv_fname)
 
     if not os.path.exists('./correlation_figs/{data_name}'.format(data_name = csv_fname)):
         os.makedirs('./correlation_figs/{data_name}'.format(data_name = csv_fname))
