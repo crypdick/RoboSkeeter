@@ -28,7 +28,7 @@ class DoMath:
             """
             in plume == 1, out == 0. therefore sum/n is % in plume
             """
-            in_out = self.flights.kinematics.inPlume.values
+            in_out = self.flights.kinematics.in_plume.values
             N_timesteps = in_out.size
             N_timesteps_in_plume = in_out.sum()
 
@@ -38,14 +38,17 @@ class DoMath:
 
     def calc_side_ratio_score(self):
         """upwind left vs right ratio"""  # TODO replace with KF score
-        upwind_half = self.kinematics.loc[self.kinematics.position_x > 0.5]
+        upwind_half = self.flights.kinematics.loc[self.flights.kinematics.position_x > 0.5]
         total_pts = len(upwind_half)
 
-        left_upwind_pts = len(self.kinematics.loc[(self.kinematics.position_x > 0.5) & (self.kinematics.position_y < 0)])
+        left_upwind_pts = len(self.flights.kinematics.loc[(self.flights.kinematics.position_x > 0.5) & (self.flights.kinematics.position_y < 0)])
         right_upwind_pts = total_pts - left_upwind_pts
-        print "seconds extra on left side: ", (left_upwind_pts - right_upwind_pts) / 100.
+        # print "seconds extra on left side: ", (left_upwind_pts - right_upwind_pts) / 100.
         self.side_ratio_score = float(left_upwind_pts) / right_upwind_pts
-        print ratio
+
+
+
+
         #     self._calc_polar_kinematics()
         #
         #
