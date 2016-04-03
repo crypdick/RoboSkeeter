@@ -2,6 +2,8 @@
 """
 Flight trajectory plotting functions
 
+# TODO make func which standardizes filename and titlename
+
 Created on Fri Mar 20 12:27:04 2015
 @author: Richard Decal, decal@uw.edu
 https://staff.washington.edu/decal/
@@ -9,7 +11,7 @@ https://github.com/isomerase/
 """
 import os
 from math import ceil
-from kinematic_math import math_toolbox
+from analysis import math_toolbox
 
 from custom_color import colormaps  # custom color maps
 from scripts import i_o
@@ -42,22 +44,22 @@ PROBABILITY_LABEL = 'Probability'
 FIG_FORMAT = ".png"
 
 
-def get_agent_info(agent_obj):
-    if agent_obj is not None:
+def get_agent_info(experiment):
+    if experiment.is_simulation:
         titleappend = " cond{condition}|damp{damp}|rF{rf}|stmF{stim}|N{total_trajectories}|m{m}".format(
-            condition=agent_obj.experiment.condition,
-            damp=agent_obj.damping_coeff,
-            rf=agent_obj.randomF_strength,
-            stim=agent_obj.stimF_strength,
-            total_trajectories=agent_obj.total_trajectories,
-            m=agent_obj.mass
+            condition=experiment.agent.experiment.condition,
+            damp=experiment.agent.damping_coeff,
+            rf=experiment.agent.randomF_strength,
+            stim=experiment.agent.stimF_strength,
+            total_trajectories=experiment.agent.total_trajectories,
+            m=experiment.agent.mass
         )
         path = MODEL_FIG_PATH
-        is_agent = 'Agent'
+        is_agent = 'Simulated Agent'
     else:
         titleappend = ''
         path = EXPERIMENT_PATH
-        is_agent = 'Mosquito'
+        is_agent = 'Observed Mosquito'
 
     return titleappend, path, is_agent
 
@@ -116,7 +118,7 @@ def plot_position_heatmaps(trajectories_obj):
     max_probability = np.max(probs_xy)
 
     #### file naming and directory selection
-    fileappend, path, agent = get_agent_info(trajectories_obj.agent_obj)
+    fileappend, path, agent = get_agent_info(trajectories_obj.experiment.agent)
 
     titlebase = "{type} Position Heatmap".format(type=agent)
     numbers = " (n = {})".format(total_trajectories)
@@ -196,10 +198,10 @@ def plot_position_heatmaps(trajectories_obj):
 
 def plot_kinematic_histograms(experiment,
         plot_kwargs=None,
-        titleappend='',
         upw_ensemble="none",
         downw_ensemble="none"):
-    ensemble = experiment.kinematics
+    titleappend = get_agent_info(experiment)
+    ensemble = experiment.flight.kinematics
     statefig = plt.figure()  # , figsize=(9, 8))
     gs1 = gridspec.GridSpec(2, 3)
     axs = [statefig.add_subplot(ss) for ss in gs1]
@@ -421,7 +423,7 @@ def plot_kinematic_histograms(experiment,
 
     gs1.tight_layout(statefig, rect=[0, 0.03, 1, 0.95])  # overlapping text hack
 
-    fileappend, path, agent = get_agent_info(agent_obj)
+    fileappend, path, agent = get_agent_info(experiment.agent)
 
     suptit = "{} Kinematic Distributions".format(agent) + titleappend
     statefig.suptitle(suptit, fontsize=14)
@@ -469,7 +471,8 @@ def plot_starting_points(ensemble):
         _ = plt.setp(ax.get_xticklabels(), visible=True)
 
 
-def plot_timeseries(ensemble, agent_obj, kinematic=None):
+def plot_timeseries(experiment, kinematic=None):
+    ensemble = experiment.flight.kinematics
     #    traj_numbers = [int(i) for i in ensemble.index.get_level_values('trajectory_num').unique()]
     data_dict = {}
 
@@ -496,7 +499,7 @@ def plot_timeseries(ensemble, agent_obj, kinematic=None):
         data_dict[col] = col_data
 
     #### file naming and directory selection
-    fileappend, path, agent = get_agent_info(agent_obj)
+    fileappend, path, agent = get_agent_info(experiment.agent)
 
     titlebase = "{agent} {kinematic} timeseries".format(agent=agent, kinematic="{kinematic}")
     numbers = " (n = {})".format(ensemble['trajectory_num'].max())
@@ -520,7 +523,8 @@ def plot_timeseries(ensemble, agent_obj, kinematic=None):
         plt.show()
 
 
-def plot_forces_violinplots(ensemble, agent_obj):
+def plot_forces_violinplots(experiment):
+    ensemble = experiment.flight.kinematics
     ensembleF = ensemble.loc[
         (ensemble['position_x'] > 0.25) & (ensemble['position_x'] < 0.95),
         ['totalF_x', 'totalF_y', 'totalF_z',
@@ -546,20 +550,21 @@ def plot_forces_violinplots(ensemble, agent_obj):
     plt.tight_layout(pad=1.8)
     plt.ylabel("Force magnitude distribution (newtons)")
 
-    fileappend, path, agent = get_agent_info(agent_obj)
+    fileappend, path, agent = get_agent_info(experiment.agent)
 
     plt.savefig(os.path.join(path, "Force Distributions" + fileappend + FIG_FORMAT))
     plt.show()
 
 
-def plot_velocity_compassplot(ensemble, agent_obj, kind):
+def plot_velocity_compassplot(experiment, style='global_normalize'):
+    ensemble = experiment.flight.kinematics
     N = 25
     roundbins = np.linspace(0.0, 2 * np.pi, N)
 
     ensemble['magnitude'] = [np.linalg.norm(x) for x in ensemble.values]
     ensemble['angle'] = np.tan(ensemble['velocity_y'] / ensemble['velocity_x']) % (2 * np.pi)
 
-    if kind == 'global_normalize':
+    if style == 'global_normalize':
         """what fraction of the total magnitude in all bins were in this bin?
         """
         ensemble['fraction'] = ensemble['magnitude'] / ensemble['magnitude'].sum()
@@ -579,15 +584,15 @@ def plot_velocity_compassplot(ensemble, agent_obj, kind):
                     r'$\pi$', r'$\frac{5\pi}{4}$', r'$\frac{3\pi}{2}$', r'$\frac{7\pi}{4}$']
         plt.xticks(x_tix, x_labels, size=20)
         plt.title(
-            "Agent velocities 0.25 < x < 0.5, center repulsion on (n = {})".format(agent_obj['total_trajectories']),
+            "Agent velocities 0.25 < x < 0.5, center repulsion on (n = {})".format(experiment.agent['total_trajectories']),
             y=1.1)
 
-        fileappend, path, agent = get_agent_info(agent_obj)
+        fileappend, path, agent = get_agent_info(experiment.agent)
 
         plt.savefig(os.path.join(path, "Velocity compass" + fileappend + FIG_FORMAT))
         plt.show()
 
-    if kind == 'bin_average':
+    if style == 'bin_average':
         """for each bin, we want the average magnitude
         select bin range with pandas,
         sum(magnitude) / n_vectors
@@ -600,23 +605,16 @@ def plot_velocity_compassplot(ensemble, agent_obj, kind):
             bin_mag_avgs[i] = bin_mag_avg
 
 
-def plot_compass_histogram(vector_name, ensemble, agent_obj, kind='avg_mag_per_bin', title='', fname=''):
+def plot_compass_histogram(vector_name, experiment, style='avg_mag_per_bin', title='', fname=''):
     """TODO: make compass plot total mag per bin, overlay compass arrows for avg magnitude
-
-    :param vector_name:
-    :param ensemble:
-    :param agent_obj:
-    :param kind:
-    :param title:
-    :param fname:
-    :return:
     """
+    ensemble = experiment.flight.kinematics
     N = 25
     roundbins = np.linspace(0.0, 2 * np.pi, N)
     width = (2 * np.pi) / N
 
 
-    #    if kind == 'global_normalize':
+    #    if style == 'global_normalize':
     #        ensemble['fraction'] = ensemble['magnitude'] / ensemble['magnitude'].sum()
     #
     #        values, bin_edges = np.histogram(ensemble['angle'], weights = ensemble['fraction'], bins = roundbins)
@@ -632,11 +630,11 @@ def plot_compass_histogram(vector_name, ensemble, agent_obj, kind='avg_mag_per_b
     #        xL=['0',r'$\frac{\pi}{4}$',r'$\frac{\pi}{2}$',r'$\frac{3\pi}{4}$',\
     #            r'$\pi$',r'$\frac{5\pi}{4}$',r'$\frac{3\pi}{2}$',r'$\frac{7\pi}{4}$']
     #        plt.xticks(xT, xL, size = 20)
-    #        plt.title("Agent velocities 0.25 < x < 0.5, center repulsion on (n = {})".format(agent_obj['total_trajectories']), y=1.1)
+    #        plt.title("Agent velocities 0.25 < x < 0.5, center repulsion on (n = {})".format(experiment.agent['total_trajectories']), y=1.1)
     #        plt.savefig("./figs/Compass plot , center repulsion on_ beta{beta}_rf{randomF_scale}_wf{wtf}_N{total_trajectories}.svg".format(\
-    #            beta=agent_obj['beta'], randomF_scale=agent_obj['randomF_strength'], wtf=agent_obj['wtF'], total_trajectories=agent_obj['total_trajectories'] + FIG_FORMAT))
+    #            beta=experiment.agent['beta'], randomF_scale=experiment.agent['randomF_strength'], wtf=experiment.agent['wtF'], total_trajectories=experiment.agent['total_trajectories'] + FIG_FORMAT))
 
-    if kind == 'avg_mag_per_bin':
+    if style == 'avg_mag_per_bin':
         """for each bin, we want the average magnitude
         select bin range with pandas,
         """
@@ -662,7 +660,7 @@ def plot_compass_histogram(vector_name, ensemble, agent_obj, kind='avg_mag_per_b
         plt.xticks(x_tix, x_labels, size=20)
         plt.title(title)
 
-        fileappend, path, agent = get_agent_info(agent_obj)
+        fileappend, path, agent = get_agent_info(experiment.agent)
 
         plt.savefig(os.path.join(path, "Compass {fname}" + fileappend + FIG_FORMAT))
         plt.show()
@@ -671,9 +669,10 @@ def plot_compass_histogram(vector_name, ensemble, agent_obj, kind='avg_mag_per_b
 
 
 
-def plot_vector_cloud(trajectories_obj, kinematic, i=None):
+def plot_vector_cloud(experiment, kinematic, i=None):
+    ensemble = experiment.flight.kinematics
     # test whether we are a simulation; if not, forbid plotting of  drivers
-    if trajectories_obj.agent_obj is None:
+    if experiment.is_simulation == False:
         if kinematic not in ['velocity', 'acceleration']:
             raise TypeError("we don't know the mosquito drivers")
 
@@ -681,10 +680,7 @@ def plot_vector_cloud(trajectories_obj, kinematic, i=None):
     for dim in ['x', 'y', 'z']:
         labels.append(kinematic + '_' + dim)
 
-    if i is None:
-        ensemble = trajectories_obj.data
-    else:
-        ensemble = trajectories_obj.get_trajectory_i_df(i)
+    ensemble = experiment.flights.get_trajectory_i_df(i)
 
     # grab labels
     vecs = []
@@ -720,9 +716,10 @@ def plot_vector_cloud(trajectories_obj, kinematic, i=None):
     ax.scatter(xs, ys, zs, '.', s=20, linewidths=0, c=ensemble_cmap, alpha=0.1)
 
 
-def vector_cloud_heatmap(trajectories_obj, kinematic, i=None):
+def vector_cloud_heatmap(experiment, kinematic, i=None):
+    ensemble = experiment.flight.kinematics
     # test whether we are a simulation; if not, forbid plotting of  drivers
-    if trajectories_obj.agent_obj is None:
+    if experiment.is_simulation is False:
         if kinematic not in ['velocity', 'acceleration']:
             raise TypeError("we don't know the mosquito drivers")
 
@@ -730,10 +727,7 @@ def vector_cloud_heatmap(trajectories_obj, kinematic, i=None):
     for dim in ['x', 'y', 'z']:
         labels.append(kinematic + '_' + dim)
 
-    if i is None:
-        ensemble = trajectories_obj.data
-    else:
-        ensemble = trajectories_obj.get_trajectory_i_df(i)
+    ensemble = experiment.flights.get_trajectory_i_df(i)
 
     # grab labels
     vecs = []
@@ -799,9 +793,10 @@ def vector_cloud_heatmap(trajectories_obj, kinematic, i=None):
     # cbar2.ax.set_ylabel(PROBABILITY_LABEL)
 
 
-def vector_cloud_kde(trajectories_obj, kinematic, i=None):
+def vector_cloud_kde(experiment, kinematic, i=None):
+
     # test whether we are a simulation; if not, forbid plotting of  drivers
-    if trajectories_obj.agent_obj is None:
+    if experiment.is_simulation is False:
         if kinematic not in ['position', 'velocity', 'acceleration']:
             raise TypeError("we don't know the mosquito drivers")
 
@@ -809,10 +804,7 @@ def vector_cloud_kde(trajectories_obj, kinematic, i=None):
     for dim in ['x', 'y', 'z']:
         labels.append(kinematic + '_' + dim)
 
-    if i is None:
-        ensemble = trajectories_obj.data
-    else:
-        ensemble = trajectories_obj.get_trajectory_i_df(i)
+    ensemble = experiment.flights.get_trajectory_i_df(i)
 
     # grab labels
     vecs = []
@@ -834,9 +826,9 @@ def vector_cloud_kde(trajectories_obj, kinematic, i=None):
                   xlim=xlim, ylim=ylim, shade_lowest=False, space=0, stat_func=None)
 
 
-def vector_cloud_pairgrid(trajectories_obj, kinematic, i=None):
+def vector_cloud_pairgrid(experiment, kinematic, i=None):
     # test whether we are a simulation; if not, forbid plotting of  drivers
-    if trajectories_obj.agent_obj is None:
+    if experiment.is_simulation is False:
         if kinematic not in ['velocity', 'acceleration']:
             raise TypeError("we don't know the mosquito drivers")
 
@@ -844,10 +836,7 @@ def vector_cloud_pairgrid(trajectories_obj, kinematic, i=None):
     for dim in ['x', 'y', 'z']:
         labels.append(kinematic + '_' + dim)
 
-    if i is None:
-        ensemble = trajectories_obj.data
-    else:
-        ensemble = trajectories_obj.get_trajectory_i_df(i)
+    ensemble = experiment.flights.get_trajectory_i_df(i)
 
     # grab labels
     vecs = []

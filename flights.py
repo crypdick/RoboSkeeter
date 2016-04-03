@@ -75,7 +75,25 @@ class Flights(object):
             print token, extract_digits(token)
 
     def get_trajectory_i_df(self, index):
-        return self.kinematics.loc[self.kinematics.trajectory_num == int(index)]
+        """
+        # TODO: select list of ints
+        Parameters
+        ----------
+        index (int or None)
+            trajectory index you want to select
+
+        Returns
+        -------
+        Sliced Pandas df
+        """
+        if index is None:
+            df = self.kinematics
+        if type(index) == int:
+            df = self.kinematics.loc[self.kinematics.trajectory_num == int(index)]
+        else:
+            raise ValueError("index must be int or None")
+
+        return df
 
 
     def get_trajectory_numbers(self):
