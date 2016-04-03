@@ -7,37 +7,26 @@ Created on Tue Apr 21 17:21:42 2015
 import os
 from Tkinter import Tk
 from tkFileDialog import askdirectory
-
+import numpy as np
 import pandas as pd
-
+import string
 import unit_tests  # hack to get root dir
 
 
-def load_experiment_csv(file_path):
-    """loads csv as-is"""
-#    file_path = os.path.join(script_dir, rel_data_path, filename)
-    return pd.read_csv(file_path, header=None, na_values="NaN")
-    
-
-def load_histogram_csv(filepath):
-    pass
-
-
-def save_processed_csv(trajectory_list, filepath):
-    """Outputs x,y,z coords at each timestep to a csv file. These trajectories
-    will still contain short NaN repeats, but Sharri will fix that downstream
-    using her interpolating code. She will also Kalman filter.
+def load_csv_to_df(data_fname, rel_dir ="data/processed_trajectories/"):
     """
-    dir = os.path.dirname(filepath)
-    filename, extension = os.path.splitext ( os.path.basename(filepath) )
-    for i, trajectory in enumerate(trajectory_list):
-        trajectory = trajectory.fillna("NaN")  # hack to turn nan into string 
-        # so that the csv doesn't have empty fields
-        file_path = os.path.join(dir, "Processed/", filename + "_SPLIT_" + str(i))
-        trajectory.to_csv(file_path, index=False)
-        
-        
-def load_csv2DF(data_fname, rel_dir = "data/processed_trajectories/"):
+
+    Parameters
+    ----------
+    data_fname
+        name of csv file
+    rel_dir
+        dir where the file lives
+
+    Returns
+    -------
+    pandas df
+    """
     file_path = os.path.join(os.getcwd(), rel_dir, data_fname + ".csv")
 
     col_labels = [
@@ -61,24 +50,67 @@ def load_csv2DF(data_fname, rel_dir = "data/processed_trajectories/"):
 
     return dataframe
 
-def load_CSVdir_to_trajectory(relative_dir):
-    from flights import Flights
-    t = Flights()
-    t.load_experiments(relative_dir=relative_dir)
-    return t
 
+def experiment_data_to_DF(experimental_condition):
+    """
 
-# def load_csv2np():
-#     v_csv = np.genfromtxt(os.path.join(os.path.dirname(__file__),'experiments','velocity_distributions_uw.csv'), delimiter=',')
-#     v_csv = v_csv.T
-#     v_observed = v_csv[4][:-1]  # throw out last datum
-#
-#     # load csv values
-#     a_csv = np.genfromtxt(os.path.join(os.path.dirname(__file__),'experiments','acceleration_distributions_uw.csv'), delimiter=',')
-#     a_csv = a_csv.T
-#     a_observed = a_csv[4][:-1]  # throw out last datum
-#
-#     return  v_observed, a_observed
+    Parameters
+    ----------
+    experimental_condition
+        (string)
+        Control, Left, or Right
+
+    Returns
+    -------
+    df
+    """
+    condition = string.capitalize(experimental_condition)
+    dir_label = "EXP_TRAJECTORIES_" + condition
+    directory = get_directory(dir_label)
+
+    df_list = []
+
+    col_labels = [
+        'position_x',
+        'position_y',
+        'position_z',
+        'velocity_x',
+        'velocity_y',
+        'velocity_z',
+        'acceleration_x',
+        'acceleration_y',
+        'acceleration_z',
+        'heading_angleS',
+        'angular_velo_xyS',
+        'angular_velo_yzS',
+        'curvatureS'
+    ]
+
+    for fname in [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]:  # list files
+        print "Loading {} from {}".format(fname, directory)
+        file_path = os.path.join(directory, fname)
+        # base_name = os.path.splitext(file_path)[0]
+
+        dataframe = pd.read_csv(file_path, na_values="NaN", names=col_labels)  # recognize str(NaN) as NaN
+        dataframe.fillna(value=0, inplace=True)
+
+        df_len = len(dataframe.position_x)
+
+        # take fname number (slice out "control_" and ".csv")
+        fname_num = int(fname[:-4])
+
+        # ensure that csv fname is just an int
+        if type(fname_num) is not int:
+            raise ValueError('''we are expecting csv files to be integers.
+                instead, we found type {}. culprit: {}'''.format(type(fname_num), fname))
+
+        dataframe['trajectory_num'] = [fname_num] * df_len
+        dataframe['tsi'] = np.arange(df_len)
+
+        df_list.append(dataframe)
+
+    df = pd.concat(df_list)
+    return df
 
 
 def get_csv_name_list(path, relative=True):
@@ -87,7 +119,19 @@ def get_csv_name_list(path, relative=True):
     else:
         return os.listdir(path)
 
+
 def get_csv_filepath_list(path, csv_list):
+    """
+
+    Parameters
+    ----------
+    path
+    csv_list
+
+    Returns
+    -------
+
+    """
     paths = [os.path.join(path, fname) for fname in csv_list]
     return paths
 
@@ -157,9 +201,15 @@ def get_directory(selection=None):
     return directory
 
 
+def extract_number_from_fname(self, token):
+    extract_digits = lambda stng: "".join(char for char in stng if char in string.digits + ".")
+    to_float = lambda x: float(x) if x.count(".") <= 1 else None
 
-
+    try:
+        return to_float(extract_digits(token))
+    except ValueError:
+        print token, extract_digits(token)
 
 
 if __name__ == '__main__':
-    a = load_csv2DF('Control-27')
+    a = load_csv_to_df('Control-27')
