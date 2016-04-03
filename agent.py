@@ -47,7 +47,7 @@ class Agent:
         # useful lists TODO: get rid of?
         self.kinematics_list = ['position', 'velocity', 'acceleration']  # curviture?
         self.forces_list = ['totalF', 'randomF', 'stimF']
-        self.other_list = ['tsi', 'times', 'inPlume', 'plume_interaction']
+        self.other_list = ['tsi', 'times', 'in_plume', 'plume_interaction']
 
         # mk forces
         self.forces = Forces(self.randomF_strength,
@@ -102,11 +102,11 @@ class Agent:
             pass
 
         self.total_trajectories = total_trajectories
-        kinematics = Flights()
-        kinematics.load_observations_and_analyze(df_list)  # concatinate all the dataframes at once instead of one at a
-                                                          # time for performance boost.
+        flights = Flights()
+        flights.kinematics = pd.concat(df_list)  # concatinate all the dataframes at once for performance boost.
+
         # add agent to trajectory object for plotting funcs
-        return kinematics
+        return flights
 
     def _generate_flight(self):
         """Generate a single trajectory using our model.
@@ -126,9 +126,9 @@ class Agent:
         triggered_tsi = {'stimulus': -10000000, 'exit': -10000000}  # a long time ago
 
         for tsi in V['tsi']:
-            inPlume[tsi] = self.plume.in_plume(position[tsi])
+            in_plume[tsi] = self.plume.check_for_plume(position[tsi])
 
-            plume_interaction[tsi], triggered_tsi = self._plume_interaction(tsi, inPlume, velocity[tsi][1],
+            plume_interaction[tsi], triggered_tsi = self._plume_interaction(tsi, in_plume, velocity[tsi][1],
                                                                             triggered_tsi)
 
             stimF[tsi], randomF[tsi], totalF[tsi] = \
@@ -176,16 +176,20 @@ class Agent:
         # Calculate driving forces at this timestep
         ################################################
         randomF = self.forces.randomF(self.randomF_strength)
+
         if "gradient" in self.decision_policy:
-            kwargs = {"gradient" : self.plume.get_nearest(position_now)}
+            raise NotImplementedError
+            kwargs = {"gradient": self.plume.get_nearest_data(position_now)}
         elif "surge" in self.decision_policy or "cast" in self.decision_policy:
-            kwargs = {"tsi":tsi,
+            kwargs = {"tsi": tsi,
                       "plume_interaction_history": plume_interaction_history,
                       "triggered_tsi": triggered_tsi,
                       "position_now": position_now}
+        else:
+            raise ValueError("unknown decision policy {}".format(self.decision_policy))
 
-        if self.experiment.experiment_conditions['condition'] in 'controlControlCONTROL':
-            stimF = np.array([0.,0.,0.])  # FIXME
+        if self.experiment.experiment_conditions['condition'] in 'controlControlCONTROL' or self.decision_policy == 'ignore':
+            stimF = np.array([0.,0.,0.])
         else:
             stimF = self.forces.stimF(kwargs)
 
@@ -211,7 +215,7 @@ class Agent:
         
         return V
 
-    def _plume_interaction(self, tsi, inPlume, velocity_y_now, last_triggered):
+    def _plume_interaction(self, tsi, in_plume, velocity_y_now, last_triggered):
         """
         out2out - searching
          (or orienting, but then this func shouldn't be called)
@@ -222,20 +226,20 @@ class Agent:
             Right_plume Exit left, Right_plume Exit right}
         TODO: export to trajectory class
         """
-        current_inPlume, past_inPlume = inPlume[tsi], inPlume[tsi - 1]
+        current_in_plume, past_in_plume = in_plume[tsi], in_plume[tsi - 1]
 
         if tsi == 0:  # always start searching
             state = 'outside'
-        elif current_inPlume == False and past_inPlume == False:
+        elif current_in_plume == False and past_in_plume == False:
             # we are not in plume and weren't in last ts
             state = 'outside'
-        elif current_inPlume == True and past_inPlume == False:
+        elif current_in_plume == True and past_in_plume == False:
             # entering plume
             state = 'inside'
-        elif current_inPlume == 1 and past_inPlume == True:
+        elif current_in_plume == 1 and past_in_plume == True:
             # we stayed in the plume
             state = 'inside'
-        elif current_inPlume == False and past_inPlume == True:
+        elif current_in_plume == False and past_in_plume == True:
             # exiting the plume
             if velocity_y_now <= 0:
                 state = 'Exit left'
@@ -348,7 +352,7 @@ class Agent:
 
         V['tsi'] = np.arange(self.max_bins)
         V['times'] = np.linspace(0, self.time_max, self.max_bins)
-        V['inPlume'] = np.zeros(self.max_bins, dtype=bool)
+        V['in_plume'] = np.zeros(self.max_bins, dtype=bool)
         V['plume_interaction'] = np.array([None] * self.max_bins)
 
         return V
