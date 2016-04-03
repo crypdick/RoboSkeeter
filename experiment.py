@@ -23,6 +23,7 @@ class Experiment(object):
 
         # init objects
         self.environment = Environment(self)
+
         self.flights = None
         self.agent = Agent(self, agent_kwargs)
 
@@ -30,6 +31,7 @@ class Experiment(object):
         self.plt = None
         self.is_scored = False  # toggle to let analysis functions know whether it has been scored
         self.percent_time_in_plume = None
+        self.side_ratio_score = None
 
     def run(self, N=None):
         """
@@ -51,7 +53,7 @@ class Experiment(object):
                 self.flights = self.agent.fly(total_trajectories=N)
         else:
             self.flights = Flights()
-            self.flights.load_experiments(experimental_condition=self.experiment_conditions['condition'])
+            self.flights.experiment_data_to_DF(experimental_condition=self.experiment_conditions['condition'])
             self.flights.kinematics['inPlume'] = 0  # FIXME
 
         # asign alias
@@ -59,18 +61,33 @@ class Experiment(object):
 
         # run analysis
         dm = DoMath(self)
-        self.flights, self.percent_time_in_plume = dm.flights, dm.percent_time_in_plume
+        self.flights, self.percent_time_in_plume, self.side_ratio_score = dm.flights, dm.percent_time_in_plume, dm.side_ratio_score
 
     def score(self):
         analysis.scoring(self)
         self.is_scored = True
 
 def start_simulation(N_flights, agent_kwargs=None, experiment_conditions=None):
+    """
+    Fire up RoboSkeeter
+    Parameters
+    ----------
+    N_flights
+        (int) number of flights to simulate
+    agent_kwargs
+        (dict) params for agent
+    experiment_conditions
+        (dict) params for environment
+
+    Returns
+    -------
+    experiment object
+    """
     if experiment_conditions is None:
         experiment_conditions = {'condition': 'Right',  # {'Left', 'Right', 'Control'}
                                  'time_max': 6.,
                                  'bounded': True,
-                                'plume_model': "timeavg"  # "Boolean", "timeavg"
+                                 'plume_model': "Boolean"  # "Boolean", "timeavg", "None"
                                  }
     if agent_kwargs is None:
         agent_kwargs = {'is_simulation': True,
@@ -80,7 +97,7 @@ def start_simulation(N_flights, agent_kwargs=None, experiment_conditions=None):
                         'collision_type': 'part_elastic',  # 'elastic', 'part_elastic'
                         'restitution_coeff': 0.1,  # 0.8
                         'stimulus_memory_N_timesteps': 1,
-                        'decision_policy': 'gradient',  # 'surge_only', 'cast_only', 'cast+surge', 'gradient', 'ignore'
+                        'decision_policy': 'surge',  # 'surge', 'cast', 'castsurge', 'gradient', 'ignore'
                         'initial_position_selection': 'downwind_high',
                         'verbose': True
                         }
@@ -92,13 +109,23 @@ def start_simulation(N_flights, agent_kwargs=None, experiment_conditions=None):
     return experiment
 
 
-def load_experiment():
-    # pick which data to retrieve
-    experiment_conditions = {'condition': 'Control',  # {'Left', 'Right', 'Control'}
-                             'plume_model': "None",  # "Boolean" "None, "Timeavg",
-                             'time_max': "N/A (experiment)",
-                             'bounded': True,
-                             }
+def load_experiment(experiment_conditions=None):
+    """
+    Load Sharri's experiments into experiment class
+    Parameters
+    ----------
+    experiment_conditions
+
+    Returns
+    -------
+    experiment class
+    """
+    if experiment_conditions is None:  # load defaults
+        experiment_conditions = {'condition': 'Control',  # {'Left', 'Right', 'Control'}
+                                 'plume_model': "None",  # "Boolean" "None, "Timeavg",
+                                 'time_max': "N/A (experiment)",
+                                 'bounded': True,
+                                 }
 
     agent_kwargs = {'is_simulation': False,
                     'randomF_strength': "UNKNOWN",
@@ -120,8 +147,8 @@ def load_experiment():
 
 
 if __name__ is '__main__':
-    # experiment = start_simulation(1, None, None)
-    experiment = load_experiment()  # TODO: experiments should use same code as simulation to figure out plume interaction
+    experiment = start_simulation(1, None, None)
+    #experiment = load_experiment()  # TODO: experiments should use same code as simulation to figure out plume interaction
 
     print "\nAliases updated."
     # useful aliases
@@ -129,20 +156,3 @@ if __name__ is '__main__':
     kinematics = experiment.flights.kinematics
     windtunnel = experiment.environment.windtunnel
     plume = experiment.environment.plume
-
-
-######################### dump data for csv for Sharri
-# print "dumping to csvs"
-# e = experiment.data
-# r = e.trajectory_num.iloc[-1]
-#
-# for i in range(r+1):
-#     e1 = e.loc[e['trajectory_num'] == i, ['position_x', 'position_y', 'position_z', 'inPlume']]
-#     e1.to_csv("l"+str(i)+'.csv', index=False)
-#
-# # experiment.plot_kinematic_hists()
-# # experiment.plot_posheatmap()
-# # experiment.plot_force_violin()
-#
-# # # for plume stats
-# # g = e.loc[e['behavior_state'].isin(['Left_plume Exit left', 'Left_plume Exit right', 'Right_plume Exit left', 'Right_plume Exit right'])]
