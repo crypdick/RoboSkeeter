@@ -33,28 +33,22 @@ class Forces():
         """given force direction and strength, return a force vector
         decision policies: 'cast_only', 'surge_only', 'cast+surge'
 
-        FIXME: if cast in decision_policy
+        TODO: review this func to make sure castsurge would work
         """
-        if self.decision_policy is 'cast_only':
-            force = self._stimF_cast_only(kwargs)
-        elif self.decision_policy is 'surge_only':
-            force = self._stimF_surge_only(kwargs)
-        elif self.decision_policy is 'cast+surge':
-            raise NotImplementedError
-        elif self.decision_policy is 'gradient':
-            force = self._stimF_temp_gradient(kwargs)
-        elif self.decision_policy is 'ignore':
-            force = np.array([0., 0., 0.])
-        else:
-            print "stimF error", self.decision_policy
-            force = np.array([0., 0., 0.])
+        force = np.array([0., 0., 0.])
+
+        if 'cast' in self.decision_policy:
+            force += self._stimF_cast_only(kwargs)
+        if 'surge' in self.decision_policy:
+            force += self._stimF_surge_only(kwargs)
+        if 'gradient' in self.decision_policy:
+            force += self._stimF_temp_gradient(kwargs)
+        if 'ignore' in self.decision_policy:
+            pass
 
         return force
 
     def _stimF_cast_only(self, kwargs):
-        """
-        :return:
-        """
         tsi = kwargs['tsi']
         plume_interaction_history = kwargs['plume_interaction_history']
         triggered_tsi = kwargs['triggered_tsi']
