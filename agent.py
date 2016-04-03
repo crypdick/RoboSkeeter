@@ -21,7 +21,14 @@ class Agent:
     def __init__(self, experiment, agent_kwargs):
         """ Load params
         """
+        # dump kwarg dictionary into the agent object
+        for key, value in agent_kwargs.iteritems():
+            setattr(self, key, value)
 
+        if experiment.is_simulation:
+            self._simulated_agent_init(experiment)
+
+    def _simulated_agent_init(self, experiment):
         # defaults
         self.mass = 2.88e-6  # avg. mass of our colony (kg) =2.88 mg,
         self.time_max = 15.
@@ -29,9 +36,6 @@ class Agent:
         self.max_bins = int(np.ceil(self.time_max / self.dt))  # N bins
         self.initial_velocity_stdev = 0.01
 
-        # dump kwarg dictionary into the agent object
-        for key, value in agent_kwargs.iteritems():
-            setattr(self, key, value)
 
         # useful aliases
         self.experiment = experiment
@@ -54,9 +58,7 @@ class Agent:
         # turn thresh, in units deg s-1.
         # From Sharri:
         # it is the stdevof the broader of two Gaussians that fit the distribution of angular velocity
-        self.turn_threshold = 433.5
 
-        
         # # create repulsion landscape
         # self._repulsion_funcs = repulsion_landscape3D.landscape(boundary=self.boundary)
 
