@@ -28,10 +28,22 @@ class Experiment(object):
 
         # these get mapped to the correct funcs after run() is ran
         self.plt = None
-        self.scored = False  # toggle to let analysis functions know whether it has been scored
-
+        self.is_scored = False  # toggle to let analysis functions know whether it has been scored
+        self.percent_time_in_plume = None
 
     def run(self, N=None):
+        """
+        Func that either loads experimental data or runs a simulation, depending on whether self.is_simulation is True
+        Parameters
+        ----------
+        N
+            (int, optional)
+            Number of flights to simulate. If we are just loading files, it will load the entire ensemble.
+
+        Returns
+        -------
+        None
+        """
         if self.is_simulation:
             if type(N) != int:
                 raise TypeError("Number of flights must be integer.")
@@ -39,7 +51,8 @@ class Experiment(object):
                 self.flights = self.agent.fly(total_trajectories=N)
         else:
             self.flights = Flights()
-            self.flights.load_experiments(experimental_condition=self.condition)
+            self.flights.load_experiments(experimental_condition=self.experiment_conditions['condition'])
+            self.flights.kinematics['inPlume'] = 0  # FIXME
 
         # asign alias
         self.plt = plttr(self)  # TODO: takes self, extracts metadata for files and titles, etc
@@ -50,7 +63,7 @@ class Experiment(object):
 
     def score(self):
         analysis.scoring(self)
-        self.scored = True
+        self.is_scored = True
 
 def start_simulation(N_flights, agent_kwargs=None, experiment_conditions=None):
     if experiment_conditions is None:
@@ -82,32 +95,36 @@ def start_simulation(N_flights, agent_kwargs=None, experiment_conditions=None):
 def load_experiment():
     # pick which data to retrieve
     experiment_conditions = {'condition': 'Control',  # {'Left', 'Right', 'Control'}
-                         'plume_model': "None", #"Boolean" "None, "Timeavg",
-                         'time_max': "N/A (experiment)",
-                         'bounded': True,
-                         }
+                             'plume_model': "None",  # "Boolean" "None, "Timeavg",
+                             'time_max': "N/A (experiment)",
+                             'bounded': True,
+                             }
 
     agent_kwargs = {'is_simulation': False,
-                        'randomF_strength': "UNKNOWN",
-                        'stimF_strength': "UNKNOWN",
-                        'damping_coeff': "UNKNOWN",
-                        'collision_type': "UNKNOWN",
-                        'restitution_coeff': "UNKNOWN",
-                        'stimulus_memory_N_timesteps': "UNKNOWN",
-                        'decision_policy': "UNKNOWN",
-                        'initial_position_selection': "UNKNOWN",
-                        'verbose': True
-                        }
+                    'randomF_strength': "UNKNOWN",
+                    'stimF_strength': "UNKNOWN",
+                    'damping_coeff': "UNKNOWN",
+                    'collision_type': "UNKNOWN",
+                    'restitution_coeff': "UNKNOWN",
+                    'stimulus_memory_N_timesteps': "UNKNOWN",
+                    'decision_policy': "UNKNOWN",
+                    'initial_position_selection': "UNKNOWN",
+                    'verbose': True
+                    }
 
     experiment = Experiment(agent_kwargs, experiment_conditions)
+    experiment.run()
     print "\nDone loading experiment."
 
     return experiment
 
 
 if __name__ is '__main__':
-    experiment = start_simulation(1, None, None)
+    # experiment = start_simulation(1, None, None)
+    experiment = load_experiment()  # TODO: experiments should use same code as simulation to figure out plume interaction
 
+    print "\nAliases updated."
+    # useful aliases
     agent = experiment.agent
     kinematics = experiment.flights.kinematics
     windtunnel = experiment.environment.windtunnel
