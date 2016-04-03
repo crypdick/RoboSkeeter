@@ -67,7 +67,7 @@ def draw_rectangular_prism(ax, x_min, x_max, y_min, y_max, z_min, z_max):
     art3d.pathpatch_2d_to_3d(ceiling, z=z_max, zdir="z")
 
 
-def draw_plume(plume, ax=None):
+def draw_bool_plume(plume, ax=None):
     """Note: tried  to add ells to Pathcollection and then plot that, but kept having a ValueError
     Also tried using an EclipseCollection but the patchcollection_2d_to_3d function does not work on it
 
@@ -139,13 +139,34 @@ def draw_trajectory(ax, trajectory, **kwargs):
         ax.scatter(inside_pts.position_x, inside_pts.position_y, inside_pts.position_z, c='r')
 
 
+def plot_plume_gradient(plume, thresh):  # TODO: plot inside windtunnel as in draw_bool_plume
+    """
+    Plot a quiverplot of the gradient
+    Parameters
+    ----------
+    plume
+        (gradient plume object)
+    thresh
+        (float)
+        filters out plotting of gradient arrows smaller than this threshold
+    """
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
 
+    filtered = plume.data[plume.data.gradient_mag > thresh]
+
+    ax.quiver(filtered.x, filtered.y, filtered.z, filtered.gradient_x, filtered.gradient_y, filtered.gradient_z, length=0.01)
+    # ax.set_xlim3d(0, 1)
+    ax.set_ylim3d(-0.127, 0.127)
+    ax.set_zlim3d(0, 0.254)
+
+    plt.title("Temperature gradient of interpolated time-averaged thermocouple recordings")
+    plt.xlabel("Upwind/downwind")
+    plt.ylabel("Crosswind")
+    plt.clabel("Elevation")
+
+    plt.show()
 
 
 if __name__ is '__main__':
     ax = plot_windtunnel()
-
-    # import experiment
-    #
-    # simulation, trajectory_s, windtunnel, plume, agent = experiment.run_simulation(None, None)
-    # draw_trajectory(ax, trajectory_s.data)
