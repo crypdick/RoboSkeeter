@@ -37,6 +37,8 @@ class Environment(object):
             plume = TimeAvgPlume(self)
         elif self.plume_model == "None":
             plume = NoPlume()
+        elif self.plume_model == "Unaveraged":
+            plume = UnaveragedPlume()
         else:
             raise NotImplementedError("no such plume type {}".format(self.plume_model))
 
@@ -164,6 +166,7 @@ class Plume(object):
 
 
 class NoPlume(Plume):
+    # TODO: test NoPlume
     def __init__(self):
         pass
 
@@ -174,6 +177,7 @@ class NoPlume(Plume):
 
 class BooleanPlume(Plume):
     """Are you in the plume Y/N"""
+    # TODO: test BooleanPlume
     def __init__(self, environment):
         super(self.__class__, self).__init__(environment)
 
@@ -252,6 +256,7 @@ class BooleanPlume(Plume):
 
 class TimeAvgPlume(Plume):
     """time-averaged temperature readings taken inside the windtunnel"""
+    # TODO: test TimeAvgPlume
     def __init__(self, environment):
         super(self.__class__, self).__init__(environment)
 
@@ -323,6 +328,7 @@ class TimeAvgPlume(Plume):
         We are assuming that far away from the plume envelope the air will be room temperature. We are padding the
         recorded area with room temperature data points
         """
+        # TODO: pad the data extending outside of the windtunnel bounds.
         xmin = self._raw_data.x.min()
         xmax = self._raw_data.x.max()
         ymin = self._raw_data.y.min()
@@ -332,7 +338,7 @@ class TimeAvgPlume(Plume):
 
         self.downwind # FIXME
 
-        raise NotImplementedError
+        raise NotImplementedError # TODO; implement padding
 
     def _interpolate_data(self, resolution):
         # TODO: review this function
@@ -346,25 +352,25 @@ class TimeAvgPlume(Plume):
         # self._grid_x = self._grid_x / 5.
         # points = self._raw_data[['x', 'y', 'z']].values  # (1382, 3)
         # points = (self._raw_data.x.values, self._raw_data.y.values, self._raw_data.z.values)  # (1382, 3)
-        x,y,z = (self._raw_data.x.values, self._raw_data.y.values, self._raw_data.z.values)  # (1382, 3)
+        x, y, z = (self._raw_data.x.values, self._raw_data.y.values, self._raw_data.z.values)  # (1382, 3)
         #print "pts", len(self._raw_data.x.values), np.shape(self._raw_data.x.values)
         temps = self._raw_data.temperature.values  # len 1382
         #print "temps", temps.shape
         epsilon = 3
         #print "epsilon", epsilon
-        rbfi = Rbf(x,y,z, temps, function='gaussian', smooth=1e-8, epsilon=epsilon)
+        rbfi = Rbf(x, y, z, temps, function='gaussian', smooth=1e-8, epsilon=epsilon)
 
         xi = np.linspace(0, 1, 50)  # xmin * .8
         yi = np.linspace(-.127, .127, 15)
         zi = np.linspace(0, .254, 15)
         #print "array shapes", xi.shape, yi.shape, zi.shape
-        self._grid_x, self._grid_y, self._grid_z = np.meshgrid(xi,yi,zi, indexing='ij')
+        self._grid_x, self._grid_y, self._grid_z = np.meshgrid(xi, yi, zi, indexing='ij')
         xxi = self._grid_x.ravel()  # FIXME flip here
         yyi = self._grid_y.ravel()
         zzi = self._grid_z.ravel()
         print "xxi shape", np.shape(xxi), np.shape(yyi), np.shape(zzi)
         print "grid shapes", np.shape(self._grid_x)
-        di = rbfi(xxi,yyi,zzi)
+        di = rbfi(xxi, yyi, zzi)
         print "shape di", di.shape
         self._interpolated_temps = di.reshape((len(xi), len(yi), len(zi)))
         # print self._interpolated_temps
@@ -389,22 +395,16 @@ class TimeAvgPlume(Plume):
         self.data['z'] = zzi
         self.data['avg_temp'] = di
 
-        # FIXME: set out of bounds temp to room temp
-
-
     def _calc_gradient(self):
-        # TODO: review this function
+        # TODO: review this gradient function
         if self.condition in 'controlControlCONTROL':
             return None
-
 
         # Solve for the spatial gradient
         self._gradient_x, self._gradient_y, self._gradient_z = np.gradient(self._interpolated_temps,
                                                                            self._grid_x,
                                                                            self._grid_y,
                                                                            self._grid_z)
-
-
 
         self.data['gradient_x'] = self._gradient_x.ravel()
         self.data['gradient_y'] = self._gradient_y.ravel()
@@ -428,6 +428,10 @@ class TimeAvgPlume(Plume):
 
         data = zip(self.data.x, self.data.y, self.data.z)
         return kdt(data)
+
+
+class UnaveragedPlume:
+    raise NotImplementedError  # TODO: implement unaveraged plume
 
 
 if __name__ == '__main__':
