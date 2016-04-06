@@ -126,10 +126,10 @@ class Agent:
         triggered_tsi = {'stimulus': -10000000, 'exit': -10000000}  # a long time ago
 
         for tsi in V['tsi']:
-            in_plume[tsi] = self.plume.check_for_plume(position[tsi])
+            in_plume[tsi] = self.plume.check_for_plume(position[tsi])  # TODO: export to behavior module
 
             plume_interaction[tsi], triggered_tsi = self._plume_interaction(tsi, in_plume, velocity[tsi][1],
-                                                                            triggered_tsi)
+                                                                            triggered_tsi) # TODO: export
 
             stimF[tsi], randomF[tsi], totalF[tsi] = \
                 self._calc_forces(tsi, velocity[tsi], plume_interaction, triggered_tsi, position[tsi])
@@ -224,8 +224,8 @@ class Agent:
         in2out - exiting
             {Left_plume Exit left, Left_plume Exit right
             Right_plume Exit left, Right_plume Exit right}
-        TODO: export to trajectory class
         """
+        # TODO: only run this stuff if running a relevant decision policy
         current_in_plume, past_in_plume = in_plume[tsi], in_plume[tsi - 1]
 
         if tsi == 0:  # always start searching
@@ -259,7 +259,6 @@ class Agent:
 
 
     def _collide_with_wall(self, candidate_pos, candidate_velo):
-        # TODO: move to wall
         walls = self.windtunnel.walls
         xpos, ypos, zpos = candidate_pos
         xvelo, yvelo, zvelo = candidate_velo
@@ -290,7 +289,7 @@ class Agent:
                 # xvelo *= -1.
                 crash = True
 
-        #y dim
+        # y dim
         if ypos < walls.left:  # too left
             ypos = walls.left + teleport_distance
             if self.collision_type == 'elastic':
