@@ -36,7 +36,6 @@ class Agent:
         self.max_bins = int(np.ceil(self.time_max / self.dt))  # N bins
         self.initial_velocity_stdev = 0.01
 
-
         # useful aliases
         self.experiment = experiment
         self.windtunnel = self.experiment.environment.windtunnel
@@ -45,7 +44,7 @@ class Agent:
         self.plume = self.experiment.environment.plume
 
         # useful lists TODO: get rid of?
-        self.kinematics_list = ['position', 'velocity', 'acceleration']  # curviture?
+        self.kinematics_list = ['position', 'velocity', 'acceleration']  # curvature?
         self.forces_list = ['totalF', 'randomF', 'stimF']
         self.other_list = ['tsi', 'times', 'in_plume', 'plume_interaction']
 
@@ -57,14 +56,14 @@ class Agent:
 
         # turn thresh, in units deg s-1.
         # From Sharri:
-        # it is the stdevof the broader of two Gaussians that fit the distribution of angular velocity
+        # it is the stdev of the broader of two Gaussians that fit the distribution of angular velocity
 
         # # create repulsion landscape
         # self._repulsion_funcs = repulsion_landscape3D.landscape(boundary=self.boundary)
 
     def fly(self, total_trajectories=1):
-        ''' iterates self._fly_single() total_trajectories times
-        '''
+        """ runs _generate_flight total_trajectories times
+        """
         df_list = []
         traj_i = 0
         try:
@@ -98,14 +97,12 @@ class Agent:
                         sys.stdout.flush()
 
         except KeyboardInterrupt:
-            print "\n Simulations interupted at iteration {}. Continuing...".format(traj_i)
+            print "\n Simulations interrupted at iteration {}. Moving along...".format(traj_i)
             pass
 
-        self.total_trajectories = total_trajectories
         flights = Flights()
-        flights.kinematics = pd.concat(df_list)  # concatinate all the dataframes at once for performance boost.
+        flights.kinematics = pd.concat(df_list)  # concatenate all the data frames at once for performance boost.
 
-        # add agent to trajectory object for plotting funcs
         return flights
 
     def _generate_flight(self):
@@ -129,7 +126,7 @@ class Agent:
             in_plume[tsi] = self.plume.check_for_plume(position[tsi])  # TODO: export to behavior module
 
             plume_interaction[tsi], triggered_tsi = self._plume_interaction(tsi, in_plume, velocity[tsi][1],
-                                                                            triggered_tsi) # TODO: export
+                                                                            triggered_tsi)  # TODO: export
 
             stimF[tsi], randomF[tsi], totalF[tsi] = \
                 self._calc_forces(tsi, velocity[tsi], plume_interaction, triggered_tsi, position[tsi])
@@ -139,8 +136,6 @@ class Agent:
 
             # check if time is out, end loop before we solve for future velo, position
             if tsi == self.max_bins-1: # -1 because of how range() works
-#                self.metadata['target_found'][0]  = False
-#                self.metadata['time_to_target_find'][0] = np.nan
                 V = self._land(tsi, V)
                 break
 
@@ -175,7 +170,7 @@ class Agent:
         ################################################
         # Calculate driving forces at this timestep
         ################################################
-        randomF = self.forces.randomF(self.randomF_strength)
+        randomF = self.forces.randomF()
 
         if "gradient" in self.decision_policy:
             raise NotImplementedError

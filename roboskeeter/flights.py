@@ -19,7 +19,6 @@ trajectory.save
 
 import numpy as np
 import pandas as pd
-
 from roboskeeter.io import i_o
 
 
