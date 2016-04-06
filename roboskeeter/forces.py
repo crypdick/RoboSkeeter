@@ -1,27 +1,18 @@
 __author__ = 'richard'
-
 import numpy as np
-
 from roboskeeter.math import math_toolbox
 
 
 class Forces():
     def __init__(self, randomF_strength, stimF_strength, stimulus_memory, decision_policy):
-        # TODO: save coefficients here
         self.randomF_strength = randomF_strength
         self.stimF_strength = stimF_strength
         self.stimulus_memory = stimulus_memory
         self.decision_policy = decision_policy
 
-    def randomF(self, dim=3):
+    def randomF(self):
         """Generate random-direction force vector at each timestep from double-
         exponential distribution given exponent term rf.
-
-        Args:
-            rf: random force distribution exponent (float)
-
-        Returns:
-            random force x and y components (array)
         """
         # TODO: make randomF draw from the canonical eqn for random draws Rich taught you
         ends = math_toolbox.gen_symm_vecs(3)
@@ -97,7 +88,6 @@ class Forces():
     def _stimF_surge_only(self, kwargs):
         tsi = kwargs['tsi']
         plume_interaction_history = kwargs['plume_interaction_history']
-        triggered_tsi = kwargs['triggered_tsi']
 
         if plume_interaction_history[tsi] is 'inside':
             force = np.array([self.stimF_strength, 0., 0.])
@@ -107,19 +97,24 @@ class Forces():
         return force
 
     def _stimF_temp_gradient(self, kwargs):
-        """gradient vector * stimFstrength"""
+        """gradient vector norm * stimF strength"""
         df = kwargs['gradient']
 
         scalar = self.stimF_strength
         vector = df[['gradient_x', "gradient_y", "gradient_z"]].values
         force = scalar * vector
+
+        # stimF here is proportional to norm of gradient. in order to avoid huge stimFs, we put a ceiling on the
+        # size of stimF
+        ceiling = 1e-5  # TODO: parameterize in function call
         norm = np.linalg.norm(force)
-        if norm > 1e-5:
-            force *= 1e-5/norm
+        if norm > ceiling:
+            force *= 1e-5 / norm
+
+        # catch problems in stimF
         if np.isnan(force).any():
             raise ValueError("Nans in stimF!! {} {}".format(force, vector))
         if np.isinf(force).any():
             raise ValueError("infs in stimF! {} {}".format(force, vector))
-
 
         return force
