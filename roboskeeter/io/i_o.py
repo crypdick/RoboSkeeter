@@ -15,64 +15,20 @@ import pandas as pd
 import setup  # hack to get root dir
 
 
-def load_csv_to_df(data_fname, rel_dir ="data/processed_trajectories/"):
+def load_single_csv_to_df(csv_dir):
     """
 
     Parameters
     ----------
-    data_fname
-        name of csv file
-    rel_dir
-        dir where the file lives
+    csv_dir
+        str, full directory of csv
 
     Returns
     -------
     pandas df
     """
-    file_path = os.path.join(os.getcwd(), rel_dir, data_fname + ".csv")
 
-    col_labels = [
-        'position_x',
-        'position_y',
-        'position_z',
-        'velocity_x',
-        'velocity_y',
-        'velocity_z',
-        'acceleration_x',
-        'acceleration_y',
-        'acceleration_z',
-        'heading_angle',
-        'angular_velo_xy',
-        'angular_velo_yz',
-        'curvature'
-    ]
-
-    dataframe = pd.read_csv(file_path, na_values="NaN", names=col_labels)  # recognize str(NaN) as NaN
-    dataframe.fillna(value=0, inplace=True)
-
-    return dataframe
-
-
-def experiment_data_to_DF(experimental_condition):
-    """
-
-    Parameters
-    ----------
-    experimental_condition
-        (string)
-        Control, Left, or Right
-
-    Returns
-    -------
-    df
-    """
-    condition = string.capitalize(experimental_condition)
-    dir_label = "EXP_TRAJECTORIES_" + condition
-    directory = get_directory(dir_label)
-
-    df_list = []
-
-    col_labels = [
+    col_labels = [  # TODO: check these col labels are in agreement w  your code
         'position_x',
         'position_y',
         'position_z',
@@ -86,32 +42,54 @@ def experiment_data_to_DF(experimental_condition):
         'angular_velo_xyS',
         'angular_velo_yzS',
         'curvatureS'
-    ]
+        ]
+
+    dataframe = pd.read_csv(csv_dir, na_values="NaN", names=col_labels)  # recognize str(NaN) as NaN
+    dataframe.fillna(value=0, inplace=True)
+
+    df_len = len(dataframe.position_x)
+
+    # take fname number
+    fname = os.path.split(csv_dir)[1]
+    fname_num = extract_number_from_fname(fname)
+
+    dataframe['trajectory_num'] = [fname_num] * df_len
+    dataframe['tsi'] = np.arange(df_len)
+    dataframe['in_plume'] = np.zeros(df_len, dtype=bool)
+    dataframe['plume_interaction'] = np.array([None] * df_len)
+
+
+    return dataframe
+
+
+def experiment_condition_to_DF(experimental_condition):
+    """
+    Given an experimental condition, load the appropriate dataset into a dataframe.
+    Parameters
+    ----------
+    experimental_condition
+        (string)
+        Control, Left, or Right
+
+    Returns
+    -------
+    df
+    """
+    condition = string.upper(experimental_condition)
+    dir_label = "EXP_TRAJECTORIES_" + condition
+    directory = get_directory(dir_label)
+
+    df_list = []
 
     for fname in [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]:  # list files
         print "Loading {} from {}".format(fname, directory)
         file_path = os.path.join(directory, fname)
-        # base_name = os.path.splitext(file_path)[0]
-
-        dataframe = pd.read_csv(file_path, na_values="NaN", names=col_labels)  # recognize str(NaN) as NaN
-        dataframe.fillna(value=0, inplace=True)
-
-        df_len = len(dataframe.position_x)
-
-        # take fname number (slice out "control_" and ".csv")
-        fname_num = int(fname[:-4])
-
-        # ensure that csv fname is just an int
-        if type(fname_num) is not int:
-            raise ValueError('''we are expecting csv files to be integers.
-                instead, we found type {}. culprit: {}'''.format(type(fname_num), fname))
-
-        dataframe['trajectory_num'] = [fname_num] * df_len
-        dataframe['tsi'] = np.arange(df_len)
+        dataframe = load_single_csv_to_df(file_path)
 
         df_list.append(dataframe)
 
     df = pd.concat(df_list)
+
     return df
 
 
@@ -190,7 +168,6 @@ def get_directory(selection=None):
         'BOOL_RIGHT_CSV': BOOL_RIGHT_CSV,
     }
 
-
     if selection is None:
         print("Enter directory with experimental data")
         Tk().withdraw()
@@ -203,15 +180,8 @@ def get_directory(selection=None):
     return directory
 
 
-def extract_number_from_fname(self, token):
-    extract_digits = lambda stng: "".join(char for char in stng if char in string.digits + ".")
-    to_float = lambda x: float(x) if x.count(".") <= 1 else None
+def extract_number_from_fname(token):
+    extract_digits = lambda stng: "".join(char for char in stng if char in string.digits)
+    to_int = lambda x: int(float(x)) if x.count(".") <= 1 else None
 
-    try:
-        return to_float(extract_digits(token))
-    except ValueError:
-        print token, extract_digits(token)
-
-
-if __name__ == '__main__':
-    a = load_csv_to_df('Control-27')
+    return to_int(extract_digits(token))
