@@ -4,7 +4,7 @@ __author__ = 'richard'
 
 import roboskeeter.math as m
 from roboskeeter.math.kinematic_math import DoMath
-
+# from roboskeeter.math.scoring.scoring import Scoring
 from agent import Agent
 from environment import Environment
 from flights import Flights
@@ -33,13 +33,14 @@ class Experiment(object):
         self.is_scored = False  # toggle to let analysis functions know whether it has been scored
         self.percent_time_in_plume = None
         self.side_ratio_score = None
+        self.score = None
 
-    def run(self, N=None):
+    def run(self, n=None):
         """
         Func that either loads experimental data or runs a simulation, depending on whether self.is_simulation is True
         Parameters
         ----------
-        N
+        n
             (int, optional)
             Number of flights to simulate. If we are just loading files, it will load the entire ensemble.
 
@@ -48,14 +49,15 @@ class Experiment(object):
         None
         """
         if self.is_simulation:
-            if type(N) != int:
+            if type(n) != int:
                 raise TypeError("Number of flights must be integer.")
             else:
-                self.flights = self.agent.fly(total_trajectories=N)
+                self.flights = self.agent.fly(total_trajectories=n)
         else:
             self.flights = Flights()
             self.flights.experiment_data_to_DF(experimental_condition=self.experiment_conditions['condition'])
-            self.flights.kinematics['inPlume'] = 0  # FIXME
+            self.flights.kinematics['inPlume'] = 0  # FIXME add column to DF
+            # TODO: rum plume interaction analysis
 
         # asign alias
         self.plt = plttr(self)  # TODO: takes self, extracts metadata for files and titles, etc
@@ -64,16 +66,21 @@ class Experiment(object):
         dm = DoMath(self)
         self.flights, self.percent_time_in_plume, self.side_ratio_score = dm.flights, dm.percent_time_in_plume, dm.side_ratio_score
 
-    def score(self):
-        math.scoring.scoring.score(self)
-        self.is_scored = True
+    # def calc_score(self):
+    #     # TODO test scoring
+        # TODO fix downstream bugs
+    #     if self.is_scored == False:
+    #         S = Scoring()
+    #         self.score = S.score(self.flights)
+    #         self.is_scored = True
 
-def start_simulation(N_flights, agent_kwargs=None, experiment_conditions=None):
+
+def start_simulation(num_flights, agent_kwargs=None, experiment_conditions=None):
     """
     Fire up RoboSkeeter
     Parameters
     ----------
-    N_flights
+    num_flights
         (int) number of flights to simulate
     agent_kwargs
         (dict) params for agent
@@ -104,7 +111,7 @@ def start_simulation(N_flights, agent_kwargs=None, experiment_conditions=None):
                         }
 
     experiment = Experiment(agent_kwargs, experiment_conditions)
-    experiment.run(N = N_flights)
+    experiment.run(n=num_flights)
     print "\nDone running simulation."
 
     return experiment
@@ -148,8 +155,9 @@ def load_experiment(experiment_conditions=None):
 
 
 if __name__ is '__main__':
-    experiment = start_simulation(1, None, None)
-    #experiment = load_experiment()  # TODO: experiments should use same code as simulation to figure out plume interaction
+    #experiment = start_simulation(1, None, None)
+    experiment = load_experiment()  # TODO: experiments should use same code as simulation to figure out plume interaction
+                                            # march timestep by timestep
 
     print "\nAliases updated."
     # useful aliases
