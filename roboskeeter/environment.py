@@ -431,7 +431,8 @@ class TimeAvgPlume(Plume):
 
 
 class UnaveragedPlume:
-    raise NotImplementedError  # TODO: implement unaveraged plume
+    def __init__(self):
+        raise NotImplementedError  # TODO: implement unaveraged plume
 
 
 if __name__ == '__main__':
