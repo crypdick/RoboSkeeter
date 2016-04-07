@@ -14,7 +14,7 @@ from flights import Flights
 from forces import Forces
 
 
-class Agent:
+class Simulator:
     """Our simulated mosquito.
     """
 
@@ -61,18 +61,19 @@ class Agent:
         # # create repulsion landscape
         # self._repulsion_funcs = repulsion_landscape3D.landscape(boundary=self.boundary)
 
-    def fly(self, total_trajectories=1):
-        """ runs _generate_flight total_trajectories times
+    def fly(self, n_trajectories=1):
+        """ runs _generate_flight n_trajectories times
         """
         df_list = []
         traj_i = 0
         try:
             if self.verbose:
-                print 'Starting simulations. If you run out of patience, hit <CTL>-C to end the loop early.'
+                print 'Starting simulations with {} plume model. If you run out of patience, hit <CTL>-C to end the loop early.'.format(self.plume.plume_model)
 
-            while traj_i < total_trajectories:
+            while traj_i < n_trajectories:
+                # print updates
                 if self.verbose:
-                    sys.stdout.write("\rTrajectory {}/{}".format(traj_i + 1, total_trajectories))
+                    sys.stdout.write("\rTrajectory {}/{}".format(traj_i + 1, n_trajectories))
                     sys.stdout.flush()
 
                 array_dict = self._generate_flight()
@@ -91,7 +92,8 @@ class Agent:
                 df_list.append(df)
 
                 traj_i += 1
-                if traj_i == total_trajectories:
+
+                if traj_i == n_trajectories:
                     if self.verbose:
                         sys.stdout.write("\rSimulations finished. Performing deep magic.")
                         sys.stdout.flush()
@@ -126,7 +128,7 @@ class Agent:
             in_plume[tsi] = self.plume.check_for_plume(position[tsi])  # TODO: export to behavior module
 
             plume_interaction[tsi], triggered_tsi = self._plume_interaction(tsi, in_plume, velocity[tsi][1],
-                                                                            triggered_tsi)  # TODO: export
+                                                                            triggered_tsi)  # TODO: export _plume_interaction
 
             stimF[tsi], randomF[tsi], totalF[tsi] = \
                 self._calc_forces(tsi, velocity[tsi], plume_interaction, triggered_tsi, position[tsi])
@@ -155,18 +157,17 @@ class Agent:
             ################################################
             if self.bounded:
                 candidate_pos, candidate_velo = self._collide_with_wall(candidate_pos, candidate_velo)
-            #                if candidate_pos is None:  # _collide_with_wall returns None if reaches end
-            #                    self._land(tsi, V)  # end flight if reach end of tunnel
-            #                    break
 
             position[tsi + 1] = candidate_pos
             velocity[tsi + 1] = candidate_velo
 
+        # once flight is finished, make dictionary ready to be loaded into DF
         V = self._fix_vector_dict(V)
 
         return V
 
     def _calc_forces(self, tsi, velocity_now, plume_interaction_history, triggered_tsi, position_now):
+        # TODO: make sure all the args can be the same for all the different behavioral policies
         ################################################
         # Calculate driving forces at this timestep
         ################################################
