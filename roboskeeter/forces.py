@@ -29,27 +29,29 @@ class Forces():
         force = np.array([0., 0., 0.])
 
         if 'cast' in self.decision_policy:
-            force += self._stimF_cast_only(kwargs)
+            force += self._cast(kwargs)
         if 'surge' in self.decision_policy:
-            force += self._stimF_surge_only(kwargs)
+            force += self._surge_upwind(kwargs)
         if 'gradient' in self.decision_policy:
-            force += self._stimF_temp_gradient(kwargs)
+            force += self._surge_up_gradient(kwargs)
         if 'ignore' in self.decision_policy:
             pass
 
         return force
 
-    def _stimF_cast_only(self, kwargs):
+    def _cast(self, kwargs):
+        # TODO: review cast
         tsi = kwargs['tsi']
         plume_interaction_history = kwargs['plume_interaction_history']
         triggered_tsi = kwargs['triggered_tsi']
 
-        empty = np.array([0., 0., 0.])
+        empty = np.array([0., 0., 0.])  # FIXME naming
+        # TODO: check if this is updating triggers, and if it should be
         inside_ago = abs(tsi - triggered_tsi['stimulus'])
         exit_ago = abs(tsi - triggered_tsi['exit'])
         cast_strength = self.stimF_strength / 10
         if tsi == 0:
-            return empty
+            return empty  # FIXME naming
         elif inside_ago < exit_ago:  # if we re-encounter the plume, stop casting
             return empty
         elif exit_ago <= self.stimulus_memory:  # stimulus encountered recently
@@ -85,7 +87,7 @@ class Forces():
 
             return force
 
-    def _stimF_surge_only(self, kwargs):
+    def _surge_upwind(self, kwargs):
         tsi = kwargs['tsi']
         plume_interaction_history = kwargs['plume_interaction_history']
 
@@ -96,7 +98,7 @@ class Forces():
 
         return force
 
-    def _stimF_temp_gradient(self, kwargs):
+    def _surge_up_gradient(self, kwargs):
         """gradient vector norm * stimF strength"""
         df = kwargs['gradient']
 
