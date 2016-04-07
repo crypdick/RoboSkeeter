@@ -196,7 +196,7 @@ def load_csvs(filepath):
     if type(filepath) == unicode or type(filepath) == str:
         # load the csv
         debug = False
-        Data = i_o.load_csv_to_df(filepath)
+        Data = i_o.load_single_csv_to_df(filepath)
     else:  # (for debugging) if script is fed a dataframe instead of a path
         debug = True
         Data = filepath

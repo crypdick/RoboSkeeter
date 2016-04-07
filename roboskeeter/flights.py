@@ -80,7 +80,7 @@ class Flights(object):
         return np.sort(self.kinematics.trajectory_num.unique())
 
     def experiment_data_to_DF(self, experimental_condition):
-        df = i_o.load_csv_to_df(experimental_condition)
+        df = i_o.experiment_condition_to_DF(experimental_condition)
         self.kinematics = df
 
     def _trim_df_endzones(self):

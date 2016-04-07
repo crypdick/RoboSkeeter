@@ -26,7 +26,7 @@ def csvList2df(csv_list):
     print "Extracting csv data."
     df_list = []
     for csv_fname in csv_list:
-        df = i_o.load_csv_to_df(csv_fname)
+        df = i_o.load_single_csv_to_df(csv_fname)
         df_vars = df[INTERESTED_VALS] # slice only cols we want
         
 #        df_vars['log_curve'] = np.log(df_vars.loc[:,'curve'])

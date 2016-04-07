@@ -74,7 +74,7 @@ if __name__ == '__main__':
     csv_i = int(raw_input("Trajectory of your desires: "))
     csv_name = csv_list[csv_i]
     
-    df = i_o.load_csv_to_df(csv_name)
+    df = i_o.load_single_csv_to_df(csv_name)
     xyz = df[['pos_x', 'pos_y', 'pos_z']]
     
     plot_trajectory_rainbow(xyz, csv_name, WINDOW_LEN = 100)
