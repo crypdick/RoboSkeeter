@@ -12,6 +12,8 @@ import numpy as np
 import pandas as pd
 from flights import Flights
 from forces import Forces
+from decision_policy import Behavior
+from memory import Memory
 
 
 class Simulator:
@@ -211,48 +213,6 @@ class Simulator:
         
         return V
 
-    def _plume_interaction(self, tsi, in_plume, velocity_y_now, last_triggered):
-        """
-        out2out - searching
-         (or orienting, but then this func shouldn't be called)
-        out2in - entering plume
-        in2in - staying
-        in2out - exiting
-            {Left_plume Exit left, Left_plume Exit right
-            Right_plume Exit left, Right_plume Exit right}
-        """
-        # TODO: only run this stuff if running a relevant decision policy
-        current_in_plume, past_in_plume = in_plume[tsi], in_plume[tsi - 1]
-
-        if tsi == 0:  # always start searching
-            state = 'outside'
-        elif current_in_plume == False and past_in_plume == False:
-            # we are not in plume and weren't in last ts
-            state = 'outside'
-        elif current_in_plume == True and past_in_plume == False:
-            # entering plume
-            state = 'inside'
-        elif current_in_plume == 1 and past_in_plume == True:
-            # we stayed in the plume
-            state = 'inside'
-        elif current_in_plume == False and past_in_plume == True:
-            # exiting the plume
-            if velocity_y_now <= 0:
-                state = 'Exit left'
-            else:
-                state = 'Exit right'
-        else:
-            raise Exception("This error shouldn't ever run")
-
-        if state is 'outside':
-            pass
-        elif state is 'inside':
-            last_triggered['stimulus'] = tsi
-        elif 'Exit' in state:
-            last_triggered['exit'] = tsi
-
-        return state, last_triggered
-
 
     def _collide_with_wall(self, candidate_pos, candidate_velo):
         walls = self.windtunnel.walls
@@ -412,14 +372,3 @@ class Simulator:
                 fixed_dct[key] = np.array([0.])  # hack so that kde calculation doesn't freeze on empty arrays
 
         return fixed_dct
-
-class Behavior():
-    # TODO: implement behavior class
-    # TODO: implement plume boundary interaction
-    # TODO: implement plume memory
-    def __init__(self, decision_policy):
-        self.decision_policy = decision_policy
-
-
-class Gradient_Following(Behavior):
-    pass # TODO implement gradient following
