@@ -48,13 +48,14 @@ class Simulator:
         # useful lists TODO: get rid of?
         self.kinematics_list = ['position', 'velocity', 'acceleration']  # curvature?
         self.forces_list = ['totalF', 'randomF', 'stimF']
-        self.other_list = ['tsi', 'times', 'in_plume', 'plume_interaction']
+        self.other_list = ['tsi', 'times', 'plume_sensed', 'plume_interaction']
 
         # mk forces
         self.forces = Forces(self.randomF_strength,
                              self.stimF_strength,
-                             self.stimulus_memory_N_timesteps,
-                             self.decision_policy)
+                             self.stimulus_memory_N_timesteps)
+
+        self.behavior = Behavior(self.decision_policy)
 
         # turn thresh, in units deg s-1.
         # From Sharri:
@@ -127,7 +128,7 @@ class Simulator:
         triggered_tsi = {'stimulus': -10000000, 'exit': -10000000}  # a long time ago
 
         for tsi in V['tsi']:
-            in_plume[tsi] = self.plume.check_for_plume(position[tsi])  # TODO: export to behavior module
+            in_plume[tsi] = self.plume.check_for_plume(position[tsi])  # returns "N/A" for non-Bool plume
 
             plume_interaction[tsi], triggered_tsi = self._plume_interaction(tsi, in_plume, velocity[tsi][1],
                                                                             triggered_tsi)  # TODO: export _plume_interaction
