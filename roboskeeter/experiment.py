@@ -5,7 +5,7 @@ __author__ = 'richard'
 import roboskeeter.math as m
 from roboskeeter.math.kinematic_math import DoMath
 # from roboskeeter.math.scoring.scoring import Scoring
-from agent import Agent
+from simulator import Simulator
 from environment import Environment
 from flights import Flights
 from roboskeeter.plotting.my_plotter import MyPlotter as plttr
@@ -26,7 +26,7 @@ class Experiment(object):
         self.environment = Environment(self)
 
         self.flights = None
-        self.agent = Agent(self, agent_kwargs)
+        self.agent = Simulator(self, agent_kwargs)
 
         # these get mapped to the correct funcs after run() is ran
         self.plt = None
@@ -52,7 +52,7 @@ class Experiment(object):
             if type(n) != int:
                 raise TypeError("Number of flights must be integer.")
             else:
-                self.flights = self.agent.fly(total_trajectories=n)
+                self.flights = self.agent.fly(n_trajectories=n)
         else:
             self.flights = Flights()
             self.flights.experiment_data_to_DF(experimental_condition=self.experiment_conditions['condition'])
@@ -155,8 +155,8 @@ def load_experiment(experiment_conditions=None):
 
 
 if __name__ is '__main__':
-    #experiment = start_simulation(1, None, None)
-    experiment = load_experiment()  # TODO: experiments should use same code as simulation to figure out plume interaction
+    experiment = start_simulation(1, None, None)
+    # experiment = load_experiment()  # TODO: experiments should use same code as simulation to figure out plume interaction
                                             # march timestep by timestep
 
     print "\nAliases updated."
