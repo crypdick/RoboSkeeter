@@ -163,6 +163,7 @@ class Plume(object):
         self.environment = environment
         self.condition = environment.condition
         self.walls = environment.windtunnel.walls
+        self.plume_model = environment.plume_model
 
 
 class NoPlume(Plume):
@@ -433,7 +434,3 @@ class TimeAvgPlume(Plume):
 class UnaveragedPlume:
     def __init__(self):
         raise NotImplementedError  # TODO: implement unaveraged plume
-
-
-if __name__ == '__main__':
-    windtunnel = WindTunnel('left')
