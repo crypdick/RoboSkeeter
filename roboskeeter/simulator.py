@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 from flights import Flights
 from forces import Forces
-from decision_policy import Behavior
+from decision_policy import Behaviors
 from memory import Memory
 
 
@@ -55,7 +55,7 @@ class Simulator:
                              self.stimF_strength,
                              self.stimulus_memory_N_timesteps)
 
-        self.behavior = Behavior(self.decision_policy)
+        self.behavior = Behaviors(self.decision_policy)
 
         # turn thresh, in units deg s-1.
         # From Sharri:

@@ -1,57 +1,54 @@
-class Behavior(object):
+import numpy as np
+
+
+class Behaviors(object):
     # TODO: implement behavior class
     # TODO: implement plume boundary interaction
     # TODO: implement plume memory
     def __init__(self, decision_policy):
         self.decision_policy = decision_policy
 
+    def _plume_interaction(self, tsi, plume_sensed, velocity_y_now, last_triggered):
+        """
+        out2out - searching
+         (or orienting, but then this func shouldn't be called)
+        out2in - entering plume
+        in2in - staying
+        in2out - exiting
+            {Left_plume Exit left, Left_plume Exit right
+            Right_plume Exit left, Right_plume Exit right}
+        """
+        # TODO: only run this stuff if running a relevant decision policy
+        current_in_plume, past_in_plume = plume_sensed[tsi], plume_sensed[tsi - 1]
 
-
-class Gradient_Following(Behavior):
-    pass # TODO implement gradient following
-
-def _plume_interaction(self, tsi, in_plume, velocity_y_now, last_triggered):
-    """
-    out2out - searching
-     (or orienting, but then this func shouldn't be called)
-    out2in - entering plume
-    in2in - staying
-    in2out - exiting
-        {Left_plume Exit left, Left_plume Exit right
-        Right_plume Exit left, Right_plume Exit right}
-    """
-    # TODO: only run this stuff if running a relevant decision policy
-    current_in_plume, past_in_plume = in_plume[tsi], in_plume[tsi - 1]
-
-    if tsi == 0:  # always start searching
-        state = 'outside'
-    elif current_in_plume == False and past_in_plume == False:
-        # we are not in plume and weren't in last ts
-        state = 'outside'
-    elif current_in_plume == True and past_in_plume == False:
-        # entering plume
-        state = 'inside'
-    elif current_in_plume == 1 and past_in_plume == True:
-        # we stayed in the plume
-        state = 'inside'
-    elif current_in_plume == False and past_in_plume == True:
-        # exiting the plume
-        if velocity_y_now <= 0:
-            state = 'Exit left'
+        if tsi == 0:  # always start searching
+            state = 'outside'
+        elif current_in_plume == False and past_in_plume == False:
+            # we are not in plume and weren't in last ts
+            state = 'outside'
+        elif current_in_plume == True and past_in_plume == False:
+            # entering plume
+            state = 'inside'
+        elif current_in_plume == 1 and past_in_plume == True:
+            # we stayed in the plume
+            state = 'inside'
+        elif current_in_plume == False and past_in_plume == True:
+            # exiting the plume
+            if velocity_y_now <= 0:
+                state = 'Exit left'
+            else:
+                state = 'Exit right'
         else:
-            state = 'Exit right'
-    else:
-        raise Exception("This error shouldn't ever run")
+            raise Exception("This error shouldn't ever run")
 
-    if state is 'outside':
-        pass
-    elif state is 'inside':
-        last_triggered['stimulus'] = tsi
-    elif 'Exit' in state:
-        last_triggered['exit'] = tsi
+        if state is 'outside':
+            pass
+        elif state is 'inside':
+            last_triggered['stimulus'] = tsi
+        elif 'Exit' in state:
+            last_triggered['exit'] = tsi
 
-    return state, last_triggered
-
+        return state, last_triggered
 
     def stimF(self, kwargs):
         """given force direction and strength, return a force vector
@@ -131,26 +128,26 @@ def _plume_interaction(self, tsi, in_plume, velocity_y_now, last_triggered):
 
         return force
 
-def _surge_up_gradient(self, kwargs):
-    """gradient vector norm * stimF strength"""
-    df = kwargs['gradient']
+    def _surge_up_gradient(self, kwargs):
+        """gradient vector norm * stimF strength"""
+        df = kwargs['gradient']
 
-    scalar = self.stimF_strength
-    vector = df[['gradient_x', "gradient_y", "gradient_z"]].values
-    force = scalar * vector
+        scalar = self.stimF_strength
+        vector = df[['gradient_x', "gradient_y", "gradient_z"]].values
+        force = scalar * vector
 
-    # stimF here is proportional to norm of gradient. in order to avoid huge stimFs, we put a ceiling on the
-    # size of stimF
-    ceiling = 1e-5  # TODO: parameterize in function call
-    norm = np.linalg.norm(force)
-    if norm > ceiling:
-        force *= 1e-5 / norm
+        # stimF here is proportional to norm of gradient. in order to avoid huge stimFs, we put a ceiling on the
+        # size of stimF
+        ceiling = 1e-5  # TODO: parameterize in function call
+        norm = np.linalg.norm(force)
+        if norm > ceiling:
+            force *= 1e-5 / norm
 
-    # catch problems in stimF
-    if np.isnan(force).any():
-        raise ValueError("Nans in stimF!! {} {}".format(force, vector))
-    if np.isinf(force).any():
-        raise ValueError("infs in stimF! {} {}".format(force, vector))
+        # catch problems in stimF
+        if np.isnan(force).any():
+            raise ValueError("Nans in stimF!! {} {}".format(force, vector))
+        if np.isinf(force).any():
+            raise ValueError("infs in stimF! {} {}".format(force, vector))
 
-    return force
+        return force
 #
