@@ -1,25 +1,24 @@
 
 class Decisions:
-    def __init__(self, plume, decision_policy, stimulus_memory_n_timesteps):
+    def __init__(self, decision_policy, stimulus_memory_n_timesteps):
         # we take plume as input for the gradient ascent. however, this is inelegant. FIXME
-        self.plume = plume
         self.decision_policy = decision_policy
 
         self.stimulus_memory_n_timesteps = stimulus_memory_n_timesteps
         self.plume_sighted_ago = 10000000  # a long time ago
         self.last_plume_side_exited = None
 
-        if 'cast' in decision_policy or 'surge' in decision_policy:
-            # sanity check
-            if plume.plume_model != 'Boolean':
-                raise TypeError('expecting a boolean plume model')
-            self.make_decision = self._boolean_decisions
-        elif 'gradient' in decision_policy:
-            # sanity check
-            if plume.plume_model != 'TimeaAvg':  # TODO add other types
-                raise TypeError("expecting gradient plume model")
-            self.make_decision = self._gradient_decisions
+    def make_decision(self, in_plume, crosswind_velocity):
+        if 'cast' in self.decision_policy:
+            decision = self._boolean_decisions(in_plume, crosswind_velocity)
+        elif 'surge' in self.decision_policy:
+            decision = self._boolean_decisions(in_plume, crosswind_velocity)
+        elif 'gradient' in self.decision_policy:
+            decision = self._gradient_decisions()
+        else:
+            raise ValueError('unk decision policy {}'.format(self.decision_policy))
 
+        return decision
 
     def _boolean_decisions(self, in_plume, crosswind_velocity):
         if in_plume is True:
@@ -49,28 +48,23 @@ class Decisions:
                             current_decision = 'cast_r'
                         else:  # 'r'
                             current_decision = 'cast_l'
-                else:  # haven't seen the plume in a while
+                    else:  # haven't seen the plume in a while
+                        current_decision = 'search'
+                else:
                     current_decision = 'search'
 
         return current_decision, plume_signal
 
-
-    def _gradient_decisions(self, position):
+    def _gradient_decisions(self):
         """
-
-        Parameters
-        ----------
-        position
-            current position. used to lookup gradient
-
         Returns
         -------
         current_decision
             we are always following the gradient in this model
         plume_signal
-            the gradient
+            tell upstream code to look up plume signal
         """
-        plume_signal = self.plume.get_nearest_gradient(position)
+        plume_signal = 'X'  # magic code to look up gradient
         current_decision = 'ga'
 
         return current_decision, plume_signal
