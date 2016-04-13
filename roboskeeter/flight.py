@@ -6,8 +6,9 @@ from roboskeeter.math import math_toolbox
 class Flight():
     def __init__(self, random_f_strength, stim_f_strength, damping_coeff, stimulus_memory_n_timesteps, decision_policy):
         self.random_f_strength = random_f_strength
-        self.stim_f_strength = stim_f_strength
+        self.stim_f_strength = stim_f_strength  # TODO: separate surge strength, cast strength, gradient strenght
         self.damping_coeff = damping_coeff
+        self.max_stim_f = 1e-5  # putting a maximum value on the stim_f
 
     def random(self):
         """Generate random-direction force vector at each timestep from double-
@@ -19,47 +20,30 @@ class Flight():
 
         return force
 
-    def stimulus(self, kwargs):
-        """given force direction and strength, return a force vector
-        decision policies: 'cast_only', 'surge_only', 'cast+surge'
-
-        TODO: review this func to make sure castsurge would work
-        """
+    def stimulus(self, decision, plume_signal):  # TODO: test castsurge
         force = np.array([0., 0., 0.])
 
-        if 'cast' in self.decision_policy:
-            force += self.behaviors.cast(kwargs)
-        if 'surge' in self.decision_policy:
-            force += self.behaviors.surge_upwind(kwargs)
-        if 'gradient' in self.decision_policy:
-            force += self.behaviors.surge_up_gradient(kwargs)
-        if 'ignore' in self.decision_policy:
+        if decision is 'search':
+            pass  # there is no stimulus_f in the absence of stimulus
+        elif decision is 'ga':
+            force += self.surge_up_gradient(plume_signal)
+        elif decision is 'surge':
+            force += self.surge_upwind()
+        elif 'cast' in decision:
+            force += self.cast(decision)
+        if decision is self.decision_policy:
             pass
 
         return force
 
-    def calc_forces(self, current_velocity, stim_f_kwargs):
+    def calc_forces(self, current_velocity, decision, plume_signal):
         # TODO: make sure all the args can be the same for all the different behavioral policies
         ################################################
         # Calculate driving forces at this timestep
         ################################################
         random_f = self.random()
 
-        if "gradient" in self.decision_policy:
-            raise NotImplementedError
-            kwargs = {"gradient": self.plume.get_nearest_data(position_now)}
-        elif "surge" in self.decision_policy or "cast" in self.decision_policy:
-            kwargs = {"tsi": tsi,
-                      "plume_interaction_history": plume_interaction_history,
-                      "triggered_tsi": triggered_tsi,
-                      "position_now": position_now}
-        else:
-            raise ValueError("unknown decision policy {}".format(self.decision_policy))
-
-        if self.experiment.experiment_conditions['condition'] in 'controlControlCONTROL' or self.decision_policy == 'ignore':
-            stim_f = np.array([0.,0.,0.])
-        else:
-            stim_f = self.forces.stimulus(kwargs)
+        stim_f = self.stimulus(decision, plume_signal)
 
         ################################################
         # calculate total force
@@ -69,89 +53,68 @@ class Flight():
 
         return stim_f, random_f, total_f
 
-class Behaviors:  # return a decision
-    def __init__(self, decision_policy):
-        self.decision_policy = decision_policy
+    def cast(self, decision):
+        """
 
-    def cast(self, kwargs):
-        # TODO: review cast
-        tsi = kwargs['tsi']
-        plume_interaction_history = kwargs['plume_interaction_history']
-        triggered_tsi = kwargs['triggered_tsi']
+        Parameters
+        ----------
+        decision
+            cast_l or cast_r
 
-        empty = np.array([0., 0., 0.])  # FIXME naming
-        # TODO: check if this is updating triggers, and if it should be
-        inside_ago = abs(tsi - triggered_tsi['stimulus'])
-        exit_ago = abs(tsi - triggered_tsi['exit'])
-        cast_strength = self.stimF_strength / 10
-        if tsi == 0:
-            return empty  # FIXME naming
-        elif inside_ago < exit_ago:  # if we re-encounter the plume, stop casting
-            return empty
-        elif exit_ago <= self.stimulus_memory:  # stimulus encountered recently
-            # print "we have a memory!"
-            # print "currently {tsi}, last {last}, difference {diff}".format(tsi=tsi, last=last_triggered['exit'], diff=exit_ago)
-            experience = plume_interaction_history[tsi - exit_ago]
-            # if experience in 'outside':
-            #     pass # keep going back
-            # elif experience is 'inside':
-            #     pass # keep going back
-            if experience == 'Exit left':
-                return np.array([0., cast_strength, 0.])  # cast right
-            elif experience == 'Exit right':
-                return np.array([0., -cast_strength, 0.])  # cast left
-            else:
-                # print "valueerror! experience", experience, "tsi", tsi
-                # print experience == 'Exit right', experience
-                raise ValueError('no such experience known: {}'.format(experience))
-                # except ValueError:
-                #     print "tsi", tsi, "memory", memory[:tsi], plume_interaction_history
-                # except TypeError:
-                #     print "memory type", memory, type(memory)
-
-
-        else:  # no recent memory of stimulus
-            current_experience = plume_interaction_history[tsi]
-            if current_experience in ['outside', 'inside']:
-                force = empty
-            else:
-                print "plume_interaction_history", plume_interaction_history, plume_interaction_history[:tsi]
-                print "current_experience", current_experience
-                raise ValueError("no such experience {} at tsi {}".format(current_experience, tsi))
-
-            return force
-
-    def surge_upwind(self, kwargs):
-        tsi = kwargs['tsi']
-        plume_interaction_history = kwargs['plume_interaction_history']
-
-        if plume_interaction_history[tsi] is 'inside':
-            force = np.array([self.stimF_strength, 0., 0.])
+        Returns
+        -------
+        force
+            the appropriate cast force
+        """
+        cast_f = self.stim_f_strength
+        if 'l' in decision:  # need to cast left
+            cast_f *= -1.
         else:
-            force = np.array([0., 0., 0.])
+            pass
+        force = np.array([0., cast_f, 0.])
 
         return force
 
-    def surge_up_gradient(self, kwargs):
-        """gradient vector norm * stimF strength"""
-        df = kwargs['gradient']
+    def surge_upwind(self):
+        force = np.array([self.stim_f_strength, 0., 0.])
 
-        scalar = self.stimF_strength
-        vector = df[['gradient_x', "gradient_y", "gradient_z"]].values
-        force = scalar * vector
+        if force > self.max_stim_f:
+            force = self.max_stim_f
+            raise Warning('exceeded maximum stim_f threshhold of {}'.format(self.max_stim_f))
 
-        # stimF here is proportional to norm of gradient. in order to avoid huge stimFs, we put a ceiling on the
-        # size of stimF
-        ceiling = 1e-5  # TODO: parameterize in function call
-        norm = np.linalg.norm(force)
-        if norm > ceiling:
-            force *= 1e-5 / norm
+        return force
 
-        # catch problems in stimF
+    def surge_up_gradient(self, gradient):
+        """
+
+        Parameters
+        ----------
+        gradient
+            the current plume gradient
+
+        Returns
+        -------
+        force
+            the stimulus force to ascend the gradient, properly scaled
+        """
+
+        scalar = self.stim_f_strength
+        force = scalar * gradient
+
+        force = self._shrink_huge_stim_f(force)
+
+        # catch bugs in gradient multiplication
         if np.isnan(force).any():
-            raise ValueError("Nans in stimF!! {} {}".format(force, vector))
+            raise ValueError("Nans in gradient force!! force = {} gradient = {}".format(force, gradient))
         if np.isinf(force).any():
-            raise ValueError("infs in stimF! {} {}".format(force, vector))
+            raise ValueError("infs in gradient force! force = {} gradient = {}".format(force, gradient))
+
+        return force
+
+    def _shrink_huge_stim_f(self, force):
+        norm = np.linalg.norm(force)
+        if norm > self.max_stim_f:
+            force *= self.max_stim_f / norm  # shrink force to maximum allowed value
 
         return force
 
