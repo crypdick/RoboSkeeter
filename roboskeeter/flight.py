@@ -3,7 +3,7 @@ import numpy as np
 from roboskeeter.math import math_toolbox
 
 
-class Forces():
+class Flight():
     def __init__(self, random_f_strength, stim_f_strength, damping_coeff, stimulus_memory_n_timesteps, decision_policy):
         self.random_f_strength = random_f_strength
         self.stim_f_strength = stim_f_strength
