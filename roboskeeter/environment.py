@@ -305,8 +305,17 @@ class TimeAvgPlume(Plume):
         """
 
         _, index = self.tree.query(position)
-        temperature = self.data.iloc[index]
-        return temperature
+        data = self.data.iloc[index]
+        return data
+
+    def get_nearest_temp(self, position):
+        data = self.get_nearest_data(position)
+        temp = data['avg_temp']
+        return temp
+
+    def get_nearest_gradient(self, position):
+        data = self.get_nearest_data(position)
+        return np.array([data['gradient_x'], data['gradient_y'], data['gradient_z']])
 
     def _load_plume_data(self):
         col_names = ['x', 'y', 'z', 'temperature']
