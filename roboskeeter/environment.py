@@ -286,7 +286,7 @@ class TimeAvgPlume(Plume):
                 always returns False"""
 
     def check_for_plume(self, position):
-        raise NotImplementedError  # TODO
+        return np.nan
 
     def plot_gradient(self, thresh=0):
         plot_plume_gradient(self, thresh)
