@@ -48,7 +48,11 @@ class DoMath:
                                                                (self.observations.kinematics.position_y < 0)])
         right_upwind_pts = total_pts - left_upwind_pts
         # print "seconds extra on left side: ", (left_upwind_pts - right_upwind_pts) / 100.
-        self.side_ratio_score = float(left_upwind_pts) / right_upwind_pts
+        try:
+            self.side_ratio_score = float(left_upwind_pts) / right_upwind_pts
+        except ZeroDivisionError:
+            print "\n no upwind right points found! setting side_ratio_score to 0"
+            self.side_ratio_score = 0
 
     def calc_KS(self):
         raise NotImplementedError  # TODO implement KS test
