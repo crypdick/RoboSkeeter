@@ -31,8 +31,10 @@ class Flight():
             force += self.surge_upwind()
         elif 'cast' in decision:
             force += self.cast(decision)
-        if decision is self.decision_policy:
+        elif decision == 'ignore':
             pass
+        else:
+            raise LookupError('unknown decision {}'.format(decision))
 
         return force
 
@@ -78,9 +80,7 @@ class Flight():
     def surge_upwind(self):
         force = np.array([self.stim_f_strength, 0., 0.])
 
-        if force > self.max_stim_f:
-            force = self.max_stim_f
-            raise Warning('exceeded maximum stim_f threshhold of {}'.format(self.max_stim_f))
+        force = self._shrink_huge_stim_f(force)
 
         return force
 
