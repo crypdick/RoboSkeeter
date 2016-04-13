@@ -140,7 +140,7 @@ class Simulator:
 
             decision[tsi], plume_signal[tsi] = self.flight.make_decision(in_plume[tsi], velocity[tsi][1])
 
-            stim_f[tsi], random_f[tsi], total_f[tsi] = self.flight.calc_forces(tsi, velocity[tsi])
+            stim_f[tsi], random_f[tsi], total_f[tsi] = self.flight.calc_forces(velocity[tsi], decision[tsi], plume_signal)
 
             # calculate current acceleration
             acceleration[tsi] = total_f[tsi] / m
