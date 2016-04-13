@@ -6,7 +6,7 @@ from roboskeeter.math.math_toolbox import calculate_curvature, distance_from_wal
 class DoMath:
     def __init__(self, experiment):
         self.experiment = experiment
-        self.observations = experiment.flights
+        self.observations = experiment.observations
 
         self.calc_kinematic_vals()
         self.percent_time_in_plume = self.calc_time_in_plume()
