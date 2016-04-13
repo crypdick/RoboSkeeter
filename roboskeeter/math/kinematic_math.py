@@ -10,7 +10,7 @@ class DoMath:
 
         self.calc_kinematic_vals()
         self.percent_time_in_plume = self.calc_time_in_plume()
-        self.side_ratio_score = self.calc_side_ratio_score()
+        self.side_ratio_score = self.calc_side_ratio_score()  # TODO: replace with KS test
 
         self.turn_threshold = 433.5
 
@@ -26,16 +26,18 @@ class DoMath:
                                                self.experiment.environment.windtunnel.boundary)
 
     def calc_time_in_plume(self):
-            """
-            in plume == 1, out == 0. therefore sum/n is % in plume
-            """
-            in_out = self.flights.kinematics.in_plume.values
-            N_timesteps = in_out.size
+        """
+        in plume == 1, out == 0. therefore sum/n is % in plume
+        """
+        in_out = self.flights.kinematics.in_plume.values
+        N_timesteps = in_out.size
+        try:
             N_timesteps_in_plume = in_out.sum()
-
             percent_time_in_plume = 1.0 * N_timesteps_in_plume / N_timesteps
+        except ValueError:  # can't sum if not boolean plume  # FIXME: get working with timeavg plume
+            percent_time_in_plume = "N/A-- not using boolean plume model"
 
-            return percent_time_in_plume
+        return percent_time_in_plume
 
     def calc_side_ratio_score(self):
         """upwind left vs right ratio"""  # TODO replace with KF score
@@ -47,6 +49,9 @@ class DoMath:
         right_upwind_pts = total_pts - left_upwind_pts
         # print "seconds extra on left side: ", (left_upwind_pts - right_upwind_pts) / 100.
         self.side_ratio_score = float(left_upwind_pts) / right_upwind_pts
+
+    def calc_KS(self):
+        raise NotImplementedError  # TODO implement KS test
 
 
 
