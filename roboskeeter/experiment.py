@@ -25,7 +25,7 @@ class Experiment(object):
         # init objects
         self.environment = Environment(self)
 
-        self.flights = None
+        self.observations = None
         self.agent = Simulator(self, agent_kwargs)
 
         # these get mapped to the correct funcs after run() is ran
@@ -52,11 +52,11 @@ class Experiment(object):
             if type(n) != int:
                 raise TypeError("Number of flights must be integer.")
             else:
-                self.flights = self.agent.fly(n_trajectories=n)
+                self.observations = self.agent.fly(n_trajectories=n)
         else:
-            self.flights = Observations()
-            self.flights.experiment_data_to_DF(experimental_condition=self.experiment_conditions['condition'])
-            self.flights.kinematics['inPlume'] = 0  # FIXME add column to DF
+            self.observations = Observations()
+            self.observations.experiment_data_to_DF(experimental_condition=self.experiment_conditions['condition'])
+            self.observations.kinematics['inPlume'] = 0  # FIXME add column to DF
             # TODO: rum plume interaction analysis
 
         # asign alias
@@ -64,14 +64,14 @@ class Experiment(object):
 
         # run analysis
         dm = DoMath(self)
-        self.flights, self.percent_time_in_plume, self.side_ratio_score = dm.flights, dm.percent_time_in_plume, dm.side_ratio_score
+        self.observations, self.percent_time_in_plume, self.side_ratio_score = dm.observations, dm.percent_time_in_plume, dm.side_ratio_score
 
     # def calc_score(self):
     #     # TODO test scoring
         # TODO fix downstream bugs
     #     if self.is_scored == False:
     #         S = Scoring()
-    #         self.score = S.score(self.flights)
+    #         self.score = S.score(self.observations)
     #         self.is_scored = True
 
 
@@ -162,6 +162,6 @@ if __name__ is '__main__':
     print "\nAliases updated."
     # useful aliases
     agent = experiment.agent
-    kinematics = experiment.flights.kinematics
+    kinematics = experiment.observations.kinematics
     windtunnel = experiment.environment.windtunnel
     plume = experiment.environment.plume

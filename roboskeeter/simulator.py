@@ -47,7 +47,7 @@ class Simulator:
         # useful lists TODO: get rid of?
         self.kinematics_list = ['position', 'velocity', 'acceleration']  # curvature?
         self.forces_list = ['total_f', 'random_f', 'stim_f']
-        self.other_list = ['tsi', 'times', 'plume_sensed', 'plume_signal']
+        self.other_list = ['tsi', 'times', 'decision', 'plume_signal']
 
         # mk forces
         self.flight = Flight(self.random_f_strength,
@@ -141,10 +141,10 @@ class Simulator:
 
             decision[tsi], plume_signal[tsi] = self.decisions.make_decision(in_plume[tsi], velocity[tsi][1])
 
-            if plume_signal[tsi] == 'X':  # this is a special code telling us to look up the gradient
+            if plume_signal[tsi] == 'X':  # this is an awful hack telling us to look up the gradient
                 plume_signal[tsi] = self.plume.get_nearest_gradient(position[tsi])
 
-            stim_f[tsi], random_f[tsi], total_f[tsi] = self.flight.calc_forces(velocity[tsi], decision[tsi], plume_signal)
+            stim_f[tsi], random_f[tsi], total_f[tsi] = self.flight.calc_forces(velocity[tsi], decision[tsi], plume_signal[tsi])
 
             # calculate current acceleration
             acceleration[tsi] = total_f[tsi] / m

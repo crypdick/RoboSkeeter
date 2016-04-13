@@ -6,7 +6,7 @@ from roboskeeter.math.math_toolbox import calculate_curvature, distance_from_wal
 class DoMath:
     def __init__(self, experiment):
         self.experiment = experiment
-        self.flights = experiment.flights
+        self.observations = experiment.flights
 
         self.calc_kinematic_vals()
         self.percent_time_in_plume = self.calc_time_in_plume()
@@ -15,7 +15,7 @@ class DoMath:
         self.turn_threshold = 433.5
 
     def calc_kinematic_vals(self):
-        k = self.flights.kinematics
+        k = self.observations.kinematics
 
         k['curvature'] = calculate_curvature(k)
         # absolute magnitude of velocity, accel vectors in 3D
@@ -29,7 +29,7 @@ class DoMath:
         """
         in plume == 1, out == 0. therefore sum/n is % in plume
         """
-        in_out = self.flights.kinematics.in_plume.values
+        in_out = self.observations.kinematics.in_plume.values
         N_timesteps = in_out.size
         try:
             N_timesteps_in_plume = in_out.sum()
@@ -41,11 +41,11 @@ class DoMath:
 
     def calc_side_ratio_score(self):
         """upwind left vs right ratio"""  # TODO replace with KF score
-        upwind_half = self.flights.kinematics.loc[self.flights.kinematics.position_x > 0.5]
+        upwind_half = self.observations.kinematics.loc[self.observations.kinematics.position_x > 0.5]
         total_pts = len(upwind_half)
 
-        left_upwind_pts = len(self.flights.kinematics.loc[(self.flights.kinematics.position_x > 0.5) & \
-                                                          (self.flights.kinematics.position_y < 0)])
+        left_upwind_pts = len(self.observations.kinematics.loc[(self.observations.kinematics.position_x > 0.5) & \
+                                                               (self.observations.kinematics.position_y < 0)])
         right_upwind_pts = total_pts - left_upwind_pts
         # print "seconds extra on left side: ", (left_upwind_pts - right_upwind_pts) / 100.
         self.side_ratio_score = float(left_upwind_pts) / right_upwind_pts

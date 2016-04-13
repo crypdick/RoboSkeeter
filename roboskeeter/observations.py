@@ -5,16 +5,6 @@ Created on Tue May  5 21:15:28 2015
 @author: richard
 
 creates a trajectory object that has a bunch of sweet methods.
-takes vectors from agent and adds it to ensemble
-
-trajectory.flights
-trajectory.append_ensemble(a trajectory)
-
-trajectory.describe()
-    agent info
-    plots
-
-trajectory.save
 """
 
 import numpy as np
@@ -41,7 +31,7 @@ class Observations(object):
         self.kinematics = pd.concat(dataframe_list)
 
     def dump2csvs(self):
-        """we don't use self.flights.to_csv(name) because Sharri likes having separate csvs for each trajectory
+        """we don't use self.observations.to_csv(name) because Sharri likes having separate csvs for each trajectory
 
         Output
         ------

@@ -87,7 +87,7 @@ class MyPlotter:
         # TODO: add heading angle plot
         for vector_name in self.experiment.agent['forces'] + self.experiment.agent['kinematic_vals']:
             # from enemble, selec mag and theta
-            df = eval("flights[['" + vector_name + "_xy_mag', '" + vector_name + "_xy_theta']]")
+            df = eval("observations[['" + vector_name + "_xy_mag', '" + vector_name + "_xy_theta']]")
             # rename col to play nice w plotting function
             df.rename(columns={vector_name + '_xy_mag': 'magnitude', vector_name + '_xy_theta': 'angle'}, inplace=True)
 
