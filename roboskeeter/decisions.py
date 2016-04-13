@@ -10,17 +10,17 @@ class Decisions:
 
     def make_decision(self, in_plume, crosswind_velocity):
         if 'cast' in self.decision_policy:
-            decision = self._boolean_decisions(in_plume, crosswind_velocity)
+            current_decision, plume_signal = self._boolean_decisions(in_plume, crosswind_velocity)
         elif 'surge' in self.decision_policy:
-            decision = self._boolean_decisions(in_plume, crosswind_velocity)
+            current_decision, plume_signal = self._boolean_decisions(in_plume, crosswind_velocity)
         elif 'gradient' in self.decision_policy:
-            decision = self._gradient_decisions()
+            current_decision, plume_signal = self._gradient_decisions()
         elif 'ignore' in self.decision_policy:
-            decision = 'ignore'
+            current_decision, plume_signal = 'ignore', 0
         else:
             raise ValueError('unk decision policy {}'.format(self.decision_policy))
 
-        return decision
+        return current_decision, plume_signal
 
     def _boolean_decisions(self, in_plume, crosswind_velocity):
         if in_plume == True:  # use == instead of "is" because we're using type np.bool
