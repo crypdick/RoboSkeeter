@@ -632,7 +632,7 @@ def plot_compass_histogram(vector_name, experiment, style='avg_mag_per_bin', tit
     #        plt.xticks(xT, xL, size = 20)
     #        plt.title("Agent velocities 0.25 < x < 0.5, center repulsion on (n = {})".format(experiment.agent['total_trajectories']), y=1.1)
     #        plt.savefig("./figs/Compass plot , center repulsion on_ beta{beta}_rf{randomF_scale}_wf{wtf}_N{total_trajectories}.svg".format(\
-    #            beta=experiment.agent['beta'], randomF_scale=experiment.agent['randomF_strength'], wtf=experiment.agent['wtF'], total_trajectories=experiment.agent['total_trajectories'] + FIG_FORMAT))
+    #            beta=experiment.agent['beta'], randomF_scale=experiment.agent['random_f_strength'], wtf=experiment.agent['wtF'], total_trajectories=experiment.agent['total_trajectories'] + FIG_FORMAT))
 
     if style == 'avg_mag_per_bin':
         """for each bin, we want the average magnitude

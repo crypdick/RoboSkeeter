@@ -37,8 +37,8 @@ def fly_wrapper(GUESS, *args):
                          'plume_type': "timeavg"#"Boolean"
                          }
 
-    agent_kwargs = {'randomF_strength': 6.55599224e-06,
-                    'stimF_strength': 0.,
+    agent_kwargs = {'random_f_strength': 6.55599224e-06,
+                    'stim_f_strength': 0.,
                     'damping_coeff': 3.63674551e-07,
                     'collision_type': 'part_elastic',
                     'restitution_coeff': restitution_guess,  # Optimizing this

@@ -90,22 +90,22 @@ def demo_randomF_strength():
     print "demo_randomF_strength"
     # normal
     for i in range(10):
-        generate_trajectory.Trajectory(agent_pos="door", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=4e-06, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=default_wallF, title = "randomF_strength demo", titleappend = ", normal")
+        generate_trajectory.Trajectory(agent_pos="door", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=4e-06, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=default_wallF, title = "random_f_strength demo", titleappend = ", normal")
     plt.show()
     
     # off
     for i in range(10):
-        generate_trajectory.Trajectory(agent_pos="door", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=0, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=default_wallF, title = "randomF_strength demo", titleappend = ", rF off")
+        generate_trajectory.Trajectory(agent_pos="door", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=0, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=default_wallF, title = "random_f_strength demo", titleappend = ", rF off")
     plt.show()
     
     # weak
     for i in range(10):
-        generate_trajectory.Trajectory(agent_pos="door", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=1e-06, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=default_wallF, title = "randomF_strength demo", titleappend = ", rF weak")
+        generate_trajectory.Trajectory(agent_pos="door", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=1e-06, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=default_wallF, title = "random_f_strength demo", titleappend = ", rF weak")
     plt.show()
     
     # strong
     for i in range(10):
-        generate_trajectory.Trajectory(agent_pos="door", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=1e-05, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=default_wallF, title = "randomF_strength demo", titleappend = ", rF strong")
+        generate_trajectory.Trajectory(agent_pos="door", target_pos="left", plotting = True,   v0_stdev=0.01, wtf=7e-07, rf=1e-05, beta=1e-5, Tmax=15, dt=0.01, detect_thresh=0.023175, bounded=True, bounce="crash", wallF=default_wallF, title = "random_f_strength demo", titleappend = ", rF strong")
     plt.show()
 
 
