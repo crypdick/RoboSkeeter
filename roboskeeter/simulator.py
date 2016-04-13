@@ -47,7 +47,7 @@ class Simulator:
         # useful lists TODO: get rid of?
         self.kinematics_list = ['position', 'velocity', 'acceleration']  # curvature?
         self.forces_list = ['total_f', 'random_f', 'stim_f']
-        self.other_list = ['tsi', 'times', 'decision', 'plume_signal']
+        self.other_list = ['tsi', 'times', 'decision', 'plume_signal', 'in_plume']
 
         # mk forces
         self.flight = Flight(self.random_f_strength,
