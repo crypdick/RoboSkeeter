@@ -9,13 +9,6 @@ class Flight():
         self.stim_f_strength = stim_f_strength
         self.damping_coeff = damping_coeff
 
-        self.decision_policy = decision_policy
-        self.stimulus_memory_n_timesteps = stimulus_memory_n_timesteps
-        self.behaviors = Behaviors(decision_policy)
-        self.plume_sighted_ago = 10000000  # a long time ago
-        self.last_plume_side_exited = None
-        self.current_decision = ''  # castL, castR, surge, search, ascend
-
     def random(self):
         """Generate random-direction force vector at each timestep from double-
         exponential distribution given exponent term rf.
@@ -25,46 +18,6 @@ class Flight():
         force = self.random_f_strength * ends
 
         return force
-
-    def make_decision(self, in_plume, crosswind_velocity):
-        self.current_decision = ''  # reset
-
-        if in_plume is True:
-            self.plume_sighted_ago = 0
-            plume_interaction = 'in'
-            if 'surge' in self.decision_policy:
-                self.current_decision = 'surge'
-        elif in_plume is False:
-            self.plume_sighted_ago += 1
-            if self.plume_sighted_ago == 1:  # we just exited the plume
-                # if our y velocity is negative, we just exited to the left. otherwise, to the right.
-                if crosswind_velocity < 0:
-                    plume_interaction = 'exit left'
-                    self.last_plume_side_exited = 'l'
-                else:
-                    plume_interaction = 'exit right'
-                    self.last_plume_side_exited = 'r'
-            else:
-                plume_interaction = 'out'
-                if 'cast' in self.decision_policy:
-                    if self.plume_sighted_ago <= self.stimulus_memory_n_timesteps:  # we were in the plume recently
-                        if self.last_plume_side_exited == 'l':
-                            self.current_decision = 'cast_r'
-                        else:  # 'r'
-                            self.current_decision = 'cast_l'
-                else:
-                    self.current_decision = 'search'
-
-        elif np.isnan(in_plume):  # this should only ever happen if we're gradient ascent TODO double check
-            plume_interaction = self.plume.get_nearest_data(position[tsi])
-            # TODO
-            # if gradient is above thresh, 'ascend'
-            #else: search
-            # surge up gradient
-        else:
-            raise TypeError
-
-        return self.current_decision
 
     def stimulus(self, kwargs):
         """given force direction and strength, return a force vector
