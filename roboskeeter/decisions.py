@@ -15,20 +15,22 @@ class Decisions:
             decision = self._boolean_decisions(in_plume, crosswind_velocity)
         elif 'gradient' in self.decision_policy:
             decision = self._gradient_decisions()
+        elif 'ignore' in self.decision_policy:
+            decision = 'ignore'
         else:
             raise ValueError('unk decision policy {}'.format(self.decision_policy))
 
         return decision
 
     def _boolean_decisions(self, in_plume, crosswind_velocity):
-        if in_plume is True:
+        if in_plume == True:  # use == instead of "is" because we're using type np.bool
             self.plume_sighted_ago = 0
             plume_signal = 'in'
             if 'surge' in self.decision_policy:
                 current_decision = 'surge'
             else:
                 current_decision = 'search'
-        elif in_plume is False:
+        elif in_plume == False:
             self.plume_sighted_ago += 1
             if self.plume_sighted_ago == 1:  # we just exited the plume
                 # if our y velocity is negative, we just exited to the left. otherwise, to the right.
