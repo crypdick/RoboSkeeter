@@ -46,7 +46,7 @@ class Simulator:
         # useful lists TODO: get rid of?
         self.kinematics_list = ['position', 'velocity', 'acceleration']  # curvature?
         self.forces_list = ['totalF', 'randomF', 'stimF']
-        self.other_list = ['tsi', 'times', 'plume_sensed', 'plume_interaction']
+        self.other_list = ['tsi', 'times', 'plume_sensed', 'plume_signal']
 
         # mk forces
         self.flight = Flight(self.randomF_strength,
@@ -124,7 +124,7 @@ class Simulator:
         #     exec(key + " = vector_dict['" + key + "']")
         # unpack vector dict into nicer aliases
         in_plume = vector_dict['in_plume']
-        plume_interaction = vector_dict['plume_interaction']
+        plume_signal = vector_dict['plume_signal']
         position = vector_dict['position']
         velocity = vector_dict['velocity']
         acceleration = vector_dict['acceleration']
@@ -138,7 +138,7 @@ class Simulator:
         for tsi in vector_dict['tsi']:
             in_plume[tsi] = self.plume.check_for_plume(position[tsi])  # returns nan for non-Bool plume
 
-            decision[tsi], plume_interaction[tsi] = self.flight.make_decision(in_plume[tsi], velocity[tsi][1])
+            decision[tsi], plume_signal[tsi] = self.flight.make_decision(in_plume[tsi], velocity[tsi][1])
 
             stim_f[tsi], random_f[tsi], total_f[tsi] = self.flight.calc_forces(tsi, velocity[tsi])
 
@@ -283,7 +283,7 @@ class Simulator:
         V['tsi'] = np.arange(self.max_bins)
         V['times'] = np.linspace(0, self.time_max, self.max_bins)
         V['in_plume'] = np.zeros(self.max_bins, dtype=bool)
-        V['plume_interaction'] = np.array([None] * self.max_bins)
+        V['plume_signal'] = np.array([None] * self.max_bins)
         V['decision'] = np.array([None] * self.max_bins)
 
         return V
