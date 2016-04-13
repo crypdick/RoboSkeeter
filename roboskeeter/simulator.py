@@ -10,8 +10,9 @@ TODO: implemement unit tests with nose
 import sys
 import numpy as np
 import pandas as pd
-from flights import Flights
+from flight import Flight
 from decisions import Decisions
+from observations import Observations
 
 
 class Simulator:
@@ -45,17 +46,15 @@ class Simulator:
 
         # useful lists TODO: get rid of?
         self.kinematics_list = ['position', 'velocity', 'acceleration']  # curvature?
-        self.forces_list = ['totalF', 'randomF', 'stimF']
+        self.forces_list = ['total_f', 'random_f', 'stim_f']
         self.other_list = ['tsi', 'times', 'plume_sensed', 'plume_signal']
 
         # mk forces
-        self.flight = Flight(self.randomF_strength,
-                             self.stimF_strength,
-                             self.damping_coeff,
-                             self.stimulus_memory_n_timesteps,
-                             self.decision_policy)
+        self.flight = Flight(self.random_f_strength,
+                             self.stim_f_strength,
+                             self.damping_coeff)
 
-        self.decisions = Decisions(self.decision_policy)  # TODO make sure init is correct
+        self.decisions = Decisions(self.decision_policy, self.stimulus_memory_n_timesteps)
 
         # turn thresh, in units deg s-1.
         # From Sharri:
@@ -71,7 +70,9 @@ class Simulator:
         traj_i = 0
         try:
             if self.verbose:
-                print 'Starting simulations with {} plume model. If you run out of patience, hit <CTL>-C to end the loop early.'.format(self.plume.plume_model)
+                print """Starting simulations with {} plume model and {} decision policy.
+                If you run out of patience, hit <CTL>-C to end the loop early.""".format(
+                    self.plume.plume_model, self.decision_policy)
 
             while traj_i < n_trajectories:
                 # print updates
@@ -105,10 +106,10 @@ class Simulator:
             print "\n Simulations interrupted at iteration {}. Moving along...".format(traj_i)
             pass
 
-        flights = Flights()
-        flights.kinematics = pd.concat(df_list)  # concatenate all the data frames at once for performance boost.
+        observations = Observations()
+        observations.kinematics = pd.concat(df_list)  # concatenate all the data frames at once for performance boost.
 
-        return flights
+        return observations
 
     def _generate_flight(self):
         """Generate a single trajectory using our model.
@@ -138,7 +139,10 @@ class Simulator:
         for tsi in vector_dict['tsi']:
             in_plume[tsi] = self.plume.check_for_plume(position[tsi])  # returns nan for non-Bool plume
 
-            decision[tsi], plume_signal[tsi] = self.flight.make_decision(in_plume[tsi], velocity[tsi][1])
+            decision[tsi], plume_signal[tsi] = self.decisions.make_decision(in_plume[tsi], velocity[tsi][1])
+
+            if plume_signal[tsi] == 'X':  # this is a special code telling us to look up the gradient
+                plume_signal[tsi] = self.plume.get_nearest_gradient(position[tsi])
 
             stim_f[tsi], random_f[tsi], total_f[tsi] = self.flight.calc_forces(velocity[tsi], decision[tsi], plume_signal)
 
