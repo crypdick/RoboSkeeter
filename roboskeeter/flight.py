@@ -4,7 +4,7 @@ from roboskeeter.math import math_toolbox
 
 
 class Flight():
-    def __init__(self, random_f_strength, stim_f_strength, damping_coeff, stimulus_memory_n_timesteps, decision_policy):
+    def __init__(self, random_f_strength, stim_f_strength, damping_coeff):
         self.random_f_strength = random_f_strength
         self.stim_f_strength = stim_f_strength  # TODO: separate surge strength, cast strength, gradient strenght
         self.damping_coeff = damping_coeff
