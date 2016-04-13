@@ -99,12 +99,12 @@ def start_simulation(num_flights, agent_kwargs=None, experiment_conditions=None)
                                  }
     if agent_kwargs is None:
         agent_kwargs = {'is_simulation': True,
-                        'randomF_strength': 6.55599224e-06,
-                        'stimF_strength': 5.0e-06,
+                        'random_f_strength': 6.55599224e-06,
+                        'stim_f_strength': 5.0e-06,
                         'damping_coeff': 3.63674551e-07,
                         'collision_type': 'part_elastic',  # 'elastic', 'part_elastic'
                         'restitution_coeff': 0.1,  # 0.8
-                        'stimulus_memory_N_timesteps': 1,
+                        'stimulus_memory_n_timesteps': 1,
                         'decision_policy': 'surge',  # 'surge', 'cast', 'castsurge', 'gradient', 'ignore'
                         'initial_position_selection': 'downwind_high',
                         'verbose': True
@@ -136,12 +136,12 @@ def load_experiment(experiment_conditions=None):
                                  }
 
     agent_kwargs = {'is_simulation': False,
-                    'randomF_strength': "UNKNOWN",
-                    'stimF_strength': "UNKNOWN",
+                    'random_f_strength': "UNKNOWN",
+                    'stim_f_strength': "UNKNOWN",
                     'damping_coeff': "UNKNOWN",
                     'collision_type': "UNKNOWN",
                     'restitution_coeff': "UNKNOWN",
-                    'stimulus_memory_N_timesteps': "UNKNOWN",
+                    'stimulus_memory_n_timesteps': "UNKNOWN",
                     'decision_policy': "UNKNOWN",
                     'initial_position_selection': "UNKNOWN",
                     'verbose': True
