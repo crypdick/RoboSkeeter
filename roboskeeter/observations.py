@@ -22,7 +22,7 @@ import pandas as pd
 from roboskeeter.io import i_o
 
 
-class Flights(object):
+class Observations(object):
     def __init__(self):
         self.kinematics = pd.DataFrame()
 
