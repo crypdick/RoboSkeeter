@@ -7,7 +7,7 @@ from roboskeeter.math.kinematic_math import DoMath
 # from roboskeeter.math.scoring.scoring import Scoring
 from simulator import Simulator
 from environment import Environment
-from flights import Flights
+from observations import Observations
 from roboskeeter.plotting.my_plotter import MyPlotter as plttr
 
 
@@ -54,7 +54,7 @@ class Experiment(object):
             else:
                 self.flights = self.agent.fly(n_trajectories=n)
         else:
-            self.flights = Flights()
+            self.flights = Observations()
             self.flights.experiment_data_to_DF(experimental_condition=self.experiment_conditions['condition'])
             self.flights.kinematics['inPlume'] = 0  # FIXME add column to DF
             # TODO: rum plume interaction analysis
