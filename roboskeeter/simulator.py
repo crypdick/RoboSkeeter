@@ -11,9 +11,7 @@ import sys
 import numpy as np
 import pandas as pd
 from flights import Flights
-from forces import Forces
-from decision_policy import Behaviors
-from memory import Memory
+from decisions import Decisions
 
 
 class Simulator:
@@ -51,11 +49,13 @@ class Simulator:
         self.other_list = ['tsi', 'times', 'plume_sensed', 'plume_interaction']
 
         # mk forces
-        self.forces = Forces(self.randomF_strength,
+        self.flight = Flight(self.randomF_strength,
                              self.stimF_strength,
-                             self.stimulus_memory_N_timesteps)
+                             self.damping_coeff,
+                             self.stimulus_memory_n_timesteps,
+                             self.decision_policy)
 
-        self.behavior = Behaviors(self.decision_policy)
+        self.decisions = Decisions(self.decision_policy)  # TODO make sure init is correct
 
         # turn thresh, in units deg s-1.
         # From Sharri:
@@ -117,31 +117,37 @@ class Simulator:
         """
         dt = self.dt
         m = self.mass
-        V = self._initialize_vectors()
+        vector_dict = self._initialize_vector_dict()
 
-        # dynamically create easy-to-read aliases for the contents of V
-        for key, value in V.iteritems():
-            exec(key + " = V['" + key + "']")
+        # # dynamically create easy-to-read aliases for the contents of vector_dict
+        # for key, value in vector_dict.iteritems():
+        #     exec(key + " = vector_dict['" + key + "']")
+        # unpack vector dict into nicer aliases
+        in_plume = vector_dict['in_plume']
+        plume_interaction = vector_dict['plume_interaction']
+        position = vector_dict['position']
+        velocity = vector_dict['velocity']
+        acceleration = vector_dict['acceleration']
+        random_f = vector_dict['random_f']
+        stim_f = vector_dict['stim_f']
+        total_f = vector_dict['total_f']
+        decision = vector_dict['decision']
 
         position[0], velocity[0] = self._set_init_pos_and_velo()
 
-        triggered_tsi = {'stimulus': -10000000, 'exit': -10000000}  # a long time ago
+        for tsi in vector_dict['tsi']:
+            in_plume[tsi] = self.plume.check_for_plume(position[tsi])  # returns nan for non-Bool plume
 
-        for tsi in V['tsi']:
-            in_plume[tsi] = self.plume.check_for_plume(position[tsi])  # returns "N/A" for non-Bool plume
+            decision[tsi], plume_interaction[tsi] = self.flight.make_decision(in_plume[tsi], velocity[tsi][1])
 
-            plume_interaction[tsi], triggered_tsi = self._plume_interaction(tsi, in_plume, velocity[tsi][1],
-                                                                            triggered_tsi)  # TODO: export _plume_interaction
-
-            stimF[tsi], randomF[tsi], totalF[tsi] = \
-                self._calc_forces(tsi, velocity[tsi], plume_interaction, triggered_tsi, position[tsi])
+            stim_f[tsi], random_f[tsi], total_f[tsi] = self.flight.calc_forces(tsi, velocity[tsi])
 
             # calculate current acceleration
-            acceleration[tsi] = totalF[tsi] / m
+            acceleration[tsi] = total_f[tsi] / m
 
             # check if time is out, end loop before we solve for future velo, position
             if tsi == self.max_bins-1: # -1 because of how range() works
-                V = self._land(tsi, V)
+                vector_dict = self._land(tsi, vector_dict)
                 break
 
             ################################################
@@ -165,41 +171,9 @@ class Simulator:
             velocity[tsi + 1] = candidate_velo
 
         # once flight is finished, make dictionary ready to be loaded into DF
-        V = self._fix_vector_dict(V)
+        vector_dict = self._fix_vector_dict(vector_dict)
 
-        return V
-
-    def _calc_forces(self, tsi, velocity_now, plume_interaction_history, triggered_tsi, position_now):
-        # TODO: make sure all the args can be the same for all the different behavioral policies
-        ################################################
-        # Calculate driving forces at this timestep
-        ################################################
-        randomF = self.forces.randomF()
-
-        if "gradient" in self.decision_policy:
-            raise NotImplementedError
-            kwargs = {"gradient": self.plume.get_nearest_data(position_now)}
-        elif "surge" in self.decision_policy or "cast" in self.decision_policy:
-            kwargs = {"tsi": tsi,
-                      "plume_interaction_history": plume_interaction_history,
-                      "triggered_tsi": triggered_tsi,
-                      "position_now": position_now}
-        else:
-            raise ValueError("unknown decision policy {}".format(self.decision_policy))
-
-        if self.experiment.experiment_conditions['condition'] in 'controlControlCONTROL' or self.decision_policy == 'ignore':
-            stimF = np.array([0.,0.,0.])
-        else:
-            stimF = self.forces.stimF(kwargs)
-
-        ################################################
-        # calculate total force
-        ################################################
-        totalF = -self.damping_coeff * velocity_now + randomF + stimF
-        ###############################
-
-        return stimF, randomF, totalF
-
+        return vector_dict
 
     def _land(self, tsi, V):
         ''' trim excess timebins in arrays
@@ -297,7 +271,7 @@ class Simulator:
 
         return candidate_pos, candidate_velo
 
-    def _initialize_vectors(self):
+    def _initialize_vector_dict(self):
         """
         initialize np arrays, store in dictionary
         """
@@ -310,6 +284,7 @@ class Simulator:
         V['times'] = np.linspace(0, self.time_max, self.max_bins)
         V['in_plume'] = np.zeros(self.max_bins, dtype=bool)
         V['plume_interaction'] = np.array([None] * self.max_bins)
+        V['decision'] = np.array([None] * self.max_bins)
 
         return V
 
