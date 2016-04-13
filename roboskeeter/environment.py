@@ -285,8 +285,15 @@ class TimeAvgPlume(Plume):
         print """Warning: we don't know the plume bounds for the Timeavg plume, so the in_plume() method
                 always returns False"""
 
-    def check_for_plume(self, position):
-        return np.nan
+    def check_for_plume(self, _):
+        """
+
+        Returns
+        -------
+        in_plume
+            always return False.
+        """
+        return False
 
     def plot_gradient(self, thresh=0):
         plot_plume_gradient(self, thresh)
