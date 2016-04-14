@@ -25,7 +25,7 @@ class Experiment(object):
         # init objects
         self.environment = Environment(self)
 
-        self.observations = None
+        self.observations = Observations()
         self.agent = Simulator(self, agent_kwargs)
 
         # these get mapped to the correct funcs after run() is ran
@@ -54,13 +54,25 @@ class Experiment(object):
             else:
                 self.observations = self.agent.fly(n_trajectories=n)
         else:
-            self.observations = Observations()
             self.observations.experiment_data_to_DF(experimental_condition=self.experiment_conditions['condition'])
-            self.observations.kinematics['inPlume'] = 0  # FIXME add column to DF
-            # TODO: rum plume interaction analysis
+            print "\nDone loading files. Iterating through flights and presenting plume, making hypothetical "
+            n_rows = len(self.observations.kinematics)
+            import numpy as np
+            in_plume = np.zeros(n_rows, dtype=bool)
+            plume_signal = np.array([None] * n_rows)
+            decision = np.array([None] * n_rows)
+            for i, row in self.observations.kinematics.iterrows():
+                in_plume[i] = self.environment.plume.check_for_plume([row.position_x,
+                                                                      row.position_y,
+                                                                      row.position_z])
+                decision[i], plume_signal[i] = self.agent.decisions.make_decision(in_plume[i], row.velocity_y)
 
-        # asign alias
-        self.plt = plttr(self)  # TODO: takes self, extracts metadata for files and titles, etc
+            self.observations.kinematics['in_plume'] = in_plume
+            self.observations.kinematics['plume_signal'] = plume_signal
+            self.observations.kinematics['decision'] = decision
+
+        # assign alias
+        self.plt = plttr(self)  # takes self, extracts metadata for files and titles, etc
 
         # run analysis
         dm = DoMath(self)
@@ -68,7 +80,6 @@ class Experiment(object):
 
     # def calc_score(self):
     #     # TODO test scoring
-        # TODO fix downstream bugs
     #     if self.is_scored == False:
     #         S = Scoring()
     #         self.score = S.score(self.observations)
@@ -105,7 +116,7 @@ def start_simulation(num_flights, agent_kwargs=None, experiment_conditions=None)
                         'collision_type': 'part_elastic',  # 'elastic', 'part_elastic'
                         'restitution_coeff': 0.1,  # 0.8
                         'stimulus_memory_n_timesteps': 1,
-                        'decision_policy': 'surge',  # 'surge', 'cast', 'castsurge', 'gradient', 'ignore'
+                        'decision_policy': 'ignore',  # 'surge', 'cast', 'castsurge', 'gradient', 'ignore'
                         'initial_position_selection': 'downwind_high',
                         'verbose': True
                         }
@@ -129,20 +140,20 @@ def load_experiment(experiment_conditions=None):
     experiment class
     """
     if experiment_conditions is None:  # load defaults
-        experiment_conditions = {'condition': 'Control',  # {'Left', 'Right', 'Control'}
-                                 'plume_model': "None",  # "Boolean" "None, "Timeavg", "Unaveraged"
+        experiment_conditions = {'condition': 'Left',  # {'Left', 'Right', 'Control'}
+                                 'plume_model': "Boolean",  # "Boolean" "None, "Timeavg", "Unaveraged"
                                  'time_max': "N/A (experiment)",
                                  'bounded': True,
                                  }
 
-    agent_kwargs = {'is_simulation': False,
+    agent_kwargs = {'is_simulation': False,  # ALL THESE VALUES ARE A HYPOTHESIS!!!
                     'random_f_strength': "UNKNOWN",
                     'stim_f_strength': "UNKNOWN",
                     'damping_coeff': "UNKNOWN",
                     'collision_type': "UNKNOWN",
                     'restitution_coeff': "UNKNOWN",
                     'stimulus_memory_n_timesteps': "UNKNOWN",
-                    'decision_policy': "UNKNOWN",
+                    'decision_policy': "surge",  # 'surge', 'cast', 'castsurge', 'gradient', 'ignore'
                     'initial_position_selection': "UNKNOWN",
                     'verbose': True
                     }
@@ -155,9 +166,8 @@ def load_experiment(experiment_conditions=None):
 
 
 if __name__ is '__main__':
-    experiment = start_simulation(1, None, None)
-    # experiment = load_experiment()  # TODO: experiments should use same code as simulation to figure out plume interaction
-                                            # march timestep by timestep
+    # experiment = start_simulation(1, None, None)
+    experiment = load_experiment()
 
     print "\nAliases updated."
     # useful aliases
