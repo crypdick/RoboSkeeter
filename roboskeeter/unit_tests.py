@@ -64,7 +64,7 @@ class TestSorcery(unittest.TestCase):
 # #    def test_trimNaN_nums(self): # only NaNs
 # #        df = NaN_run(100)
 # #        df2 = flight_trajectory_processor.trim_NaNs(df)
-# #        self.assertTrue(self.check_df_equal(df([]), df2)) # todo: figure out how to make empty dataframe
+# #        self.assertTrue(self.check_df_equal(pd.DataFrame(), pd.DataFrame()))
 #
 #     ## TEST SPLITTER
 #     def test_allNums(self): # only numbers

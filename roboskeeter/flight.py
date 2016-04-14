@@ -20,7 +20,7 @@ class Flight():
 
         return force
 
-    def stimulus(self, decision, plume_signal):  # TODO: test castsurge
+    def stimulus(self, decision, plume_signal):
         force = np.array([0., 0., 0.])
 
         if decision is 'search':
@@ -39,7 +39,6 @@ class Flight():
         return force
 
     def calc_forces(self, current_velocity, decision, plume_signal):
-        # TODO: make sure all the args can be the same for all the different behavioral policies
         ################################################
         # Calculate driving forces at this timestep
         ################################################

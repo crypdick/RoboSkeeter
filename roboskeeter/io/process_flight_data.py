@@ -34,13 +34,6 @@ import numpy as np
 
 from roboskeeter.io import i_o
 
-
-#def sanitychecks(full_trajectory):
-#    """test if the csv file has camxy, date, video, raw
-#    
-#    TODO:Implement
-#    """
-#    return full_trajectory
     
 
 def trim_leading_trailing_NaNs(array, trim='fb'):

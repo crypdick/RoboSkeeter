@@ -4,3 +4,10 @@
 # TODO redo basinhopping for all params. add how they were optimized into table
 # TODO integrate all of Sharri's data into environment
 # TODO make Sphinx documentation once UW Data sciences gets the template working
+# TODO import RIch's kinematics
+# TODO import Rich's unit tests for kinematics
+
+############# TODO Modules to test:
+score
+optimizer
+all plotting funcs

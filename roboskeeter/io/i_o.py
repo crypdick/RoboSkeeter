@@ -28,7 +28,7 @@ def load_single_csv_to_df(csv_dir):
     pandas df
     """
 
-    col_labels = [  # TODO: check these col labels are in agreement w  your code
+    col_labels = [  # TODO: check that Sharri's kinematics are the same as your kinematics
         'position_x',
         'position_y',
         'position_z',

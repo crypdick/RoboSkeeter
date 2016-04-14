@@ -185,7 +185,6 @@ class BooleanPlume(Plume):
         self.resolution = self._calc_resolution()
 
     def check_for_plume(self, position):
-        # TODO: make compatible with experiments
         in_bounds, _ = self.walls.check_in_bounds(position)
         x, y, z = position
 

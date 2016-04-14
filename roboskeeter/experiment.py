@@ -78,8 +78,7 @@ class Experiment(object):
         dm = DoMath(self)
         self.observations, self.percent_time_in_plume, self.side_ratio_score = dm.observations, dm.percent_time_in_plume, dm.side_ratio_score
 
-    # def calc_score(self):
-    #     # TODO test scoring
+    # def calc_score(self):  # TODO uncomment scoring block
     #     if self.is_scored == False:
     #         S = Scoring()
     #         self.score = S.score(self.observations)
@@ -103,10 +102,10 @@ def start_simulation(num_flights, agent_kwargs=None, experiment_conditions=None)
     experiment object
     """
     if experiment_conditions is None:
-        experiment_conditions = {'condition': 'Right',  # {'Left', 'Right', 'Control'}
+        experiment_conditions = {'condition': 'Left',  # {'Left', 'Right', 'Control'}
                                  'time_max': 6.,
                                  'bounded': True,
-                                 'plume_model': "Boolean"  # "Boolean", "timeavg", "None", "Unaveraged"
+                                 'plume_model': "None"  # "Boolean", "timeavg", "None", "Unaveraged"
                                  }
     if agent_kwargs is None:
         agent_kwargs = {'is_simulation': True,
@@ -140,7 +139,7 @@ def load_experiment(experiment_conditions=None):
     experiment class
     """
     if experiment_conditions is None:  # load defaults
-        experiment_conditions = {'condition': 'Left',  # {'Left', 'Right', 'Control'}
+        experiment_conditions = {'condition': 'Control',  # {'Left', 'Right', 'Control'}
                                  'plume_model': "Boolean",  # "Boolean" "None, "Timeavg", "Unaveraged"
                                  'time_max': "N/A (experiment)",
                                  'bounded': True,
@@ -166,8 +165,8 @@ def load_experiment(experiment_conditions=None):
 
 
 if __name__ is '__main__':
-    # experiment = start_simulation(1, None, None)
-    experiment = load_experiment()
+    experiment = start_simulation(1, None, None)
+    # experiment = load_experiment()
 
     print "\nAliases updated."
     # useful aliases
