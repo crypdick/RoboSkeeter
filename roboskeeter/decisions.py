@@ -1,7 +1,6 @@
 
 class Decisions:
     def __init__(self, decision_policy, stimulus_memory_n_timesteps):
-        # we take plume as input for the gradient ascent. however, this is inelegant. FIXME
         self.decision_policy = decision_policy
 
         self.stimulus_memory_n_timesteps = stimulus_memory_n_timesteps

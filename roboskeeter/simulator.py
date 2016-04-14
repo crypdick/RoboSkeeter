@@ -26,6 +26,8 @@ class Simulator:
         for key, value in agent_kwargs.iteritems():
             setattr(self, key, value)
 
+        self.decisions = Decisions(self.decision_policy, self.stimulus_memory_n_timesteps)
+
         if experiment.is_simulation:
             self._simulated_agent_init(experiment)
 
@@ -53,8 +55,6 @@ class Simulator:
         self.flight = Flight(self.random_f_strength,
                              self.stim_f_strength,
                              self.damping_coeff)
-
-        self.decisions = Decisions(self.decision_policy, self.stimulus_memory_n_timesteps)
 
         # turn thresh, in units deg s-1.
         # From Sharri:
@@ -137,7 +137,7 @@ class Simulator:
         position[0], velocity[0] = self._set_init_pos_and_velo()
 
         for tsi in vector_dict['tsi']:
-            in_plume[tsi] = self.plume.check_for_plume(position[tsi])  # returns nan for non-Bool plume
+            in_plume[tsi] = self.plume.check_for_plume(position[tsi])  # returns False for non-Bool plume
 
             decision[tsi], plume_signal[tsi] = self.decisions.make_decision(in_plume[tsi], velocity[tsi][1])
 

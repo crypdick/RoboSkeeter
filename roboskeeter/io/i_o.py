@@ -55,9 +55,7 @@ def load_single_csv_to_df(csv_dir):
 
     dataframe['trajectory_num'] = [fname_num] * df_len
     dataframe['tsi'] = np.arange(df_len)
-    dataframe['in_plume'] = np.zeros(df_len, dtype=bool)
-    dataframe['plume_interaction'] = np.array([None] * df_len)
-
+    # plume related stuff will get set inside Experiment()
 
     return dataframe
 

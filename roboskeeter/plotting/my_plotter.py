@@ -20,7 +20,6 @@ class MyPlotter:
             self.observations = self.observations.kinematics.loc[(self.observations.kinematics['position_x'] > 0.25) & \
                                                                  (self.observations.kinematics['position_x'] < 0.95)]
 
-
     def visualize_forces(self):
         """like plot_vector_cloud, but with all of the kinematics at once"""
         plot_kinematics.plot_all_force_clouds(self)
