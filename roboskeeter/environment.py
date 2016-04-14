@@ -36,9 +36,9 @@ class Environment(object):
         elif self.plume_model == "timeavg":
             plume = TimeAvgPlume(self)
         elif self.plume_model == "None":
-            plume = NoPlume()
+            plume = NoPlume(self)
         elif self.plume_model == "Unaveraged":
-            plume = UnaveragedPlume()
+            plume = UnaveragedPlume(self)
         else:
             raise NotImplementedError("no such plume type {}".format(self.plume_model))
 
@@ -167,9 +167,8 @@ class Plume(object):
 
 
 class NoPlume(Plume):
-    # TODO: test NoPlume
-    def __init__(self):
-        pass
+    def __init__(self, environment):
+        super(self.__class__, self).__init__(environment)
 
     def check_for_plume(self, _):
         # always return false
@@ -178,7 +177,6 @@ class NoPlume(Plume):
 
 class BooleanPlume(Plume):
     """Are you in the plume Y/N"""
-    # TODO: test BooleanPlume
     def __init__(self, environment):
         super(self.__class__, self).__init__(environment)
 
@@ -448,5 +446,6 @@ class TimeAvgPlume(Plume):
 
 
 class UnaveragedPlume:
-    def __init__(self):
+    def __init__(self, environment):
+        super(self.__class__, self).__init__(environment)
         raise NotImplementedError  # TODO: implement unaveraged plume
