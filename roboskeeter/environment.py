@@ -276,6 +276,7 @@ class TimeAvgPlume(Plume):
         resolution = (100j, 25j, 25j)  # stored as complex numbers for mgrid to work properly
 
         self._raw_data = self._load_plume_data()
+        self._pad_plume_data()
         self._interpolate_data(resolution)
         self._calc_gradient()
         self.tree = self._calc_kdtree()
@@ -291,9 +292,6 @@ class TimeAvgPlume(Plume):
             always return False.
         """
         return False
-
-    def plot_gradient(self, thresh=0):
-        plot_plume_gradient(self, thresh)
 
     def get_nearest_data(self, position):
         """
@@ -350,79 +348,58 @@ class TimeAvgPlume(Plume):
         zmin = self._raw_data.z.min()
         zmax = self._raw_data.z.max()
 
-        self.downwind # FIXME
+        print "TODO: skipping padding function as it hasn't been fully implemented yet"
+        pass # TODO; implement padding
 
-        raise NotImplementedError # TODO; implement padding
 
     def _interpolate_data(self, resolution):
         # TODO: review this function
         if self.condition in 'controlControlCONTROL':
-            return None
+            return None  # TODO: wtf
 
-        # self._grid_x, self._grid_y, self._grid_z = np.mgrid[0.:1.:resolution[0], -0.127:0.127:resolution[1], 0:0.254:resolution[2]]
-        # grid_x, grid_y, grid_z = np.mgrid[0.:1.:100j, -0.127:0.127:25j, 0:0.254:25j]
-        #print len(np.unique(self._raw_data.x)),len(np.unique(self._raw_data.y)), len(np.unique(self._raw_data.z))
-        # self._raw_data['x'] = self._raw_data.x / 5.
-        # self._grid_x = self._grid_x / 5.
-        # points = self._raw_data[['x', 'y', 'z']].values  # (1382, 3)
-        # points = (self._raw_data.x.values, self._raw_data.y.values, self._raw_data.z.values)  # (1382, 3)
-        x, y, z = (self._raw_data.x.values, self._raw_data.y.values, self._raw_data.z.values)  # (1382, 3)
-        #print "pts", len(self._raw_data.x.values), np.shape(self._raw_data.x.values)
-        temps = self._raw_data.avg_temp.values  # len 1382
-        #print "temps", temps.shape
-        epsilon = 3
-        #print "epsilon", epsilon
+        # useful aliases
+        x, y, z, temps = self._raw_data.x.values, self._raw_data.y.values,\
+                         self._raw_data.z.values, self._raw_data.avg_temp.values
+
+        # init rbf interpolator
+        epsilon = 3  # TODO: set as the average 3d euclidean distance between observations
         rbfi = Rbf(x, y, z, temps, function='gaussian', smooth=1e-8, epsilon=epsilon)
 
+        # make positions to interpolate at
         xi = np.linspace(0, 1, 50)  # xmin * .8
         yi = np.linspace(-.127, .127, 15)
         zi = np.linspace(0, .254, 15)
-        #print "array shapes", xi.shape, yi.shape, zi.shape
+        # we save this grid b/c it helps us with the gradient func
         self._grid_x, self._grid_y, self._grid_z = np.meshgrid(xi, yi, zi, indexing='ij')
         xxi = self._grid_x.ravel()  # FIXME flip here
         yyi = self._grid_y.ravel()
         zzi = self._grid_z.ravel()
-        # print "xxi shape", np.shape(xxi), np.shape(yyi), np.shape(zzi)
-        # print "grid shapes", np.shape(self._grid_x)
-        di = rbfi(xxi, yyi, zzi)
-        # print "shape di", di.shape
-        self._interpolated_temps = di.reshape((len(xi), len(yi), len(zi)))
-        # print self._interpolated_temps
 
+        # interpolate
+        interp_temps = rbfi(xxi, yyi, zzi)
+        print interp_temps
+        # we save this grid b/c it helps us with the gradient func
+        self._grid_temps = interp_temps.reshape((len(xi), len(yi), len(zi)))
 
-        # self._interpolated_temps = griddata(points,
-        #                               temps,
-        #                               (self._grid_x, self._grid_y, self._grid_z),
-        #                               method='linear')
-        #
-        # self._interpolated_temps = interpn(points,
-        #                               temps,
-        #                               (self._grid_x, self._grid_y, self._grid_z),
-        #                               method='linear')
-
-        # self.data['x'] = self._grid_x.ravel()
-        # self.data['y'] = self._grid_y.ravel()
-        # self.data['z'] = self._grid_z.ravel()
-        # self.data['avg_temp'] = self._interpolated_temps.ravel()
+        # save to df
         self.data['x'] = xxi
         self.data['y'] = yyi
         self.data['z'] = zzi
-        self.data['avg_temp'] = di
+        self.data['avg_temp'] = interp_temps
 
     def _calc_gradient(self):
+        return None # TODO: awaiting fix to gradient function: https://stackoverflow.com/questions/36781698/numpy-sample-distances-for-3d-gradient
         # TODO: review this gradient function
         if self.condition in 'controlControlCONTROL':
             return None
 
         # Solve for the spatial gradient
-        self._gradient_x, self._gradient_y, self._gradient_z = np.gradient(self._interpolated_temps,
-                                                                           self._grid_x,
-                                                                           self._grid_y,
-                                                                           self._grid_z)
+        gradient_x, gradient_y, gradient_z = np.gradient(self._grid_temps,
+                                                         np.diff(self._grid_x), np.diff(self._grid_y), np.diff(self._grid_z))
 
-        self.data['gradient_x'] = self._gradient_x.ravel()
-        self.data['gradient_y'] = self._gradient_y.ravel()
-        self.data['gradient_z'] = self._gradient_z.ravel()
+        self.data['gradient_x'] = gradient_x.ravel()
+        self.data['gradient_y'] = gradient_y.ravel()
+        self.data['gradient_z'] = gradient_z.ravel()
 
         print """Timeaveraged plume stats:  TODO implement sanity checks
                 raw data min temp: {}
@@ -447,8 +424,13 @@ class TimeAvgPlume(Plume):
     def show_raw_data(self):
         from roboskeeter.plotting.plot_environment import plot_windtunnel, plot_plume_recordings_scatter
         fig, ax = plot_windtunnel(self.environment.windtunnel)
-        # ax.axis('off')
         plot_plume_recordings_scatter(self._raw_data, ax)
+        fig.show()
+
+    def plot_gradient(self, thresh=0):
+        from roboskeeter.plotting.plot_environment import plot_windtunnel, plot_plume_gradient
+        fig, ax = plot_windtunnel(self.environment.windtunnel)
+        plot_plume_gradient(self._gradient_x, ax, thresh)
         fig.show()
 
 
