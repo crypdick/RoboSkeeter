@@ -6,6 +6,7 @@
 # TODO make Sphinx documentation once UW Data sciences gets the template working
 # TODO import RIch's kinematics
 # TODO import Rich's unit tests for kinematics
+# TODO separate plot kinemtaics into separate plots instead of jointplot
 
 ############# TODO Modules to test:
 score

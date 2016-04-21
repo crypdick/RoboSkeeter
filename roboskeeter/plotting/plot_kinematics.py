@@ -44,7 +44,7 @@ PROBABILITY_LABEL = 'Probability'
 FIG_FORMAT = ".png"
 
 
-def get_agent_info(experiment):
+def get_agent_info(experiment, plot_type = ''):  # TODO: take plot type
     if experiment.is_simulation:
         titleappend = " cond{condition}|damp{damp}|rF{rf}|stmF{stim}|N{total_trajectories}|m{m}".format(
             condition=experiment.agent.experiment.condition,
@@ -53,15 +53,15 @@ def get_agent_info(experiment):
             stim=experiment.agent.stimF_strength,
             total_trajectories=experiment.agent.total_trajectories,
             m=experiment.agent.mass
-        )
+            )
         path = MODEL_FIG_PATH
-        is_agent = 'Simulated Agent'
+        prefix = 'Simulated'
     else:
-        titleappend = ''
+        titleappend = ''  # TODO add condition
         path = EXPERIMENT_PATH
-        is_agent = 'Observed Mosquito'
+        prefix = 'Experimental'
 
-    return titleappend, path, is_agent
+    return titleappend, path, prefix
 
 
 def draw_cage_2D():
@@ -901,7 +901,8 @@ def vector_cloud_pairgrid(experiment, kinematic, i=None):
 def plot_all_force_clouds(experiment):
     #  TODO: break this up
     if experiment.is_simulation is False:
-            raise TypeError("Can't visualize the forces for an experimental trajectory because we don't have that information.")
+            raise TypeError("""Can't visualize the forces for an experimental trajectory
+                            because we don't have that information.""")
 
     else:
         # visualize direction selection
