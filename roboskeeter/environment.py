@@ -276,11 +276,11 @@ class TimeAvgPlume(Plume):
         resolution = (100j, 25j, 25j)  # stored as complex numbers for mgrid to work properly
 
         self._raw_data = self._load_plume_data()
-        # self._interpolate_data(resolution)
-        # self._calc_gradient()
-        # self.tree = self._calc_kdtree()
-        # print """Warning: we don't know the plume bounds for the Timeavg plume, so the in_plume() method
-        #         always returns False"""
+        self._interpolate_data(resolution)
+        self._calc_gradient()
+        self.tree = self._calc_kdtree()
+        print """Warning: we don't know the plume bounds for the Timeavg plume, so the in_plume() method
+                always returns False"""
 
     def check_for_plume(self, _):
         """
@@ -322,7 +322,7 @@ class TimeAvgPlume(Plume):
         return np.array([data['gradient_x'], data['gradient_y'], data['gradient_z']])
 
     def _load_plume_data(self):
-        col_names = ['x', 'y', 'z', 'temperature']
+        col_names = ['x', 'y', 'z', 'avg_temp']
 
         if self.condition in 'controlControlCONTROL':
             return None
@@ -368,7 +368,7 @@ class TimeAvgPlume(Plume):
         # points = (self._raw_data.x.values, self._raw_data.y.values, self._raw_data.z.values)  # (1382, 3)
         x, y, z = (self._raw_data.x.values, self._raw_data.y.values, self._raw_data.z.values)  # (1382, 3)
         #print "pts", len(self._raw_data.x.values), np.shape(self._raw_data.x.values)
-        temps = self._raw_data.temperature.values  # len 1382
+        temps = self._raw_data.avg_temp.values  # len 1382
         #print "temps", temps.shape
         epsilon = 3
         #print "epsilon", epsilon
@@ -382,10 +382,10 @@ class TimeAvgPlume(Plume):
         xxi = self._grid_x.ravel()  # FIXME flip here
         yyi = self._grid_y.ravel()
         zzi = self._grid_z.ravel()
-        print "xxi shape", np.shape(xxi), np.shape(yyi), np.shape(zzi)
-        print "grid shapes", np.shape(self._grid_x)
+        # print "xxi shape", np.shape(xxi), np.shape(yyi), np.shape(zzi)
+        # print "grid shapes", np.shape(self._grid_x)
         di = rbfi(xxi, yyi, zzi)
-        print "shape di", di.shape
+        # print "shape di", di.shape
         self._interpolated_temps = di.reshape((len(xi), len(yi), len(zi)))
         # print self._interpolated_temps
 
@@ -424,12 +424,13 @@ class TimeAvgPlume(Plume):
         self.data['gradient_y'] = self._gradient_y.ravel()
         self.data['gradient_z'] = self._gradient_z.ravel()
 
-        print """raw min {}
-                raw max {}
-                interp min {}
-                interp max {}
-                """.format(self._raw_data.temperature.min(),self._raw_data.temperature.max(),
-                           self.data.avg_temp.min(),self.data.avg_temp.max())
+        print """Timeaveraged plume stats:  TODO implement sanity checks
+                raw data min temp: {}
+                raw data max temp: {}
+                interpolated min temp: {}
+                interpolated max temp: {}
+                """.format(self._raw_data.avg_temp.min(),self._raw_data.avg_temp.max(),
+                           self.data.avg_temp.min(), self.data.avg_temp.max())
 
         self.data.fillna(0, inplace=True)  # replace NaNs, infs before calculating norm
         self.data.replace([np.inf, -np.inf], 0, inplace=True)
@@ -444,10 +445,10 @@ class TimeAvgPlume(Plume):
         return kdt(data)
 
     def show_raw_data(self):
-        from roboskeeter.plotting.plot_environment import plot_windtunnel, plot_plume_scatter
+        from roboskeeter.plotting.plot_environment import plot_windtunnel, plot_plume_recordings_scatter
         fig, ax = plot_windtunnel(self.environment.windtunnel)
         # ax.axis('off')
-        plot_plume_scatter(self._raw_data, ax)
+        plot_plume_recordings_scatter(self._raw_data, ax)
         fig.show()
 
 
