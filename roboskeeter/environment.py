@@ -21,23 +21,23 @@ class Environment(object):
         """
         self.condition = experiment.experiment_conditions['condition']
         self.bounded = experiment.experiment_conditions['bounded']
-        self.plume_model = experiment.experiment_conditions['plume_model']
+        self.plume_model = experiment.experiment_conditions['plume_model'].lower()
 
-        if self.condition == 'Control' and self.plume_model != 'None':
+        if self.condition == 'Control' and self.plume_model != 'none':
             print "{} plume model selected for control condition, setting instead to no plume.".format(self.plume_model)
-            self.plume_model = 'None'
+            self.plume_model = 'none'
 
         self.windtunnel = WindTunnel(self.condition)
         self.plume = self._load_plume()
 
     def _load_plume(self):
-        if self.plume_model == "Boolean":
+        if self.plume_model == "boolean":
             plume = BooleanPlume(self)
         elif self.plume_model == "timeavg":
             plume = TimeAvgPlume(self)
-        elif self.plume_model == "None":
+        elif self.plume_model == "none":
             plume = NoPlume(self)
-        elif self.plume_model == "Unaveraged":
+        elif self.plume_model == "unaveraged":
             plume = UnaveragedPlume(self)
         else:
             raise NotImplementedError("no such plume type {}".format(self.plume_model))
@@ -59,8 +59,8 @@ class WindTunnel:
         self.heater_r = Heater("Right", self.experimental_condition)
 
     def show(self):
-        ax = plot_windtunnel(self)
-        return ax
+        fig, ax = plot_windtunnel(self)
+        return fig, ax
 
 
 class Walls:
@@ -276,11 +276,11 @@ class TimeAvgPlume(Plume):
         resolution = (100j, 25j, 25j)  # stored as complex numbers for mgrid to work properly
 
         self._raw_data = self._load_plume_data()
-        self._interpolate_data(resolution)
-        self._calc_gradient()
-        self.tree = self._calc_kdtree()
-        print """Warning: we don't know the plume bounds for the Timeavg plume, so the in_plume() method
-                always returns False"""
+        # self._interpolate_data(resolution)
+        # self._calc_gradient()
+        # self.tree = self._calc_kdtree()
+        # print """Warning: we don't know the plume bounds for the Timeavg plume, so the in_plume() method
+        #         always returns False"""
 
     def check_for_plume(self, _):
         """
@@ -442,6 +442,14 @@ class TimeAvgPlume(Plume):
 
         data = zip(self.data.x, self.data.y, self.data.z)
         return kdt(data)
+
+    def show_raw_data(self):
+        from roboskeeter.plotting.plot_environment import plot_windtunnel, plot_plume_scatter
+        fig, ax = plot_windtunnel(self.environment.windtunnel)
+        # ax.axis('off')
+        plot_plume_scatter(self._raw_data, ax)
+        fig.show()
+
 
 
 class UnaveragedPlume:
