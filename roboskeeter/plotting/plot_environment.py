@@ -143,7 +143,7 @@ def plot_plume_recordings_scatter(plume_data, ax):
     ax.scatter(plume_data.x, plume_data.y, plume_data.z, c=plume_data.avg_temp, cmap='inferno')
 
 
-def plot_plume_gradient(plume, thresh):  # TODO: plot inside windtunnel as in draw_bool_plume
+def plot_plume_gradient(plume, ax, thresh):  # TODO: plot inside windtunnel as in draw_bool_plume
     """
     Plot a quiverplot of the gradient
     Parameters
@@ -154,15 +154,13 @@ def plot_plume_gradient(plume, thresh):  # TODO: plot inside windtunnel as in dr
         (float)
         filters out plotting of gradient arrows smaller than this threshold
     """
-    fig = plt.figure()
-    ax = fig.gca(projection='3d')
 
     filtered = plume.data[plume.data.gradient_mag > thresh]
 
     ax.quiver(filtered.x, filtered.y, filtered.z, filtered.gradient_x, filtered.gradient_y, filtered.gradient_z, length=0.01)
     # ax.set_xlim3d(0, 1)
-    ax.set_ylim3d(-0.127, 0.127)
-    ax.set_zlim3d(0, 0.254)
+    # ax.set_ylim3d(-0.127, 0.127)
+    # ax.set_zlim3d(0, 0.254)
 
     plt.title("Temperature gradient of interpolated time-averaged thermocouple recordings")
     plt.xlabel("Upwind/downwind")
