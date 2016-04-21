@@ -105,7 +105,7 @@ def start_simulation(num_flights, agent_kwargs=None, experiment_conditions=None)
         experiment_conditions = {'condition': 'Left',  # {'Left', 'Right', 'Control'}
                                  'time_max': 6.,
                                  'bounded': True,
-                                 'plume_model': "None"  # "Boolean", "timeavg", "None", "Unaveraged"
+                                 'plume_model': "Timeavg"  # "Boolean", "Timeavg", "None", "Unaveraged"
                                  }
     if agent_kwargs is None:
         agent_kwargs = {'is_simulation': True,
