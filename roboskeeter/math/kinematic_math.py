@@ -51,7 +51,8 @@ class DoMath:
         try:
             self.side_ratio_score = float(left_upwind_pts) / right_upwind_pts
         except ZeroDivisionError:
-            print "\n no upwind right points found! setting side_ratio_score to 0"
+            print """\n Warning: no upwind right-side points found! This usually means you didn't run enough trajectories.
+                  To avoid a divide 0 error we're skipping the side ratio scoring and setting side_ratio_score to 0."""
             self.side_ratio_score = 0
 
     def calc_KS(self):
