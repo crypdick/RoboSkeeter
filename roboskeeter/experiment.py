@@ -2,12 +2,11 @@ __author__ = 'richard'
 """
 """
 
-import roboskeeter.math as m
 from roboskeeter.math.kinematic_math import DoMath
 # from roboskeeter.math.scoring.scoring import Scoring
-from simulator import Simulator
-from environment import Environment
-from observations import Observations
+from roboskeeter.simulator import Simulator
+from roboskeeter.environment import Environment
+from roboskeeter.observations import Observations
 from roboskeeter.plotting.my_plotter import MyPlotter as plttr
 
 
