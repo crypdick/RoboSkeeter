@@ -155,7 +155,7 @@ def plot_plume_gradient(plume, ax, thresh):  # TODO: plot inside windtunnel as i
         filters out plotting of gradient arrows smaller than this threshold
     """
 
-    filtered = plume.data[plume.data.gradient_mag > thresh]
+    filtered = plume.data[plume.data.gradient_norm > thresh]
 
     ax.quiver(filtered.x, filtered.y, filtered.z, filtered.gradient_x, filtered.gradient_y, filtered.gradient_z, length=0.01)
     # ax.set_xlim3d(0, 1)
