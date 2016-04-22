@@ -29,6 +29,7 @@ class Environment(object):
 
         self.windtunnel = WindTunnel(self.condition)
         self.plume = self._load_plume()
+        self.room_temperature = 19.0
 
     def _load_plume(self):
         if self.plume_model == "boolean":
@@ -340,17 +341,55 @@ class TimeAvgPlume(Plume):
         We are assuming that far away from the plume envelope the air will be room temperature. We are padding the
         recorded area with room temperature data points
         """
-        # TODO: pad the data extending outside of the windtunnel bounds.
-        xmin = self._raw_data.x.min()
-        xmax = self._raw_data.x.max()
-        ymin = self._raw_data.y.min()
-        ymax = self._raw_data.y.max()
-        zmin = self._raw_data.z.min()
-        zmax = self._raw_data.z.max()
+        expand_factor = .4  # expand by this much
+        y_pad = (self.right - self.left) * expand_factor
+        x_pad = (self.upwind - self.downwind) * expand_factor
+        z_pad = (self.ceiling - self.floor) * expand_factor
 
-        print "TODO: skipping padding function as it hasn't been fully implemented yet"
-        pass # TODO; implement padding
+        self.left -= y_pad
+        self.right += y_pad
+        self.floor -= z_pad
+        self.ceiling += z_pad
+        self.downwind -= x_pad
+        self.upwind += x_pad
 
+        padding_distance = 0.10  # start padding 10cm away from recorded data
+
+        data_xmin = self._raw_data.x.min() - padding_distance
+        data_xmax = self._raw_data.x.max() + padding_distance
+        data_ymin = self._raw_data.y.min() - padding_distance
+        data_ymax = self._raw_data.y.max() + padding_distance
+        data_zmin = self._raw_data.z.min() - padding_distance
+        data_zmax = self._raw_data.z.max() + padding_distance
+
+        df_list = [self.data]
+        df_list.append(self._pad_data_grid(self.downwind, data_xmin, self.left, self.right, self.floor, self.ceiling))
+        df_list.append(self._pad_data_grid(data_xmax, self.upwind, self.left, self.right, self.floor, self.ceiling))
+
+        df_list.append(self._pad_data_grid(data_xmin, data_xmax, self.left, data_ymin, self.floor, self.ceiling))
+        df_list.append(self._pad_data_grid(data_xmin, data_xmax, data_ymax, self.right, self.floor, self.ceiling))
+
+        df_list.append(self._pad_data_grid(data_xmin, data_xmax, data_ymin, data_ymax, self.floor, data_zmin))
+        df_list.append(self._pad_data_grid(data_xmin, data_xmax, data_ymin, data_ymax, data_zmax, self.ceiling))
+
+        self.data = pd.concat(df_list)
+
+    def _pad_data_grid(self, xmin, xmax, ymin, ymax, zmin, zmax, temp=19, res=0.1):
+        # left grid
+        x = np.arange(xmin, xmax, res)
+        y = np.arange(ymin, ymax, res)
+        z = np.arange(zmin, zmax, res)
+        # we save this grid b/c it helps us with the gradient func
+        xx, yy, zz = np.meshgrid(x, y, z, indexing='ij')
+        df_dict = dict()
+        df_dict['x'] = xx.ravel()  # FIXME flip here
+        df_dict['y'] = yy.ravel()
+        df_dict['z'] = zz.ravel()
+        df_dict['avg_temp'] = np.array([temp] * len(x) * len(y) * len(z))
+
+        df = pd.DataFrame(data=df_dict)
+
+        return df
 
     def _interpolate_data(self, resolution):
         # TODO: review this function
@@ -377,15 +416,17 @@ class TimeAvgPlume(Plume):
 
         # interpolate
         interp_temps = rbfi(xxi, yyi, zzi)
-        print interp_temps
         # we save this grid b/c it helps us with the gradient func
         self._grid_temps = interp_temps.reshape((len(xi), len(yi), len(zi)))
 
         # save to df
-        self.data['x'] = xxi
-        self.data['y'] = yyi
-        self.data['z'] = zzi
-        self.data['avg_temp'] = interp_temps
+        df_dict = dict()
+        df_dict['x'] = xxi
+        df_dict['y'] = yyi
+        df_dict['z'] = zzi
+        df_dict['avg_temp'] = interp_temps
+        df = pd.DataFrame(df_dict)
+        self.data = pd.concat([self.data, df])
 
     def _calc_gradient(self):
         return None # TODO: awaiting fix to gradient function: https://stackoverflow.com/questions/36781698/numpy-sample-distances-for-3d-gradient
@@ -412,7 +453,7 @@ class TimeAvgPlume(Plume):
         self.data.fillna(0, inplace=True)  # replace NaNs, infs before calculating norm
         self.data.replace([np.inf, -np.inf], 0, inplace=True)
 
-        self.data['gradient_mag'] = np.linalg.norm(self.data[['gradient_x', 'gradient_y', 'gradient_z']], axis=1)
+        self.data['gradient_norm'] = np.linalg.norm(self.data[['gradient_x', 'gradient_y', 'gradient_z']], axis=1)
 
     def _calc_kdtree(self):
         if self.condition in 'controlControlCONTROL':
@@ -427,12 +468,17 @@ class TimeAvgPlume(Plume):
         plot_plume_recordings_scatter(self._raw_data, ax)
         fig.show()
 
+    def show(self):
+        from roboskeeter.plotting.plot_environment import plot_windtunnel, plot_plume_recordings_scatter
+        fig, ax = plot_windtunnel(self.environment.windtunnel)
+        plot_plume_recordings_scatter(self.data, ax)
+        fig.show()
+
     def plot_gradient(self, thresh=0):
         from roboskeeter.plotting.plot_environment import plot_windtunnel, plot_plume_gradient
         fig, ax = plot_windtunnel(self.environment.windtunnel)
         plot_plume_gradient(self._gradient_x, ax, thresh)
         fig.show()
-
 
 
 class UnaveragedPlume:
