@@ -284,6 +284,14 @@ class TimeAvgPlume(Plume):
         print """Warning: we don't know the plume bounds for the Timeavg plume, so the in_plume() method
                 always returns False"""
 
+        print """Timeaveraged plume stats:  TODO implement sanity checks
+        raw data min temp: {}
+        raw data max temp: {}
+        interpolated min temp: {}
+        interpolated max temp: {}
+        """.format(self._raw_data.avg_temp.min(),self._raw_data.avg_temp.max(),
+                   self.data.avg_temp.min(), self.data.avg_temp.max())
+
     def check_for_plume(self, _):
         """
 
@@ -401,13 +409,14 @@ class TimeAvgPlume(Plume):
                          self._raw_data.z.values, self._raw_data.avg_temp.values
 
         # init rbf interpolator
-        epsilon = 3  # TODO: set as the average 3d euclidean distance between observations
-        rbfi = Rbf(x, y, z, temps, function='gaussian', smooth=1e-8, epsilon=epsilon)
+        epsilon = .1  # TODO: set as the average 3d euclidean distance between observations
+        smoothing = 1e-8
+        rbfi = Rbf(x, y, z, temps, function='gaussian', smooth=smoothing, epsilon=epsilon)
 
         # make positions to interpolate at
-        xi = np.linspace(0, 1, 50)  # xmin * .8
-        yi = np.linspace(-.127, .127, 15)
-        zi = np.linspace(0, .254, 15)
+        xi = np.linspace(0, 1, 100)  # xmin * .8
+        yi = np.linspace(-.127, .127, 30)
+        zi = np.linspace(0, .254, 30)
         # we save this grid b/c it helps us with the gradient func
         self._grid_x, self._grid_y, self._grid_z = np.meshgrid(xi, yi, zi, indexing='ij')
         xxi = self._grid_x.ravel()  # FIXME flip here
@@ -426,7 +435,7 @@ class TimeAvgPlume(Plume):
         df_dict['z'] = zzi
         df_dict['avg_temp'] = interp_temps
         df = pd.DataFrame(df_dict)
-        self.data = pd.concat([self.data, df])
+        self.data = df  # replace self.data with interpolated data b/c gradient func can't deal with unevenly sampled data
 
     def _calc_gradient(self):
         return None # TODO: awaiting fix to gradient function: https://stackoverflow.com/questions/36781698/numpy-sample-distances-for-3d-gradient
@@ -436,19 +445,13 @@ class TimeAvgPlume(Plume):
 
         # Solve for the spatial gradient
         gradient_x, gradient_y, gradient_z = np.gradient(self._grid_temps,
-                                                         np.diff(self._grid_x), np.diff(self._grid_y), np.diff(self._grid_z))
+                                                         np.diff(self._grid_x),
+                                                         np.diff(self._grid_y),
+                                                         np.diff(self._grid_z))
 
         self.data['gradient_x'] = gradient_x.ravel()
         self.data['gradient_y'] = gradient_y.ravel()
         self.data['gradient_z'] = gradient_z.ravel()
-
-        print """Timeaveraged plume stats:  TODO implement sanity checks
-                raw data min temp: {}
-                raw data max temp: {}
-                interpolated min temp: {}
-                interpolated max temp: {}
-                """.format(self._raw_data.avg_temp.min(),self._raw_data.avg_temp.max(),
-                           self.data.avg_temp.min(), self.data.avg_temp.max())
 
         self.data.fillna(0, inplace=True)  # replace NaNs, infs before calculating norm
         self.data.replace([np.inf, -np.inf], 0, inplace=True)
