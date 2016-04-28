@@ -7,13 +7,13 @@ from mpl_toolkits.mplot3d import Axes3D
 
 # generate observations
 left = -2.
-right = 2.
+right = 3.
 # floor = 0.
 # ceiling = 1.
 bottom = -1.
-top = 1.
+top = 2.
 
-resolution = 0.5
+resolution = 0.7
 
 temp = 19.
 
@@ -24,24 +24,35 @@ xx, yy = np.meshgrid(x, y, indexing='ij')
 df_dict = dict()
 df_dict['x'] = xx.ravel()
 df_dict['y'] = yy.ravel()
-df_dict['avg_temp'] = np.array([temp] * len(x) * len(y))  # make it the same temperature everywhere
+# df_dict['avg_temp'] = np.array([temp] * len(x) * len(y))  # make it the same temperature everywhere
 
 
 
 observations = pd.DataFrame(data=df_dict)
 # observations.loc[((observations['x'] > -.5) & (observations['x'] < 0.5) & (observations['y'] > -.2) & (observations['y'] < 0.6)), 'avg_temp'] = 50.
-observations.loc[((observations['x'] > 0) &
-                  (observations['x'] < top) &
-                  (observations['y'] > 0) &
-                  (observations['y'] < right)),
-                 'avg_temp'] = observations.loc[((observations['x'] > 0) & (observations['x'] < top) & (observations['y'] > 0) & (observations['y'] < right)), 'x'] * 50 +\
-                    observations.loc[((observations['x'] > 0) & (observations['x'] < top) & (observations['y'] > 0) & (observations['y'] < right)), 'y'] * 50
 
-tt = np.reshape(observations.avg_temp, np.shape(xx))
+# make some places hot
+
+## slant
+# observations.loc[((observations['x'] > 0) &
+#                   (observations['x'] < top) &
+#                   (observations['y'] > 0) &
+#                   (observations['y'] < right)),
+#                  'avg_temp'] = observations.loc[((observations['x'] > 0) & (observations['x'] < top) & (observations['y'] > 0) & (observations['y'] < right)), 'x'] * 50 +\
+#                     observations.loc[((observations['x'] > 0) & (observations['x'] < top) & (observations['y'] > 0) & (observations['y'] < right)), 'y'] / 50
+
+### gauss
+tt = plt.mlab.bivariate_normal(xx, yy)
+observations['avg_temp'] = np.ravel(tt)
+
+
+
+
+# tt = np.reshape(observations.avg_temp, np.shape(xx))
 
 # make interpolator
 rbfi = Rbf(observations.x.values, observations.y.values, observations.avg_temp.values,
-           function='quintic')
+           function='gaussian')
 
 # define positions to interpolate at
 xi = np.linspace(bottom/2, top/2, 10)  # xmin * .8
@@ -66,6 +77,7 @@ ax = fig.gca(projection='3d')
 # plt.scatter(xxi_flat, yyi_flat, c=interp_temps, cmap='inferno', lw=0)
 ax.plot_wireframe(xx, yy, tt)
 ax.plot_wireframe(xxi, yyi, tti, color='green')
+
 # plt.scatter(observations.x.values, observations.y.values, c=observations.avg_temp.values, marker='x')
 plt.show()
 
