@@ -281,8 +281,6 @@ class TimeAvgPlume(Plume):
         self._interpolate_data(resolution)
         self._calc_gradient()
         self.tree = self._calc_kdtree()
-        print """Warning: we don't know the plume bounds for the Timeavg plume, so the in_plume() method
-                always returns False"""
 
         print """Timeaveraged plume stats:  TODO implement sanity checks
         raw data min temp: {}
@@ -292,14 +290,20 @@ class TimeAvgPlume(Plume):
         """.format(self._raw_data.avg_temp.min(),self._raw_data.avg_temp.max(),
                    self.data.avg_temp.min(), self.data.avg_temp.max())
 
+        print """Warning: we don't know the plume bounds for the Timeavg plume, so the check_for_plume() method
+                always returns False"""
+
     def check_for_plume(self, _):
         """
+        we don't know the plume bounds for the Timeavg plume, so the check_for_plume() method
+                always returns False
 
         Returns
         -------
         in_plume
             always return False.
         """
+
         return False
 
     def get_nearest_data(self, position):
@@ -348,6 +352,8 @@ class TimeAvgPlume(Plume):
         """
         We are assuming that far away from the plume envelope the air will be room temperature. We are padding the
         recorded area with room temperature data points
+
+        Appends the padded data to the raw data
         """
         expand_factor = .4  # expand by this much
         y_pad = (self.right - self.left) * expand_factor
@@ -361,7 +367,7 @@ class TimeAvgPlume(Plume):
         self.downwind -= x_pad
         self.upwind += x_pad
 
-        padding_distance = 0.10  # start padding 10cm away from recorded data
+        padding_distance = 0.05  # start padding 10cm away from recorded data
 
         data_xmin = self._raw_data.x.min() - padding_distance
         data_xmax = self._raw_data.x.max() + padding_distance
@@ -370,7 +376,8 @@ class TimeAvgPlume(Plume):
         data_zmin = self._raw_data.z.min() - padding_distance
         data_zmax = self._raw_data.z.max() + padding_distance
 
-        df_list = [self.data]
+
+        df_list = [self.data]  # append to raw data
         df_list.append(self._pad_data_grid(self.downwind, data_xmin, self.left, self.right, self.floor, self.ceiling))
         df_list.append(self._pad_data_grid(data_xmax, self.upwind, self.left, self.right, self.floor, self.ceiling))
 
@@ -400,6 +407,16 @@ class TimeAvgPlume(Plume):
         return df
 
     def _interpolate_data(self, resolution):
+        """
+        Replace data with a higher resolution interpolation
+        Parameters
+        ----------
+        resolution
+
+        Returns
+        -------
+
+        """
         # TODO: review this function
         if self.condition in 'controlControlCONTROL':
             return None  # TODO: wtf
@@ -409,9 +426,9 @@ class TimeAvgPlume(Plume):
                          self._raw_data.z.values, self._raw_data.avg_temp.values
 
         # init rbf interpolator
-        epsilon = .1  # TODO: set as the average 3d euclidean distance between observations
-        smoothing = 1e-8
-        rbfi = Rbf(x, y, z, temps, function='gaussian', smooth=smoothing, epsilon=epsilon)
+        epsilon = .06  # TODO: set as the average 3d euclidean distance between observations
+        smoothing = .1
+        rbfi = Rbf(x, y, z, temps, function='quintic', smooth=smoothing, epsilon=epsilon)
 
         # make positions to interpolate at
         xi = np.linspace(0, 1, 100)  # xmin * .8
@@ -474,7 +491,8 @@ class TimeAvgPlume(Plume):
     def show(self):
         from roboskeeter.plotting.plot_environment import plot_windtunnel, plot_plume_recordings_scatter
         fig, ax = plot_windtunnel(self.environment.windtunnel)
-        plot_plume_recordings_scatter(self.data, ax)
+        # plot_plume_recordings_scatter(self.data, ax)
+        plot_plume_recordings_scatter(self.data[self.data.avg_temp < 0], ax)  # only plot things with really high temps
         fig.show()
 
     def plot_gradient(self, thresh=0):
