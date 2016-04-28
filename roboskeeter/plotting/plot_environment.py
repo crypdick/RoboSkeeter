@@ -140,7 +140,7 @@ def draw_trajectory(ax, trajectory, **kwargs):
 
 
 def plot_plume_recordings_scatter(plume_data, ax):
-    ax.scatter(plume_data.x, plume_data.y, plume_data.z, c=plume_data.avg_temp, cmap='inferno')
+    ax.scatter(plume_data.x, plume_data.y, plume_data.z, c=plume_data.avg_temp, cmap='inferno', lw=0)
 
 
 def plot_plume_gradient(plume, ax, thresh):  # TODO: plot inside windtunnel as in draw_bool_plume
