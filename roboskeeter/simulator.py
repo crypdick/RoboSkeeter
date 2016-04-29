@@ -71,8 +71,9 @@ class Simulator:
         try:
             if self.verbose:
                 print """Starting simulations with {} plume model and {} decision policy.
-                If you run out of patience, hit <CTL>-C to end the loop early.""".format(
-                    self.plume.plume_model, self.decision_policy)
+                If you run out of patience, press <CTL>-C to stop generating simulations and
+                cut to the chase scene.""".format(
+                self.plume.plume_model, self.decision_policy)
 
             while traj_i < n_trajectories:
                 # print updates
