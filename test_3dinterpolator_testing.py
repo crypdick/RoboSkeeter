@@ -8,8 +8,8 @@ from mpl_toolkits.mplot3d import Axes3D
 # generate observations
 left = -2.
 right = 3.
-# floor = 0.
-# ceiling = 1.
+floor = -5
+ceiling = 5
 bottom = -1.
 top = 2.
 
@@ -17,35 +17,37 @@ resolution = 0.7
 
 x = np.arange(bottom, top, resolution)
 y = np.arange(left, right, resolution)
+z = np.arange(floor, ceiling, resolution)
 
-xx, yy = np.meshgrid(x, y, indexing='ij')
+xx, yy, zz = np.meshgrid(x, y, z, indexing='ij')
 df_dict = dict()
 df_dict['x'] = xx.ravel()
 df_dict['y'] = yy.ravel()
+df_dict['z'] = zz.ravel()
 
 
 observations = pd.DataFrame(data=df_dict)
 
 
-# make some places hot
+# # make some places hot
+#
+# temp = 19.
+# observations['avg_temp'] = np.array([temp] * len(x) * len(y))  # make it the same temperature everywhere
+# # observations.loc[((observations['x'] > -.5) & (observations['x'] < 0.5) & (observations['y'] > -.2) \
+# #         & (observations['y'] < 0.6)), 'avg_temp'] = 50.
+#
+# # slant
+# observations.loc[((observations['x'] > 0) &
+#                   (observations['x'] < top) &
+#                   (observations['y'] > 0) &
+#                   (observations['y'] < right)),
+#                  'avg_temp'] = observations.loc[((observations['x'] > 0) & (observations['x'] < top) & (observations['y'] > 0) & (observations['y'] < right)), 'x'] * 50 +\
+#                     observations.loc[((observations['x'] > 0) & (observations['x'] < top) & (observations['y'] > 0) & (observations['y'] < right)), 'y'] / 50
+# tt = np.reshape(observations.avg_temp, np.shape(xx))
 
-temp = 19.
-observations['avg_temp'] = np.array([temp] * len(x) * len(y))  # make it the same temperature everywhere
-# observations.loc[((observations['x'] > -.5) & (observations['x'] < 0.5) & (observations['y'] > -.2) \
-#         & (observations['y'] < 0.6)), 'avg_temp'] = 50.
-
-# slant
-observations.loc[((observations['x'] > 0) &
-                  (observations['x'] < top) &
-                  (observations['y'] > 0) &
-                  (observations['y'] < right)),
-                 'avg_temp'] = observations.loc[((observations['x'] > 0) & (observations['x'] < top) & (observations['y'] > 0) & (observations['y'] < right)), 'x'] * 50 +\
-                    observations.loc[((observations['x'] > 0) & (observations['x'] < top) & (observations['y'] > 0) & (observations['y'] < right)), 'y'] / 50
-tt = np.reshape(observations.avg_temp, np.shape(xx))
-
-# ### gauss
-# tt = plt.mlab.bivariate_normal(xx, yy)
-# observations['avg_temp'] = np.ravel(tt)
+### gauss
+tt = plt.mlab.bivariate_normal(xx, yy, zz)
+observations['avg_temp'] = np.ravel(tt)
 
 
 
@@ -53,12 +55,13 @@ tt = np.reshape(observations.avg_temp, np.shape(xx))
 # tt = np.reshape(observations.avg_temp, np.shape(xx))
 
 # make interpolator
-rbfi = Rbf(observations.x.values, observations.y.values, observations.avg_temp.values,
+rbfi = Rbf(observations.x.values, observations.y.values, observations.z.values, observations.avg_temp.values,
            function='gaussian')
 
 # define positions to interpolate at
 xi = np.linspace(bottom/2, top/2, 10)  # xmin * .8
 yi = np.linspace(left/2, right/2, 10)
+zi = np.linspace(floor/2, ceiling/2, 10)
 xxi, yyi = np.meshgrid(xi, yi, indexing='ij')
 xxi_flat = xxi.ravel()
 yyi_flat = yyi.ravel()
