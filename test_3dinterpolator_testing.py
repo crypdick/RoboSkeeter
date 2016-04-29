@@ -1,8 +1,8 @@
 import numpy as np
 from scipy.interpolate import Rbf
 import pandas as pd
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+from mayavi import mlab
+from scipy.stats import multivariate_normal
 
 
 # generate observations
@@ -29,6 +29,16 @@ df_dict['z'] = zz.ravel()
 observations = pd.DataFrame(data=df_dict)
 
 
+xyz = np.column_stack([xx.flat, yy.flat, zz.flat])
+mu = np.array([0.0, 0.0, 0.0])
+sigma = np.array([1,1,1])
+covariance = np.diag(sigma**2)
+
+temp = multivariate_normal.pdf(xyz, mean=mu, cov=covariance)
+temp = temp.reshape(xx.shape)
+
+
+
 # # make some places hot
 #
 # temp = 19.
@@ -46,50 +56,51 @@ observations = pd.DataFrame(data=df_dict)
 # tt = np.reshape(observations.avg_temp, np.shape(xx))
 
 ### gauss
-tt = plt.mlab.bivariate_normal(xx, yy, zz)
-observations['avg_temp'] = np.ravel(tt)
+
+# observations['avg_temp'] = np.ravel(tt)
+
+
+#
+#
+# # tt = np.reshape(observations.avg_temp, np.shape(xx))
+#
+# # make interpolator
+# rbfi = Rbf(observations.x.values, observations.y.values, observations.z.values, observations.avg_temp.values,
+#            function='gaussian')
+#
+# # define positions to interpolate at
+# xi = np.linspace(bottom/2, top/2, 10)  # xmin * .8
+# yi = np.linspace(left/2, right/2, 10)
+# zi = np.linspace(floor/2, ceiling/2, 10)
+# xxi, yyi = np.meshgrid(xi, yi, indexing='ij')
+# xxi_flat = xxi.ravel()
+# yyi_flat = yyi.ravel()
+#
+# # interpolate
+# interp_temps = rbfi(xxi_flat, yyi_flat)
+# tti = interp_temps.reshape((len(xi), len(yi)))
+#
+# print """
+#         Interpolated temp stats
+#         min {}
+#         max {}
+#         avg {}
+#         """.format(interp_temps.min(), interp_temps.max(), interp_temps.mean())
+#
+
+# Plot scatter with mayavi
+figure = mlab.figure('DensityPlot', bgcolor=(1, 1, 1))
 
 
 
-
-# tt = np.reshape(observations.avg_temp, np.shape(xx))
-
-# make interpolator
-rbfi = Rbf(observations.x.values, observations.y.values, observations.z.values, observations.avg_temp.values,
-           function='gaussian')
-
-# define positions to interpolate at
-xi = np.linspace(bottom/2, top/2, 10)  # xmin * .8
-yi = np.linspace(left/2, right/2, 10)
-zi = np.linspace(floor/2, ceiling/2, 10)
-xxi, yyi = np.meshgrid(xi, yi, indexing='ij')
-xxi_flat = xxi.ravel()
-yyi_flat = yyi.ravel()
-
-# interpolate
-interp_temps = rbfi(xxi_flat, yyi_flat)
-tti = interp_temps.reshape((len(xi), len(yi)))
-
-print """
-        Interpolated temp stats
-        min {}
-        max {}
-        avg {}
-        """.format(interp_temps.min(), interp_temps.max(), interp_temps.mean())
-
-fig = plt.figure()
-ax = fig.gca(projection='3d')
-# plt.scatter(xxi_flat, yyi_flat, c=interp_temps, cmap='inferno', lw=0)
-ax.plot_wireframe(xx, yy, tt)
-ax.plot_wireframe(xxi, yyi, tti, color='green')
-
-# plt.scatter(observations.x.values, observations.y.values, c=observations.avg_temp.values, marker='x')
-plt.show()
+# grid = mlab.pipeline.scalar_field(xi, yi, zi, density)
+# min = density.min()
+# max=density.max()
+# s = mlab.pipeline.volume(grid, vmin=min, vmax=max,) #min + .5*(max-min))
 
 
-# # save to df
-# df_dict = dict()
-# df_dict['x'] = xxi_flat
-# df_dict['y'] = yyi_flat
-# df_dict['avg_temp'] = interp_temps
-# df = pd.DataFrame(df_dict)
+src = mlab.pipeline.scalar_field(temp)
+vol = mlab.pipeline.volume(src, vmin=temp.min(), vmax=temp.max()*.7)
+
+mlab.axes()
+mlab.show()
