@@ -1,9 +1,11 @@
+import matplotlib
+matplotlib.use('Qt4Agg')
+matplotlib.interactive(True)
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle, Ellipse, Circle
 # register Axes3D class with matplotlib by importing Axes3D
 from mpl_toolkits.mplot3d import art3d
 import numpy as np
-
 
 def set_windtunnel_bounds(ax):
     ax.set_xlim(0, 1)
