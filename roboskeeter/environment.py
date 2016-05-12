@@ -268,18 +268,17 @@ class TimeAvgPlume(Plume):
         self.floor = self.walls.floor
 
         # initialize vals
-        self.data = pd.DataFrame()
-        self._grid_x, self._grid_y, self.grid_z, self._interpolated_temps = None, None, None, None
         self._gradient_x, self._gradient_y, self._gradient_z = None, None, None
 
         # number of x, y, z positions to interpolate the data. numbers chosen to reflect the spacing at which the
         # measurements were taken to avoid gradient values of 0 due to undersampling
-        resolution = (100j, 25j, 25j)  # stored as complex numbers for mgrid to work properly
+        # resolution = (100j, 25j, 25j)  # stored as complex numbers for mgrid to work properly
+        interpolation_resolution = .001  # 1 cm
 
         self._raw_data = self._load_plume_data()
-        self._pad_plume_data()
-        self._interpolate_data(resolution)
-        self._calc_gradient()
+        padded_data = self._pad_plume_data()
+        self.data, gridded_data = self._interpolate_data(padded_data, interpolation_resolution)
+        self._calc_gradient(*gridded_data)
         self.tree = self._calc_kdtree()
 
         print """Timeaveraged plume stats:  TODO implement sanity checks
@@ -306,7 +305,7 @@ class TimeAvgPlume(Plume):
 
         return False
 
-    def get_nearest_data(self, position):
+    def get_nearest_prediction(self, position):
         """
         Given [x,y,z] return nearest temperature data
         Parameters
@@ -321,16 +320,30 @@ class TimeAvgPlume(Plume):
 
         _, index = self.tree.query(position)
         data = self.data.iloc[index]
-        return data
-
-    def get_nearest_temp(self, position):
-        data = self.get_nearest_data(position)
-        temp = data['avg_temp']
-        return temp
+        return data['avg_temp']
 
     def get_nearest_gradient(self, position):
-        data = self.get_nearest_data(position)
+        data = self.get_nearest_prediction(position)
         return np.array([data['gradient_x'], data['gradient_y'], data['gradient_z']])
+
+    def show_raw_data(self):
+        from roboskeeter.plotting.plot_environment import plot_windtunnel, plot_plume_recordings_scatter
+        fig, ax = plot_windtunnel(self.environment.windtunnel)
+        plot_plume_recordings_scatter(self._raw_data, ax)
+        fig.show()
+
+    def show(self):
+        from roboskeeter.plotting.plot_environment import plot_windtunnel, plot_plume_recordings_scatter
+        fig, ax = plot_windtunnel(self.environment.windtunnel)
+        # plot_plume_recordings_scatter(self.data, ax)
+        plot_plume_recordings_scatter(self.data[self.data.avg_temp < 0], ax)  # only plot things with really high temps
+        fig.show()
+
+    def plot_gradient(self, thresh=0):
+        from roboskeeter.plotting.plot_environment import plot_windtunnel, plot_plume_gradient
+        fig, ax = plot_windtunnel(self.environment.windtunnel)
+        plot_plume_gradient(self._gradient_x, ax, thresh)
+        fig.show()
 
     def _load_plume_data(self):
         col_names = ['x', 'y', 'z', 'avg_temp']
@@ -355,19 +368,20 @@ class TimeAvgPlume(Plume):
 
         Appends the padded data to the raw data
         """
+        # expand the windtunnel bounds to synthesize data outside the windtunnel bounds
         expand_factor = .4  # expand by this much
         y_pad = (self.right - self.left) * expand_factor
         x_pad = (self.upwind - self.downwind) * expand_factor
         z_pad = (self.ceiling - self.floor) * expand_factor
 
-        self.left -= y_pad
-        self.right += y_pad
-        self.floor -= z_pad
-        self.ceiling += z_pad
-        self.downwind -= x_pad
-        self.upwind += x_pad
+        left = self.left - y_pad
+        right = self.right + y_pad
+        floor =  self.floor - z_pad
+        ceiling = self.ceiling + z_pad
+        downwind = self.downwind - x_pad
+        upwind = self.upwind + x_pad
 
-        padding_distance = 0.05  # start padding 10cm away from recorded data
+        padding_distance = 0.03  # start padding 3 cm away from recorded data
 
         data_xmin = self._raw_data.x.min() - padding_distance
         data_xmax = self._raw_data.x.max() + padding_distance
@@ -377,19 +391,20 @@ class TimeAvgPlume(Plume):
         data_zmax = self._raw_data.z.max() + padding_distance
 
 
-        df_list = [self.data]  # append to raw data
-        df_list.append(self._pad_data_grid(self.downwind, data_xmin, self.left, self.right, self.floor, self.ceiling))
-        df_list.append(self._pad_data_grid(data_xmax, self.upwind, self.left, self.right, self.floor, self.ceiling))
+        df_list = [self._raw_data]  # append to raw data
+        # make grids of room temp data to fill the volume surrounding the place we took measurements
+        df_list.append(self._make_uniform_data_grid(downwind, data_xmin, left, right, floor, ceiling))
+        df_list.append(self._make_uniform_data_grid(data_xmax, upwind, left, right, floor, ceiling))
 
-        df_list.append(self._pad_data_grid(data_xmin, data_xmax, self.left, data_ymin, self.floor, self.ceiling))
-        df_list.append(self._pad_data_grid(data_xmin, data_xmax, data_ymax, self.right, self.floor, self.ceiling))
+        df_list.append(self._make_uniform_data_grid(data_xmin, data_xmax, left, data_ymin, floor, ceiling))
+        df_list.append(self._make_uniform_data_grid(data_xmin, data_xmax, data_ymax, right, floor, ceiling))
 
-        df_list.append(self._pad_data_grid(data_xmin, data_xmax, data_ymin, data_ymax, self.floor, data_zmin))
-        df_list.append(self._pad_data_grid(data_xmin, data_xmax, data_ymin, data_ymax, data_zmax, self.ceiling))
+        df_list.append(self._make_uniform_data_grid(data_xmin, data_xmax, data_ymin, data_ymax, floor, data_zmin))
+        df_list.append(self._make_uniform_data_grid(data_xmin, data_xmax, data_ymin, data_ymax, data_zmax, ceiling))
 
-        self.data = pd.concat(df_list)
+        return pd.concat(df_list)
 
-    def _pad_data_grid(self, xmin, xmax, ymin, ymax, zmin, zmax, temp=19, res=0.1):
+    def _make_uniform_data_grid(self, xmin, xmax, ymin, ymax, zmin, zmax, temp=19, res=0.1):
         # left grid
         x = np.arange(xmin, xmax, res)
         y = np.arange(ymin, ymax, res)
@@ -406,7 +421,7 @@ class TimeAvgPlume(Plume):
 
         return df
 
-    def _interpolate_data(self, resolution):
+    def _interpolate_data(self, data, resolution):
         """
         Replace data with a higher resolution interpolation
         Parameters
@@ -422,8 +437,7 @@ class TimeAvgPlume(Plume):
             return None  # TODO: wtf
 
         # useful aliases
-        x, y, z, temps = self._raw_data.x.values, self._raw_data.y.values,\
-                         self._raw_data.z.values, self._raw_data.avg_temp.values
+        x, y, z, temps = data.x.values, data.y.values, data.z.values, data.avg_temp.values
 
         # init rbf interpolator
         epsilon = .06  # TODO: set as the average 3d euclidean distance between observations
@@ -431,40 +445,41 @@ class TimeAvgPlume(Plume):
         rbfi = Rbf(x, y, z, temps, function='quintic', smooth=smoothing, epsilon=epsilon)
 
         # make positions to interpolate at
-        xi = np.linspace(0, 1, 100)  # xmin * .8
-        yi = np.linspace(-.127, .127, 30)
-        zi = np.linspace(0, .254, 30)
+        xi = np.arange(self.downwind, self.upwind, resolution)
+        yi = np.arange(self.left, self.right, resolution)
+        zi = np.arange(self.floor, self.ceiling, resolution)
         # we save this grid b/c it helps us with the gradient func
-        self._grid_x, self._grid_y, self._grid_z = np.meshgrid(xi, yi, zi, indexing='ij')
-        xxi = self._grid_x.ravel()  # FIXME flip here
-        yyi = self._grid_y.ravel()
-        zzi = self._grid_z.ravel()
+        grid_x, grid_y, grid_z = np.meshgrid(xi, yi, zi, indexing='ij')
+        grid_x_flat = grid_x.ravel()  # FIXME flip here
+        grid_y_flat = grid_y.ravel()
+        grid_z_flat = grid_z.ravel()
 
         # interpolate
-        interp_temps = rbfi(xxi, yyi, zzi)
+        interp_temps = rbfi(grid_x_flat, grid_y_flat, grid_z_flat)
         # we save this grid b/c it helps us with the gradient func
-        self._grid_temps = interp_temps.reshape((len(xi), len(yi), len(zi)))
+        grid_temps = interp_temps.reshape((len(xi), len(yi), len(zi)))
 
         # save to df
         df_dict = dict()
-        df_dict['x'] = xxi
-        df_dict['y'] = yyi
-        df_dict['z'] = zzi
+        df_dict['x'] = grid_x_flat
+        df_dict['y'] = grid_y_flat
+        df_dict['z'] = grid_z_flat
         df_dict['avg_temp'] = interp_temps
-        df = pd.DataFrame(df_dict)
-        self.data = df  # replace self.data with interpolated data b/c gradient func can't deal with unevenly sampled data
+        interpolated_temps = pd.DataFrame(df_dict)
 
-    def _calc_gradient(self):
+        return interpolated_temps, (grid_x, grid_y, grid_z, grid_temps)
+
+    def _calc_gradient(self, grid_x, grid_y, grid_z, grid_temps):
         return None # TODO: awaiting fix to gradient function: https://stackoverflow.com/questions/36781698/numpy-sample-distances-for-3d-gradient
         # TODO: review this gradient function
         if self.condition in 'controlControlCONTROL':
             return None
 
         # Solve for the spatial gradient
-        gradient_x, gradient_y, gradient_z = np.gradient(self._grid_temps,
-                                                         np.diff(self._grid_x),
-                                                         np.diff(self._grid_y),
-                                                         np.diff(self._grid_z))
+        gradient_x, gradient_y, gradient_z = np.gradient(grid_temps,
+                                                         np.diff(grid_x),
+                                                         np.diff(grid_y),
+                                                         np.diff(grid_z))
 
         self.data['gradient_x'] = gradient_x.ravel()
         self.data['gradient_y'] = gradient_y.ravel()
@@ -481,25 +496,6 @@ class TimeAvgPlume(Plume):
 
         data = zip(self.data.x, self.data.y, self.data.z)
         return kdt(data)
-
-    def show_raw_data(self):
-        from roboskeeter.plotting.plot_environment import plot_windtunnel, plot_plume_recordings_scatter
-        fig, ax = plot_windtunnel(self.environment.windtunnel)
-        plot_plume_recordings_scatter(self._raw_data, ax)
-        fig.show()
-
-    def show(self):
-        from roboskeeter.plotting.plot_environment import plot_windtunnel, plot_plume_recordings_scatter
-        fig, ax = plot_windtunnel(self.environment.windtunnel)
-        # plot_plume_recordings_scatter(self.data, ax)
-        plot_plume_recordings_scatter(self.data[self.data.avg_temp < 0], ax)  # only plot things with really high temps
-        fig.show()
-
-    def plot_gradient(self, thresh=0):
-        from roboskeeter.plotting.plot_environment import plot_windtunnel, plot_plume_gradient
-        fig, ax = plot_windtunnel(self.environment.windtunnel)
-        plot_plume_gradient(self._gradient_x, ax, thresh)
-        fig.show()
 
 
 class UnaveragedPlume:
