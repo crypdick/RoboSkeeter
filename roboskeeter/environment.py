@@ -476,13 +476,8 @@ class TimeAvgPlume(Plume):
             return None
 
         # Solve for the spatial
-        gradient_x, gradient_y, gradient_z = np.gradient(self.grid_temp[:,:,:-1],  # throw out last col to make all matrices same shape
-                                                         np.diff(self.grid_x),
-                                                         np.diff(self.grid_y),
-                                                         np.diff(self.grid_z))
-
-
-        print len(self.data), len(gradient_x.ravel()), len(self.data) - len(gradient_x.ravel()),
+        distances = [np.diff(self.grid_x, axis=0)[0][0][0], np.diff(self.grid_y, axis=1)[0][0][0], np.diff(self.grid_z, axis=2)[0][0][0]]
+        gradient_x, gradient_y, gradient_z = np.gradient(self.grid_temp, *distances)
 
         self.data['gradient_x'] = gradient_x.ravel()
         self.data['gradient_y'] = gradient_y.ravel()
