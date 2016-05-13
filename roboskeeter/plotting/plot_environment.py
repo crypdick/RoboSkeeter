@@ -141,8 +141,9 @@ def draw_trajectory(ax, trajectory, **kwargs):
         ax.scatter(inside_pts.position_x, inside_pts.position_y, inside_pts.position_z, c='r')
 
 
-def plot_plume_recordings_scatter(plume_data, ax):
-    ax.scatter(plume_data.x, plume_data.y, plume_data.z, c=plume_data.avg_temp, cmap='inferno', lw=0)
+def plot_plume_recordings_scatter(plume_data, ax, temp_thresh = 0.):
+    plume_data = plume_data[plume_data.avg_temp > temp_thresh]
+    ax.scatter(plume_data.x, plume_data.y, plume_data.z, c=plume_data.avg_temp, cmap='Oranges', lw=0)
 
 
 def plot_plume_gradient(plume, ax, thresh):  # TODO: plot inside windtunnel as in draw_bool_plume
