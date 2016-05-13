@@ -324,10 +324,10 @@ class TimeAvgPlume(Plume):
         data = self.get_nearest_prediction(position)
         return np.array([data['gradient_x'], data['gradient_y'], data['gradient_z']])
 
-    def show_raw_data(self):
+    def show_raw_data(self, temp_thresh=0):
         from roboskeeter.plotting.plot_environment import plot_windtunnel, plot_plume_recordings_scatter
         fig, ax = plot_windtunnel(self.environment.windtunnel)
-        plot_plume_recordings_scatter(self._raw_data, ax)
+        plot_plume_recordings_scatter(self._raw_data, ax, temp_thresh=temp_thresh)
         fig.show()
 
     def show(self):
@@ -336,6 +336,10 @@ class TimeAvgPlume(Plume):
         # plot_plume_recordings_scatter(self.data, ax)
         pemavi.plot_plume_recordings_volume(self.bounds, self.grid_x, self.grid_y, self.grid_z, self.grid_temp)
         # fig.show()
+
+    def show_gradient(self):
+        import roboskeeter.plotting.plot_environment_mayavi as pemavi
+        pemavi.plot_plume_3d_quiver(self.gradient_x, self.gradient_y, self.gradient_z)
 
 
     def plot_gradient(self, thresh=0):
