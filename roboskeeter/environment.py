@@ -275,12 +275,20 @@ class TimeAvgPlume(Plume):
 
         print "loading raw plume data"
         self._raw_data = self._load_plume_data()
-        print "filling area surrounding measured area with room temperature data"
-        self.padded_data = self._pad_plume_data()
-        print "starting interpolation"
-        self.data, self.grid_x, self.grid_y, self.grid_z, self.grid_temp = self._interpolate_data(self.padded_data, interpolation_resolution)
-        print "calculating gradient"
-        self.gradient_x, self.gradient_y, self.gradient_z = self._calc_gradient()
+        data_list = self._load_plume_data()
+
+        if len(data_list) == 3:
+            print "loading precomputed padded and interpolated data"
+            self._raw_data, self.padded_data, self.data = data_list
+        elif len(data_list) == 1:
+            self._raw_data = data_list[0]
+            print "filling area surrounding measured area with room temperature data"
+            self.padded_data = self._pad_plume_data()
+            print "starting interpolation"
+            self.data, self.grid_x, self.grid_y, self.grid_z, self.grid_temp = self._interpolate_data(self.padded_data, interpolation_resolution)
+            print "calculating gradient"
+            self.gradient_x, self.gradient_y, self.gradient_z = self._calc_gradient()
+
         print "calculating kd-tree"
         self.tree = self._calc_kdtree()
 
@@ -323,7 +331,7 @@ class TimeAvgPlume(Plume):
 
         _, index = self.tree.query(position)
         data = self.data.iloc[index]
-        return data['avg_temp']
+        return data
 
     def get_nearest_gradient(self, position):
         data = self.get_nearest_prediction(position)
@@ -360,20 +368,58 @@ class TimeAvgPlume(Plume):
         # fig.show()
 
     def _load_plume_data(self):
+        """
+
+        Returns
+        -------
+        list of dataframes
+
+        if precomputed files exist, will return [raw data, padded data, interpolated data]
+        else, will return [raw data]
+        """
         col_names = ['x', 'y', 'z', 'avg_temp']
 
         if self.condition in 'controlControlCONTROL':
             return None
         elif self.condition in 'lLleftLeft':
             plume_dir = get_directory('THERMOCOUPLE_TIMEAVG_LEFT_CSV')
-            df = pd.read_csv(plume_dir, names=col_names)
+            raw = pd.read_csv(plume_dir, names=col_names)
+            raw = raw.dropna()
+
+            # check for pre-computed padded files
+            try:
+                padded_f = get_directory('THERMOCOUPLE_TIMEAVG_LEFT_PADDED_CSV')
+                padded_df = pd.read_csv(padded_f)
+
+                interpolated_f = get_directory('THERMOCOUPLE_TIMEAVG_LEFT_INTERPOLATED_CSV')
+                interpolated_df = pd.read_csv(interpolated_f)
+
+                return [raw, padded_df, interpolated_df]
+            except IOError:  # files doesn't exist
+                print "did not find pre-computed padded temps"
+                return [raw]
+
         elif self.condition in 'rightRight':
             plume_dir = get_directory('THERMOCOUPLE_TIMEAVG_RIGHT_CSV')
-            df = pd.read_csv(plume_dir, names=col_names)
+            raw = pd.read_csv(plume_dir, names=col_names)
+            raw = raw.dropna()
+
+            # check for pre-computed padded files
+            try:
+                padded_f = get_directory('THERMOCOUPLE_TIMEAVG_RIGHT_PADDED_CSV')
+                padded_df = pd.read_csv(padded_f)
+
+                interpolated_f = get_directory('THERMOCOUPLE_TIMEAVG_RIGHT_INTERPOLATED_CSV')
+                interpolated_df = pd.read_csv(interpolated_f)
+
+                return [raw, padded_df, interpolated_df]
+            except IOError:  # files doesn't exist
+                print "did not find pre-computed padded temps"
+                return [raw]
+
         else:
             raise Exception('problem with loading plume data {}'.format(self.condition))
 
-        return df.dropna()
 
     def _pad_plume_data(self):
         """

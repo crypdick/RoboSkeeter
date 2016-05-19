@@ -144,7 +144,11 @@ def get_directory(selection=None):
     THERMOCOUPLE_RAW_LEFT_CSV = os.path.join(RAW, 'left', 'raw_left.csv')
     THERMOCOUPLE_RAW_RIGHT_CSV = os.path.join(RAW, 'right', 'raw_right.csv')
     THERMOCOUPLE_TIMEAVG_LEFT_CSV = os.path.join(TIMEAVG, 'left', 'timeavg_left.csv')
+    THERMOCOUPLE_TIMEAVG_LEFT_PADDED_CSV = os.path.join(TIMEAVG, 'left', 'timeavg_left_padded.csv')
+    THERMOCOUPLE_TIMEAVG_LEFT_INTERPOLATED_CSV = os.path.join(TIMEAVG, 'left', 'timeavg_left_interpolated.csv')
     THERMOCOUPLE_TIMEAVG_RIGHT_CSV = os.path.join(TIMEAVG, 'right', 'timeavg_right.csv')
+    THERMOCOUPLE_TIMEAVG_RIGHT_PADDED_CSV = os.path.join(TIMEAVG, 'right', 'timeavg_right_padded.csv')
+    THERMOCOUPLE_TIMEAVG_RIGHT_INTERPOLATED_CSV = os.path.join(TIMEAVG, 'right', 'timeavg_right_interpolated.csv')
     BOOL_LEFT_CSV = os.path.join(BOOL, 'left', 'left_plume_bounds.csv')
     BOOL_RIGHT_CSV = os.path.join(BOOL, 'right', 'right_plume_bounds.csv')
 
@@ -160,11 +164,15 @@ def get_directory(selection=None):
         'EXP_TRAJECTORIES_LEFT': EXP_TRAJECTORIES_LEFT,
         'EXP_TRAJECTORIES_RIGHT': EXP_TRAJECTORIES_RIGHT,
         'THERMOCOUPLE_RAW_LEFT': THERMOCOUPLE_RAW_LEFT_CSV,
+        'THERMOCOUPLE_TIMEAVG_LEFT_PADDED_CSV': THERMOCOUPLE_TIMEAVG_LEFT_PADDED_CSV,
+        'THERMOCOUPLE_TIMEAVG_LEFT_INTERPOLATED_CSV': THERMOCOUPLE_TIMEAVG_LEFT_INTERPOLATED_CSV,
         'THERMOCOUPLE_RAW_RIGHT': THERMOCOUPLE_RAW_RIGHT_CSV,
+        'THERMOCOUPLE_TIMEAVG_RIGHT_PADDED_CSV': THERMOCOUPLE_TIMEAVG_RIGHT_PADDED_CSV,
+        'THERMOCOUPLE_TIMEAVG_RIGHT_INTERPOLATED_CSV': THERMOCOUPLE_TIMEAVG_RIGHT_INTERPOLATED_CSV,
         'THERMOCOUPLE_TIMEAVG_LEFT_CSV': THERMOCOUPLE_TIMEAVG_LEFT_CSV,
         'THERMOCOUPLE_TIMEAVG_RIGHT_CSV': THERMOCOUPLE_TIMEAVG_RIGHT_CSV,
         'BOOL_LEFT_CSV': BOOL_LEFT_CSV,
-        'BOOL_RIGHT_CSV': BOOL_RIGHT_CSV,
+        'BOOL_RIGHT_CSV': BOOL_RIGHT_CSV
     }
 
     if selection is None:
