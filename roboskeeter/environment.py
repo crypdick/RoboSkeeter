@@ -324,10 +324,16 @@ class TimeAvgPlume(Plume):
         data = self.get_nearest_prediction(position)
         return np.array([data['gradient_x'], data['gradient_y'], data['gradient_z']])
 
-    def show_raw_data(self, temp_thresh=0):
+    def show_scatter_data(self, selection = 'raw', temp_thresh=0):
+        if selection == 'raw':
+            data = self._raw_data
+        elif selection == 'padded':
+            data = self.padded_data
+        elif selection == 'interpolated':
+            data = self.data
         from roboskeeter.plotting.plot_environment import plot_windtunnel, plot_plume_recordings_scatter
         fig, ax = plot_windtunnel(self.environment.windtunnel)
-        plot_plume_recordings_scatter(self._raw_data, ax, temp_thresh=temp_thresh)
+        plot_plume_recordings_scatter(data, ax, temp_thresh)
         fig.show()
 
     def show(self):
@@ -339,7 +345,7 @@ class TimeAvgPlume(Plume):
 
     def show_gradient(self):
         import roboskeeter.plotting.plot_environment_mayavi as pemavi
-        pemavi.plot_plume_3d_quiver(self.gradient_x, self.gradient_y, self.gradient_z)
+        pemavi.plot_plume_3d_quiver(self.gradient_x, self.gradient_y, self.gradient_z, self.bounds)
 
 
     def plot_gradient(self, thresh=0):
@@ -372,7 +378,7 @@ class TimeAvgPlume(Plume):
         Appends the padded data to the raw data
         """
         # expand the windtunnel bounds to synthesize data outside the windtunnel bounds
-        expand_factor = .4  # expand by this much
+        expand_factor = .05  # expand by this much
         y_pad = (self.right - self.left) * expand_factor
         x_pad = (self.upwind - self.downwind) * expand_factor
         z_pad = (self.ceiling - self.floor) * expand_factor
@@ -407,7 +413,8 @@ class TimeAvgPlume(Plume):
 
         return pd.concat(df_list)
 
-    def _make_uniform_data_grid(self, xmin, xmax, ymin, ymax, zmin, zmax, temp=19, res=0.1):
+    def _make_uniform_data_grid(self, xmin, xmax, ymin, ymax, zmin, zmax, temp=19, res=0.02):
+        # res is resolution in meters
         # left grid
         x = np.arange(xmin, xmax, res)
         y = np.arange(ymin, ymax, res)
@@ -446,7 +453,7 @@ class TimeAvgPlume(Plume):
         # init rbf interpolator
         epsilon = .06  # TODO: set as the average 3d euclidean distance between observations
         smoothing = .1
-        rbfi = Rbf(x, y, z, temps, function='gaussian', smooth=smoothing, epsilon=epsilon)
+        rbfi = Rbf(x, y, z, temps, function='quintic', smooth=smoothing, epsilon=epsilon)
 
         # make positions to interpolate at
         xi = np.linspace(self.downwind, self.upwind, 50)  # TODO fix resolution
