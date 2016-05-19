@@ -273,10 +273,15 @@ class TimeAvgPlume(Plume):
         # resolution = (100j, 25j, 25j)  # stored as complex numbers for mgrid to work properly
         interpolation_resolution = .05  # 1 cm
 
+        print "loading raw plume data"
         self._raw_data = self._load_plume_data()
+        print "filling area surrounding measured area with room temperature data"
         self.padded_data = self._pad_plume_data()
+        print "starting interpolation"
         self.data, self.grid_x, self.grid_y, self.grid_z, self.grid_temp = self._interpolate_data(self.padded_data, interpolation_resolution)
+        print "calculating gradient"
         self.gradient_x, self.gradient_y, self.gradient_z = self._calc_gradient()
+        print "calculating kd-tree"
         self.tree = self._calc_kdtree()
 
         print """Timeaveraged plume stats:  TODO implement sanity checks
@@ -351,8 +356,8 @@ class TimeAvgPlume(Plume):
     def plot_gradient(self, thresh=0):
         from roboskeeter.plotting.plot_environment import plot_windtunnel, plot_plume_gradient
         fig, ax = plot_windtunnel(self.environment.windtunnel)
-        plot_plume_gradient(self._gradient_x, ax, thresh)  # FIXME use all gradients
-        fig.show()
+        plot_plume_gradient(self, ax, thresh)
+        # fig.show()
 
     def _load_plume_data(self):
         col_names = ['x', 'y', 'z', 'avg_temp']
