@@ -7,7 +7,7 @@ from roboskeeter.math.kinematic_math import DoMath
 from roboskeeter.simulator import Simulator
 from roboskeeter.environment import Environment
 from roboskeeter.observations import Observations
-from roboskeeter.plotting.my_plotter import MyPlotter as plttr
+from roboskeeter.plotting.my_plotter import MyPlotter
 
 
 class Experiment(object):
@@ -54,7 +54,7 @@ class Experiment(object):
                 self.observations = self.agent.fly(n_trajectories=n)
         else:
             self.observations.experiment_data_to_DF(experimental_condition=self.experiment_conditions['condition'])
-            print "\nDone loading files. Iterating through flights and presenting plume, making hypothetical "
+            print "\nDone loading files. Iterating through flights and presenting plume, making hypothetical decisions"
             n_rows = len(self.observations.kinematics)
             import numpy as np
             in_plume = np.zeros(n_rows, dtype=bool)
@@ -71,10 +71,10 @@ class Experiment(object):
             self.observations.kinematics['decision'] = decision
 
         # assign alias
-        self.plt = plttr(self)  # takes self, extracts metadata for files and titles, etc
+        self.plt = MyPlotter(self)  # takes self, extracts metadata for files and titles, etc
 
         # run analysis
-        dm = DoMath(self)
+        dm = DoMath(self)  # updates kinematics, etc.
         self.observations, self.percent_time_in_plume, self.side_ratio_score = dm.observations, dm.percent_time_in_plume, dm.side_ratio_score
 
     # def calc_score(self):  # TODO uncomment scoring block
@@ -101,7 +101,7 @@ def start_simulation(num_flights, agent_kwargs=None, experiment_conditions=None)
     experiment object
     """
     if experiment_conditions is None:
-        experiment_conditions = {'condition': 'Left',  # {'Left', 'Right', 'Control'}
+        experiment_conditions = {'condition': 'Right',  # {'Left', 'Right', 'Control'}
                                  'time_max': 6.,
                                  'bounded': True,
                                  'plume_model': "Timeavg"  # "Boolean", "Timeavg", "None", "Unaveraged"
@@ -114,7 +114,7 @@ def start_simulation(num_flights, agent_kwargs=None, experiment_conditions=None)
                         'collision_type': 'part_elastic',  # 'elastic', 'part_elastic'
                         'restitution_coeff': 0.1,  # 0.8
                         'stimulus_memory_n_timesteps': 1,
-                        'decision_policy': 'ignore',  # 'surge', 'cast', 'castsurge', 'gradient', 'ignore'
+                        'decision_policy': 'gradient',  # 'surge', 'cast', 'castsurge', 'gradient', 'ignore'
                         'initial_position_selection': 'downwind_high',
                         'verbose': True
                         }
@@ -173,3 +173,4 @@ if __name__ is '__main__':
     kinematics = experiment.observations.kinematics
     windtunnel = experiment.environment.windtunnel
     plume = experiment.environment.plume
+    plotter = experiment.plt
