@@ -138,13 +138,15 @@ def get_directory(selection=None):
     EXP_TRAJECTORIES_RIGHT = os.path.join(EXPERIMENTAL_TRAJECTORIES, 'right')
 
     PLUME_PATH = os.path.join(EXPERIMENTS_PATH, 'plume_data')
-    THERMOCOUPLE = os.path.join(PLUME_PATH, 'thermocouple')
-    THERMOCOUPLE_RAW_LEFT = os.path.join(THERMOCOUPLE, 'raw_left')
-    THERMOCOUPLE_RAW_RIGHT = os.path.join(THERMOCOUPLE, 'raw_right')
-    THERMOCOUPLE_TIMEAVG_LEFT_CSV = os.path.join(THERMOCOUPLE, 'timeavg', 'left', 'timeavg_left.csv')
-    THERMOCOUPLE_TIMEAVG_RIGHT_CSV = os.path.join(THERMOCOUPLE, 'timeavg', 'right', 'timeavg_right.csv')
-    BOOL_LEFT_CSV = os.path.join(PLUME_PATH, 'boolean', 'left', 'left_plume_bounds.csv')
-    BOOL_RIGHT_CSV = os.path.join(PLUME_PATH, 'boolean', 'right', 'right_plume_bounds.csv')
+    RAW = os.path.join(PLUME_PATH, 'raw')
+    TIMEAVG = os.path.join(PLUME_PATH, 'timeavg')
+    BOOL = os.path.join(PLUME_PATH, 'boolean')
+    THERMOCOUPLE_RAW_LEFT_CSV = os.path.join(RAW, 'left', 'raw_left.csv')
+    THERMOCOUPLE_RAW_RIGHT_CSV = os.path.join(RAW, 'right', 'raw_right.csv')
+    THERMOCOUPLE_TIMEAVG_LEFT_CSV = os.path.join(TIMEAVG, 'left', 'timeavg_left.csv')
+    THERMOCOUPLE_TIMEAVG_RIGHT_CSV = os.path.join(TIMEAVG, 'right', 'timeavg_right.csv')
+    BOOL_LEFT_CSV = os.path.join(BOOL, 'left', 'left_plume_bounds.csv')
+    BOOL_RIGHT_CSV = os.path.join(BOOL, 'right', 'right_plume_bounds.csv')
 
 
 
@@ -157,9 +159,8 @@ def get_directory(selection=None):
         'EXP_TRAJECTORIES_CONTROL': EXP_TRAJECTORIES_CONTROL,
         'EXP_TRAJECTORIES_LEFT': EXP_TRAJECTORIES_LEFT,
         'EXP_TRAJECTORIES_RIGHT': EXP_TRAJECTORIES_RIGHT,
-        'THERMOCOUPLE': THERMOCOUPLE,
-        'THERMOCOUPLE_RAW_LEFT': THERMOCOUPLE_RAW_LEFT,
-        'THERMOCOUPLE_RAW_RIGHT': THERMOCOUPLE_RAW_RIGHT,
+        'THERMOCOUPLE_RAW_LEFT': THERMOCOUPLE_RAW_LEFT_CSV,
+        'THERMOCOUPLE_RAW_RIGHT': THERMOCOUPLE_RAW_RIGHT_CSV,
         'THERMOCOUPLE_TIMEAVG_LEFT_CSV': THERMOCOUPLE_TIMEAVG_LEFT_CSV,
         'THERMOCOUPLE_TIMEAVG_RIGHT_CSV': THERMOCOUPLE_TIMEAVG_RIGHT_CSV,
         'BOOL_LEFT_CSV': BOOL_LEFT_CSV,
