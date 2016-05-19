@@ -141,12 +141,12 @@ def draw_trajectory(ax, trajectory, **kwargs):
         ax.scatter(inside_pts.position_x, inside_pts.position_y, inside_pts.position_z, c='r')
 
 
-def plot_plume_recordings_scatter(plume_data, ax, temp_thresh = 0.):
+def plot_plume_recordings_scatter(plume_data, ax, temp_thresh):
     plume_data = plume_data[plume_data.avg_temp > temp_thresh]
     ax.scatter(plume_data.x, plume_data.y, plume_data.z, c=plume_data.avg_temp, cmap='Oranges', lw=0)
 
 
-def plot_plume_gradient(plume, ax, thresh):  # TODO: plot inside windtunnel as in draw_bool_plume
+def plot_plume_gradient(plume, ax, thresh, skipevery = 6):  # TODO: plot inside windtunnel as in draw_bool_plume
     """
     Plot a quiverplot of the gradient
     Parameters
@@ -159,6 +159,8 @@ def plot_plume_gradient(plume, ax, thresh):  # TODO: plot inside windtunnel as i
     """
 
     filtered = plume.data[plume.data.gradient_norm > thresh]
+    if skipevery != 0:
+        filtered = filtered[::skipevery]
 
     ax.quiver(filtered.x, filtered.y, filtered.z, filtered.gradient_x, filtered.gradient_y, filtered.gradient_z, length=0.01)
     # ax.set_xlim3d(0, 1)
