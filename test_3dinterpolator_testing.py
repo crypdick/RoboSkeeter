@@ -57,17 +57,19 @@ interp_bounds = [interp_downwind, interp_upwind, interp_left, interp_right, inte
 
 interp_res = ground_tr_resolution/2
 
-xi = np.arange(interp_downwind, interp_upwind, interp_res)
-yi = np.arange(interp_left, interp_right, interp_res)
-zi = np.arange(interp_floor, interp_ceiling, interp_res)
-xxi, yyi, zzi = np.meshgrid(xi, yi, zi, indexing='ij')
-xxi_flat = xxi.ravel()
-yyi_flat = yyi.ravel()
-zzi_flat = zzi.ravel()
+# xi = np.arange(interp_downwind, interp_upwind, interp_res)
+# yi = np.arange(interp_left, interp_right, interp_res)
+# zi = np.arange(interp_floor, interp_ceiling, interp_res)
+# xxi, yyi, zzi = np.meshgrid(xi, yi, zi, indexing='ij')
+# xxi_flat = xxi.ravel()
+# yyi_flat = yyi.ravel()
+# zzi_flat = zzi.ravel()
 
 # interpolate
-interp_temps = rbfi(xxi_flat, yyi_flat, zzi_flat)
-tti = interp_temps.reshape((len(xi), len(yi), len(zi)))
+# interp_temps = rbfi(xxi_flat, yyi_flat, zzi_flat)
+interp_temps = rbfi(observations.x.values, observations.y.values, observations.z.values)
+# tti = interp_temps.reshape((len(xi), len(yi), len(zi)))
+tti = interp_temps.reshape(xx.shape)
 
 # print """
 #         Interpolated temp stats
