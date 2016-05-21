@@ -46,7 +46,7 @@ FIG_FORMAT = ".png"
 
 def get_agent_info(experiment, plot_type = ''):  # TODO: take plot type
     if experiment.is_simulation:
-        titleappend = " cond{condition}|damp{damp}|rF{rf}|stmF{stim}|N{total_trajectories}|m{m}".format(
+        titleappend = "{condition} condition|damp={damp}|rF={rf}|stmF={stim}|N={total_trajectories}|mass={m}".format(
             condition=experiment.agent.experiment.condition,
             damp=experiment.agent.damping_coeff,
             rf=experiment.agent.randomF_strength,
