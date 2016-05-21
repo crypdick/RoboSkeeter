@@ -59,10 +59,10 @@ class Observations(object):
         """
         if index is None:
             df = self.kinematics
-        if type(index) == int:
+        if type(index) == int or type(index) == np.int64:
             df = self.kinematics.loc[self.kinematics.trajectory_num == int(index)]
         else:
-            raise ValueError("index must be int or None")
+            raise ValueError("index must be int or None, found type {} instead".format(type(index)))
 
         return df
 
