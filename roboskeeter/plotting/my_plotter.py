@@ -1,4 +1,5 @@
 from roboskeeter.plotting import plot_kinematics, animate_trajectory_callable, plot_environment
+import numpy as np
 
 
 class MyPlotter:
@@ -15,6 +16,10 @@ class MyPlotter:
         None
         """
         self.experiment = experiment
+
+        trajectory_type_dict = {True: 'Simulation', False: 'Experiment'}
+        self.trajectory_type = trajectory_type_dict[self.experiment.is_simulation]
+
         self.observations = self.experiment.observations
         if trim_endzones:
             self.observations = self.observations.kinematics.loc[(self.observations.kinematics['position_x'] > 0.25) & \
@@ -42,7 +47,7 @@ class MyPlotter:
     def plot_start_postiions(self):
         plot_kinematics.plot_starting_points(self)
 
-    def animate_trajectory(self, trajectory_i=None, highlight_inside_plume=False, show_plume=False):
+    def animate_trajectory(self, trajectory_i=None, highlight_inside_plume=False, show_plume=False, save =False, view='top'):
         if trajectory_i is None:
             trajectory_i = self.observations.get_trajectory_numbers().min()
 
@@ -52,13 +57,13 @@ class MyPlotter:
         p = selected_trajectory_df[['position_x', 'position_y', 'position_z']].values
         x_t = p.reshape((1, len(p), 3))  # make into correct shape for Jake vdp's code: 1 x T x 3
 
-        fig, ax = plot_environment.plot_windtunnel(self.experiment.windtunnel)
+        fig, ax = plot_environment.plot_windtunnel(self.experiment.environment.windtunnel)
         ax.axis('off')
 
         if show_plume:
             plot_environment.draw_bool_plume(self.experiment.plume, ax=ax)
 
-        anim = animate_trajectory_callable.Windtunnel_animation(fig, ax, x_t)
+        anim = animate_trajectory_callable.Windtunnel_animation(fig, ax, x_t, save, view)
         anim.start_animation()
 
     def plot_position_heatmaps(self):
@@ -116,9 +121,9 @@ class MyPlotter:
 
     def plot_3Dtrajectory(self, trajectory_i=None, highlight_inside_plume=False, show_plume=False):
         if trajectory_i is None:
-            trajectory_i = self.observations.kinematics.get_trajectory_numbers().min()
+            trajectory_i = self.observations.get_trajectory_numbers().min()
 
-        fig, ax = plot_environment.plot_windtunnel(self.experiment.windtunnel)
+        fig, ax = plot_environment.plot_windtunnel(self.experiment.environment.windtunnel)
         if show_plume:
             plot_environment.plot_windtunnel.draw_plume(self.experiment.plume, ax=ax)
 
@@ -127,16 +132,16 @@ class MyPlotter:
             ax.axis('off')
             for i in index:
                 selected_trajectory_df = self.observations.get_trajectory_slice(i)
-                plot_kwargs = {'title': "{type} trajectory #{N}".format(type=self.is_experiment, N=i),
+                plot_kwargs = {'title': "{type} trajectory #{N}".format(type=self.trajectory_type, N=i),
                                'highlight_inside_plume': highlight_inside_plume}
                 plot_environment.draw_trajectory(ax, selected_trajectory_df)
         elif type(trajectory_i) is np.int64 or int:
             selected_trajectory_df = self.observations.get_trajectory_slice(trajectory_i)  # get data
-            plot_kwargs = {'title': "{type} trajectory #{N}".format(type=self.is_experiment, N=trajectory_i),
+            plot_kwargs = {'title': "{type} trajectory #{N}".format(type=self.trajectory_type, N=trajectory_i),
                            'highlight_inside_plume': highlight_inside_plume}
             plot_environment.draw_trajectory(ax, selected_trajectory_df, **plot_kwargs)
         else:
-            raise TypeError("wrong kind of trajectory_i {}".format(type(trajectory_i)))
+            raise TypeError("wrong kind of trajectory_index {}".format(type(trajectory_i)))
 
     def plot_sliced_hists(self):
         """Plot histograms from 0.25 < x < 0.95, as well as that same space
