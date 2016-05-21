@@ -20,16 +20,23 @@ from matplotlib import animation
 
 
 class Windtunnel_animation(object):
-    def __init__(self, fig, ax, x_t,
+    def __init__(self, fig, ax, x_t, save, view = 'top',
                  metadata={"trajectory type": "simulation",
-                           "trajectory index": 0},
-                 save=False):
-        print "hello1"
+                           "trajectory index": 0}):
+        # print "hello1"
         self.fig = fig
         self.ax = ax
         self.x_t = x_t
         self.save = save
         self.metadata = metadata
+
+        self.view = view
+        if self.view == 'top':
+            self.view_params = [90, 0]
+        elif self.view == 'diag':
+            self.view_params = [30, .3]
+        else:
+            self.view_params = [0, .5]
 
         # # choose a different color for each trajectory
         # colors = plt.cm.jet(np.linspace(0, 1, N_trajectories))
@@ -42,11 +49,11 @@ class Windtunnel_animation(object):
 
 
     def start_animation(self):
-        print "hello start"
+        # print "hello start"
         animation_args = (self.fig, self.ax, self.x_t, self.lines, self.pts)
 
         # instantiate the animator.
-        print self.x_t
+        # print self.x_t
 
         anim = animation.FuncAnimation(self.fig, self.ani_update, init_func=self.ani_init,
                                        # FIXME http://matplotlib.org/examples/animation/simple_3danim.html
@@ -58,13 +65,13 @@ class Windtunnel_animation(object):
         writer = Writer_class(fps=100, metadata=dict(artist='Richard'), bitrate=10) #birate 1000 is good
 
         if self.save:
-            anim.save('{}-{}.mp4'.format(self.metadata["trajectory type"], self.metadata["trajectory index"]), writer=writer)
+            anim.save('{}-{}-{}.mp4'.format(self.metadata["trajectory type"], self.view, self.metadata["trajectory index"]), writer=writer)
 
         plt.show()
 
 
     def ani_init(self):
-        print "initiating"
+        # print "initiating"
         for line, pt in zip(self.lines, self.pts):
             # init lines
             line.set_data([], [])
@@ -81,11 +88,11 @@ class Windtunnel_animation(object):
     def ani_update(self, i):
         # we'll step two time-steps per frame.  This leads to nice results.  # TODO: test with 1
         i = (2 * i) % self.x_t.shape[1]
-        print "i", i
+        # print "i", i
 
         for line, pt, xi in zip(self.lines, self.pts, self.x_t):
             x, y, z = xi[:i].T
-            print xi.shape
+            # print xi.shape
             # update lines
             line.set_data(x, y)
             # for line collection use
@@ -97,7 +104,7 @@ class Windtunnel_animation(object):
             pt.set_3d_properties(z[-1:])
 
         # ax.view_init(30, 0.3 * i)
-        self.ax.view_init(90, 0 * i)
+        self.ax.view_init(self.view_params[0], self.view_params[1] * i)
         self.fig.canvas.draw()
 
         return self.lines + self.pts
