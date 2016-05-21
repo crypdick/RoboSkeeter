@@ -164,7 +164,7 @@ def load_experiment(experiment_conditions=None):
 
 
 if __name__ is '__main__':
-    experiment = start_simulation(1, None, None)
+    experiment = start_simulation(5, None, None)
     # experiment = load_experiment()
 
     print "\nAliases updated."
