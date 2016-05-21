@@ -166,6 +166,14 @@ class Plume(object):
         self.walls = environment.windtunnel.walls
         self.plume_model = environment.plume_model
 
+        self.left = self.walls.left
+        self.right = self.walls.right
+        self.upwind = self.walls.upwind
+        self.downwind = self.walls.downwind
+        self.ceiling = self.walls.ceiling
+        self.floor = self.walls.floor
+        self.bounds = [self.downwind, self.upwind, self.left, self.right, self.floor, self.ceiling]
+
 
 class NoPlume(Plume):
     def __init__(self, environment):
@@ -259,15 +267,6 @@ class TimeAvgPlume(Plume):
     def __init__(self, environment):
         super(self.__class__, self).__init__(environment)
 
-        # useful references
-        self.left = self.walls.left
-        self.right = self.walls.right
-        self.upwind = self.walls.upwind
-        self.downwind = self.walls.downwind
-        self.ceiling = self.walls.ceiling
-        self.floor = self.walls.floor
-        self.bounds = [self.downwind, self.upwind, self.left, self.right, self.floor, self.ceiling]
-
         # number of x, y, z positions to interpolate the data. numbers chosen to reflect the spacing at which the
         # measurements were taken to avoid gradient values of 0 due to undersampling
         # resolution = (100j, 25j, 25j)  # stored as complex numbers for mgrid to work properly
@@ -355,6 +354,7 @@ class TimeAvgPlume(Plume):
         # plot_plume_recordings_scatter(self.data, ax)
         pemavi.plot_plume_recordings_volume(self.bounds, self.grid_x, self.grid_y, self.grid_z, self.grid_temp)
         # fig.show()
+
 
     def show_gradient(self):
         import roboskeeter.plotting.plot_environment_mayavi as pemavi
@@ -503,8 +503,9 @@ class TimeAvgPlume(Plume):
 
         # init rbf interpolator
         epsilon = .06  # TODO: set as the average 3d euclidean distance between observations
-        smoothing = .1
+        smoothing = .05
         rbfi = Rbf(x, y, z, temps, function='quintic', smooth=smoothing, epsilon=epsilon)
+        # rbfi = Rbf(x, y, z, temps, function='quintic')
 
         # make positions to interpolate at
         xi = np.linspace(self.downwind, self.upwind, 50)  # TODO fix resolution
@@ -532,13 +533,17 @@ class TimeAvgPlume(Plume):
         return interpolated_temps, grid_x, grid_y, grid_z, grid_temps
 
     def _calc_gradient(self):
-        # return None # TODO: awaiting fix to gradient function: https://stackoverflow.com/questions/36781698/numpy-sample-distances-for-3d-gradient
+        # impossible to do gradient with uneven samples: https://stackoverflow.com/questions/36781698/numpy-sample-distances-for-3d-gradient
+        # so doing instead on regular grid
         # TODO: review this gradient function
         if self.condition in 'controlControlCONTROL':
             return None
 
+        # grid_x, grid_y, grid_z = np.meshgrid(xi, yi, zi, indexing='ij')
+        #grid_temps = interp_temps.reshape((len(xi), len(yi), len(zi)))
+
         # Solve for the spatial
-        distances = [np.diff(self.grid_x, axis=0)[0][0][0], np.diff(self.grid_y, axis=1)[0][0][0], np.diff(self.grid_z, axis=2)[0][0][0]]
+        distances = [np.diff(self.data.x.unique())[0], np.diff(self.data.y.unique())[0], np.diff(self.data.z.unique())[0]]
         gradient_x, gradient_y, gradient_z = np.gradient(self.grid_temp, *distances)
 
         self.data['gradient_x'] = gradient_x.ravel()
