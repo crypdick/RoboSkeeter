@@ -140,6 +140,8 @@ def draw_trajectory(ax, trajectory, **kwargs):
         inside_pts = trajectory.loc[trajectory['inPlume'] == True]
         ax.scatter(inside_pts.position_x, inside_pts.position_y, inside_pts.position_z, c='r')
 
+    plt.show()
+
 
 def plot_plume_recordings_scatter(plume_data, ax, temp_thresh):
     plume_data = plume_data[plume_data.avg_temp > temp_thresh]
