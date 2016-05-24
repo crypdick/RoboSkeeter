@@ -337,12 +337,7 @@ class TimeAvgPlume(Plume):
         return np.array([data['gradient_x'], data['gradient_y'], data['gradient_z']])
 
     def show_scatter_data(self, selection = 'raw', temp_thresh=0):
-        if selection == 'raw':
-            data = self._raw_data
-        elif selection == 'padded':
-            data = self.padded_data
-        elif selection == 'interpolated':
-            data = self.data
+        data = self._select_data(selection)
         from roboskeeter.plotting.plot_environment import plot_windtunnel, plot_plume_recordings_scatter
         fig, ax = plot_windtunnel(self.environment.windtunnel)
         plot_plume_recordings_scatter(data, ax, temp_thresh)
@@ -366,6 +361,20 @@ class TimeAvgPlume(Plume):
         fig, ax = plot_windtunnel(self.environment.windtunnel)
         plot_plume_gradient(self, ax, thresh)
         # fig.show()
+
+    def calc_euclidean_distance_neighbords(self, selection='interpolated'):
+        data = self._select_data(selection)
+        kdtree = self._calc_kdtree(selection)
+
+        coords = data[['x', 'y', 'z']]
+
+        dist_neighbors = np.zeros(len(coords))
+        for i in range(len(coords)):
+            coord = coords.iloc[i]
+            dists, _ = kdtree.query(coord, k=2, p=2)  # euclidean dist, select 2 nearest neighbords
+            dist_neighbors[i] = dists[-1]  # select second entry
+
+        return dist_neighbors.mean()
 
     def _load_plume_data(self):
         """
@@ -501,19 +510,23 @@ class TimeAvgPlume(Plume):
         # useful aliases
         x, y, z, temps = data.x.values, data.y.values, data.z.values, data.avg_temp.values
 
+        # calculate average 3D euclidean distance b/w observations
+        avg_distance = self.calc_euclidean_distance_neighbords(selection = 'padded')
+
+
         # init rbf interpolator
-        epsilon = .06  # TODO: set as the average 3d euclidean distance between observations
-        smoothing = .05
-        rbfi = Rbf(x, y, z, temps, function='quintic', smooth=smoothing, epsilon=epsilon)
+        smoothing = .02
+        rbfi = Rbf(x, y, z, temps, function='quintic', smooth=smoothing, epsilon=avg_distance)
         # rbfi = Rbf(x, y, z, temps, function='quintic')
 
         # make positions to interpolate at
-        xi = np.linspace(self.downwind, self.upwind, 50)  # TODO fix resolution
+        # TODO: run this on a computer with lots of memory and save CSV so you don't run into memory errors (200, 60, 60)
+        xi = np.linspace(self.downwind, self.upwind, 50)  # todo: fix resolution
         yi = np.linspace(self.left, self.right, 15)
         zi = np.linspace(self.floor, self.ceiling, 15)
         # we save this grid b/c it helps us with the gradient func
         grid_x, grid_y, grid_z = np.meshgrid(xi, yi, zi, indexing='ij')
-        grid_x_flat = grid_x.ravel()  # FIXME flip here
+        grid_x_flat = grid_x.ravel()
         grid_y_flat = grid_y.ravel()
         grid_z_flat = grid_z.ravel()
 
@@ -557,12 +570,26 @@ class TimeAvgPlume(Plume):
 
         return gradient_x, gradient_y, gradient_z
 
-    def _calc_kdtree(self):
+    def _calc_kdtree(self, selection = 'interpolated'):
         if self.condition in 'controlControlCONTROL':
             return None
 
-        data = zip(self.data.x, self.data.y, self.data.z)
-        return kdt(data)
+        data = self._select_data(selection)
+
+        zdata = zip(data.x, data.y, data.z)
+        return kdt(zdata)
+
+    def _select_data(self, selection):
+        if selection == 'raw':
+            data = self._raw_data
+        elif selection == 'padded':
+            data = self.padded_data
+        elif selection == 'interpolated':
+            data = self. data
+        else:
+            raise ValueError
+
+        return data
 
 
 class UnaveragedPlume:
