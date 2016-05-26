@@ -5,7 +5,7 @@ from datetime import datetime
 
 from scipy.optimize import minimize_scalar
 
-from roboskeeter.experiment import start_simulation
+from roboskeeter.experiments import start_simulation
 from roboskeeter.scripts import load_mosquito_kde_data_dicts
 
 

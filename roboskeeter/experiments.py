@@ -139,7 +139,7 @@ def load_experiment(experiment_conditions=None):
     """
     if experiment_conditions is None:  # load defaults
         experiment_conditions = {'condition': 'Control',  # {'Left', 'Right', 'Control'}
-                                 'plume_model': "Boolean",  # "Boolean" "None, "Timeavg", "Unaveraged"
+                                 'plume_model': "None",  # "Boolean" "None, "Timeavg", "Unaveraged"
                                  'time_max': "N/A (experiment)",
                                  'bounded': True,
                                  }
@@ -164,8 +164,8 @@ def load_experiment(experiment_conditions=None):
 
 
 if __name__ is '__main__':
-    experiment = start_simulation(5, None, None)
-    # experiment = load_experiment()
+    # experiment = start_simulation(5, None, None)
+    experiment = load_experiment()
 
     print "\nAliases updated."
     # useful aliases

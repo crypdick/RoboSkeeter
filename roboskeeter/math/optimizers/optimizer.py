@@ -6,7 +6,7 @@ from datetime import datetime
 import numpy as np
 from scipy.optimize import minimize_scalar
 
-import roboskeeter.experiment
+import roboskeeter.experiments
 from roboskeeter.scripts import load_mosquito_kde_data_dicts
 
 
@@ -48,7 +48,7 @@ def fly_wrapper(GUESS, *args):
                     'verbose': False
                     }
 
-    simulation, trajectory_s, windtunnel, plume, agent = roboskeeter.experiment.start_simulation(agent_kwargs, experiment_kwargs)
+    simulation, trajectory_s, windtunnel, plume, agent = roboskeeter.experiments.start_simulation(agent_kwargs, experiment_kwargs)
 
     combined_score, score_components, _ = trajectory_s.calc_score(ref_ensemble=(EXP_BINS, EXP_VALS))
 
@@ -115,7 +115,7 @@ def main(x_0=None):
     global BEST_GUESS
     BEST_GUESS = None
 
-    OPTIM_ALGORITHM = 'SLSQP'  # for multiple vars,
+    OPTIM_ALGORITHM = 'SLSQP'  # for multiple vars
     PLOTTER = False
     # ACF_THRESH = 0.5
     GUESS_PARAMS = "[resitution]"  #, F_WIND_SCALE]"  # [5e-6, 4.12405e-6, 5e-7]

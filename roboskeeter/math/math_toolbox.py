@@ -152,12 +152,7 @@ def is_turning():
             #         V['turning'][tsi] = 0"""
 
 
-def calculate_1Dkde(vector, bandwidth=0.5):
-    """
-
-    :param vector: a 1D vector
-    :return: kde object
-    """
+def calculate_1Dkde(vector, bandwidth=0.5):  # TODO: how to determine bandwidth
     kernel = 'gaussian'
     vector = vector[:, np.newaxis]
 
