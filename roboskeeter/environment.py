@@ -183,6 +183,10 @@ class NoPlume(Plume):
         # always return false
         return False
 
+    def get_nearest_gradient(self):
+        """if trying to use gradient ascent decision policy with No Plume, return no gradient"""
+        return np.array([0., 0., 0.])
+
 
 class BooleanPlume(Plume):
     """Are you in the plume Y/N"""
@@ -283,6 +287,7 @@ class TimeAvgPlume(Plume):
             self._raw_data = data_list[0]
             print "filling area surrounding measured area with room temperature data"
             self.padded_data = self._pad_plume_data()
+            print "padded data shape", self.padded_data.shape
             print "starting interpolation"
             self.data, self.grid_x, self.grid_y, self.grid_z, self.grid_temp = self._interpolate_data(self.padded_data, interpolation_resolution)
             print "calculating gradient"
@@ -460,6 +465,7 @@ class TimeAvgPlume(Plume):
         data_zmax = self._raw_data.z.max() + padding_distance
 
 
+
         df_list = [self._raw_data]  # append to raw data
         # make grids of room temp data to fill the volume surrounding the place we took measurements
         df_list.append(self._make_uniform_data_grid(downwind, data_xmin, left, right, floor, ceiling))
@@ -473,7 +479,7 @@ class TimeAvgPlume(Plume):
 
         return pd.concat(df_list)
 
-    def _make_uniform_data_grid(self, xmin, xmax, ymin, ymax, zmin, zmax, temp=19, res=0.02):
+    def _make_uniform_data_grid(self, xmin, xmax, ymin, ymax, zmin, zmax, temp=19, res=0.1):  # FIXME increase res
         # res is resolution in meters
         # left grid
         x = np.arange(xmin, xmax, res)
@@ -482,7 +488,7 @@ class TimeAvgPlume(Plume):
         # we save this grid b/c it helps us with the gradient func
         xx, yy, zz = np.meshgrid(x, y, z, indexing='ij')
         df_dict = dict()
-        df_dict['x'] = xx.ravel()  # FIXME flip here
+        df_dict['x'] = xx.ravel()
         df_dict['y'] = yy.ravel()
         df_dict['z'] = zz.ravel()
         df_dict['avg_temp'] = np.array([temp] * len(x) * len(y) * len(z))
@@ -515,15 +521,20 @@ class TimeAvgPlume(Plume):
 
 
         # init rbf interpolator
-        smoothing = .02
+        """smoothing was determined by testing various numbers and looking at the minimum and maximum of the resulting plumes
+        if I put values too far from this, the minimum and maximum temperature start to become extremely unnaturalistic.
+        """
+        smoothing = 2e-5
         rbfi = Rbf(x, y, z, temps, function='quintic', smooth=smoothing, epsilon=avg_distance)
-        # rbfi = Rbf(x, y, z, temps, function='quintic')
 
         # make positions to interpolate at
         # TODO: run this on a computer with lots of memory and save CSV so you don't run into memory errors (200, 60, 60)
         xi = np.linspace(self.downwind, self.upwind, 50)  # todo: fix resolution
         yi = np.linspace(self.left, self.right, 15)
         zi = np.linspace(self.floor, self.ceiling, 15)
+        # xi = np.linspace(self.downwind, self.upwind, 25)  # todo: fix resolution
+        # yi = np.linspace(self.left, self.right, 7)
+        # zi = np.linspace(self.floor, self.ceiling, 7)
         # we save this grid b/c it helps us with the gradient func
         grid_x, grid_y, grid_z = np.meshgrid(xi, yi, zi, indexing='ij')
         grid_x_flat = grid_x.ravel()
