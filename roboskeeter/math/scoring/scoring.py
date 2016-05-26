@@ -1,7 +1,7 @@
 __author__ = 'richard'
 
 import numpy as np
-from scipy.stats import entropy
+from scipy.stats import entropy, ks_2samp
 from roboskeeter.math.math_toolbox import calculate_1Dkde, evaluate_kde
 
 
@@ -11,7 +11,18 @@ class Scoring():
     def __init__(self,
                  target_experiment,
                  reference_experiment=None,
-                 scoring_kwargs={'kinematics_list' : ['velocities', 'curviture'], 'dimensions': ['x', 'y', 'z']}):
+                 scoring_kwargs={'kinematics_list' : ['velocities', 'curviture'], 'dimensions': ['x', 'y', 'z']},
+                 score_weights={'velocity_x': 1,
+                                'velocity_y': 1,
+                                'velocity_z': 1,
+                                'acceleration_x': 0,
+                                'acceleration_y': 0,
+                                'acceleration_z': 0,
+                                'position_x': 0,
+                                'position_y': 0,
+                                'position_z': 0,
+                                'curvature': 3}
+                 ):
         if reference_experiment is None:
             raise NotImplementedError
         else:
