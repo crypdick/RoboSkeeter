@@ -3,7 +3,7 @@ __author__ = 'richard'
 """
 
 from roboskeeter.math.kinematic_math import DoMath
-# from roboskeeter.math.scoring.scoring import Scoring
+from roboskeeter.math.scoring.scoring import Scoring
 from roboskeeter.simulator import Simulator
 from roboskeeter.environment import Environment
 from roboskeeter.observations import Observations
@@ -77,11 +77,11 @@ class Experiment(object):
         dm = DoMath(self)  # updates kinematics, etc.
         self.observations, self.percent_time_in_plume, self.side_ratio_score = dm.observations, dm.percent_time_in_plume, dm.side_ratio_score
 
-    # def calc_score(self):  # TODO uncomment scoring block
-    #     if self.is_scored == False:
-    #         S = Scoring()
-    #         self.score = S.score(self.observations)
-    #         self.is_scored = True
+    def calc_score(self):  # TODO uncomment scoring block
+        if self.is_scored == False:
+            S = Scoring()
+            self.score = S.score(self.observations)
+            self.is_scored = True
 
 
 def start_simulation(num_flights, agent_kwargs=None, experiment_conditions=None):
@@ -104,7 +104,7 @@ def start_simulation(num_flights, agent_kwargs=None, experiment_conditions=None)
         experiment_conditions = {'condition': 'Right',  # {'Left', 'Right', 'Control'}
                                  'time_max': 6.,
                                  'bounded': True,
-                                 'plume_model': "Timeavg"  # "Boolean", "Timeavg", "None", "Unaveraged"
+                                 'plume_model': "None"  # "Boolean", "Timeavg", "None", "Unaveraged"
                                  }
     if agent_kwargs is None:
         agent_kwargs = {'is_simulation': True,
