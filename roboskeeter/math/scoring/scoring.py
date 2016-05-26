@@ -3,7 +3,7 @@ __author__ = 'richard'
 import numpy as np
 from scipy.stats import entropy
 # from scipy.stats import gaussian_kde as kde
-from kinematic_math.math_toolbox import calculate_1Dkde, evaluate_kde
+from roboskeeter.math.math_toolbox import calculate_1Dkde, evaluate_kde
 
 
 
