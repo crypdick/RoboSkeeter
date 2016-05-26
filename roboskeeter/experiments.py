@@ -32,7 +32,7 @@ class Experiment(object):
         self.is_scored = False  # toggle to let analysis functions know whether it has been scored
         self.percent_time_in_plume = None
         self.side_ratio_score = None
-        self.score = None
+        self.score, self.score_components = None, None
 
     def run(self, n=None):
         """
@@ -79,9 +79,12 @@ class Experiment(object):
 
     def calc_score(self):  # TODO uncomment scoring block
         if self.is_scored == False:
-            S = Scoring()
-            self.score = S.score(self.observations)
+            S = Scoring(self)
+            score, score_components = S.score, S.score_components
             self.is_scored = True
+            return score, score_components
+        else:
+            pass
 
 
 def start_simulation(num_flights, agent_kwargs=None, experiment_conditions=None):
@@ -138,7 +141,7 @@ def load_experiment(experiment_conditions=None):
     experiment class
     """
     if experiment_conditions is None:  # load defaults
-        experiment_conditions = {'condition': 'Control',  # {'Left', 'Right', 'Control'}
+        experiment_conditions = {'condition': 'Right',  # {'Left', 'Right', 'Control'}
                                  'plume_model': "None",  # "Boolean" "None, "Timeavg", "Unaveraged"
                                  'time_max': "N/A (experiment)",
                                  'bounded': True,
@@ -164,8 +167,8 @@ def load_experiment(experiment_conditions=None):
 
 
 if __name__ is '__main__':
-    # experiment = start_simulation(5, None, None)
-    experiment = load_experiment()
+    experiment = start_simulation(5, None, None)
+    # experiment = load_experiment()
 
     print "\nAliases updated."
     # useful aliases

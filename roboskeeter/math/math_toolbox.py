@@ -100,7 +100,7 @@ def calculate_curvature(ensemble):
     acceleration_vec = np.vstack((ensemble.acceleration_x, ensemble.acceleration_y, ensemble.acceleration_z))
 
     numerator = np.linalg.norm( np.cross(velocity_vec.T, acceleration_vec.T), axis=1)
-    denominator = np.linalg.norm(acceleration_vec, axis=0)** 3
+    denominator = np.linalg.norm(acceleration_vec, axis=0)**3
 
     curvature = numerator/denominator
 
