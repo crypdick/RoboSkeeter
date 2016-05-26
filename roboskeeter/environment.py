@@ -183,7 +183,7 @@ class NoPlume(Plume):
         # always return false
         return False
 
-    def get_nearest_gradient(self):
+    def get_nearest_gradient(self, _):
         """if trying to use gradient ascent decision policy with No Plume, return no gradient"""
         return np.array([0., 0., 0.])
 
