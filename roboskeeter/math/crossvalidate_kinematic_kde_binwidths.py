@@ -14,8 +14,8 @@ import time
 n_cross_validations = 2  # minimum 2
 
 # the kinematics we want to score
-kinematics_list = ['velocity_x', 'velocity_y', 'velocity_z', 'curvature', 'position_x', 'position_y', 'position_z', 'acceleration_x', 'acceleration_y', 'acceleration_z']
-# kinematics_list = ['velocity_x']
+# kinematics_list = ['velocity_x', 'velocity_y', 'velocity_z', 'curvature', 'position_x', 'position_y', 'position_z', 'acceleration_x', 'acceleration_y', 'acceleration_z']
+kinematics_list = ['curvature', 'velocity_y']
 
 control_conditions = {'condition': 'Control',  # {'Left', 'Right', 'Control'}
                          'plume_model': "None",  # "Boolean" "None, "Timeavg", "Unaveraged"
@@ -35,8 +35,8 @@ R_conditions = {'condition': 'Right',  # {'Left', 'Right', 'Control'}
                          'bounded': True,
                          }
 
-# conditions = [control_conditions, L_conditions, R_conditions]
-conditions = [control_conditions]
+conditions = [control_conditions, L_conditions, R_conditions]
+# conditions = [control_conditions]
 
 for condition in conditions:
     experiment = experiments.load_experiment(condition)
@@ -51,11 +51,11 @@ for condition in conditions:
     for kinematic in kinematics_list:
         x = kinematics_dict[kinematic]
 
-        print "gridsearch started for {} - condition = ".format(kinematic, condition)
+        print "gridsearch started for {} - condition = {}".format(kinematic, condition['condition'])
         start = time.clock()
         grid = GridSearchCV(KernelDensity(),
-                            {'bandwidth': np.linspace(0.02, .2, 10)},
-                            # {'bandwidth': np.linspace(0.02, .1, 10)},
+                            # {'bandwidth': np.linspace(0.02, .2, 10)},
+                            {'bandwidth': np.linspace(0.01, .1, 4)},
                             cv=n_cross_validations)
         grid.fit(x[:, None])
         end = time.clock()
@@ -64,3 +64,13 @@ for condition in conditions:
 
 
 
+# x_grid = np.linspace(-5, 5, 50)
+# kde_skl = KernelDensity(bandwidth=0.02)
+# kde_skl.fit(x[:, np.newaxis])
+# log_pdf = kde_skl.score_samples(x_grid[:, np.newaxis])
+# pdf = np.exp(log_pdf)
+#
+# import matplotlib.pyplot as plt
+# fig, ax = plt.subplots()
+# ax.plot(x_grid, pdf, color='blue', alpha=0.5, lw=3)
+# plt.show()
