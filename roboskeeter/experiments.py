@@ -8,6 +8,7 @@ from roboskeeter.simulator import Simulator
 from roboskeeter.environment import Environment
 from roboskeeter.observations import Observations
 from roboskeeter.plotting.my_plotter import MyPlotter
+import numpy as np
 
 
 class Experiment(object):
@@ -26,6 +27,7 @@ class Experiment(object):
 
         self.observations = Observations()
         self.agent = Simulator(self, agent_kwargs)
+        self.optimizing = agent_kwargs['optimizing']  # toggle flag if optimizing to skip some unneccessary computations
 
         # these get mapped to the correct funcs after run() is ran
         self.plt = None
@@ -56,7 +58,6 @@ class Experiment(object):
             self.observations.experiment_data_to_DF(experimental_condition=self.experiment_conditions['condition'])
             print "\nDone loading files. Iterating through flights and presenting plume, making hypothetical decisions"
             n_rows = len(self.observations.kinematics)
-            import numpy as np
             in_plume = np.zeros(n_rows, dtype=bool)
             plume_signal = np.array([None] * n_rows)
             decision = np.array([None] * n_rows)
@@ -74,6 +75,7 @@ class Experiment(object):
         self.plt = MyPlotter(self)  # takes self, extracts metadata for files and titles, etc
 
         # run analysis
+
         dm = DoMath(self)  # updates kinematics, etc.
         self.observations, self.percent_time_in_plume, self.side_ratio_score = dm.observations, dm.percent_time_in_plume, dm.side_ratio_score
 
@@ -129,12 +131,14 @@ def start_simulation(num_flights, agent_kwargs=None, experiment_conditions=None)
                         'stimulus_memory_n_timesteps': 1,
                         'decision_policy': 'gradient',  # 'surge', 'cast', 'castsurge', 'gradient', 'ignore'
                         'initial_position_selection': 'downwind_high',
-                        'verbose': True
+                        'verbose': True,
+                        'optimizing': False
                         }
 
     experiment = Experiment(agent_kwargs, experiment_conditions)
     experiment.run(n=num_flights)
-    print "\nDone running simulation."
+    if agent_kwargs['verbose'] is True:
+        print "\nDone running simulation."
 
     return experiment
 
@@ -166,7 +170,8 @@ def load_experiment(experiment_conditions=None):
                     'stimulus_memory_n_timesteps': "UNKNOWN",
                     'decision_policy': "surge",  # 'surge', 'cast', 'castsurge', 'gradient', 'ignore'
                     'initial_position_selection': "UNKNOWN",
-                    'verbose': True
+                    'verbose': True,
+                    'optimizing': False
                     }
 
     experiment = Experiment(agent_kwargs, experiment_conditions)
