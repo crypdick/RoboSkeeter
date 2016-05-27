@@ -140,7 +140,10 @@ def get_directory(selection=None):
     PLUME_PATH = os.path.join(EXPERIMENTS_PATH, 'plume_data')
     RAW = os.path.join(PLUME_PATH, 'raw')
     TIMEAVG = os.path.join(PLUME_PATH, 'timeavg')
+    VAR = os.path.join(PLUME_PATH, 'variance')
     BOOL = os.path.join(PLUME_PATH, 'boolean')
+    VAR_LEFT_CSV = os.path.join(VAR, 'left', 'LeftplumeVar_nonan.csv')
+    VAR_RIGHT_CSV = os.path.join(VAR, 'right', 'RightplumeVar_nonan.csv')
     THERMOCOUPLE_RAW_LEFT_CSV = os.path.join(RAW, 'left', 'raw_left.csv')
     THERMOCOUPLE_RAW_RIGHT_CSV = os.path.join(RAW, 'right', 'raw_right.csv')
     THERMOCOUPLE_TIMEAVG_LEFT_CSV = os.path.join(TIMEAVG, 'left', 'timeavg_left.csv')
@@ -172,7 +175,9 @@ def get_directory(selection=None):
         'THERMOCOUPLE_TIMEAVG_LEFT_CSV': THERMOCOUPLE_TIMEAVG_LEFT_CSV,
         'THERMOCOUPLE_TIMEAVG_RIGHT_CSV': THERMOCOUPLE_TIMEAVG_RIGHT_CSV,
         'BOOL_LEFT_CSV': BOOL_LEFT_CSV,
-        'BOOL_RIGHT_CSV': BOOL_RIGHT_CSV
+        'BOOL_RIGHT_CSV': BOOL_RIGHT_CSV,
+        'VAR_LEFT_CSV': VAR_LEFT_CSV,
+        'VAR_RIGHT_CSV': VAR_RIGHT_CSV
     }
 
     if selection is None:
