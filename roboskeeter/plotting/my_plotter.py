@@ -69,25 +69,11 @@ class MyPlotter:
     def plot_position_heatmaps(self):
         plot_kinematics.plot_position_heatmaps(self)
 
-    def plot_kinematic_hists(self, ensemble='none', titleappend=''):
-        if type(ensemble) is str:
-            ensemble = self.experiment.kinematics
+    def plot_kinematic_hists(self):
 
-        plot_kinematics.plot_kinematic_histograms(ensemble, self.experiment.agent, titleappend=titleappend)
+        plot_kinematics.plot_kinematic_histograms(self.experiment)
 
-    def plot_door_velocity_compass(self, region='door', kind='avg_mag_per_bin'):
-        if region == 'door':
-            """plot the area """
-            ensemble = self.experiment.kinematics.loc[
-                ((self.experiment.kinematics['position_x'] > 0.25) & (self.experiment.kinematics['position_x'] < 0.5)), ['velocity_x', 'velocity_y']]
-        else:
-            ensemble = self.experiment.kinematics
-
-        plot_kinematics.plot_velocity_compassplot(ensemble, self.experiment.agent, kind)
-
-    def plot_kinematic_compass(self, kind='avg_mag_per_bin', data=None, flags='', title_append=''):
-        if data is None:  # TODO: wtf?
-            data = self.experiment.kinematics
+    def plot_kinematic_compass(self, kind='avg_mag_per_bin', flags='', title_append=''):
         # TODO: add heading angle plot
         for vector_name in self.experiment.agent['forces'] + self.experiment.agent['kinematic_vals']:
             # from enemble, selec mag and theta
@@ -109,7 +95,7 @@ class MyPlotter:
         behaviors = ['searching', 'entering', 'staying', 'Left_plume, exit left',
                      'Left_plume, exit right', "Right_plume, exit left", "Right_plume, exit right"]
         for behavior in behaviors:
-            ensemble = self.experiment.kinematics.loc[self.experiment.kinematics.plume_experience == behavior]
+            ensemble = self.obvservations.kinematics.loc[self.obvservations.kinematics.plume_experience == behavior]
             if ensemble.empty is True:
                 print "no data for ", behavior
                 pass
@@ -150,19 +136,19 @@ class MyPlotter:
         x_edges = np.linspace(.25, .95, 5)
 
         print "full ensemble"
-        full_ensemble = self.experiment.kinematics.loc[(self.experiment.kinematics['position_x'] > x_edges[0]) \
-                                            & (self.experiment.kinematics['position_x'] < x_edges[4])]
+        full_ensemble = self.obvservations.kinematics.loc[(self.obvservations.kinematics['position_x'] > x_edges[0]) \
+                                            & (self.obvservations.kinematics['position_x'] < x_edges[4])]
         self.plot_kinematic_hists(ensemble=full_ensemble, titleappend=' {} < x <= {}'.format(x_edges[0], x_edges[4]))
 
         print "downwind half ensemble"
-        downwind_ensemble = self.experiment.kinematics.loc[(self.experiment.kinematics['position_x'] > x_edges[0]) \
-                                                & (self.experiment.kinematics['position_x'] < x_edges[2])]
+        downwind_ensemble = self.obvservations.kinematics.loc[(self.obvservations.kinematics['position_x'] > x_edges[0]) \
+                                                & (self.obvservations.kinematics['position_x'] < x_edges[2])]
         self.plot_kinematic_hists(ensemble=downwind_ensemble,
                                   titleappend=' {} < x <= {}'.format(x_edges[0], x_edges[2]))
 
         print "upwind half ensemble"
-        upwind_ensemble = self.experiment.kinematics.loc[(self.experiment.kinematics['position_x'] > x_edges[2]) \
-                                              & (self.experiment.kinematics['position_x'] < x_edges[4])]
+        upwind_ensemble = self.obvservations.kinematics.loc[(self.obvservations.kinematics['position_x'] > x_edges[2]) \
+                                              & (self.obvservations.kinematics['position_x'] < x_edges[4])]
         self.plot_kinematic_hists(ensemble=upwind_ensemble, titleappend=' {} < x <= {}'.format(x_edges[2], x_edges[4]))
         #
         #        print "first quarter ensemble"
@@ -191,15 +177,9 @@ class MyPlotter:
                                                   downw_ensemble=downwind_ensemble)
 
     def plot_score_comparison(self):
-        plot_kinematics.plot_score_comparison(self)
+        plot_kinematics.plot_score_comparison(self.experiment)
 
     def plot_timeseries(self, kinematic=None):
-        # ensemble = self.data.loc[:,
-        #            ['tsi', 'position_x', 'position_y', 'position_z', 'velocity_x', 'velocity_y', 'velocity_z',
-        #             'acceleration_x',
-        #             'acceleration_y', 'acceleration_z', 'curvature']]
-        #        ensemble['trajectory_num'] = ensemble.index
-        # ensemble.reset_index(level=0, inplace=True)
-        plot_kinematics.plot_timeseries(self.experiment.kinematics, self.experiment.agent, kinematic=kinematic)
+        plot_kinematics.plot_timeseries(self.experiment, kinematic=kinematic)
 
 
