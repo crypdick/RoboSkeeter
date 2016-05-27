@@ -10,7 +10,7 @@ class DoMath:
 
         self.calc_kinematic_vals()
 
-        if self.experiment.optimizing is False:  # skip the following computations if optimizing
+        if self.experiment.experiment_conditions['optimizing'] is False:  # skip the following computations if optimizing
             self.percent_time_in_plume = self.calc_time_in_plume()
             self.side_ratio_score = self.calc_side_ratio_score()  # TODO: replace with KS test
 
