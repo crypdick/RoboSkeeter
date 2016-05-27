@@ -43,19 +43,19 @@ logging.basicConfig(filename='basin_hopping.log', level=logging.DEBUG)
 #     plt.show()
 #     plt.close()
 
-
-class Baseline_Bounds(object):
-    # ["resitution", "randomF", "damping"]
-    def __init__(self, xmin=[0., 1e-7, 1e-7], xmax=[1., 1e-4, 1e-4]):
-        self.xmin = np.array(xmin)
-        self.xmax = np.array(xmax)
-
-    def __call__(self, **kwargs):
-        x = kwargs["x_new"]
-        tmin = bool(np.all(x >= self.xmin))
-        tmax = bool(np.all(x <= self.xmax))
-
-        return tmax and tmin
+#
+# class Baseline_Bounds(object):
+#     # ["resitution", "randomF", "damping"]
+#     def __init__(self, xmin=[0., 1e-7, 1e-7], xmax=[1., 1e-4, 1e-4]):
+#         self.xmin = np.array(xmin)
+#         self.xmax = np.array(xmax)
+#
+#     def __call__(self, **kwargs):
+#         x = kwargs["x_new"]
+#         tmin = bool(np.all(x >= self.xmin))
+#         tmax = bool(np.all(x <= self.xmax))
+#
+#         return tmax and tmin
 
 
 # def main(x_0=None):
@@ -79,6 +79,7 @@ class Baseline_Bounds(object):
 
 class FitBaselineModel:
     def __init__(self, initial_guess, n_trajectories = 100):
+        self.iter_count = 0
         self.function = basinhopping
 
         self.stepsize = 1e-6
@@ -106,7 +107,8 @@ class FitBaselineModel:
                                 'position_z': 1,
                                 'curvature': 3}
 
-        self.bounds = Baseline_Bounds()
+        # self.bounds = Baseline_Bounds()
+        self.bounds = ((0., 1.), (1e-7, 1e-4), (1e-7, 1e-4))
 
         self.initial_guess = initial_guess
         self.n_trajectories = n_trajectories
@@ -149,11 +151,12 @@ class FitBaselineModel:
                 niter_success=self.niter_success,  # Stop the run if the global minimum candidate remains the same for this number of iterations
                 minimizer_kwargs={
                     'method': self.optimizer,
+                    'bounds': self.bounds,
                     "tol": 0.02  # tolerance for considering a basin minimized, set to about the difference between re-scoring
                     # same simulation
                 },
-                disp=True,
-                accept_test=self.bounds)
+                disp=True)
+                # accept_test=self.bounds)
 
             return result
         except KeyboardInterrupt:
@@ -169,18 +172,19 @@ class FitBaselineModel:
             estimated damping was 5e-6, # cranked up to get more noise #5e-6,#1e-6,  # 1e-5
         :return:
         """
+        self.iter_count += 1
         print """
         ##############################################################
-        Guess: {}
-        ##############################################################""".format(guess)
+        Iter """.format(self.iter_count)
 
 
         resitution, randomF, damping  = guess
 
-        experiment_conditions = {'condition': 'Control',
+        simulation_conditions = {'condition': 'Control',
                              'time_max': 6.,
                              'bounded': True,
-                             'plume_model': "None"
+                             'plume_model': "None",
+                             'optimizing': True
                              }
 
         agent_kwargs = {'is_simulation': True,
@@ -196,18 +200,18 @@ class FitBaselineModel:
                         'optimizing': True
                         }
 
-        experiment = experiments.start_simulation(self.n_trajectories, agent_kwargs, experiment_conditions)
+        experiment = experiments.start_simulation(self.n_trajectories, agent_kwargs, simulation_conditions)
 
         combined_score, score_components = experiment.calc_score(score_weights=self.score_weights, reference_data=self.reference_data)  # save on computation by passing the ref data
 
-        log_str = "guess = {}. total score = {}. score components = {}. time = {}".format(guess, combined_score, score_components, datetime.now())
+        log_str = "iter {}, guess = {}. total score = {}. score components = {}. time = {}".format(self.iter_count, guess, combined_score, score_components, datetime.now())
         logging.info(log_str)
         print log_str
 
         if combined_score < self.best_score:  # move to own func
             self.best_score = combined_score
             self.best_guess = guess
-            hs_announcement = "accepted {} as new best guess".format(guess)
+            hs_announcement = "accepted {} as new best guess!!!!!!!!!!!!!!!!!!!!!".format(guess)
             print(hs_announcement)
             logging.info(hs_announcement)
 
@@ -217,7 +221,8 @@ class FitBaselineModel:
         reference_experiment = experiments.load_experiment(experiment_conditions = {'condition': 'Control',
                                  'plume_model': "None",
                                  'time_max': "N/A (experiment)",
-                                 'bounded': True
+                                 'bounded': True,
+                                 'optimizing': True
                                  })
 
         return reference_experiment.observations.get_kinematic_dict()

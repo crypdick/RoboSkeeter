@@ -9,11 +9,11 @@ class Scoring():
     def __init__(self,
                  target_experiment,
                  score_weights,
-                 reference_data=None,
-                 scoring_kwargs={'kinematics_list' : ['velocities', 'curviture'], 'dimensions': ['x', 'y', 'z']},
+                 reference_data=None
                  ):
         if reference_data is None:
             # when called from an experiment class, find out the relevant experiment from metadata, load that experiment, use as reference
+            print "no reference data provided; loading experimental data"
             reference_experiment = self.load_reference_ensemble(target_experiment.experiment_conditions['condition'])
             self.reference_data = reference_experiment.observations.get_kinematic_dict()
         else:
