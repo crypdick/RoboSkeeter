@@ -72,5 +72,5 @@ class Decisions:
 
         return current_decision, plume_signal
 
-    def _ignore_plume(self):
+    def _ignore_plume(self, *_):
         return 'ignore', 0
