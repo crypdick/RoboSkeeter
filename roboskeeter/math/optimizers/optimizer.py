@@ -4,63 +4,14 @@ import logging
 from datetime import datetime
 
 import numpy as np
-from scipy.optimize import minimize_scalar
+from scipy.optimize import minimize_scalar, basinhopping
 
-import roboskeeter.experiments
-from roboskeeter.scripts import load_mosquito_kde_data_dicts
+from roboskeeter import experiments
 
+logging.basicConfig(filename='basin_hopping.log', level=logging.DEBUG)
 
-# wrapper func for agent 3D
-def fly_wrapper(GUESS, *args):
-    """
-    :param bias_scale_GUESS:
-    :param mass_GUESS:
-        mean mosquito mass is 2.88e-6
-    :param damping_GUESS:
-        estimated damping was 5e-6, # cranked up to get more noise #5e-6,#1e-6,  # 1e-5
-    :return:
-    """
-    print """
-    ##############################################################
-    Guess: {}
-    ##############################################################""".format(GUESS)
+# TODO: save guesses and their scores
 
-    restitution_guess = GUESS
-    (EXP_BINS, EXP_VALS) = args
-    N_TRAJECTORIES = 20
-    # N_TRAJECTORIES, PLOTTER, (EXP_BINS, EXP_VALS) = args
-
-    experiment_kwargs = {'condition': 'Control',
-                         'time_max': 6.,
-                         'bounded': True,
-                         'number_trajectories': N_TRAJECTORIES,
-                         'plume_type': "timeavg"#"Boolean"
-                         }
-
-    agent_kwargs = {'random_f_strength': 6.55599224e-06,
-                    'stim_f_strength': 0.,
-                    'damping_coeff': 3.63674551e-07,
-                    'collision_type': 'part_elastic',
-                    'restitution_coeff': restitution_guess,  # Optimizing this
-                    'stimulus_memory': 100,
-                    'decision_policy': 'cast_only',  # 'surge_only', 'cast_only', 'cast+surge', 'gradient', 'ignore'
-                    'initial_position_selection': 'downwind_high',
-                    'verbose': False
-                    }
-
-    simulation, trajectory_s, windtunnel, plume, agent = roboskeeter.experiments.start_simulation(agent_kwargs, experiment_kwargs)
-
-    combined_score, score_components, _ = trajectory_s.calc_score(ref_ensemble=(EXP_BINS, EXP_VALS))
-
-    global HIGH_SCORE
-    global BEST_GUESS
-    if combined_score < HIGH_SCORE:
-        HIGH_SCORE = combined_score
-        BEST_GUESS = GUESS
-        string = "{0} New high score: {1}. Guess: {2}. Score components = {3}".format(datetime.now(), HIGH_SCORE, GUESS,
-                                                                                      score_components)
-        print(string)
-        logging.info(string)
 
     # if PLOTTER is True:
     #     error_plotter(ensemble, GUESS, dkl_scores, acf_score, aabs_bins, a_counts_n, vabs_bins, v_counts_n, v_observed, a_observed)
@@ -68,7 +19,6 @@ def fly_wrapper(GUESS, *args):
     # if np.any(np.isinf(dkl_scores)):
     #     error_plotter(ensemble, GUESS, dkl_scores, acf_score, aabs_bins, a_counts_n, vabs_bins, v_counts_n, v_observed, a_observed)
 
-    return combined_score
 
 
 # def error_plotter(ensemble, guess, dkl_scores, acf_score, aabs_bins, a_counts_n, vabs_bins, v_counts_n, v_observed, a_observed):
@@ -94,88 +44,189 @@ def fly_wrapper(GUESS, *args):
 #     plt.close()
 
 
-class MyBounds(object):
-    def __init__(self, xmax = [1], xmin = [0]):  #xmax=[1e-4, 1e-4], xmin=[1e-7, 1e-7]):  # , 1e08]):
-        self.xmax = np.array(xmax)
+class Baseline_Bounds(object):
+    def __init__(self, xmin=[1e-7, 1e-7, 0.], xmax=[1e-4, 1e-4, 1.]):
         self.xmin = np.array(xmin)
+        self.xmax = np.array(xmax)
 
     def __call__(self, **kwargs):
         x = kwargs["x_new"]
-        tmax = bool(np.all(x <= self.xmax))
         tmin = bool(np.all(x >= self.xmin))
+        tmax = bool(np.all(x <= self.xmax))
+
         return tmax and tmin
 
 
-def main(x_0=None):
-    logging.basicConfig(filename='basin_hopping.log', level=logging.DEBUG)
+# def main(x_0=None):
+#
+#     if x_0 is None:
+#         INITIAL_GUESS = [0.1]
+#     else:
+#         INITIAL_GUESS = x_0
 
-    global HIGH_SCORE
-    HIGH_SCORE = 1e10
 
-    global BEST_GUESS
-    BEST_GUESS = None
-
-    OPTIM_ALGORITHM = 'SLSQP'  # for multiple vars
-    PLOTTER = False
-    # ACF_THRESH = 0.5
-    GUESS_PARAMS = "[resitution]"  #, F_WIND_SCALE]"  # [5e-6, 4.12405e-6, 5e-7]
-    if x_0 is None:
-        INITIAL_GUESS = [0.1]
-    else:
-        INITIAL_GUESS = x_0
-    N_TRAJECTORIES = 10
-
-    print "Starting optimizer."
-
-    logging.info("""\n ############################################################
-        ############################################################
-        {} Start optimization with {} algorithm
-        # trajectories = {}
-        Params = {}
-        Initial Guess = {}
-        ############################################################""".format(
-        datetime.now(), OPTIM_ALGORITHM, N_TRAJECTORIES, GUESS_PARAMS, INITIAL_GUESS))
-
-    mybounds = MyBounds()
-
-    # # if minimizing multiple inputs
-    # result = basinhopping(
+    # ################################################ if minimizing a scalar
+    # result = minimize_scalar(
     #     fly_wrapper,
-    #     INITIAL_GUESS,
-    #     stepsize=1e-6,
-    #     T=1e-5,
-    #     niter=50,  # number of basin hopping iterations, default 100
-    #     niter_success=8,  # Stop the run if the global minimum candidate remains the same for this number of iterations
-    #     minimizer_kwargs={
-    #         "args": (N_TRAJECTORIES, PLOTTER, (load_mosquito_kde_data_dicts())),
-    #         'method': OPTIM_ALGORITHM,
-    #         "bounds": [0,1], #[(5e-7, 1e-3), (5e-7, 1e-2)],
-    #         "tol": 0.02  # tolerance for considering a basin minimized, set to about the difference between re-scoring
-    #         # same simulation
-    #     },
-    #     disp=True,
-    #     accept_test=mybounds
+    #     bounds=(0., 1.),
+    #     method='bounded',
+    #     args=(load_mosquito_kde_data_dicts())
     # )
 
-    # if minimizing a scalar
-    result = minimize_scalar(
-        fly_wrapper,
-        bounds=(0., 1.),
-        method='bounded',
-        args=(load_mosquito_kde_data_dicts())
-    )
+    # return BEST_GUESS, HIGH_SCORE, result
 
-    return BEST_GUESS, HIGH_SCORE, result
+
+class FitBaselineModel:
+    def __init__(self, initial_guess, n_trajectories = 100):
+        self.function = basinhopping
+
+        self.stepsize = 1e-6
+        self.temperature = 1e-5
+        self.niter = 50  # number of basin hopping iterations, default 100
+        self.niter_success = 8  # Stop the run if the global minimum candidate remains the same for this number of iterations
+
+        # init buest guess with very large score
+        self.best_guess = None
+        self.best_score = 1e10
+
+        self.optimizer = 'SLSQP'  # for multiple vars
+        self.plotting = False
+
+        self.parameter_names = ["resitution", "randomF", "damping"]  # # [5e-6, 4.12405e-6, 5e-7]  # TODO fix order
+
+        self.score_weights = {'velocity_x': 1,
+                                'velocity_y': 1,
+                                'velocity_z': 1,
+                                'acceleration_x': 1,
+                                'acceleration_y': 1,
+                                'acceleration_z': 1,
+                                'position_x': 1,
+                                'position_y': 1,
+                                'position_z': 1,
+                                'curvature': 3}
+
+        self.bounds = Baseline_Bounds()
+
+        self.initial_guess = initial_guess
+        self.n_trajectories = n_trajectories
+
+        self.reference_data = self._load_reference_ensemble
+
+        logging.info("""\n ############################################################
+        ############################################################
+        {date}
+        algorithm = {algo}
+        n_trajectories = {N}
+        Params = {pn}
+        Initial Guess = {i}
+        stepsize = {ss}
+        T = {T}
+        niter = {ni}
+        niter_success = {nis}
+        ############################################################""".format(
+            date=datetime.now(),
+            algo=self.optimizer,
+            N=self.n_trajectories,
+            pn=self.parameter_names,
+            i=self.initial_guess,
+            ss = self.stepsize,
+            T = self.temperature,
+            ni = self.niter,
+            nis = self.niter_success))
+
+
+        self.result = self.run_optimization()
+
+    def run_optimization(self):
+
+        result = basinhopping(
+            self.simulation_wrapper,
+            self.initial_guess,
+            stepsize=self.stepsize,
+            T=self.temperature,
+            niter=self.niter,  # number of basin hopping iterations, default 100
+            niter_success=self.niter_success,  # Stop the run if the global minimum candidate remains the same for this number of iterations
+            minimizer_kwargs={
+                'method': self.optimizer,
+                "tol": 0.02  # tolerance for considering a basin minimized, set to about the difference between re-scoring
+                # same simulation
+            },
+            disp=True,
+            accept_test=self.mybounds)
+
+        return result
+
+    def simulation_wrapper(self, guess):
+        """
+        :param bias_scale_GUESS:
+        :param mass_GUESS:
+            mean mosquito mass is 2.88e-6
+        :param damping_GUESS:
+            estimated damping was 5e-6, # cranked up to get more noise #5e-6,#1e-6,  # 1e-5
+        :return:
+        """
+        print """
+        ##############################################################
+        Guess: {}
+        ##############################################################""".format(guess)
+
+
+        resitution, randomF, damping  = guess
+
+        experiment_kwargs = {'condition': 'Control',
+                             'time_max': 6.,
+                             'bounded': True,
+                             'number_trajectories': self.n_trajectories,
+                             'plume_type': "None"
+                             }
+
+        agent_kwargs = {'random_f_strength': resitution,
+                        'stim_f_strength': 0.,
+                        'damping_coeff': damping,
+                        'collision_type': 'part_elastic',
+                        'restitution_coeff': resitution,  # Optimizing this
+                        'stimulus_memory': 100,
+                        'decision_policy': 'ignore',  # 'surge_only', 'cast_only', 'cast+surge', 'gradient', 'ignore'
+                        'initial_position_selection': 'downwind_high',
+                        'verbose': False
+                        }
+
+        experiment = experiments.start_simulation(self.n_trajectories, agent_kwargs, experiment_kwargs)
+
+        combined_score, score_components = experiment.calc_score(score_weights=self.score_weights, reference_data=self.reference_data)  # save on computation by passing the ref data
+
+        log_str = "guess = {}. total score = {}. score components = {}. time = {}".format(guess, combined_score, score_components, datetime.now())
+        logging.info(log_str)
+
+        if combined_score < self.best_score:  # move to own func
+            self.best_score = combined_score
+            self.best_guess = guess
+            hs_announcement = "accepted {} as new best guess".format(guess)
+            print(hs_announcement)
+            logging.info(hs_announcement)
+
+        return combined_score
+
+    def _load_reference_ensemble(self):
+        reference_experiment = experiments.load_experiment(experiment_conditions = {'condition': 'Control',
+                                 'plume_model': "None"
+                                 'time_max': "N/A (experiment)",
+                                 'bounded': True
+                                 })
+
+        return reference_experiment.observations.get_kinematic_dict()
+
 
 
 if __name__ == '__main__':
-    BEST_GUESS, HIGH_SCORE, result = main()
+    O = FitBaselineModel
+    result = O.run_optimization()
 
     msg = """############################################################
     Trial end. FINAL GUESS: {0}
     SCORE: {1}
-     {2}
-    ############################################################""".format(BEST_GUESS, HIGH_SCORE, result)
+    RESULT: {2}
+    ############################################################""".format(O.best_guess, O.best_score, result)
 
     logging.info(msg)
     print msg
