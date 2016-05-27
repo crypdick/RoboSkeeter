@@ -219,8 +219,10 @@ class FitBaselineModel:
 
 
 if __name__ == '__main__':
+    initial_guess = [0.1, 6.55599224e-06, 3.63674551e-07]  # ["resitution", "randomF", "damping"]
+
     O = FitBaselineModel
-    result = O.run_optimization()
+    result = O.run_optimization(initial_guess)
 
     msg = """############################################################
     Trial end. FINAL GUESS: {0}
