@@ -83,12 +83,12 @@ class Experiment(object):
     def calc_score(self, reference_data=None, score_weights = {'velocity_x': 1,
                                 'velocity_y': 1,
                                 'velocity_z': 1,
-                                'acceleration_x': 0,
-                                'acceleration_y': 0,
-                                'acceleration_z': 0,
-                                'position_x': 0,
-                                'position_y': 0,
-                                'position_z': 0,
+                                'acceleration_x': 1,
+                                'acceleration_y': 1,
+                                'acceleration_z': 1,  # FIXME change these values back
+                                'position_x': 1,
+                                'position_y': 1,
+                                'position_z': 1,
                                 'curvature': 3}):
         if self.is_scored is True:
             pass
@@ -117,7 +117,7 @@ def start_simulation(num_flights, agent_kwargs=None, experiment_conditions=None)
     experiment object
     """
     if experiment_conditions is None:
-        experiment_conditions = {'condition': 'Right',  # {'Left', 'Right', 'Control'}
+        experiment_conditions = {'condition': 'Control',  # {'Left', 'Right', 'Control'}
                                  'time_max': 6.,
                                  'bounded': True,
                                  'optimizing': False,
@@ -133,7 +133,7 @@ def start_simulation(num_flights, agent_kwargs=None, experiment_conditions=None)
                         'stimulus_memory_n_timesteps': 1,
                         'decision_policy': 'gradient',  # 'surge', 'cast', 'castsurge', 'gradient', 'ignore'
                         'initial_position_selection': 'downwind_high',
-                        'verbose': True,
+                        'verbose': False,  # FIXME set to true
                         'optimizing': False
                         }
 
@@ -184,7 +184,7 @@ def load_experiment(experiment_conditions=None):
 
 
 if __name__ is '__main__':
-    experiment = start_simulation(5, None, None)
+    experiment = start_simulation(150, None, None)
     # experiment = load_experiment()
 
     print "\nAliases updated."
