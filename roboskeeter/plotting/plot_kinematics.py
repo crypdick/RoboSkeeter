@@ -24,6 +24,7 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 # register Axes3D class with matplotlib by importing Axes3D
 from mpl_toolkits.mplot3d import Axes3D
+from roboskeeter.math.math_toolbox import calculate_1Dkde, evaluate_kde
 
 # just used to get proper paths
 stopdeletingmeplease = Axes3D
@@ -47,11 +48,11 @@ FIG_FORMAT = ".png"
 def get_agent_info(experiment, plot_type = ''):  # TODO: take plot type
     if experiment.is_simulation:
         titleappend = "{condition} condition|damp={damp}|rF={rf}|stmF={stim}|N={total_trajectories}|mass={m}".format(
-            condition=experiment.agent.experiment.condition,
+            condition=experiment.experiment_conditions['condition'],
             damp=experiment.agent.damping_coeff,
-            rf=experiment.agent.randomF_strength,
-            stim=experiment.agent.stimF_strength,
-            total_trajectories=experiment.agent.total_trajectories,
+            rf=experiment.agent.random_f_strength,
+            stim=experiment.agent.stim_f_strength,
+            total_trajectories=experiment.observations.kinematics.trajectory_num.unique().__len__(),
             m=experiment.agent.mass
             )
         path = MODEL_FIG_PATH
@@ -197,18 +198,17 @@ def plot_position_heatmaps(trajectories_obj):
 
 
 def plot_kinematic_histograms(experiment,
-        plot_kwargs=None,
-        upw_ensemble="none",
-        downw_ensemble="none"):
-    titleappend = get_agent_info(experiment)
-    ensemble = experiment.flight.kinematics
+                                plot_kwargs=None,
+                                upw_ensemble="none",
+                                downw_ensemble="none"):
+    titleappend, _, _ = get_agent_info(experiment)
+    ensemble = experiment.observations.kinematics
     statefig = plt.figure()  # , figsize=(9, 8))
     gs1 = gridspec.GridSpec(2, 3)
     axs = [statefig.add_subplot(ss) for ss in gs1]
     # position distributions
     #    pos_all = np.concatenate(pos, axis=0)
     pos_binwidth = .01
-
     # X pos
     xpos_min, xpos_max = 0.25, .85
     xpos_counts, xpos_bins = np.histogram(ensemble['position_x'],
@@ -423,9 +423,12 @@ def plot_kinematic_histograms(experiment,
 
     gs1.tight_layout(statefig, rect=[0, 0.03, 1, 0.95])  # overlapping text hack
 
-    fileappend, path, agent = get_agent_info(experiment.agent)
+    fileappend, path, agent = get_agent_info(experiment)
 
-    suptit = "{} Kinematic Distributions".format(agent) + titleappend
+    try:
+        suptit = "{} Kinematic Distributions".format(agent) + titleappend
+    except TypeError:
+        print agent, titleappend
     statefig.suptitle(suptit, fontsize=14)
 
     plt.savefig(os.path.join(path, suptit + FIG_FORMAT))
@@ -472,7 +475,7 @@ def plot_starting_points(ensemble):
 
 
 def plot_timeseries(experiment, kinematic=None):
-    ensemble = experiment.flight.kinematics
+    ensemble = experiment.observations.kinematics
     #    traj_numbers = [int(i) for i in ensemble.index.get_level_values('trajectory_num').unique()]
     data_dict = {}
 
@@ -524,7 +527,7 @@ def plot_timeseries(experiment, kinematic=None):
 
 
 def plot_forces_violinplots(experiment):
-    ensemble = experiment.flight.kinematics
+    ensemble = experiment.observations.kinematics
     ensembleF = ensemble.loc[
         (ensemble['position_x'] > 0.25) & (ensemble['position_x'] < 0.95),
         ['totalF_x', 'totalF_y', 'totalF_z',
@@ -557,7 +560,7 @@ def plot_forces_violinplots(experiment):
 
 
 def plot_velocity_compassplot(experiment, style='global_normalize'):
-    ensemble = experiment.flight.kinematics
+    ensemble = experiment.observations.kinematics
     N = 25
     roundbins = np.linspace(0.0, 2 * np.pi, N)
 
@@ -608,7 +611,7 @@ def plot_velocity_compassplot(experiment, style='global_normalize'):
 def plot_compass_histogram(vector_name, experiment, style='avg_mag_per_bin', title='', fname=''):
     """TODO: make compass plot total mag per bin, overlay compass arrows for avg magnitude
     """
-    ensemble = experiment.flight.kinematics
+    ensemble = experiment.observations.kinematics
     N = 25
     roundbins = np.linspace(0.0, 2 * np.pi, N)
     width = (2 * np.pi) / N
@@ -670,7 +673,7 @@ def plot_compass_histogram(vector_name, experiment, style='avg_mag_per_bin', tit
 
 
 def plot_vector_cloud(experiment, kinematic, i=None):
-    ensemble = experiment.flight.kinematics
+    ensemble = experiment.observations.kinematics
     # test whether we are a simulation; if not, forbid plotting of  drivers
     if experiment.is_simulation == False:
         if kinematic not in ['velocity', 'acceleration']:
@@ -717,7 +720,7 @@ def plot_vector_cloud(experiment, kinematic, i=None):
 
 
 def vector_cloud_heatmap(experiment, kinematic, i=None):
-    ensemble = experiment.flight.kinematics
+    ensemble = experiment.observations.kinematics
     # test whether we are a simulation; if not, forbid plotting of  drivers
     if experiment.is_simulation is False:
         if kinematic not in ['velocity', 'acceleration']:
@@ -836,7 +839,7 @@ def vector_cloud_pairgrid(experiment, kinematic, i=None):
     for dim in ['x', 'y', 'z']:
         labels.append(kinematic + '_' + dim)
 
-    ensemble = experiment.flights.get_trajectory_slice(i)
+    ensemble = experiment.observations.get_trajectory_slice(i)
 
     # grab labels
     vecs = []
@@ -848,8 +851,7 @@ def vector_cloud_pairgrid(experiment, kinematic, i=None):
     g.map_lower(sns.kdeplot, cmap="Blues_d", shade=True)
     g.map_diag(sns.kdeplot, lw=3, legend=False)
     plt.subplots_adjust(top=0.9)
-    g.fig.suptitle('Pairwise comparison of {agent_type} {kinematic}'.format(agent_type=trajectories_obj.is_agent,
-                                                                            kinematic=kinematic))
+    g.fig.suptitle('Pairwise comparison of {kinematic}'.format(kinematic=kinematic))
     g.set(xlim=(-0.8, 0.8), ylim=(-0.8, 0.8))
 
 
@@ -919,7 +921,7 @@ def plot_all_force_clouds(experiment):
         y = data[:, 1]
         z = data[:, 2]
 
-        ax.scatter(x, y, z, c=ensemble_cmap, marker='.', s=80, linewidths=0)
+        ax.scatter(x, y, z, c=CM, marker='.', s=80, linewidths=0)
         ax.scatter(0, 0, 0, c='r', marker='o', s=150, linewidths=0)
 
         ax.set_xlabel('X')
@@ -930,7 +932,7 @@ def plot_all_force_clouds(experiment):
         plt.show()
 
 
-
+        ensemble = experiment.observations.kinematics
 
         ##############################################################################################
         # colors for rest of this funct
@@ -1009,20 +1011,34 @@ def plot_all_force_clouds(experiment):
         plt.show()
 
 
-def plot_score_comparison(trajectories_obj):
-    from roboskeeter.scripts import load_mosquito_kde_data_dicts
+def plot_score_comparison(experiment):
+    try:
+        score_components = experiment.score_components
+    except AttributeError:  # we haven't calculated the score beforehand
+        score, score_components = experiment.calc_score()
 
-    ref_bins_dict, ref_kde_vals_dict = load_mosquito_kde_data_dicts()
-    total_score, scores, targ_kde_vals_dict = trajectories_obj.calc_score()
+    # get reference data
+    def load_reference_vals(condition):
+        from roboskeeter import experiments
+        reference_experiment = experiments.load_experiment(experiment_conditions = {'condition': condition,
+                                 'plume_model': "None",  # "Boolean" "None, "Timeavg", "Unaveraged"
+                                 'time_max': "N/A (experiment)",
+                                 'bounded': True,
+                                 'optimizing': True
+                                 })
+        return reference_experiment.observations.get_kinematic_dict()
 
-    for kinematic, ref_vals in ref_kde_vals_dict.iteritems():
-        targ_vals = targ_kde_vals_dict[kinematic]
 
-        plt.figure()
-        plt.plot(ref_bins_dict[kinematic], targ_vals, label="Input")
-        plt.plot(ref_bins_dict[kinematic], ref_vals, label="Reference")
-        plt.ylabel("Probability")
-        plt.xlabel("Value")
+    reference_vals = load_reference_vals(experiment.experiment_conditions['condition'])
+    target_vals = experiment.observations.get_kinematic_dict(trim_endzones=True)
+
+
+    for kinematic, targ_val in target_vals.iteritems():
+        ref_val = reference_vals[kinematic]
+
+        sns.kdeplot(data=targ_val, color='blue', label='target')
+        sns.kdeplot(data=ref_val, color='red', label='reference')
+        sns.plt.title(kinematic)
         plt.legend()
-        plt.title("Comparison of {kinematic} Probabilities between Control Experiments and Simulation (n = {N})".format(
-            kinematic=kinematic, N=len(trajectories_obj.data.index.get_level_values('trajectory_num').unique())))
+        sns.plt.show()
+
