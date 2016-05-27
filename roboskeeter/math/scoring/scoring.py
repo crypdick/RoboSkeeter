@@ -46,5 +46,6 @@ class Scoring():
                                  'plume_model': "None",  # "Boolean" "None, "Timeavg", "Unaveraged"
                                  'time_max': "N/A (experiment)",
                                  'bounded': True,
+                                 'optimizing': True
                                  })
         return reference_experiment
