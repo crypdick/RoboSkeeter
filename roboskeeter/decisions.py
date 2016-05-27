@@ -7,19 +7,21 @@ class Decisions:
         self.plume_sighted_ago = 10000000  # a long time ago
         self.last_plume_side_exited = None
 
-    def make_decision(self, in_plume, crosswind_velocity):
+        self.make_decision = self._set_decision_policy()
+
+
+    def _set_decision_policy(self):
         if 'cast' in self.decision_policy:
-            current_decision, plume_signal = self._boolean_decisions(in_plume, crosswind_velocity)
+            policy = self._boolean_decisions
         elif 'surge' in self.decision_policy:
-            current_decision, plume_signal = self._boolean_decisions(in_plume, crosswind_velocity)
+            policy = self._boolean_decisions
         elif 'gradient' in self.decision_policy:
-            current_decision, plume_signal = self._gradient_decisions()
+            policy = self._gradient_decisions
         elif 'ignore' in self.decision_policy:
-            current_decision, plume_signal = 'ignore', 0
+            policy = self._ignore_plume
         else:
             raise ValueError('unk decision policy {}'.format(self.decision_policy))
-
-        return current_decision, plume_signal
+        return policy
 
     def _boolean_decisions(self, in_plume, crosswind_velocity):
         if in_plume == True:  # use == instead of "is" because we're using type np.bool
@@ -56,7 +58,7 @@ class Decisions:
 
         return current_decision, plume_signal
 
-    def _gradient_decisions(self):
+    def _gradient_decisions(self, *_):
         """
         Returns
         -------
@@ -69,3 +71,6 @@ class Decisions:
         current_decision = 'ga'
 
         return current_decision, plume_signal
+
+    def _ignore_plume(self):
+        return 'ignore', 0
