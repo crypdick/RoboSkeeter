@@ -27,7 +27,6 @@ class Experiment(object):
 
         self.observations = Observations()
         self.agent = Simulator(self, agent_kwargs)
-        self.optimizing = agent_kwargs['optimizing']  # toggle flag if optimizing to skip some unneccessary computations
 
         # these get mapped to the correct funcs after run() is ran
         self.plt = None
@@ -56,20 +55,22 @@ class Experiment(object):
                 self.observations = self.agent.fly(n_trajectories=n)
         else:
             self.observations.experiment_data_to_DF(experimental_condition=self.experiment_conditions['condition'])
-            print "\nDone loading files. Iterating through flights and presenting plume, making hypothetical decisions"
-            n_rows = len(self.observations.kinematics)
-            in_plume = np.zeros(n_rows, dtype=bool)
-            plume_signal = np.array([None] * n_rows)
-            decision = np.array([None] * n_rows)
-            for i, row in self.observations.kinematics.iterrows():
-                in_plume[i] = self.environment.plume.check_for_plume([row.position_x,
-                                                                      row.position_y,
-                                                                      row.position_z])
-                decision[i], plume_signal[i] = self.agent.decisions.make_decision(in_plume[i], row.velocity_y)
+            if self.experiment_conditions['optimizing'] is False:  # skip unneccessary computations for optimizer
+                print self.optimizing
+                print "\nDone loading files. Iterating through flights and presenting plume, making hypothetical decisions"
+                n_rows = len(self.observations.kinematics)
+                in_plume = np.zeros(n_rows, dtype=bool)
+                plume_signal = np.array([None] * n_rows)
+                decision = np.array([None] * n_rows)
+                for i, row in self.observations.kinematics.iterrows():
+                    in_plume[i] = self.environment.plume.check_for_plume([row.position_x,
+                                                                          row.position_y,
+                                                                          row.position_z])
+                    decision[i], plume_signal[i] = self.agent.decisions.make_decision(in_plume[i], row.velocity_y)
 
-            self.observations.kinematics['in_plume'] = in_plume
-            self.observations.kinematics['plume_signal'] = plume_signal
-            self.observations.kinematics['decision'] = decision
+                self.observations.kinematics['in_plume'] = in_plume
+                self.observations.kinematics['plume_signal'] = plume_signal
+                self.observations.kinematics['decision'] = decision
 
         # assign alias
         self.plt = MyPlotter(self)  # takes self, extracts metadata for files and titles, etc
@@ -119,6 +120,7 @@ def start_simulation(num_flights, agent_kwargs=None, experiment_conditions=None)
         experiment_conditions = {'condition': 'Right',  # {'Left', 'Right', 'Control'}
                                  'time_max': 6.,
                                  'bounded': True,
+                                 'optimizing': False,
                                  'plume_model': "None"  # "Boolean", "Timeavg", "None", "Unaveraged"
                                  }
     if agent_kwargs is None:
@@ -159,6 +161,7 @@ def load_experiment(experiment_conditions=None):
                                  'plume_model': "None",  # "Boolean" "None, "Timeavg", "Unaveraged"
                                  'time_max': "N/A (experiment)",
                                  'bounded': True,
+                                 'optimizing': False
                                  }
 
     agent_kwargs = {'is_simulation': False,  # ALL THESE VALUES ARE A HYPOTHESIS!!!
@@ -170,8 +173,7 @@ def load_experiment(experiment_conditions=None):
                     'stimulus_memory_n_timesteps': "UNKNOWN",
                     'decision_policy': "surge",  # 'surge', 'cast', 'castsurge', 'gradient', 'ignore'
                     'initial_position_selection': "UNKNOWN",
-                    'verbose': True,
-                    'optimizing': False
+                    'verbose': True
                     }
 
     experiment = Experiment(agent_kwargs, experiment_conditions)
