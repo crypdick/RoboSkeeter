@@ -75,3 +75,18 @@ class Observations(object):
 
     def _trim_df_endzones(self):
         return self.kinematics.loc[(self.kinematics['position_x'] > 0.05) & (self.kinematics['position_x'] < 0.95)]
+
+    def get_kinematic_dict(self):
+        dict = {'velocity_x': self.kinematics['velocity_x'].values,
+               'velocity_y': self.kinematics['velocity_y'].values,
+               'velocity_z': self.kinematics['velocity_z'].values,
+               'position_x': self.kinematics['position_x'].values,
+               'position_y': self.kinematics['position_y'].values,
+               'position_z': self.kinematics['position_z'].values,
+               'acceleration_x': np.abs(self.kinematics['acceleration_x'].values),
+               'acceleration_y': np.abs(self.kinematics['acceleration_y'].values),
+               'acceleration_z': np.abs(self.kinematics['acceleration_z'].values),
+               'curvature': self.kinematics['curvature'].values
+               }
+
+        return dict
