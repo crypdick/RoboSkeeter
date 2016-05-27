@@ -35,7 +35,7 @@ class Experiment(object):
         self.side_ratio_score = None
         self.score, self.score_components = None, None
 
-    def run(self, n=None):
+    def run(self, n=None):  # None as default in case we're loading experiments instead of simulating
         """
         Func that either loads experimental data or runs a simulation, depending on whether self.is_simulation is True
         Parameters
@@ -93,7 +93,7 @@ class Experiment(object):
         if self.is_scored is True:
             pass
         else:
-            S = Scoring(self, score_weights, reference_data=reference_data,)
+            S = Scoring(self, score_weights, reference_data=reference_data)
             score, score_components = S.score, S.score_components
             self.is_scored = True
             return score, score_components
@@ -125,12 +125,12 @@ def start_simulation(num_flights, agent_kwargs=None, experiment_conditions=None)
                                  }
     if agent_kwargs is None:
         agent_kwargs = {'is_simulation': True,
-                        'random_f_strength': 6.55599224e-06,
+                        'random_f_strength': 6.64725529e-06, #6.55599224e-06,
                         'stim_f_strength': 5.0e-06,
-                        'damping_coeff': 3.63674551e-07,
+                        'damping_coeff': 3.63417031e-07, # 3.63674551e-07,
                         'collision_type': 'part_elastic',  # 'elastic', 'part_elastic'
-                        'restitution_coeff': 0.1,  # 0.8
-                        'stimulus_memory_n_timesteps': 1,
+                        'restitution_coeff': 9.99023340e-02, #0.1,  # 0.8
+                        'stimulus_memory_n_timesteps': 100,
                         'decision_policy': 'gradient',  # 'surge', 'cast', 'castsurge', 'gradient', 'ignore'
                         'initial_position_selection': 'downwind_high',
                         'verbose': False,  # FIXME set to true
