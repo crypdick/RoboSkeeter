@@ -139,23 +139,26 @@ class FitBaselineModel:
         self.result = self.run_optimization()
 
     def run_optimization(self):
+        try:
+            result = basinhopping(
+                self.simulation_wrapper,
+                self.initial_guess,
+                stepsize=self.stepsize,
+                T=self.temperature,
+                niter=self.niter,  # number of basin hopping iterations, default 100
+                niter_success=self.niter_success,  # Stop the run if the global minimum candidate remains the same for this number of iterations
+                minimizer_kwargs={
+                    'method': self.optimizer,
+                    "tol": 0.02  # tolerance for considering a basin minimized, set to about the difference between re-scoring
+                    # same simulation
+                },
+                disp=True,
+                accept_test=self.bounds)
 
-        result = basinhopping(
-            self.simulation_wrapper,
-            self.initial_guess,
-            stepsize=self.stepsize,
-            T=self.temperature,
-            niter=self.niter,  # number of basin hopping iterations, default 100
-            niter_success=self.niter_success,  # Stop the run if the global minimum candidate remains the same for this number of iterations
-            minimizer_kwargs={
-                'method': self.optimizer,
-                "tol": 0.02  # tolerance for considering a basin minimized, set to about the difference between re-scoring
-                # same simulation
-            },
-            disp=True,
-            accept_test=self.bounds)
-
-        return result
+            return result
+        except KeyboardInterrupt:
+            print "\n Optimization interrupted! Moving along..."
+            return ""
 
     def simulation_wrapper(self, guess):
         """
@@ -189,7 +192,8 @@ class FitBaselineModel:
                         'stimulus_memory_n_timesteps': 1,
                         'decision_policy': 'ignore',  # 'surge_only', 'cast_only', 'cast+surge', 'gradient', 'ignore'
                         'initial_position_selection': 'downwind_high',
-                        'verbose': False
+                        'verbose': False,
+                        'optimizing': True
                         }
 
         experiment = experiments.start_simulation(self.n_trajectories, agent_kwargs, experiment_conditions)
