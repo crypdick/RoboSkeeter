@@ -79,13 +79,14 @@ logging.basicConfig(filename='basin_hopping.log', level=logging.DEBUG)
 
 class FitBaselineModel:
     def __init__(self, initial_guess, n_trajectories = 100):
+        print "starting optimization"
         self.iter_count = 0
         self.function = basinhopping
 
-        self.stepsize = 1e-6
-        self.temperature = 1e-5
-        self.niter = 50  # number of basin hopping iterations, default 100
-        self.niter_success = 8  # Stop the run if the global minimum candidate remains the same for this number of iterations
+        self.stepsize = 4e-6
+        self.temperature = 5e-5
+        self.niter = 200  # number of basin hopping iterations, default 100
+        self.niter_success = 15  # Stop the run if the global minimum candidate remains the same for this number of iterations
 
         # init buest guess with very large score
         self.best_guess = None
@@ -152,8 +153,8 @@ class FitBaselineModel:
                 minimizer_kwargs={
                     'method': self.optimizer,
                     'bounds': self.bounds,
-                    "tol": 0.02  # tolerance for considering a basin minimized, set to about the difference between re-scoring
-                    # same simulation
+                    "tol": 0.15  # tolerance for considering a basin minimized, set to about the difference between re-scoring
+                    # same simulation. note, this was about .1 for n=150 flights
                 },
                 disp=True)
                 # accept_test=self.bounds)
@@ -173,10 +174,6 @@ class FitBaselineModel:
         :return:
         """
         self.iter_count += 1
-        print """
-        ##############################################################
-        Iter """.format(self.iter_count)
-
 
         resitution, randomF, damping  = guess
 
