@@ -45,7 +45,8 @@ logging.basicConfig(filename='basin_hopping.log', level=logging.DEBUG)
 
 
 class Baseline_Bounds(object):
-    def __init__(self, xmin=[1e-7, 1e-7, 0.], xmax=[1e-4, 1e-4, 1.]):
+    # ["resitution", "randomF", "damping"]
+    def __init__(self, xmin=[0., 1e-7, 1e-7], xmax=[1., 1e-4, 1e-4]):
         self.xmin = np.array(xmin)
         self.xmax = np.array(xmax)
 
@@ -110,7 +111,7 @@ class FitBaselineModel:
         self.initial_guess = initial_guess
         self.n_trajectories = n_trajectories
 
-        self.reference_data = self._load_reference_ensemble
+        self.reference_data = self._load_reference_ensemble()
 
         logging.info("""\n ############################################################
         ############################################################
@@ -152,7 +153,7 @@ class FitBaselineModel:
                 # same simulation
             },
             disp=True,
-            accept_test=self.mybounds)
+            accept_test=self.bounds)
 
         return result
 
@@ -173,30 +174,31 @@ class FitBaselineModel:
 
         resitution, randomF, damping  = guess
 
-        experiment_kwargs = {'condition': 'Control',
+        experiment_conditions = {'condition': 'Control',
                              'time_max': 6.,
                              'bounded': True,
-                             'number_trajectories': self.n_trajectories,
-                             'plume_type': "None"
+                             'plume_model': "None"
                              }
 
-        agent_kwargs = {'random_f_strength': resitution,
+        agent_kwargs = {'is_simulation': True,
+                        'random_f_strength': resitution,
                         'stim_f_strength': 0.,
                         'damping_coeff': damping,
                         'collision_type': 'part_elastic',
                         'restitution_coeff': resitution,  # Optimizing this
-                        'stimulus_memory': 100,
+                        'stimulus_memory_n_timesteps': 1,
                         'decision_policy': 'ignore',  # 'surge_only', 'cast_only', 'cast+surge', 'gradient', 'ignore'
                         'initial_position_selection': 'downwind_high',
                         'verbose': False
                         }
 
-        experiment = experiments.start_simulation(self.n_trajectories, agent_kwargs, experiment_kwargs)
+        experiment = experiments.start_simulation(self.n_trajectories, agent_kwargs, experiment_conditions)
 
         combined_score, score_components = experiment.calc_score(score_weights=self.score_weights, reference_data=self.reference_data)  # save on computation by passing the ref data
 
         log_str = "guess = {}. total score = {}. score components = {}. time = {}".format(guess, combined_score, score_components, datetime.now())
         logging.info(log_str)
+        print log_str
 
         if combined_score < self.best_score:  # move to own func
             self.best_score = combined_score
@@ -209,7 +211,7 @@ class FitBaselineModel:
 
     def _load_reference_ensemble(self):
         reference_experiment = experiments.load_experiment(experiment_conditions = {'condition': 'Control',
-                                 'plume_model': "None"
+                                 'plume_model': "None",
                                  'time_max': "N/A (experiment)",
                                  'bounded': True
                                  })
@@ -221,8 +223,8 @@ class FitBaselineModel:
 if __name__ == '__main__':
     initial_guess = [0.1, 6.55599224e-06, 3.63674551e-07]  # ["resitution", "randomF", "damping"]
 
-    O = FitBaselineModel
-    result = O.run_optimization(initial_guess)
+    O = FitBaselineModel(initial_guess)
+    result = O.run_optimization()
 
     msg = """############################################################
     Trial end. FINAL GUESS: {0}
