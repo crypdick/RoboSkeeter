@@ -9,10 +9,14 @@ class DoMath:
         self.observations = experiment.observations
 
         self.calc_kinematic_vals()
-        self.percent_time_in_plume = self.calc_time_in_plume()
-        self.side_ratio_score = self.calc_side_ratio_score()  # TODO: replace with KS test
 
-        self.turn_threshold = 433.5
+        if self.experiment.optimizing is False:  # skip the following computations if optimizing
+            self.percent_time_in_plume = self.calc_time_in_plume()
+            self.side_ratio_score = self.calc_side_ratio_score()  # TODO: replace with KS test
+
+            self.turn_threshold = 433.5
+        else:
+            self.percent_time_in_plume = self.side_ratio_score = self.turn_threshold = 0
 
     def calc_kinematic_vals(self):
         k = self.observations.kinematics
