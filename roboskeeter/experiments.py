@@ -77,14 +77,24 @@ class Experiment(object):
         dm = DoMath(self)  # updates kinematics, etc.
         self.observations, self.percent_time_in_plume, self.side_ratio_score = dm.observations, dm.percent_time_in_plume, dm.side_ratio_score
 
-    def calc_score(self):  # TODO uncomment scoring block
-        if self.is_scored == False:
-            S = Scoring(self)
+    def calc_score(self, reference_data=None, score_weights = {'velocity_x': 1,
+                                'velocity_y': 1,
+                                'velocity_z': 1,
+                                'acceleration_x': 0,
+                                'acceleration_y': 0,
+                                'acceleration_z': 0,
+                                'position_x': 0,
+                                'position_y': 0,
+                                'position_z': 0,
+                                'curvature': 3}):
+        if self.is_scored is True:
+            pass
+        else:
+            S = Scoring(self, score_weights, reference_data=reference_data,)
             score, score_components = S.score, S.score_components
             self.is_scored = True
             return score, score_components
-        else:
-            pass
+
 
 
 def start_simulation(num_flights, agent_kwargs=None, experiment_conditions=None):

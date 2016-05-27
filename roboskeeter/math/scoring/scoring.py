@@ -8,18 +8,9 @@ from scipy.stats import ks_2samp
 class Scoring():
     def __init__(self,
                  target_experiment,
+                 score_weights,
                  reference_data=None,
                  scoring_kwargs={'kinematics_list' : ['velocities', 'curviture'], 'dimensions': ['x', 'y', 'z']},
-                 score_weights={'velocity_x': 1,
-                                'velocity_y': 1,
-                                'velocity_z': 1,
-                                'acceleration_x': 0,
-                                'acceleration_y': 0,
-                                'acceleration_z': 0,
-                                'position_x': 0,
-                                'position_y': 0,
-                                'position_z': 0,
-                                'curvature': 3}
                  ):
         if reference_data is None:
             # when called from an experiment class, find out the relevant experiment from metadata, load that experiment, use as reference
