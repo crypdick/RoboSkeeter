@@ -15,13 +15,13 @@ class Scoring():
             # when called from an experiment class, find out the relevant experiment from metadata, load that experiment, use as reference
             print "no reference data provided; loading experimental data"
             reference_experiment = self.load_reference_ensemble(target_experiment.experiment_conditions['condition'])
-            self.reference_data = reference_experiment.observations.get_kinematic_dict()
+            self.reference_data = reference_experiment.observations.get_kinematic_dict(trim_endzones=True)
         else:
             self.reference_data = reference_data
 
         self.score_weights = score_weights
 
-        self.target_data = target_experiment.observations.get_kinematic_dict()
+        self.target_data = target_experiment.observations.get_kinematic_dict(trim_endzones=True)
 
         self.score, self.score_components = self.calc_score()
 
