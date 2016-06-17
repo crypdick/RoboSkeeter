@@ -118,9 +118,9 @@ def gen_symm_vecs(dims=3):
     credit: http://codereview.stackexchange.com/a/77945/76407
     """
     vecs = np.random.normal(size=dims)
-    mags = np.linalg.norm(vecs, axis=-1)
+    vec_norm = np.linalg.norm(vecs, axis=-1)
 
-    ends = vecs / mags[..., np.newaxis]  # divide by length to get unit vector
+    ends = vecs / vec_norm[..., np.newaxis]  # divide by length to get unit vector
 
     return ends
 
