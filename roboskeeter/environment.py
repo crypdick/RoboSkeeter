@@ -179,7 +179,7 @@ class NoPlume(Plume):
     def __init__(self, environment):
         super(self.__class__, self).__init__(environment)
 
-    def check_for_plume(self, _):
+    def check_in_plume_bounds(self, _):
         # always return false
         return False
 
@@ -197,15 +197,18 @@ class BooleanPlume(Plume):
 
         self.resolution = self._calc_resolution()
 
-    def check_for_plume(self, position):
-        in_bounds, _ = self.walls.check_in_bounds(position)
+    def check_in_plume_bounds(self, position):
+        in_windtunnel_bounds, _ = self.walls.check_in_bounds(position)
         x, y, z = position
 
-        if np.abs(self.data['x_position'] - x).min() > self.resolution:
-            # calcs distance to all points, if too far from the plume in the upwind/downwind direction returns false
+        x_distances_to_plume_planes = np.abs(self.data['x_position'] - x)
+
+        if x_distances_to_plume_planes.min() > self.resolution:
+            # if distance to nearest plume plane is greater than thresh, we are too far upwind or downwind from plume
+            # to be inside the plume
             in_plume = False
-        elif in_bounds is False:
-            print("WARNING: can't find plumes outside of windtunnel bounds")
+        elif in_windtunnel_bounds is False:
+            # print("WARNING: can't find plumes outside of windtunnel bounds")
             in_plume = False
         else:
             plume_plane = self._get_nearest_plume_plane(x)
@@ -264,6 +267,10 @@ class BooleanPlume(Plume):
 
         return resolution
 
+    def get_nearest_gradient(self, _):
+        """if trying to use gradient ascent decision policy with Boolean, return no gradient"""
+        return np.array([0., 0., 0.])
+
 
 class TimeAvgPlume(Plume):
     """time-averaged temperature readings taken inside the windtunnel"""
@@ -287,7 +294,6 @@ class TimeAvgPlume(Plume):
             self._raw_data = data_list[0]
             print "filling area surrounding measured area with room temperature data"
             self.padded_data = self._pad_plume_data()
-            print "padded data shape", self.padded_data.shape
             print "starting interpolation"
             self.data, self.grid_x, self.grid_y, self.grid_z, self.grid_temp = self._interpolate_data(self.padded_data, interpolation_resolution)
             print "calculating gradient"
@@ -307,9 +313,9 @@ class TimeAvgPlume(Plume):
         print """Warning: we don't know the plume bounds for the Timeavg plume, so the check_for_plume() method
                 always returns False"""
 
-    def check_for_plume(self, _):
+    def check_in_plume_bounds(self, *_):
         """
-        we don't know the plume bounds for the Timeavg plume, so the check_for_plume() method
+        we don't know the plume bounds for the Timeavg plume, so the check_in_plume_bounds() method
                 always returns False
 
         Returns
@@ -319,6 +325,7 @@ class TimeAvgPlume(Plume):
         """
 
         return False
+
 
     def get_nearest_prediction(self, position):
         """
@@ -434,7 +441,6 @@ class TimeAvgPlume(Plume):
         else:
             raise Exception('problem with loading plume data {}'.format(self.condition))
 
-
     def _pad_plume_data(self):
         """
         We are assuming that far away from the plume envelope the air will be room temperature. We are padding the
@@ -442,18 +448,6 @@ class TimeAvgPlume(Plume):
 
         Appends the padded data to the raw data
         """
-        # expand the windtunnel bounds to synthesize data outside the windtunnel bounds
-        expand_factor = .05  # expand by this much
-        y_pad = (self.right - self.left) * expand_factor
-        x_pad = (self.upwind - self.downwind) * expand_factor
-        z_pad = (self.ceiling - self.floor) * expand_factor
-
-        left = self.left - y_pad
-        right = self.right + y_pad
-        floor =  self.floor - z_pad
-        ceiling = self.ceiling + z_pad
-        downwind = self.downwind - x_pad
-        upwind = self.upwind + x_pad
 
         padding_distance = 0.03  # start padding 3 cm away from recorded data
 
@@ -468,18 +462,18 @@ class TimeAvgPlume(Plume):
 
         df_list = [self._raw_data]  # append to raw data
         # make grids of room temp data to fill the volume surrounding the place we took measurements
-        df_list.append(self._make_uniform_data_grid(downwind, data_xmin, left, right, floor, ceiling))
-        df_list.append(self._make_uniform_data_grid(data_xmax, upwind, left, right, floor, ceiling))
+        df_list.append(self._make_uniform_data_grid(self.downwind, data_xmin, self.left, self.right, self.floor, self.ceiling))
+        df_list.append(self._make_uniform_data_grid(data_xmax, self.upwind, self.left, self.right, self.floor, self.ceiling))
 
-        df_list.append(self._make_uniform_data_grid(data_xmin, data_xmax, left, data_ymin, floor, ceiling))
-        df_list.append(self._make_uniform_data_grid(data_xmin, data_xmax, data_ymax, right, floor, ceiling))
+        df_list.append(self._make_uniform_data_grid(data_xmin, data_xmax, self.left, data_ymin, self.floor, self.ceiling))
+        df_list.append(self._make_uniform_data_grid(data_xmin, data_xmax, data_ymax, self.right, self.floor, self.ceiling))
 
-        df_list.append(self._make_uniform_data_grid(data_xmin, data_xmax, data_ymin, data_ymax, floor, data_zmin))
-        df_list.append(self._make_uniform_data_grid(data_xmin, data_xmax, data_ymin, data_ymax, data_zmax, ceiling))
+        df_list.append(self._make_uniform_data_grid(data_xmin, data_xmax, data_ymin, data_ymax, self.floor, data_zmin))
+        df_list.append(self._make_uniform_data_grid(data_xmin, data_xmax, data_ymin, data_ymax, data_zmax, self.ceiling))
 
         return pd.concat(df_list)
 
-    def _make_uniform_data_grid(self, xmin, xmax, ymin, ymax, zmin, zmax, temp=19, res=0.1):  # FIXME increase res
+    def _make_uniform_data_grid(self, xmin, xmax, ymin, ymax, zmin, zmax, temp=19, res=0.03):
         # res is resolution in meters
         # left grid
         x = np.arange(xmin, xmax, res)
