@@ -138,7 +138,7 @@ class Simulator:
         position[0], velocity[0] = self._set_init_pos_and_velo()
 
         for tsi in vector_dict['tsi']:
-            in_plume[tsi] = self.plume.check_for_plume(position[tsi])  # returns False for non-Bool plume
+            in_plume[tsi] = self.plume.check_in_plume_bounds(position[tsi])  # returns False for non-Bool plume
 
             decision[tsi], plume_signal[tsi] = self.decisions.make_decision(in_plume[tsi], velocity[tsi][1])
 
@@ -306,6 +306,9 @@ class Simulator:
         initial_velocity = np.random.normal(0, self.initial_velocity_stdev, 3)
         selection = self.initial_position_selection
 
+        if selection == 'downwind_high':
+            initial_position = np.array(
+                [0.05, np.random.uniform(-0.127, 0.127), 0.2373])  # 0.2373 is mode of z pos distribution
         if type(selection) is list:
             initial_position = np.array(selection)
         if selection == "door":  # start trajectories as they exit the front door
@@ -313,9 +316,6 @@ class Simulator:
             # FIXME cage is actually suspending above floor
         if selection == 'downwind_plane':
             initial_position = np.array([0.1, np.random.uniform(-0.127, 0.127), np.random.uniform(0., 0.254)])
-        if selection == 'downwind_high':
-            initial_position = np.array(
-                [0.05, np.random.uniform(-0.127, 0.127), 0.2373])  # 0.2373 is mode of z pos distribution
         else:
             raise Exception('invalid agent position specified: {}'.format(selection))
 
