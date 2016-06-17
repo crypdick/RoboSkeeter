@@ -7,7 +7,7 @@ from roboskeeter.math.scoring.scoring import Scoring
 from roboskeeter.simulator import Simulator
 from roboskeeter.environment import Environment
 from roboskeeter.observations import Observations
-from roboskeeter.plotting.my_plotter import MyPlotter
+from roboskeeter.plotting.plot_funcs_wrapper import PlotFuncsWrapper
 import numpy as np
 
 
@@ -56,16 +56,16 @@ class Experiment(object):
         else:
             self.observations.experiment_data_to_DF(experimental_condition=self.experiment_conditions['condition'])
             if self.experiment_conditions['optimizing'] is False:  # skip unneccessary computations for optimizer
-                print self.optimizing
-                print "\nDone loading files. Iterating through flights and presenting plume, making hypothetical decisions"
+                print """\nDone loading files. Iterating through flights and presenting plume, making hypothetical
+                 decisions using selected decision policy ({})""".format(self.agent.decision_policy)
                 n_rows = len(self.observations.kinematics)
                 in_plume = np.zeros(n_rows, dtype=bool)
                 plume_signal = np.array([None] * n_rows)
                 decision = np.array([None] * n_rows)
                 for i, row in self.observations.kinematics.iterrows():
-                    in_plume[i] = self.environment.plume.check_for_plume([row.position_x,
-                                                                          row.position_y,
-                                                                          row.position_z])
+                    in_plume[i] = self.environment.plume.check_in_plume_bounds([row.position_x,
+                                                                                row.position_y,
+                                                                                row.position_z])
                     decision[i], plume_signal[i] = self.agent.decisions.make_decision(in_plume[i], row.velocity_y)
 
                 self.observations.kinematics['in_plume'] = in_plume
@@ -73,7 +73,7 @@ class Experiment(object):
                 self.observations.kinematics['decision'] = decision
 
         # assign alias
-        self.plt = MyPlotter(self)  # takes self, extracts metadata for files and titles, etc
+        self.plt = PlotFuncsWrapper(self)  # takes self, extracts metadata for files and titles, etc
 
         # run analysis
 
@@ -94,13 +94,13 @@ class Experiment(object):
             pass
         else:
             S = Scoring(self, score_weights, reference_data=reference_data)
-            score, score_components = S.score, S.score_components
+            self.score, self.score_components = S.score, S.score_components
             self.is_scored = True
-            return score, score_components
+            return self.score, self.score_components
 
 
 
-def start_simulation(num_flights, agent_kwargs=None, experiment_conditions=None):
+def start_simulation(num_flights, agent_kwargs=None, simulation_conditions=None):
     """
     Fire up RoboSkeeter
     Parameters
@@ -109,19 +109,19 @@ def start_simulation(num_flights, agent_kwargs=None, experiment_conditions=None)
         (int) number of flights to simulate
     agent_kwargs
         (dict) params for agent
-    experiment_conditions
+    simulation_conditions
         (dict) params for environment
 
     Returns
     -------
     experiment object
     """
-    if experiment_conditions is None:
-        experiment_conditions = {'condition': 'Control',  # {'Left', 'Right', 'Control'}
+    if simulation_conditions is None:
+        simulation_conditions = {'condition': 'Right',  # {'Left', 'Right', 'Control'}
                                  'time_max': 6.,
                                  'bounded': True,
                                  'optimizing': False,
-                                 'plume_model': "None"  # "Boolean", "Timeavg", "None", "Unaveraged"
+                                 'plume_model': "Timeavg"  # "Boolean", "Timeavg", "None", "Unaveraged"
                                  }
     if agent_kwargs is None:
         agent_kwargs = {'is_simulation': True,
@@ -133,11 +133,11 @@ def start_simulation(num_flights, agent_kwargs=None, experiment_conditions=None)
                         'stimulus_memory_n_timesteps': 100,
                         'decision_policy': 'gradient',  # 'surge', 'cast', 'castsurge', 'gradient', 'ignore'
                         'initial_position_selection': 'downwind_high',
-                        'verbose': False,  # FIXME set to true
+                        'verbose': True,
                         'optimizing': False
                         }
 
-    experiment = Experiment(agent_kwargs, experiment_conditions)
+    experiment = Experiment(agent_kwargs, simulation_conditions)
     experiment.run(n=num_flights)
     if agent_kwargs['verbose'] is True:
         print "\nDone running simulation."
@@ -145,7 +145,7 @@ def start_simulation(num_flights, agent_kwargs=None, experiment_conditions=None)
     return experiment
 
 
-def load_experiment(experiment_conditions=None):
+def load_experiment(condition='Control'):
     """
     Load Sharri's experiments into experiment class
     Parameters
@@ -156,13 +156,12 @@ def load_experiment(experiment_conditions=None):
     -------
     experiment class
     """
-    if experiment_conditions is None:  # load defaults
-        experiment_conditions = {'condition': 'Right',  # {'Left', 'Right', 'Control'}
-                                 'plume_model': "None",  # "Boolean" "None, "Timeavg", "Unaveraged"
-                                 'time_max': "N/A (experiment)",
-                                 'bounded': True,
-                                 'optimizing': False
-                                 }
+    experiment_conditions = {'condition': condition,  # {'Left', 'Right', 'Control'}
+                             'plume_model': "Boolean",  # "Boolean" "None, "Timeavg", "Unaveraged"
+                             'time_max': "N/A (experiment)",
+                             'bounded': True,
+                             'optimizing': False
+                             }
 
     agent_kwargs = {'is_simulation': False,  # ALL THESE VALUES ARE A HYPOTHESIS!!!
                     'random_f_strength': "UNKNOWN",
@@ -184,8 +183,8 @@ def load_experiment(experiment_conditions=None):
 
 
 if __name__ is '__main__':
-    experiment = start_simulation(150, None, None)
-    # experiment = load_experiment()
+    # experiment = start_simulation(200, None, None)
+    experiment = load_experiment('Left')
 
     print "\nAliases updated."
     # useful aliases
