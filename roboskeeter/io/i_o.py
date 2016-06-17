@@ -44,8 +44,11 @@ def load_single_csv_to_df(csv_dir):
         'curvatureS'
         ]
 
-    dataframe = pd.read_csv(csv_dir, na_values="NaN", names=col_labels)  # recognize str(NaN) as NaN
-    dataframe.fillna(value=0, inplace=True)
+    # map string "NaN" to np.nan
+    # header=None is needed to make sure dtype float is assigned properly, apparently
+    dataframe = pd.read_csv(csv_dir, na_values="NaN", names=col_labels, header=None, dtype=np.float32)
+
+    dataframe.fillna(value=0, inplace=True)  # TODO: there shouldn't be NaNs in data
 
     df_len = len(dataframe.position_x)
 
@@ -196,4 +199,6 @@ def extract_number_from_fname(token):
     extract_digits = lambda stng: "".join(char for char in stng if char in string.digits)
     to_int = lambda x: int(float(x)) if x.count(".") <= 1 else None
 
-    return to_int(extract_digits(token))
+    number = to_int(extract_digits(token))
+
+    return number
