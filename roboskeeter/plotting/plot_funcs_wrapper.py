@@ -2,7 +2,7 @@ from roboskeeter.plotting import plot_kinematics, animate_trajectory_callable, p
 import numpy as np
 
 
-class MyPlotter:
+class PlotFuncsWrapper:
     def __init__(self, experiment, trim_endzones=False):
         """
 
@@ -176,8 +176,8 @@ class MyPlotter:
                                                   upw_ensemble=upwind_ensemble,
                                                   downw_ensemble=downwind_ensemble)
 
-    def plot_score_comparison(self):
-        plot_kinematics.plot_score_comparison(self.experiment)
+    def plot_score_comparison(self, reference_vals=None):
+        plot_kinematics.plot_score_comparison(self.experiment, reference_vals=reference_vals)
 
     def plot_timeseries(self, kinematic=None):
         plot_kinematics.plot_timeseries(self.experiment, kinematic=kinematic)
