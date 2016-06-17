@@ -34,9 +34,9 @@ class Scoring():
         total score and score components
         """
         score_components = dict()
-        for k, v in self.target_data.iteritems():
-            ks, pval = ks_2samp(v, self.reference_data[k])
-            score_components[k] = self.score_weights[k] * ks
+        for kinematic, kinematic_array in self.target_data.iteritems():
+            ks_score, pval = ks_2samp(kinematic_array, self.reference_data[kinematic])
+            score_components[kinematic] = self.score_weights[kinematic] * ks_score
 
         return sum(score_components.values()), score_components
 
