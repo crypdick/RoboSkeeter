@@ -1011,34 +1011,43 @@ def plot_all_force_clouds(experiment):
         plt.show()
 
 
-def plot_score_comparison(experiment):
-    try:
-        score_components = experiment.score_components
-    except AttributeError:  # we haven't calculated the score beforehand
-        score, score_components = experiment.calc_score()
+def plot_score_comparison(experiment, reference_vals=None, show_score=False):
+    if show_score:
+        if experiment.is_scored:
+            score, score_components = experiment.score, experiment.score_components
+        else:
+            score, score_components = experiment.calc_score()
 
-    # get reference data
-    def load_reference_vals(condition):
-        from roboskeeter import experiments
-        reference_experiment = experiments.load_experiment(experiment_conditions = {'condition': condition,
-                                 'plume_model': "None",  # "Boolean" "None, "Timeavg", "Unaveraged"
-                                 'time_max': "N/A (experiment)",
-                                 'bounded': True,
-                                 'optimizing': True
-                                 })
-        return reference_experiment.observations.get_kinematic_dict()
+    if reference_vals is None:
+        # get reference data if None is given to func. if anything string is passed instead, we won't plot reference data
+        def load_reference_vals(condition):
+            from roboskeeter import experiments
+            reference_experiment = experiments.load_experiment(experiment_conditions = {'condition': condition,
+                                     'plume_model': "None",  # "Boolean" "None, "Timeavg", "Unaveraged"
+                                     'time_max': "N/A (experiment)",
+                                     'bounded': True,
+                                     'optimizing': True
+                                     })
+            return reference_experiment.observations.get_kinematic_dict(trim_endzones=True)
 
 
-    reference_vals = load_reference_vals(experiment.experiment_conditions['condition'])
+        reference_vals = load_reference_vals(experiment.experiment_conditions['condition'])
     target_vals = experiment.observations.get_kinematic_dict(trim_endzones=True)
 
-
+    titleappend, _, _ = get_agent_info(experiment)
     for kinematic, targ_val in target_vals.iteritems():
-        ref_val = reference_vals[kinematic]
+        sns.kdeplot(data=targ_val, color='blue', label='simulation', lw=3, shade=True, cut=0)
+        try:
+            ref_val = reference_vals[kinematic]
+            sns.kdeplot(data=ref_val, color='red', label='experiment', lw=3, shade=True, cut=0)
+            plt.legend()  # only show legend if plotting both distributions
+        except TypeError:  # no reference data to be plotted
+            pass
 
-        sns.kdeplot(data=targ_val, color='blue', label='target')
-        sns.kdeplot(data=ref_val, color='red', label='reference')
-        sns.plt.title(kinematic)
-        plt.legend()
+        try:
+            sns.plt.title("{}. distribution score = {}".format(kinematic, score_components[kinematic]))
+        except TypeError:
+            print score_components
+
         sns.plt.show()
 
