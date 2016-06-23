@@ -94,3 +94,17 @@ class Observations(object):
                }
 
         return dict
+
+    def get_starting_positions(self):
+        positions_at_timestep_0 = self.kinematics.loc[(self.kinematics.tsi == 0), ['position_x', 'position_y', 'position_z']]
+        return positions_at_timestep_0
+
+
+"""
+the following is the code I used to fit the intiial velocity using the control experimental flight data
+
+v0 = kinematics.loc[(kinematics.tsi == 0),['velocity_x','velocity_y','velocity_z']]
+v0_norm = np.linalg.norm(v0, axis=1)
+mu, std = scipy.stats.norm.fit(v0_norm)
+
+"""
