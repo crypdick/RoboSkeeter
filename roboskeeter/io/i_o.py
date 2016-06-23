@@ -70,24 +70,26 @@ def experiment_condition_to_DF(experimental_condition):
     ----------
     experimental_condition
         (string)
-        Control, Left, or Right
+        Control, Left, or Right, or list thereof
 
     Returns
     -------
     df
     """
-    condition = string.upper(experimental_condition)
-    dir_label = "EXP_TRAJECTORIES_" + condition
-    directory = get_directory(dir_label)
-
+    if type(experimental_condition) is str:
+        experimental_condition = [experimental_condition]
+    experimental_condition = [string.upper(i) for i in experimental_condition]
     df_list = []
+    for condition in experimental_condition:
+        dir_label = "EXP_TRAJECTORIES_" + condition
+        directory = get_directory(dir_label)
 
-    for fname in [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]:  # list files
-        print "Loading {} from {}".format(fname, directory)
-        file_path = os.path.join(directory, fname)
-        dataframe = load_single_csv_to_df(file_path)
+        for fname in [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]:  # list files
+            print "Loading {} from {}".format(fname, directory)
+            file_path = os.path.join(directory, fname)
+            dataframe = load_single_csv_to_df(file_path)
 
-        df_list.append(dataframe)
+            df_list.append(dataframe)
 
     df = pd.concat(df_list)
 

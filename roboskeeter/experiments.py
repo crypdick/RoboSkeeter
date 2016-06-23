@@ -117,7 +117,7 @@ def start_simulation(num_flights, agent_kwargs=None, simulation_conditions=None)
     experiment object
     """
     if simulation_conditions is None:
-        simulation_conditions = {'condition': 'Right',  # {'Left', 'Right', 'Control'}
+        simulation_conditions = {'condition': 'Right',  # {'Left', 'Right', 'Control'} or a list of these
                                  'time_max': 6.,
                                  'bounded': True,
                                  'optimizing': False,
@@ -132,7 +132,7 @@ def start_simulation(num_flights, agent_kwargs=None, simulation_conditions=None)
                         'restitution_coeff': 9.99023340e-02, #0.1,  # 0.8
                         'stimulus_memory_n_timesteps': 100,
                         'decision_policy': 'gradient',  # 'surge', 'cast', 'castsurge', 'gradient', 'ignore'
-                        'initial_position_selection': 'downwind_high',
+                        'initial_position_selection': 'realistic',
                         'verbose': True,
                         'optimizing': False
                         }
@@ -156,8 +156,8 @@ def load_experiment(condition='Control'):
     -------
     experiment class
     """
-    experiment_conditions = {'condition': condition,  # {'Left', 'Right', 'Control'}
-                             'plume_model': "Boolean",  # "Boolean" "None, "Timeavg", "Unaveraged"
+    experiment_conditions = {'condition': condition,  # {'Left', 'Right', 'Control', or a list of these}
+                             'plume_model': "None", #"Boolean",  # "Boolean" "None, "Timeavg", "Unaveraged"
                              'time_max': "N/A (experiment)",
                              'bounded': True,
                              'optimizing': False
@@ -170,7 +170,7 @@ def load_experiment(condition='Control'):
                     'collision_type': "UNKNOWN",
                     'restitution_coeff': "UNKNOWN",
                     'stimulus_memory_n_timesteps': "UNKNOWN",
-                    'decision_policy': "surge",  # 'surge', 'cast', 'castsurge', 'gradient', 'ignore'
+                    'decision_policy': "ignore", # "surge",  # 'surge', 'cast', 'castsurge', 'gradient', 'ignore'
                     'initial_position_selection': "UNKNOWN",
                     'verbose': True
                     }
@@ -183,8 +183,8 @@ def load_experiment(condition='Control'):
 
 
 if __name__ is '__main__':
-    # experiment = start_simulation(200, None, None)
-    experiment = load_experiment('Left')
+    experiment = start_simulation(20, None, None)
+    # experiment = load_experiment(['Control'])
 
     print "\nAliases updated."
     # useful aliases
