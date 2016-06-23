@@ -198,18 +198,18 @@ class Simulator:
         
         return V
 
-
     def _collide_with_wall(self, candidate_pos, candidate_velo):
         walls = self.windtunnel.walls
         xpos, ypos, zpos = candidate_pos
         xvelo, yvelo, zvelo = candidate_velo
-        teleport_distance = 0.003  # this is arbitrary
+        teleport_distance = 0.005  # this is arbitrary
         crash = False
 
         # print "test", candidate_velo
 
         # x dim
         if xpos < walls.downwind:  # too far behind
+            crash = True
             xpos = walls.downwind + teleport_distance  # teleport back inside
             if self.collision_type == 'elastic':
                 xvelo *= -1.
@@ -217,10 +217,10 @@ class Simulator:
                 xvelo *= -self.restitution_coeff
             elif self.collision_type == 'crash':
                 xvelo = 0.
-                crash = True
             else:
                 raise ValueError("unknown collision type {}".format(self.collision_type))
         if xpos > walls.upwind:  # reached far (upwind) wall (end)
+            crash = True
             xpos = walls.upwind - teleport_distance  # teleport back inside
             if self.collision_type == 'elastic':
                 xvelo *= -1.
@@ -228,10 +228,11 @@ class Simulator:
                 xvelo *= -self.restitution_coeff
             elif self.collision_type == 'crash':
                 xvelo = 0.
-                crash = True
+
 
         # y dim
         if ypos < walls.left:  # too left
+            crash = True
             ypos = walls.left + teleport_distance
             if self.collision_type == 'elastic':
                 yvelo *= -1.
@@ -239,8 +240,9 @@ class Simulator:
                 yvelo *= -self.restitution_coeff
             elif self.collision_type == "crash":
                 yvelo = 0.
-                crash = True
+
         if ypos > walls.right:  # too far right
+            crash = True
             ypos = walls.right - teleport_distance
             if self.collision_type == 'elastic':
                 yvelo *= -1.
@@ -248,10 +250,10 @@ class Simulator:
                 yvelo *= -self.restitution_coeff
             elif self.collision_type == 'crash':
                 yvelo = 0.
-                crash = True
 
         # z dim
         if zpos > walls.ceiling:  # too far above
+            crash = True
             zpos = walls.ceiling - teleport_distance
             if self.collision_type == 'elastic':
                 zvelo *= -1.
@@ -259,8 +261,8 @@ class Simulator:
                 zvelo *= -self.restitution_coeff
             elif self.collision_type == "crash":
                 zvelo = 0.
-                crash = True
         if zpos < walls.floor:  # too far below
+            crash = True
             zpos = walls.floor + teleport_distance
             if self.collision_type == 'elastic':
                 zvelo *= -1.
@@ -268,15 +270,11 @@ class Simulator:
                 zvelo *= -self.restitution_coeff
             elif self.collision_type == 'crash':
                 zvelo = 0.
-                crash = True
 
         try:
             candidate_pos, candidate_velo = np.array([xpos, ypos, zpos]), np.array([xvelo, yvelo, zvelo])
         except:
             print " cand velo", [xvelo, yvelo, zvelo], "before", candidate_velo
-
-        if crash is True and self.collision_type is 'crash':
-            candidate_velo *= self.crash_coeff
 
 
         return candidate_pos, candidate_velo
