@@ -329,15 +329,15 @@ class Simulator:
             y = choose([left + y_avg_dist_to_wall, (right - y_avg_dist_to_wall)])
             z = ceiling - z_avg_dist_to_wall
             initial_position = np.array([x,y,z])
-        if self.initial_position_selection == 'downwind_high':
+        elif self.initial_position_selection == 'downwind_high':
             initial_position = np.array(
                 [0.05, np.random.uniform(-0.127, 0.127), 0.2373])  # 0.2373 is mode of z pos distribution
-        if type(self.initial_position_selection) is list:
+        elif type(self.initial_position_selection) is list:
             initial_position = np.array(self.initial_position_selection)
-        if self.initial_position_selection == "door":  # start trajectories as they exit the front door
+        elif self.initial_position_selection == "door":  # start trajectories as they exit the front door
             initial_position = np.array([0.1909, np.random.uniform(-0.0381, 0.0381), np.random.uniform(0., 0.1016)])
             # FIXME cage is actually suspending above floor
-        if self.initial_position_selection == 'downwind_plane':
+        elif self.initial_position_selection == 'downwind_plane':
             initial_position = np.array([0.1, np.random.uniform(-0.127, 0.127), np.random.uniform(0., 0.254)])
         else:
             raise Exception('invalid agent position specified: {}'.format(self.initial_position_selection))
