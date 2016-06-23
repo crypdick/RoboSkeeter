@@ -203,7 +203,7 @@ class Simulator:
         walls = self.windtunnel.walls
         xpos, ypos, zpos = candidate_pos
         xvelo, yvelo, zvelo = candidate_velo
-        teleport_distance = 0.005
+        teleport_distance = 0.003  # this is arbitrary
         crash = False
 
         # print "test", candidate_velo
@@ -216,7 +216,7 @@ class Simulator:
             elif self.collision_type == 'part_elastic':
                 xvelo *= -self.restitution_coeff
             elif self.collision_type == 'crash':
-                # xvelo *= -1.
+                xvelo = 0.
                 crash = True
             else:
                 raise ValueError("unknown collision type {}".format(self.collision_type))
@@ -227,7 +227,7 @@ class Simulator:
             elif self.collision_type == 'part_elastic':
                 xvelo *= -self.restitution_coeff
             elif self.collision_type == 'crash':
-                # xvelo *= -1.
+                xvelo = 0.
                 crash = True
 
         # y dim
@@ -238,16 +238,16 @@ class Simulator:
             elif self.collision_type == 'part_elastic':
                 yvelo *= -self.restitution_coeff
             elif self.collision_type == "crash":
-                # yvelo *= -1.
+                yvelo = 0.
                 crash = True
         if ypos > walls.right:  # too far right
             ypos = walls.right - teleport_distance
             if self.collision_type == 'elastic':
                 yvelo *= -1.
-            if self.collision_type == 'part_elastic':
+            elif self.collision_type == 'part_elastic':
                 yvelo *= -self.restitution_coeff
             elif self.collision_type == 'crash':
-                # yvelo *= -1.
+                yvelo = 0.
                 crash = True
 
         # z dim
@@ -255,19 +255,19 @@ class Simulator:
             zpos = walls.ceiling - teleport_distance
             if self.collision_type == 'elastic':
                 zvelo *= -1.
-            if self.collision_type == 'part_elastic':
+            elif self.collision_type == 'part_elastic':
                 zvelo *= -self.restitution_coeff
             elif self.collision_type == "crash":
-                # zvelo *= -1.
+                zvelo = 0.
                 crash = True
         if zpos < walls.floor:  # too far below
             zpos = walls.floor + teleport_distance
             if self.collision_type == 'elastic':
                 zvelo *= -1.
-            if self.collision_type == 'part_elastic':
+            elif self.collision_type == 'part_elastic':
                 zvelo *= -self.restitution_coeff
             elif self.collision_type == 'crash':
-                # zvelo *= -1.
+                zvelo = 0.
                 crash = True
 
         try:
