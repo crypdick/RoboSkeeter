@@ -438,7 +438,7 @@ def plot_kinematic_histograms(experiment,
 #    return xpos_counts_norm, ypos_bins, ypos_counts, ypos_counts_norm, vx_counts_n
 
 def plot_starting_points(ensemble):
-    positions_at_timestep_0 = ensemble.loc[(ensemble.tsi == 0), ['position_x', 'position_y', 'position_z']]
+    positions_at_timestep_0 = ensemble.get_starting_positions()
 
     f1 = plt.figure()
     ax = f1.add_subplot(111, projection='3d')
@@ -450,8 +450,8 @@ def plot_starting_points(ensemble):
 
     g = sns.PairGrid(positions_at_timestep_0, diag_sharey=False)
     g.map_upper(plt.scatter)
-    g.map_lower(sns.kdeplot, cmap="Blues_d", shade=True)  # , clip=((0,1)))
-    g.map_diag(sns.kdeplot, lw=3, legend=False)
+    g.map_lower(sns.kdeplot, cmap="Blues_d", shade=True, cut=0)  # , clip=((0,1)))
+    g.map_diag(sns.kdeplot, lw=3, legend=False, cut=0)
 
     xlabels, ylabels = [], []
 
@@ -472,6 +472,8 @@ def plot_starting_points(ensemble):
     for ax in g.axes.flat:
         _ = plt.setp(ax.get_yticklabels(), visible=True)
         _ = plt.setp(ax.get_xticklabels(), visible=True)
+
+    plt.show()
 
 
 def plot_timeseries(experiment, kinematic=None):
