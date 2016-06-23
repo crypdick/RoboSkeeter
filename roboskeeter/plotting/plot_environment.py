@@ -95,7 +95,7 @@ def draw_bool_plume(plume, ax=None):
         ax.add_patch(ell)
         art3d.patch_2d_to_3d(ell, z=val, zdir="x")
 
-    art3d.patch_collection_2d_to_3d(ells)
+    # art3d.patch_collection_2d_to_3d(ells)
 
     plt.show()
 
