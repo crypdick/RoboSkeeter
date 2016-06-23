@@ -13,7 +13,8 @@ import pandas as pd
 from flight import Flight
 from decisions import Decisions
 from observations import Observations
-
+from random import choice as choose
+from roboskeeter.math.math_toolbox import gen_symm_vecs
 
 class Simulator:
     """Our simulated mosquito.
@@ -37,7 +38,10 @@ class Simulator:
         self.time_max = 15.
         self.dt = 0.01
         self.max_bins = int(np.ceil(self.time_max / self.dt))  # N bins
-        self.initial_velocity_stdev = 0.01
+
+        # from gassian fit to experimental control data
+        self.initial_velocity_mu = 0.18
+        self.initial_velocity_stdev = 0.08
 
         # useful aliases
         self.experiment = experiment
@@ -135,7 +139,8 @@ class Simulator:
         total_f = vector_dict['total_f']
         decision = vector_dict['decision']
 
-        position[0], velocity[0] = self._set_init_pos_and_velo()
+        position[0] = self._set_init_position()
+        velocity[0] = self._set_init_velocity()
 
         for tsi in vector_dict['tsi']:
             in_plume[tsi] = self.plume.check_in_plume_bounds(position[tsi])  # returns False for non-Bool plume
@@ -293,7 +298,15 @@ class Simulator:
 
         return V
 
-    def _set_init_pos_and_velo(self):
+    def _set_init_velocity(self):
+        initial_velocity_norm = np.random.normal(self.initial_velocity_mu, self.initial_velocity_stdev, 1)
+
+        unit_vector = gen_symm_vecs(3)
+        velocity_vec = initial_velocity_norm * unit_vector
+
+        return velocity_vec
+
+    def _set_init_position(self):
         ''' puts the agent in an initial position, usually within the bounds of the
         cage
 
@@ -303,23 +316,33 @@ class Simulator:
         '''
 
         # generate random intial velocity condition using normal distribution fitted to experimental data
-        initial_velocity = np.random.normal(0, self.initial_velocity_stdev, 3)
-        selection = self.initial_position_selection
-
-        if selection == 'downwind_high':
+        if self.initial_position_selection == 'realistic':
+            """these were calculated by taking selecting the initial positions of all observed trajectories in all
+            conditions. Then, for each dimension, I calculated the distance of each initial position to the nearest wall
+            in that dimension (i.e. for each z I calculated the distance to the floor and ceiling and selected
+            the smallest distance. Then, Decisions aand"""
+            downwind, upwind, left, right, floor, ceiling = self.boundary
+            x_avg_dist_to_wall = 0.268
+            y_avg_dist_to_wall = 0.044
+            z_avg_dist_to_wall = 0.049
+            x = choose([(downwind + x_avg_dist_to_wall), (upwind - x_avg_dist_to_wall)])
+            y = choose([left + y_avg_dist_to_wall, (right - y_avg_dist_to_wall)])
+            z = ceiling - z_avg_dist_to_wall
+            initial_position = np.array([x,y,z])
+        if self.initial_position_selection == 'downwind_high':
             initial_position = np.array(
                 [0.05, np.random.uniform(-0.127, 0.127), 0.2373])  # 0.2373 is mode of z pos distribution
-        if type(selection) is list:
-            initial_position = np.array(selection)
-        if selection == "door":  # start trajectories as they exit the front door
+        if type(self.initial_position_selection) is list:
+            initial_position = np.array(self.initial_position_selection)
+        if self.initial_position_selection == "door":  # start trajectories as they exit the front door
             initial_position = np.array([0.1909, np.random.uniform(-0.0381, 0.0381), np.random.uniform(0., 0.1016)])
             # FIXME cage is actually suspending above floor
-        if selection == 'downwind_plane':
+        if self.initial_position_selection == 'downwind_plane':
             initial_position = np.array([0.1, np.random.uniform(-0.127, 0.127), np.random.uniform(0., 0.254)])
         else:
-            raise Exception('invalid agent position specified: {}'.format(selection))
+            raise Exception('invalid agent position specified: {}'.format(self.initial_position_selection))
 
-        return initial_position, initial_velocity
+        return initial_position
 
     def _velocity_ceiling(self, candidate_velo):
         """check if we're seeing enormous velocities, which sometimes happens when running the optimization
