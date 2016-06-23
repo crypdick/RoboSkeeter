@@ -45,7 +45,7 @@ class PlotFuncsWrapper:
         plot_kinematics.vector_cloud_pairgrid(self, kinematic, i=None)
 
     def plot_start_postiions(self):
-        plot_kinematics.plot_starting_points(self)
+        plot_kinematics.plot_starting_points(self.observations)
 
     def animate_trajectory(self, trajectory_i=None, highlight_inside_plume=False, show_plume=False, save =False, view='top'):
         if trajectory_i is None:
