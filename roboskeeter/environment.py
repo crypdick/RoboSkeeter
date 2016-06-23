@@ -292,8 +292,10 @@ class TimeAvgPlume(Plume):
             self._raw_data, self.padded_data, self.data = data_list
         elif len(data_list) == 1:
             self._raw_data = data_list[0]
-            print "filling area surrounding measured area with room temperature data"
-            self.padded_data = self._pad_plume_data()
+            # print "filling area surrounding measured area with room temperature data"
+            # self.padded_data = self._pad_plume_data()
+            print "adding sheet of room temp data on outer windtunnel walls"
+            self.padded_data = self._room_temp_wall_sheet()
             print "starting interpolation"
             self.data, self.grid_x, self.grid_y, self.grid_z, self.grid_temp = self._interpolate_data(self.padded_data, interpolation_resolution)
             print "calculating gradient"
@@ -441,6 +443,30 @@ class TimeAvgPlume(Plume):
         else:
             raise Exception('problem with loading plume data {}'.format(self.condition))
 
+    def _room_temp_wall_sheet(self):
+        wall_thickness = 0.03  # make sure this value is >= resolution in the _make_uniform_data_grid()
+        data_xmin = self.downwind - wall_thickness
+        data_xmax = self.upwind + wall_thickness
+        data_ymin = self.left - wall_thickness
+        data_ymax = self.right + wall_thickness
+        data_zmin = self.floor - wall_thickness
+        data_zmax = self.ceiling + wall_thickness
+
+
+        df_list = [self._raw_data]  # start with raw data
+
+        # make a sheet of room temp data for each wall
+        df_list.append(self._make_uniform_data_grid(data_xmin, self.downwind, self.left, self.right, self.floor, self.ceiling))
+        df_list.append(self._make_uniform_data_grid(self.upwind, data_xmax, self.left, self.right, self.floor, self.ceiling))
+
+        df_list.append(self._make_uniform_data_grid(self.downwind, self.upwind, data_ymin, self.left, self.floor, self.ceiling))
+        df_list.append(self._make_uniform_data_grid(self.downwind, self.upwind, self.right, data_ymax, self.floor, self.ceiling))
+
+        df_list.append(self._make_uniform_data_grid(self.downwind, self.upwind, self.left, self.right, data_zmin, self.floor))
+        df_list.append(self._make_uniform_data_grid(self.downwind, self.upwind, self.left, self.right, self.ceiling, data_zmax))
+
+        return pd.concat(df_list)
+
     def _pad_plume_data(self):
         """
         We are assuming that far away from the plume envelope the air will be room temperature. We are padding the
@@ -459,7 +485,6 @@ class TimeAvgPlume(Plume):
         data_zmax = self._raw_data.z.max() + padding_distance
 
 
-
         df_list = [self._raw_data]  # append to raw data
         # make grids of room temp data to fill the volume surrounding the place we took measurements
         df_list.append(self._make_uniform_data_grid(self.downwind, data_xmin, self.left, self.right, self.floor, self.ceiling))
@@ -473,7 +498,7 @@ class TimeAvgPlume(Plume):
 
         return pd.concat(df_list)
 
-    def _make_uniform_data_grid(self, xmin, xmax, ymin, ymax, zmin, zmax, temp=19, res=0.03):
+    def _make_uniform_data_grid(self, xmin, xmax, ymin, ymax, zmin, zmax, temp=19., res=0.03):
         # res is resolution in meters
         # left grid
         x = np.arange(xmin, xmax, res)
@@ -504,6 +529,7 @@ class TimeAvgPlume(Plume):
         interpolated_temps, (grid_x, grid_y, grid_z, grid_temps)
         """
         # TODO: review this function
+        # import pdb; pdb.set_trace()
         if self.condition in 'controlControlCONTROL':
             return None  # TODO: wtf
 
