@@ -14,9 +14,8 @@ class Flight():
         """Generate random-direction force vector at each timestep from double-
         exponential distribution given exponent term rf.
         """
-        # TODO: make randomF draw from the canonical eqn for random draws Rich taught you
-        ends = math_toolbox.gen_symm_vecs(3)
-        force = self.random_f_strength * ends
+        unit_vector = math_toolbox.generate_random_unit_vector()
+        force = self.random_f_strength * unit_vector
 
         return force
 
