@@ -537,15 +537,15 @@ class TimeAvgPlume(Plume):
         x, y, z, temps = data.x.values, data.y.values, data.z.values, data.avg_temp.values
 
         # calculate average 3D euclidean distance b/w observations
-        avg_distance = self.calc_euclidean_distance_neighbords(selection = 'padded')
+        avg_distance = self.calc_euclidean_distance_neighbords(selection = 'raw')
 
 
         # init rbf interpolator
         """smoothing was determined by testing various numbers and looking at the minimum and maximum of the resulting plumes
         if I put values too far from this, the minimum and maximum temperature start to become extremely unnaturalistic.
         """
-        smoothing = 2e-5
-        rbfi = Rbf(x, y, z, temps, function='quintic', smooth=smoothing, epsilon=avg_distance)
+        smoothing = 2e-5  # TODO: we can disable smoothing by getting rid of duplicate positions
+        self.rbfi = Rbf(x, y, z, temps, function='quintic', smooth=smoothing, epsilon=avg_distance)
 
         # make positions to interpolate at
         # TODO: run this on a computer with lots of memory and save CSV so you don't run into memory errors (200, 60, 60)
@@ -562,7 +562,7 @@ class TimeAvgPlume(Plume):
         grid_z_flat = grid_z.ravel()
 
         # interpolate
-        interp_temps = rbfi(grid_x_flat, grid_y_flat, grid_z_flat)
+        interp_temps = self.rbfi(grid_x_flat, grid_y_flat, grid_z_flat)
         # we save this grid b/c it helps us with the gradient func
         grid_temps = interp_temps.reshape((len(xi), len(yi), len(zi)))
 
