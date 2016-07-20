@@ -917,7 +917,7 @@ def plot_all_force_clouds(experiment):
         data = np.zeros((Npoints, 3))
 
         for point in range(Npoints):
-            data[point] = math_toolbox.gen_symm_vecs(3)
+            data[point] = math_toolbox.generate_random_unit_vector()
 
         x = data[:, 0]
         y = data[:, 1]
