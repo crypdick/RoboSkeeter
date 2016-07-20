@@ -120,7 +120,9 @@ class PlotFuncsWrapper:
                 selected_trajectory_df = self.observations.get_trajectory_slice(i)
                 plot_kwargs = {'title': "{type} trajectory #{N}".format(type=self.trajectory_type, N=i),
                                'highlight_inside_plume': highlight_inside_plume}
-                plot_environment.draw_trajectory(ax, selected_trajectory_df)
+                ax = plot_environment.draw_trajectory(ax, selected_trajectory_df)
+            import matplotlib.pyplot as plt
+            plt.show()
         elif type(trajectory_i) is np.int64 or int:
             selected_trajectory_df = self.observations.get_trajectory_slice(trajectory_i)  # get data
             plot_kwargs = {'title': "{type} trajectory #{N}".format(type=self.trajectory_type, N=trajectory_i),
