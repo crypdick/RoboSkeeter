@@ -12,8 +12,6 @@ from tkFileDialog import askdirectory
 import numpy as np
 import pandas as pd
 
-import setup  # hack to get root dir
-
 
 def load_single_csv_to_df(csv_dir):
     """
@@ -133,7 +131,8 @@ def get_directory(selection=None):
     Out:
     directory path
     """
-    PROJECT_PATH = os.path.dirname(setup.__file__)
+    dirname = os.path.dirname
+    PROJECT_PATH = dirname(dirname(dirname(__file__)))
     EXPERIMENTS_PATH = os.path.join(PROJECT_PATH, 'data', 'experiments')
     MODEL_PATH = os.path.join(PROJECT_PATH, 'data', 'model')
 
