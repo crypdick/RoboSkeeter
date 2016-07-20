@@ -109,20 +109,17 @@ def calculate_curvature(ensemble):
     return curvature
 
 
-def gen_symm_vecs(dims=3):
+def generate_random_unit_vector():
     """generate randomly pointed (radially-symmetric) 3D unit vectors/ direction vectors
 
-    first we draw from a 3D gaussian, which is a symmetric distribution no matter how you slice it. then, we map
-    those draws onto the unit sphere.
-
-    credit: http://codereview.stackexchange.com/a/77945/76407
+    math test
+    print "vector lengths", np.sqrt(np.sum([x*x, y*y, z*z], axis=0))
+    print "mean", np.mean(np.sum([x*x, y*y, z*z], axis=0))
+    print "variance", np.var(np.sum([x*x, y*y, z*z], axis=0))
     """
-    vecs = np.random.normal(size=dims)
-    vec_norm = np.linalg.norm(vecs, axis=-1)
-
-    ends = vecs / vec_norm[..., np.newaxis]  # divide by length to get unit vector
-
-    return ends
+    gauss = np.random.normal(size=3)
+    unit_vector = gauss / np.linalg.norm(gauss, axis=0)
+    return unit_vector
 
 def rads_to_degrees(rads):
     degrees = (rads * 180/np.pi) % 360  # map to [0,360)
