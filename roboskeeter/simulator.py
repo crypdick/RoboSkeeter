@@ -14,7 +14,7 @@ from flight import Flight
 from decisions import Decisions
 from observations import Observations
 from random import choice as choose
-from roboskeeter.math.math_toolbox import gen_symm_vecs
+from roboskeeter.math.math_toolbox import generate_random_unit_vector
 
 class Simulator:
     """Our simulated mosquito.
@@ -299,7 +299,7 @@ class Simulator:
     def _set_init_velocity(self):
         initial_velocity_norm = np.random.normal(self.initial_velocity_mu, self.initial_velocity_stdev, 1)
 
-        unit_vector = gen_symm_vecs(3)
+        unit_vector = generate_random_unit_vector()
         velocity_vec = initial_velocity_norm * unit_vector
 
         return velocity_vec
