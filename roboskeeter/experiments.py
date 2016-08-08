@@ -3,7 +3,7 @@ __author__ = 'richard'
 """
 
 from roboskeeter.math.kinematic_math import DoMath
-from roboskeeter.math.scoring.scoring import Scoring
+# from roboskeeter.math.scoring.scoring import Scoring
 from roboskeeter.simulator import Simulator
 from roboskeeter.environment import Environment
 from roboskeeter.observations import Observations
@@ -56,8 +56,9 @@ class Experiment(object):
         else:
             self.observations.experiment_data_to_DF(experimental_condition=self.experiment_conditions['condition'])
             if self.experiment_conditions['optimizing'] is False:  # skip unneccessary computations for optimizer
-                print """\nDone loading files. Iterating through flights and presenting plume, making hypothetical
-                 decisions using selected decision policy ({})""".format(self.agent.decision_policy)
+                print """\nDone loading files. Iterating through flights and presenting plume model "{}",
+                 making hypothetical decisions using "{}" decision policy""".format(
+                    self.environment.plume_model, self.agent.decision_policy)
                 n_rows = len(self.observations.kinematics)
                 in_plume = np.zeros(n_rows, dtype=bool)
                 plume_signal = np.array([None] * n_rows)
@@ -80,23 +81,23 @@ class Experiment(object):
         dm = DoMath(self)  # updates kinematics, etc.
         self.observations, self.percent_time_in_plume, self.side_ratio_score = dm.observations, dm.percent_time_in_plume, dm.side_ratio_score
 
-    def calc_score(self, reference_data=None, score_weights = {'velocity_x': 1,
-                                'velocity_y': 1,
-                                'velocity_z': 1,
-                                'acceleration_x': 1,
-                                'acceleration_y': 1,
-                                'acceleration_z': 1,  # FIXME change these values back
-                                'position_x': 1,
-                                'position_y': 1,
-                                'position_z': 1,
-                                'curvature': 3}):
-        if self.is_scored is True:
-            pass
-        else:
-            S = Scoring(self, score_weights, reference_data=reference_data)
-            self.score, self.score_components = S.score, S.score_components
-            self.is_scored = True
-            return self.score, self.score_components
+    # def calc_score(self, reference_data=None, score_weights = {'velocity_x': 1,
+    #                             'velocity_y': 1,
+    #                             'velocity_z': 1,
+    #                             'acceleration_x': 1,
+    #                             'acceleration_y': 1,
+    #                             'acceleration_z': 1,  # FIXME change these values back
+    #                             'position_x': 1,
+    #                             'position_y': 1,
+    #                             'position_z': 1,
+    #                             'curvature': 3}):
+    #     if self.is_scored is True:
+    #         pass
+    #     else:
+    #         S = Scoring(self, score_weights, reference_data=reference_data)
+    #         self.score, self.score_components = S.score, S.score_components
+    #         self.is_scored = True
+    #         return self.score, self.score_components
 
 
 
@@ -117,11 +118,11 @@ def start_simulation(num_flights, agent_kwargs=None, simulation_conditions=None)
     experiment object
     """
     if simulation_conditions is None:
-        simulation_conditions = {'condition': 'Right',  # {'Left', 'Right', 'Control'} or a list of these
+        simulation_conditions = {'condition': 'Control',  # {'Left', 'Right', 'Control'} or a list of these
                                  'time_max': 6.,
                                  'bounded': True,
                                  'optimizing': False,
-                                 'plume_model': "Timeavg"  # "Boolean", "Timeavg", "None", "Unaveraged"
+                                 'plume_model': "None"  # "Boolean", "Timeavg", "None", "Unaveraged"
                                  }
     if agent_kwargs is None:
         agent_kwargs = {'is_simulation': True,
@@ -131,7 +132,7 @@ def start_simulation(num_flights, agent_kwargs=None, simulation_conditions=None)
                         'collision_type': 'part_elastic',  # 'elastic', 'part_elastic'
                         'restitution_coeff': 9.99023340e-02, #0.1,  # 0.8
                         'stimulus_memory_n_timesteps': 100,
-                        'decision_policy': 'gradient',  # 'surge', 'cast', 'castsurge', 'gradient', 'ignore'
+                        'decision_policy': 'ignore',  # 'surge', 'cast', 'castsurge', 'gradient', 'ignore'
                         'initial_position_selection': 'realistic',
                         'verbose': True,
                         'optimizing': False
@@ -183,8 +184,8 @@ def load_experiment(condition='Control'):
 
 
 if __name__ is '__main__':
-    experiment = start_simulation(20, None, None)
-    # experiment = load_experiment(['Control'])
+    # experiment = start_simulation(5, None, None)
+    experiment = load_experiment(['Control'])
 
     print "\nAliases updated."
     # useful aliases
