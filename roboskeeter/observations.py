@@ -42,8 +42,6 @@ class Observations(object):
             temp_array = temp_traj[['position_x', 'position_y', 'position_z', 'in_plume']].values
             np.savetxt(str(trajectory_i) + ".csv", temp_array, delimiter=",")
 
-
-
     def get_trajectory_slice(self, index=None):
         """
         # TODO: select list of ints
@@ -70,8 +68,23 @@ class Observations(object):
         return np.sort(self.kinematics.trajectory_num.unique())
 
     def experiment_data_to_DF(self, experimental_condition):
-        df = i_o.experiment_condition_to_DF(experimental_condition)
-        self.kinematics = df
+        """
+        for loading experimental data to df
+        Parameters
+        ----------
+        experimental_condition
+
+        Returns
+        -------
+
+        """
+        try:
+            df = i_o.experiment_condition_to_DF(experimental_condition)
+            self.kinematics = df
+        except TypeError:
+            raise AssertionError('Input experimental condition should be string, instead got {}. printed: {}'.format(
+                type(experimental_condition), experimental_condition
+            ))
 
     def _trim_df_endzones(self):
         return self.kinematics.loc[(self.kinematics['position_x'] > 0.05) & (self.kinematics['position_x'] < 0.95)]
