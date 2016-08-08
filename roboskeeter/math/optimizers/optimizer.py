@@ -7,6 +7,7 @@ import numpy as np
 from scipy.optimize import minimize_scalar, basinhopping
 
 from roboskeeter import experiments
+from roboskeeter.math.scoring import scoring
 
 logging.basicConfig(filename='basin_hopping.log', level=logging.DEBUG)
 
@@ -80,6 +81,8 @@ logging.basicConfig(filename='basin_hopping.log', level=logging.DEBUG)
 class FitBaselineModel:
     def __init__(self, initial_guess, n_trajectories = 100):
         print "starting optimization"
+
+        ## optimizer params
         self.iter_count = 0
         self.function = basinhopping
 
@@ -88,7 +91,7 @@ class FitBaselineModel:
         self.niter = 200  # number of basin hopping iterations, default 100
         self.niter_success = 15  # Stop the run if the global minimum candidate remains the same for this number of iterations
 
-        # init buest guess with very large score
+        # init best guess with very large score
         self.best_guess = None
         self.best_score = 1e10
 
@@ -97,6 +100,13 @@ class FitBaselineModel:
 
         self.parameter_names = ["resitution", "randomF", "damping"]  # # [5e-6, 4.12405e-6, 5e-7]  # TODO fix order
 
+        self.initial_guess = initial_guess
+        self.n_trajectories = n_trajectories
+
+        # self.bounds = Baseline_Bounds()
+        self.bounds = ((0., 0.4), (1e-7, 1e-4), (1e-7, 1e-4))
+
+        ## scoring params
         self.score_weights = {'velocity_x': 1,
                                 'velocity_y': 1,
                                 'velocity_z': 1,
@@ -107,14 +117,11 @@ class FitBaselineModel:
                                 'position_y': 1,
                                 'position_z': 1,
                                 'curvature': 3}
+        self.scorer = scoring.Scoring(self.score_weights, reference_data=None)  # None loads default ref data
+        """save computations by loading scorer and reference data just once
+        """
 
-        # self.bounds = Baseline_Bounds()
-        self.bounds = ((0., 1.), (1e-7, 1e-4), (1e-7, 1e-4))
-
-        self.initial_guess = initial_guess
-        self.n_trajectories = n_trajectories
-
-        self.reference_data = self._load_reference_ensemble()
+        # self.reference_data = self._load_reference_ensemble()  # TODO: check this isn't necessary anymore
 
         logging.info("""\n ############################################################
         ############################################################
@@ -139,12 +146,12 @@ class FitBaselineModel:
             nis = self.niter_success))
 
 
-        self.result = self.run_optimization()
+        self.result = self._optimize()
 
-    def run_optimization(self):
+    def _optimize(self):
         try:
             result = basinhopping(
-                self.simulation_wrapper,
+                self._simulation_wrapper,
                 self.initial_guess,
                 stepsize=self.stepsize,
                 T=self.temperature,
@@ -164,7 +171,7 @@ class FitBaselineModel:
             print "\n Optimization interrupted! Moving along..."
             return ""
 
-    def simulation_wrapper(self, guess):
+    def _simulation_wrapper(self, guess):
         """
         :param bias_scale_GUESS:
         :param mass_GUESS:
@@ -197,9 +204,12 @@ class FitBaselineModel:
                         'optimizing': True
                         }
 
+        # experiment = experiments.start_simulation(self.n_trajectories, None, None)
         experiment = experiments.start_simulation(self.n_trajectories, agent_kwargs, simulation_conditions)
 
-        combined_score, score_components = experiment.calc_score(score_weights=self.score_weights, reference_data=self.reference_data)  # save on computation by passing the ref data
+        # TODO: we commented out the auto calc score
+        # use our scorer instead
+        combined_score, score_components = self.scorer.calc_score(experiment)
 
         log_str = "iter {}, guess = {}. total score = {}. score components = {}. time = {}".format(self.iter_count, guess, combined_score, score_components, datetime.now())
         logging.info(log_str)
@@ -230,7 +240,7 @@ if __name__ == '__main__':
     initial_guess = [0.1, 6.55599224e-06, 3.63674551e-07]  # ["resitution", "randomF", "damping"]
 
     O = FitBaselineModel(initial_guess)
-    result = O.run_optimization()
+    result = O._optimize()
 
     msg = """############################################################
     Trial end. FINAL GUESS: {0}
