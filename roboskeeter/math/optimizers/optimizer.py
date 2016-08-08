@@ -3,8 +3,7 @@ __author__ = 'richard'
 import logging
 from datetime import datetime
 
-import numpy as np
-from scipy.optimize import minimize_scalar, basinhopping
+from scipy.optimize import minimize_scalar, basinhopping, brute
 
 from roboskeeter import experiments
 from roboskeeter.math.scoring import scoring
@@ -79,8 +78,8 @@ logging.basicConfig(filename='basin_hopping.log', level=logging.DEBUG)
 
 
 class FitBaselineModel:
-    def __init__(self, initial_guess, n_trajectories = 100):
-        print "starting optimization"
+    def __init__(self, initial_guess, n_trajectories = 100, method='basinhopping'):
+        print "starting optimization using"
 
         ## optimizer params
         self.iter_count = 0
@@ -95,7 +94,7 @@ class FitBaselineModel:
         self.best_guess = None
         self.best_score = 1e10
 
-        self.optimizer = 'SLSQP'  # for multiple vars
+        self.method = method
         self.plotting = False
 
         self.parameter_names = ["resitution", "randomF", "damping"]  # # [5e-6, 4.12405e-6, 5e-7]  # TODO fix order
@@ -117,7 +116,7 @@ class FitBaselineModel:
                                 'position_y': 1,
                                 'position_z': 1,
                                 'curvature': 3}
-        self.scorer = scoring.Scoring(self.score_weights, reference_data=None)  # None loads default ref data
+        self.scorer = scoring.Scoring(score_weights=self.score_weights, reference_data=None, condition='Control')  # None loads default ref data
         """save computations by loading scorer and reference data just once
         """
 
@@ -136,7 +135,7 @@ class FitBaselineModel:
         niter_success = {nis}
         ############################################################""".format(
             date=datetime.now(),
-            algo=self.optimizer,
+            algo=self.method,
             N=self.n_trajectories,
             pn=self.parameter_names,
             i=self.initial_guess,
@@ -145,11 +144,17 @@ class FitBaselineModel:
             ni = self.niter,
             nis = self.niter_success))
 
-
         self.result = self._optimize()
 
     def _optimize(self):
+        f = {'basinhopping':self._optimize_bh, 'brute': self._optimize_brute_force}
+        result = f[self.method]()
+        return result
+
+    def _optimize_bh(self):
         try:
+            optimizer = 'SLSQP'  # for multiple vars
+            logging.info(optimizer)
             result = basinhopping(
                 self._simulation_wrapper,
                 self.initial_guess,
@@ -158,7 +163,7 @@ class FitBaselineModel:
                 niter=self.niter,  # number of basin hopping iterations, default 100
                 niter_success=self.niter_success,  # Stop the run if the global minimum candidate remains the same for this number of iterations
                 minimizer_kwargs={
-                    'method': self.optimizer,
+                    'method': optimizer,
                     'bounds': self.bounds,
                     "tol": 0.15  # tolerance for considering a basin minimized, set to about the difference between re-scoring
                     # same simulation. note, this was about .1 for n=150 flights
@@ -170,6 +175,17 @@ class FitBaselineModel:
         except KeyboardInterrupt:
             print "\n Optimization interrupted! Moving along..."
             return ""
+
+    def _optimize_brute_force(self):
+        x0, fval, grid, Jout = brute(
+            self._simulation_wrapper,
+            self.bounds,
+            Ns=20,
+            # args=params,
+            full_output=True,
+            finish=None)
+
+        return [x0, fval, grid, Jout]
 
     def _simulation_wrapper(self, guess):
         """
@@ -223,16 +239,16 @@ class FitBaselineModel:
             logging.info(hs_announcement)
 
         return combined_score
-
-    def _load_reference_ensemble(self):
-        reference_experiment = experiments.load_experiment(experiment_conditions = {'condition': 'Control',
-                                 'plume_model': "None",
-                                 'time_max': "N/A (experiment)",
-                                 'bounded': True,
-                                 'optimizing': True
-                                 })
-
-        return reference_experiment.observations.get_kinematic_dict()
+    #
+    # def _load_reference_ensemble(self):
+    #     reference_experiment = experiments.load_experiment(experiment_conditions = {'condition': 'Control',
+    #                              'plume_model': "None",
+    #                              'time_max': "N/A (experiment)",
+    #                              'bounded': True,
+    #                              'optimizing': True
+    #                              })
+    #
+    #     return reference_experiment.observations.get_kinematic_dict()
 
 
 
