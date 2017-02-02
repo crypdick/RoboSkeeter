@@ -117,14 +117,14 @@ def start_simulation(num_flights, agent_kwargs=None, simulation_conditions=None)
     -------
     experiment object
     """
-    if simulation_conditions is None:
-        simulation_conditions = {'condition': 'Control',  # {'Left', 'Right', 'Control'} or a list of these
+    if simulation_conditions is None:  # Load defaults
+        simulation_conditions = {'condition': 'Left',  # {'Left', 'Right', 'Control'} or a list of these
                                  'time_max': 6.,
                                  'bounded': True,
                                  'optimizing': False,
-                                 'plume_model': "None"  # "Boolean", "Timeavg", "None", "Unaveraged"
+                                 'plume_model': "Timeavg"  # "Boolean", "Timeavg", "None", "Unaveraged"
                                  }
-    if agent_kwargs is None:
+    if agent_kwargs is None: # Load defaults
         agent_kwargs = {'is_simulation': True,
                         'random_f_strength': 6.64725529e-06, #6.55599224e-06,
                         'stim_f_strength': 5.0e-06,
@@ -132,7 +132,7 @@ def start_simulation(num_flights, agent_kwargs=None, simulation_conditions=None)
                         'collision_type': 'part_elastic',  # 'elastic', 'part_elastic'
                         'restitution_coeff': 9.99023340e-02, #0.1,  # 0.8
                         'stimulus_memory_n_timesteps': 100,
-                        'decision_policy': 'ignore',  # 'surge', 'cast', 'castsurge', 'gradient', 'ignore'
+                        'decision_policy': 'gradient',  # 'surge', 'cast', 'castsurge', 'gradient', 'ignore'
                         'initial_position_selection': 'realistic',
                         'verbose': True,
                         'optimizing': False
@@ -184,8 +184,8 @@ def load_experiment(condition='Control'):
 
 
 if __name__ is '__main__':
-    # experiment = start_simulation(5, None, None)
-    experiment = load_experiment(['Control'])
+    experiment = start_simulation(5, None, None)
+    # experiment = load_experiment(['Control'])
 
     print "\nAliases updated."
     # useful aliases
