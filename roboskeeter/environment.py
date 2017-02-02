@@ -547,10 +547,22 @@ class TimeAvgPlume(Plume):
 
         return grid_x, grid_y, grid_z
 
-    def _interpolate_data_griddata(self, data, resolution):
-        pass
+    def _interpolate_data_griddata(self):
+        data = self.padded_data
 
-    def _interpolate_data_RBF(self, data):
+        interpolated_temp_grid = griddata(data[['x', 'y', 'z']].values, data['avg_temp'].values, (self.grid_x, self.grid_y, self.grid_z), method='nearest')
+
+        # save to df
+        df_dict = dict()
+        df_dict['x'] = self.grid_x.ravel()
+        df_dict['y'] = self.grid_y.ravel()
+        df_dict['z'] = self.grid_z.ravel()
+        df_dict['avg_temp'] = interpolated_temp_grid.ravel()
+        interpolated_temps_df = pd.DataFrame(df_dict)
+
+        return interpolated_temps_df, interpolated_temp_grid
+
+    def _interpolate_data_RBF(self):
         """
         Replace data with a higher resolution interpolation
         Parameters
@@ -563,9 +575,11 @@ class TimeAvgPlume(Plume):
         interpolated_temps, (grid_x, grid_y, grid_z, grid_temps)
         """
         # TODO: review this function
-        # import pdb; pdb.set_trace()
         if self.condition in 'controlControlCONTROL':
-            return None  # TODO: wtf
+            raise Exception("This code block shouldn't be running if Control is selected. \
+                            use uniform temp plume class instead")
+
+        data = self.padded_data
 
         # useful aliases
         x, y, z, temps = data.x.values, data.y.values, data.z.values, data.avg_temp.values
@@ -596,7 +610,7 @@ class TimeAvgPlume(Plume):
         interpolated_temps_df = pd.DataFrame(df_dict)
 
         # we save this grid b/c it helps us with the gradient func
-        grid_temps = interp_temps.reshape(grid_x.shape)  # all the grid_* have the same shape
+        grid_temps = interp_temps.reshape(self.grid_x.shape)  # all the grid_* have the same shape
 
         return interpolated_temps_df, grid_temps
 
