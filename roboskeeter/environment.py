@@ -1,5 +1,3 @@
-__author__ = 'richard'
-
 import numpy as np
 import pandas as pd
 from scipy.interpolate import Rbf
@@ -297,7 +295,9 @@ class TimeAvgPlume(Plume):
             print "adding sheet of room temp data on outer windtunnel walls"
             self.padded_data = self._room_temp_wall_sheet()
             print "starting interpolation"
-            self.data, self.grid_x, self.grid_y, self.grid_z, self.grid_temp = self._interpolate_data(self.padded_data, interpolation_resolution)
+            print "WARNING: temporarily setting interpolation function by hand inside environment.py! ~line 300"
+            interp_func = self._interpolate_data_linear(self.padded_data, interpolation_resolution)
+            self.data, self.grid_x, self.grid_y, self.grid_z, self.grid_temp = self._interpolate_data_RBF(self.padded_data, interpolation_resolution)
             print "calculating gradient"
             self.gradient_x, self.gradient_y, self.gradient_z = self._calc_gradient()
 
@@ -309,7 +309,7 @@ class TimeAvgPlume(Plume):
         raw data max temp: {}
         interpolated min temp: {}
         interpolated max temp: {}
-        """.format(self._raw_data.avg_temp.min(),self._raw_data.avg_temp.max(),
+        """.format(self._raw_data.avg_temp.min(), self._raw_data.avg_temp.max(),
                    self.data.avg_temp.min(), self.data.avg_temp.max())
 
         print """Warning: we don't know the plume bounds for the Timeavg plume, so the check_for_plume() method
@@ -327,7 +327,6 @@ class TimeAvgPlume(Plume):
         """
 
         return False
-
 
     def get_nearest_prediction(self, position):
         """
@@ -364,11 +363,9 @@ class TimeAvgPlume(Plume):
         pemavi.plot_plume_recordings_volume(self.bounds, self.grid_x, self.grid_y, self.grid_z, self.grid_temp)
         # fig.show()
 
-
     def show_gradient(self):
         import roboskeeter.plotting.plot_environment_mayavi as pemavi
         pemavi.plot_plume_3d_quiver(self.gradient_x, self.gradient_y, self.gradient_z, self.bounds)
-
 
     def plot_gradient(self, thresh=0):
         from roboskeeter.plotting.plot_environment import plot_windtunnel, plot_plume_gradient
@@ -444,6 +441,7 @@ class TimeAvgPlume(Plume):
             raise Exception('problem with loading plume data {}'.format(self.condition))
 
     def _room_temp_wall_sheet(self):
+        # generates a plane of room temp data points immediately outside of the wintunnel
         wall_thickness = 0.03  # make sure this value is >= resolution in the _make_uniform_data_grid()
         data_xmin = self.downwind - wall_thickness
         data_xmax = self.upwind + wall_thickness
@@ -499,6 +497,8 @@ class TimeAvgPlume(Plume):
         return pd.concat(df_list)
 
     def _make_uniform_data_grid(self, xmin, xmax, ymin, ymax, zmin, zmax, temp=19., res=0.03):
+        """given temp and resolution, fills a volume with a uniform temp grid"""
+
         # res is resolution in meters
         # left grid
         x = np.arange(xmin, xmax, res)
@@ -516,7 +516,10 @@ class TimeAvgPlume(Plume):
 
         return df
 
-    def _interpolate_data(self, data, resolution):
+    def _interpolate_data_linear(self, data, resolution):
+        pass
+
+    def _interpolate_data_RBF(self, data, resolution):
         """
         Replace data with a higher resolution interpolation
         Parameters
@@ -577,9 +580,11 @@ class TimeAvgPlume(Plume):
         return interpolated_temps, grid_x, grid_y, grid_z, grid_temps
 
     def _calc_gradient(self):
-        # impossible to do gradient with uneven samples: https://stackoverflow.com/questions/36781698/numpy-sample-distances-for-3d-gradient
+        # impossible to do gradient with unevenly spaced  samples, see https://stackoverflow.com/questions/36781698/numpy-sample-distances-for-3d-gradient
         # so doing instead on regular grid
         # TODO: review this gradient function
+        print "HIGH PRIORITY: audit the _calc_gradient function!"
+
         if self.condition in 'controlControlCONTROL':
             return None
 
@@ -602,7 +607,7 @@ class TimeAvgPlume(Plume):
         return gradient_x, gradient_y, gradient_z
 
     def _calc_kdtree(self, selection = 'interpolated'):
-        if self.condition in 'controlControlCONTROL':
+        if self.condition in 'controlControlCONTROL':  # TODO: review this
             return None
 
         data = self._select_data(selection)
