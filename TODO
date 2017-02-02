@@ -1,3 +1,6 @@
+test griddata plume interpolation
+double-check if there's control temp recordings. if not, make a uniform data plume for control condition
+
 # TODO add top level doc strings to all scripts
 # TODO make unit tests
 # TODO make sure everything in LaTeX document is correct
