@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from scipy.interpolate import Rbf
+from scipy.interpolate import Rbf, griddata
 from scipy.spatial import cKDTree as kdt
 
 from roboskeeter.io.i_o import get_directory
@@ -22,8 +22,10 @@ class Environment(object):
         self.plume_model = experiment.experiment_conditions['plume_model'].lower()
 
         if self.condition == 'Control' and self.plume_model != 'none':
-            print "{} plume model selected for control condition, setting instead to no plume.".format(self.plume_model)
+            print "{} plume model selected for control condition, but there is no setting instead to no plume.".format(self.plume_model)
+            print "TODO: make sure there isn't any Control temp recordings. If not, make Uniform plume"
             self.plume_model = 'none'
+            print "TODO: make a uniform temp plume!!"
 
         self.windtunnel = WindTunnel(self.condition)
         self.plume = self._load_plume()
@@ -38,6 +40,8 @@ class Environment(object):
             plume = NoPlume(self)
         elif self.plume_model == "unaveraged":
             plume = UnaveragedPlume(self)
+        elif self.plume_model == "uniform-room-temp":
+            plume = UniformRoomTemp(self)
         else:
             raise NotImplementedError("no such plume type {}".format(self.plume_model))
 
@@ -186,6 +190,20 @@ class NoPlume(Plume):
         return np.array([0., 0., 0.])
 
 
+class UniformRoomTemp(Plume):
+    def __init__(self, environment):
+        super(self.__class__, self).__init__(environment)
+        raise NotImplementedError('TODO make a uniform temperature plume for control simulations')
+
+    def check_in_plume_bounds(self, _):
+        # always return false
+        return False
+
+    def get_nearest_gradient(self, _):
+        """if trying to use gradient ascent decision policy with No Plume, return no gradient"""
+        return np.array([0., 0., 0.])
+
+
 class BooleanPlume(Plume):
     """Are you in the plume Y/N"""
     def __init__(self, environment):
@@ -279,25 +297,27 @@ class TimeAvgPlume(Plume):
         # number of x, y, z positions to interpolate the data. numbers chosen to reflect the spacing at which the
         # measurements were taken to avoid gradient values of 0 due to undersampling
         # resolution = (100j, 25j, 25j)  # stored as complex numbers for mgrid to work properly
-        interpolation_resolution = .05  # 1 cm
+        self.interpolation_resolution = .05  # in meters
 
         print "loading raw plume data"
-        self._raw_data = self._load_plume_data()
-        data_list = self._load_plume_data()
+        data_list = self._load_plume_data() # returns list. len(list) == 3 if precomputed.
 
         if len(data_list) == 3:
             print "loading precomputed padded and interpolated data"
-            self._raw_data, self.padded_data, self.data = data_list
+            self.raw_data, self.padded_data, self.data = data_list
         elif len(data_list) == 1:
-            self._raw_data = data_list[0]
+            self.raw_data = data_list[0]
             # print "filling area surrounding measured area with room temperature data"
             # self.padded_data = self._pad_plume_data()
             print "adding sheet of room temp data on outer windtunnel walls"
             self.padded_data = self._room_temp_wall_sheet()
-            print "starting interpolation"
-            print "WARNING: temporarily setting interpolation function by hand inside environment.py! ~line 300"
-            interp_func = self._interpolate_data_linear(self.padded_data, interpolation_resolution)
-            self.data, self.grid_x, self.grid_y, self.grid_z, self.grid_temp = self._interpolate_data_RBF(self.padded_data, interpolation_resolution)
+
+            print "starting interpolation, resolution = {}".format(self.interpolation_resolution)
+            self.grid_x, self.grid_y, self.grid_z = self._set_interpolation_coords(self.padded_data)
+            print "WARNING: temporarily setting interpolation function by hand inside environment.py! ~line 317"
+            interp_func = self._interpolate_data_griddata  # options: self._interpolate_data_RBF self._interpolate_data_griddata
+            self.data, self.grid_temp = interp_func()
+            # self.data, self.grid_x, self.grid_y, self.grid_z, self.grid_temp = self._interpolate_data_RBF()
             print "calculating gradient"
             self.gradient_x, self.gradient_y, self.gradient_z = self._calc_gradient()
 
@@ -309,7 +329,7 @@ class TimeAvgPlume(Plume):
         raw data max temp: {}
         interpolated min temp: {}
         interpolated max temp: {}
-        """.format(self._raw_data.avg_temp.min(), self._raw_data.avg_temp.max(),
+        """.format(self.raw_data.avg_temp.min(), self.raw_data.avg_temp.max(),
                    self.data.avg_temp.min(), self.data.avg_temp.max())
 
         print """Warning: we don't know the plume bounds for the Timeavg plume, so the check_for_plume() method
@@ -360,7 +380,7 @@ class TimeAvgPlume(Plume):
         import roboskeeter.plotting.plot_environment_mayavi as pemavi
         # fig, ax = plot_windtunnel(self.environment.windtunnel)
         # plot_plume_recordings_scatter(self.data, ax)
-        pemavi.plot_plume_recordings_volume(self.bounds, self.grid_x, self.grid_y, self.grid_z, self.grid_temp)
+        # pemavi.plot_plume_recordings_volume(self.bounds, self.grid_x, self.grid_y, self.grid_z, self.grid_temp)
         # fig.show()
 
     def show_gradient(self):
@@ -400,7 +420,7 @@ class TimeAvgPlume(Plume):
         col_names = ['x', 'y', 'z', 'avg_temp']
 
         if self.condition in 'controlControlCONTROL':
-            return None
+            raise Exception("We shouldn't ever run this, unless we ever decide to precompute control temps")
         elif self.condition in 'lLleftLeft':
             plume_dir = get_directory('THERMOCOUPLE_TIMEAVG_LEFT_CSV')
             raw = pd.read_csv(plume_dir, names=col_names)
@@ -438,7 +458,7 @@ class TimeAvgPlume(Plume):
                 return [raw]
 
         else:
-            raise Exception('problem with loading plume data {}'.format(self.condition))
+            raise Exception('No such condition for loading plume data: {}'.format(self.condition))
 
     def _room_temp_wall_sheet(self):
         # generates a plane of room temp data points immediately outside of the wintunnel
@@ -451,7 +471,7 @@ class TimeAvgPlume(Plume):
         data_zmax = self.ceiling + wall_thickness
 
 
-        df_list = [self._raw_data]  # start with raw data
+        df_list = [self.raw_data]  # start with raw data
 
         # make a sheet of room temp data for each wall
         df_list.append(self._make_uniform_data_grid(data_xmin, self.downwind, self.left, self.right, self.floor, self.ceiling))
@@ -475,15 +495,15 @@ class TimeAvgPlume(Plume):
 
         padding_distance = 0.03  # start padding 3 cm away from recorded data
 
-        data_xmin = self._raw_data.x.min() - padding_distance
-        data_xmax = self._raw_data.x.max() + padding_distance
-        data_ymin = self._raw_data.y.min() - padding_distance
-        data_ymax = self._raw_data.y.max() + padding_distance
-        data_zmin = self._raw_data.z.min() - padding_distance
-        data_zmax = self._raw_data.z.max() + padding_distance
+        data_xmin = self.raw_data.x.min() - padding_distance
+        data_xmax = self.raw_data.x.max() + padding_distance
+        data_ymin = self.raw_data.y.min() - padding_distance
+        data_ymax = self.raw_data.y.max() + padding_distance
+        data_zmin = self.raw_data.z.min() - padding_distance
+        data_zmax = self.raw_data.z.max() + padding_distance
 
 
-        df_list = [self._raw_data]  # append to raw data
+        df_list = [self.raw_data]  # append to raw data
         # make grids of room temp data to fill the volume surrounding the place we took measurements
         df_list.append(self._make_uniform_data_grid(self.downwind, data_xmin, self.left, self.right, self.floor, self.ceiling))
         df_list.append(self._make_uniform_data_grid(data_xmax, self.upwind, self.left, self.right, self.floor, self.ceiling))
@@ -516,10 +536,21 @@ class TimeAvgPlume(Plume):
 
         return df
 
-    def _interpolate_data_linear(self, data, resolution):
+    def _set_interpolation_coords(self, data):
+        """generate the coords our interpolator will evaluate at"""
+        # TODO: run this on a computer with lots of memory and save CSV so you don't run into memory errors (200, 60, 60)
+        xi = np.arange(self.downwind, self.upwind, self.interpolation_resolution)
+        yi = np.arange(self.left, self.right, self.interpolation_resolution)
+        zi = np.arange(self.floor, self.ceiling, self.interpolation_resolution)
+
+        grid_x, grid_y, grid_z = np.meshgrid(xi, yi, zi, indexing='ij')
+
+        return grid_x, grid_y, grid_z
+
+    def _interpolate_data_griddata(self, data, resolution):
         pass
 
-    def _interpolate_data_RBF(self, data, resolution):
+    def _interpolate_data_RBF(self, data):
         """
         Replace data with a higher resolution interpolation
         Parameters
@@ -550,24 +581,11 @@ class TimeAvgPlume(Plume):
         smoothing = 2e-5  # TODO: we can disable smoothing by getting rid of duplicate positions
         self.rbfi = Rbf(x, y, z, temps, function='quintic', smooth=smoothing, epsilon=avg_distance)
 
-        # make positions to interpolate at
-        # TODO: run this on a computer with lots of memory and save CSV so you don't run into memory errors (200, 60, 60)
-        xi = np.linspace(self.downwind, self.upwind, 50)  # todo: fix resolution
-        yi = np.linspace(self.left, self.right, 15)
-        zi = np.linspace(self.floor, self.ceiling, 15)
-        # xi = np.linspace(self.downwind, self.upwind, 25)  # todo: fix resolution
-        # yi = np.linspace(self.left, self.right, 7)
-        # zi = np.linspace(self.floor, self.ceiling, 7)
-        # we save this grid b/c it helps us with the gradient func
-        grid_x, grid_y, grid_z = np.meshgrid(xi, yi, zi, indexing='ij')
-        grid_x_flat = grid_x.ravel()
-        grid_y_flat = grid_y.ravel()
-        grid_z_flat = grid_z.ravel()
-
-        # interpolate
+        # interpolate at those locations
+        grid_x_flat = self.grid_x.ravel()
+        grid_y_flat = self.grid_y.ravel()
+        grid_z_flat = self.grid_z.ravel()
         interp_temps = self.rbfi(grid_x_flat, grid_y_flat, grid_z_flat)
-        # we save this grid b/c it helps us with the gradient func
-        grid_temps = interp_temps.reshape((len(xi), len(yi), len(zi)))
 
         # save to df
         df_dict = dict()
@@ -575,9 +593,12 @@ class TimeAvgPlume(Plume):
         df_dict['y'] = grid_y_flat
         df_dict['z'] = grid_z_flat
         df_dict['avg_temp'] = interp_temps
-        interpolated_temps = pd.DataFrame(df_dict)
+        interpolated_temps_df = pd.DataFrame(df_dict)
 
-        return interpolated_temps, grid_x, grid_y, grid_z, grid_temps
+        # we save this grid b/c it helps us with the gradient func
+        grid_temps = interp_temps.reshape(grid_x.shape)  # all the grid_* have the same shape
+
+        return interpolated_temps_df, grid_temps
 
     def _calc_gradient(self):
         # impossible to do gradient with unevenly spaced  samples, see https://stackoverflow.com/questions/36781698/numpy-sample-distances-for-3d-gradient
@@ -617,7 +638,7 @@ class TimeAvgPlume(Plume):
 
     def _select_data(self, selection):
         if selection == 'raw':
-            data = self._raw_data
+            data = self.raw_data
         elif selection == 'padded':
             data = self.padded_data
         elif selection == 'interpolated':
