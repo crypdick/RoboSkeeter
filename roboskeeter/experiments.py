@@ -56,21 +56,21 @@ class Experiment(object):
         else:
             self.observations.experiment_data_to_DF(experimental_condition=self.experiment_conditions['condition'])
             if self.experiment_conditions['optimizing'] is False:  # skip unneccessary computations for optimizer
-                print """\nDone loading files. Iterating through flights and presenting plume model "{}",
+                print """\nDone loading files. Iterating through flights and presenting heat model "{}",
                  making hypothetical decisions using "{}" decision policy""".format(
-                    self.environment.plume_model, self.agent.decision_policy)
+                    self.environment.heat_model, self.agent.decision_policy)
                 n_rows = len(self.observations.kinematics)
                 in_plume = np.zeros(n_rows, dtype=bool)
-                plume_signal = np.array([None] * n_rows)
+                heat_signal = np.array([None] * n_rows)
                 decision = np.array([None] * n_rows)
                 for i, row in self.observations.kinematics.iterrows():
-                    in_plume[i] = self.environment.plume.check_in_plume_bounds([row.position_x,
-                                                                                row.position_y,
-                                                                                row.position_z])
-                    decision[i], plume_signal[i] = self.agent.decisions.make_decision(in_plume[i], row.velocity_y)
+                    in_plume[i] = self.environment.heat.check_in_plume_bounds([row.position_x,
+                                                                               row.position_y,
+                                                                               row.position_z])
+                    decision[i], heat_signal[i] = self.agent.decisions.make_decision(in_plume[i], row.velocity_y)
 
                 self.observations.kinematics['in_plume'] = in_plume
-                self.observations.kinematics['plume_signal'] = plume_signal
+                self.observations.kinematics['plume_signal'] = heat_signal
                 self.observations.kinematics['decision'] = decision
 
         # assign alias
@@ -122,7 +122,7 @@ def start_simulation(num_flights, agent_kwargs=None, simulation_conditions=None)
                                  'time_max': 6.,
                                  'bounded': True,
                                  'optimizing': False,
-                                 'plume_model': "Timeavg"  # "Boolean", "Timeavg", "None", "Unaveraged"
+                                 'heat_model': "Timeavg"  # "Boolean", "Timeavg", "None", "Unaveraged"
                                  }
     if agent_kwargs is None: # Load defaults
         agent_kwargs = {'is_simulation': True,
@@ -158,7 +158,7 @@ def load_experiment(condition='Control'):
     experiment class
     """
     experiment_conditions = {'condition': condition,  # {'Left', 'Right', 'Control', or a list of these}
-                             'plume_model': "None", #"Boolean",  # "Boolean" "None, "Timeavg", "Unaveraged"
+                             'heat_model': "None", #"Boolean",  # "Boolean" "None, "Timeavg", "Unaveraged"
                              'time_max': "N/A (experiment)",
                              'bounded': True,
                              'optimizing': False
