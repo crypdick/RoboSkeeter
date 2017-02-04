@@ -88,6 +88,7 @@ class Observations(object):
             print """IOerror. You are probably missing the trajectory data in /data/trajectories. The data can be found at
                 https://drive.google.com/open?id=0B1CyEg2BqCdjY2p5SXRuQTcwNmc
                 Note, the data is encrypted until we publish. If you're a collaborator, email Richard Decal for the password."""
+            raise
 
     def _trim_df_endzones(self):
         return self.kinematics.loc[(self.kinematics['position_x'] > 0.05) & (self.kinematics['position_x'] < 0.95)]

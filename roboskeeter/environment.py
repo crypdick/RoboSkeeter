@@ -34,6 +34,7 @@ class Environment(object):
             print """IOerror. You are probably missing the temperature data in /data/temperature. The data can be found at
             https://drive.google.com/file/d/0B1CyEg2BqCdjX21yZ0FSVWNEa1E/view?usp=sharing
             Note, the data is encrypted until we publish. If you're a collaborator, email Richard Decal for the password."""
+            raise
         self.room_temperature = 19.0
 
     def _load_heat_model(self):
