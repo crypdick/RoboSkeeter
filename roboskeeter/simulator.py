@@ -48,7 +48,7 @@ class Simulator:
         self.windtunnel = self.experiment.environment.windtunnel
         self.bounded = self.experiment.experiment_conditions['bounded']
         self.boundary = self.windtunnel.boundary
-        self.heat_model = self.experiment.environment.heat_model
+        self.heat = self.experiment.environment.heat
 
         # useful lists TODO: get rid of?
         self.kinematics_list = ['position', 'velocity', 'acceleration']  # curvature?
@@ -77,7 +77,7 @@ class Simulator:
                 print """Starting simulations with {} heat model and {} decision policy.
                 If you run out of patience, press <CTL>-C to stop generating simulations and
                 cut to the chase scene.""".format(
-                self.heat.heat_model, self.decision_policy)
+                self.heat.heat_model_name, self.decision_policy)
 
             while traj_i < n_trajectories:
                 # print updates

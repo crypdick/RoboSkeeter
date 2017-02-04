@@ -58,7 +58,7 @@ class Experiment(object):
             if self.experiment_conditions['optimizing'] is False:  # skip unneccessary computations for optimizer
                 print """\nDone loading files. Iterating through flights and presenting heat model "{}",
                  making hypothetical decisions using "{}" decision policy""".format(
-                    self.environment.heat_model, self.agent.decision_policy)
+                    self.environment.heat_model_name, self.agent.decision_policy)
                 n_rows = len(self.observations.kinematics)
                 in_plume = np.zeros(n_rows, dtype=bool)
                 heat_signal = np.array([None] * n_rows)
@@ -122,7 +122,7 @@ def start_simulation(num_flights, agent_kwargs=None, simulation_conditions=None)
                                  'time_max': 6.,
                                  'bounded': True,
                                  'optimizing': False,
-                                 'heat_model': "Timeavg"  # "Boolean", "Timeavg", "None", "Unaveraged"
+                                 'heat_model_name': "Timeavg"  # "Boolean", "Timeavg", "None", "Unaveraged"
                                  }
     if agent_kwargs is None: # Load defaults
         agent_kwargs = {'is_simulation': True,
@@ -158,7 +158,7 @@ def load_experiment(condition='Control'):
     experiment class
     """
     experiment_conditions = {'condition': condition,  # {'Left', 'Right', 'Control', or a list of these}
-                             'heat_model': "None", #"Boolean",  # "Boolean" "None, "Timeavg", "Unaveraged"
+                             'heat_model_name': "None", #"Boolean",  # "Boolean" "None, "Timeavg", "Unaveraged"
                              'time_max': "N/A (experiment)",
                              'bounded': True,
                              'optimizing': False
@@ -192,5 +192,5 @@ if __name__ is '__main__':
     agent = experiment.agent
     kinematics = experiment.observations.kinematics
     windtunnel = experiment.environment.windtunnel
-    plume = experiment.environment.plume
+    heat = experiment.environment.heat
     plotter = experiment.plt

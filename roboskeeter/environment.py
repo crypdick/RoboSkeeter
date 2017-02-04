@@ -19,12 +19,12 @@ class Environment(object):
         """
         self.condition = experiment.experiment_conditions['condition']
         self.bounded = experiment.experiment_conditions['bounded']
-        self.heat_model = experiment.experiment_conditions['heat_model'].lower()
+        self.heat_model_name = experiment.experiment_conditions['heat_model_name'].lower()
 
-        if self.condition == 'Control' and self.heat_model != 'none':
-            print "{} plume model selected for control condition, but there is no setting instead to no plume.".format(self.heat_model)
+        if self.condition == 'Control' and self.heat_model_name != 'none':
+            print "{} plume model selected for control condition, but there is no setting instead to no plume.".format(self.heat_model_name)
             print "TODO: make sure there isn't any Control temp recordings. If not, make Uniform plume"
-            self.heat_model = 'none'
+            self.heat_model_name = 'none'
             print "TODO: make a uniform temp plume!!"
 
         self.windtunnel = WindTunnel(self.condition)
@@ -37,18 +37,18 @@ class Environment(object):
         self.room_temperature = 19.0
 
     def _load_heat_model(self):
-        if self.heat_model == "boolean":
+        if self.heat_model_name == "boolean":
             plume = BooleanPlumeModel(self)
-        elif self.heat_model == "timeavg":
+        elif self.heat_model_name == "timeavg":
             plume = TimeAvgTempModel(self)
-        elif self.heat_model == "none":
-            plume = NoPlumeModel(self)
-        elif self.heat_model == "unaveraged":
+        elif self.heat_model_name == "none":
+            plume = NoHeatModel(self)
+        elif self.heat_model_name == "unaveraged":
             plume = UnaveragedTempsModel(self)
-        elif self.heat_model == "uniform-room-temp":
+        elif self.heat_model_name == "uniform-room-temp":
             plume = UniformRoomTemp(self)
         else:
-            raise NotImplementedError("no such plume type {}".format(self.heat_model))
+            raise NotImplementedError("no such plume type {}".format(self.heat_model_name))
 
         return plume
 
@@ -155,7 +155,7 @@ class Heater:
         return zmin, zmax, diam, x_coord, y_coord
 
 
-class PlumeModel(object):
+class HeatModel(object):
     def __init__(self, environment):
         """
         The plume base class
@@ -171,7 +171,7 @@ class PlumeModel(object):
         self.environment = environment
         self.condition = environment.condition
         self.walls = environment.windtunnel.walls
-        self.heat_model = environment.heat_model
+        self.heat_model_name = environment.heat_model_name
 
         self.left = self.walls.left
         self.right = self.walls.right
@@ -182,7 +182,7 @@ class PlumeModel(object):
         self.bounds = [self.downwind, self.upwind, self.left, self.right, self.floor, self.ceiling]
 
 
-class NoPlumeModel(PlumeModel):
+class NoHeatModel(HeatModel):
     def __init__(self, environment):
         super(self.__class__, self).__init__(environment)
 
@@ -195,7 +195,7 @@ class NoPlumeModel(PlumeModel):
         return np.array([0., 0., 0.])
 
 
-class UniformRoomTemp(PlumeModel):
+class UniformRoomTemp(HeatModel):
     def __init__(self, environment):
         super(self.__class__, self).__init__(environment)
         raise NotImplementedError('TODO make a uniform temperature plume for control simulations')
@@ -209,7 +209,7 @@ class UniformRoomTemp(PlumeModel):
         return np.array([0., 0., 0.])
 
 
-class BooleanPlumeModel(PlumeModel):
+class BooleanPlumeModel(HeatModel):
     """Are you in the plume Y/N"""
     def __init__(self, environment):
         super(self.__class__, self).__init__(environment)
@@ -219,6 +219,8 @@ class BooleanPlumeModel(PlumeModel):
         self.resolution = self._calc_resolution()
 
     def check_in_plume_bounds(self, position):
+        #  I guess conceptually this should be under the `decisions` module, since the mosquito decides whether it's in
+        #  the plume or not. But for now I'm keeping it this way.
         in_windtunnel_bounds, _ = self.walls.check_in_bounds(position)
         x, y, z = position
 
@@ -293,7 +295,7 @@ class BooleanPlumeModel(PlumeModel):
         return np.array([0., 0., 0.])
 
 
-class TimeAvgTempModel(PlumeModel):
+class TimeAvgTempModel(HeatModel):
     """time-averaged temperature readings taken inside the windtunnel"""
     # TODO: test TimeAvgPlume
     def __init__(self, environment):
