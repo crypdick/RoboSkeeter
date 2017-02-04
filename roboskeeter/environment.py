@@ -33,13 +33,13 @@ class Environment(object):
 
     def _load_plume(self):
         if self.plume_model == "boolean":
-            plume = BooleanPlume(self)
+            plume = BooleanPlumeModel(self)
         elif self.plume_model == "timeavg":
-            plume = TimeAvgPlume(self)
+            plume = TimeAvgTempModel(self)
         elif self.plume_model == "none":
-            plume = NoPlume(self)
+            plume = NoPlumeModel(self)
         elif self.plume_model == "unaveraged":
-            plume = UnaveragedPlume(self)
+            plume = UnaveragedTempsModel(self)
         elif self.plume_model == "uniform-room-temp":
             plume = UniformRoomTemp(self)
         else:
@@ -150,7 +150,7 @@ class Heater:
         return zmin, zmax, diam, x_coord, y_coord
 
 
-class Plume(object):
+class PlumeModel(object):
     def __init__(self, environment):
         """
         The plume base class
@@ -177,7 +177,7 @@ class Plume(object):
         self.bounds = [self.downwind, self.upwind, self.left, self.right, self.floor, self.ceiling]
 
 
-class NoPlume(Plume):
+class NoPlumeModel(PlumeModel):
     def __init__(self, environment):
         super(self.__class__, self).__init__(environment)
 
@@ -190,7 +190,7 @@ class NoPlume(Plume):
         return np.array([0., 0., 0.])
 
 
-class UniformRoomTemp(Plume):
+class UniformRoomTemp(PlumeModel):
     def __init__(self, environment):
         super(self.__class__, self).__init__(environment)
         raise NotImplementedError('TODO make a uniform temperature plume for control simulations')
@@ -204,7 +204,7 @@ class UniformRoomTemp(Plume):
         return np.array([0., 0., 0.])
 
 
-class BooleanPlume(Plume):
+class BooleanPlumeModel(PlumeModel):
     """Are you in the plume Y/N"""
     def __init__(self, environment):
         super(self.__class__, self).__init__(environment)
@@ -288,7 +288,7 @@ class BooleanPlume(Plume):
         return np.array([0., 0., 0.])
 
 
-class TimeAvgPlume(Plume):
+class TimeAvgTempModel(PlumeModel):
     """time-averaged temperature readings taken inside the windtunnel"""
     # TODO: test TimeAvgPlume
     def __init__(self, environment):
@@ -378,14 +378,15 @@ class TimeAvgPlume(Plume):
 
     def show(self):
         import roboskeeter.plotting.plot_environment_mayavi as pemavi
-        # fig, ax = plot_windtunnel(self.environment.windtunnel)
-        # plot_plume_recordings_scatter(self.data, ax)
-        # pemavi.plot_plume_recordings_volume(self.bounds, self.grid_x, self.grid_y, self.grid_z, self.grid_temp)
-        # fig.show()
+        from roboskeeter.plotting.plot_environment import plot_windtunnel, plot_plume_recordings_scatter
+        fig, ax = plot_windtunnel(self.environment.windtunnel)
+        plot_plume_recordings_scatter(self.data, ax)
+        pemavi.plot_plume_recordings_volume(self.bounds, self.grid_x, self.grid_y, self.grid_z, self.grid_temp)
+        fig.show()
 
     def show_gradient(self):
         import roboskeeter.plotting.plot_environment_mayavi as pemavi
-        pemavi.plot_plume_3d_quiver(self.gradient_x, self.gradient_y, self.gradient_z, self.bounds)
+        #pemavi.plot_plume_3d_quiver(self.gradient_x, self.gradient_y, self.gradient_z, self.bounds)
 
     def plot_gradient(self, thresh=0):
         from roboskeeter.plotting.plot_environment import plot_windtunnel, plot_plume_gradient
@@ -550,7 +551,7 @@ class TimeAvgPlume(Plume):
     def _interpolate_data_griddata(self):
         data = self.padded_data
 
-        interpolated_temp_grid = griddata(data[['x', 'y', 'z']].values, data['avg_temp'].values, (self.grid_x, self.grid_y, self.grid_z), method='nearest')
+        interpolated_temp_grid = griddata(data[['x', 'y', 'z']].values, data['avg_temp'].values, (self.grid_x, self.grid_y, self.grid_z), method='linear')
 
         # save to df
         df_dict = dict()
@@ -663,7 +664,7 @@ class TimeAvgPlume(Plume):
         return data
 
 
-class UnaveragedPlume:
+class UnaveragedTempsModel:
     def __init__(self, environment):
         super(self.__class__, self).__init__(environment)
         raise NotImplementedError  # TODO: implement unaveraged plume
