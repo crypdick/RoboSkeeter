@@ -141,7 +141,7 @@ def get_directory(selection=None):
     EXP_TRAJECTORIES_LEFT = os.path.join(EXPERIMENTAL_TRAJECTORIES, 'left')
     EXP_TRAJECTORIES_RIGHT = os.path.join(EXPERIMENTAL_TRAJECTORIES, 'right')
 
-    PLUME_PATH = os.path.join(EXPERIMENTS_PATH, 'plume_data')
+    PLUME_PATH = os.path.join(EXPERIMENTS_PATH, 'temperature')
     RAW = os.path.join(PLUME_PATH, 'raw')
     TIMEAVG = os.path.join(PLUME_PATH, 'timeavg')
     VAR = os.path.join(PLUME_PATH, 'variance')
