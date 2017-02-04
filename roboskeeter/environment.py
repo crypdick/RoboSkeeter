@@ -19,31 +19,36 @@ class Environment(object):
         """
         self.condition = experiment.experiment_conditions['condition']
         self.bounded = experiment.experiment_conditions['bounded']
-        self.plume_model = experiment.experiment_conditions['plume_model'].lower()
+        self.heat_model = experiment.experiment_conditions['heat_model'].lower()
 
-        if self.condition == 'Control' and self.plume_model != 'none':
-            print "{} plume model selected for control condition, but there is no setting instead to no plume.".format(self.plume_model)
+        if self.condition == 'Control' and self.heat_model != 'none':
+            print "{} plume model selected for control condition, but there is no setting instead to no plume.".format(self.heat_model)
             print "TODO: make sure there isn't any Control temp recordings. If not, make Uniform plume"
-            self.plume_model = 'none'
+            self.heat_model = 'none'
             print "TODO: make a uniform temp plume!!"
 
         self.windtunnel = WindTunnel(self.condition)
-        self.plume = self._load_plume()
+        try:
+            self.heat = self._load_heat_model()
+        except IOError:
+            print """IOerror. You are probably missing the temperature data in /data/temperature. The data can be found at
+            https://drive.google.com/file/d/0B1CyEg2BqCdjX21yZ0FSVWNEa1E/view?usp=sharing
+            Note, the data is encrypted until we publish. If you're a collaborator, email Richard Decal."""
         self.room_temperature = 19.0
 
-    def _load_plume(self):
-        if self.plume_model == "boolean":
+    def _load_heat_model(self):
+        if self.heat_model == "boolean":
             plume = BooleanPlumeModel(self)
-        elif self.plume_model == "timeavg":
+        elif self.heat_model == "timeavg":
             plume = TimeAvgTempModel(self)
-        elif self.plume_model == "none":
+        elif self.heat_model == "none":
             plume = NoPlumeModel(self)
-        elif self.plume_model == "unaveraged":
+        elif self.heat_model == "unaveraged":
             plume = UnaveragedTempsModel(self)
-        elif self.plume_model == "uniform-room-temp":
+        elif self.heat_model == "uniform-room-temp":
             plume = UniformRoomTemp(self)
         else:
-            raise NotImplementedError("no such plume type {}".format(self.plume_model))
+            raise NotImplementedError("no such plume type {}".format(self.heat_model))
 
         return plume
 
@@ -166,7 +171,7 @@ class PlumeModel(object):
         self.environment = environment
         self.condition = environment.condition
         self.walls = environment.windtunnel.walls
-        self.plume_model = environment.plume_model
+        self.heat_model = environment.heat_model
 
         self.left = self.walls.left
         self.right = self.walls.right
