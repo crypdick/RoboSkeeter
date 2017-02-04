@@ -325,11 +325,12 @@ class TimeAvgTempModel(PlumeModel):
         self.tree = self._calc_kdtree()
 
         print """Timeaveraged plume stats:  TODO implement sanity checks
+        interp function: {}
         raw data min temp: {}
         raw data max temp: {}
         interpolated min temp: {}
         interpolated max temp: {}
-        """.format(self.raw_data.avg_temp.min(), self.raw_data.avg_temp.max(),
+        """.format(interp_func, self.raw_data.avg_temp.min(), self.raw_data.avg_temp.max(),
                    self.data.avg_temp.min(), self.data.avg_temp.max())
 
         print """Warning: we don't know the plume bounds for the Timeavg plume, so the check_for_plume() method
@@ -370,6 +371,7 @@ class TimeAvgTempModel(PlumeModel):
         return np.array([data['gradient_x'], data['gradient_y'], data['gradient_z']])
 
     def show_scatter_data(self, selection = 'raw', temp_thresh=0):
+        print "selection={}".format(selection)
         data = self._select_data(selection)
         from roboskeeter.plotting.plot_environment import plot_windtunnel, plot_plume_recordings_scatter
         fig, ax = plot_windtunnel(self.environment.windtunnel)
@@ -657,7 +659,7 @@ class TimeAvgTempModel(PlumeModel):
         elif selection == 'padded':
             data = self.padded_data
         elif selection == 'interpolated':
-            data = self. data
+            data = self.data
         else:
             raise ValueError
 
