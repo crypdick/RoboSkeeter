@@ -48,12 +48,12 @@ class Simulator:
         self.windtunnel = self.experiment.environment.windtunnel
         self.bounded = self.experiment.experiment_conditions['bounded']
         self.boundary = self.windtunnel.boundary
-        self.plume = self.experiment.environment.plume
+        self.heat_model = self.experiment.environment.heat_model
 
         # useful lists TODO: get rid of?
         self.kinematics_list = ['position', 'velocity', 'acceleration']  # curvature?
         self.forces_list = ['total_f', 'random_f', 'stim_f']
-        self.other_list = ['tsi', 'times', 'decision', 'plume_signal', 'in_plume']
+        self.other_list = ['tsi', 'times', 'decision', 'heat_signal', 'in_plume']
 
         # mk forces
         self.flight = Flight(self.random_f_strength,
@@ -74,10 +74,10 @@ class Simulator:
         traj_i = 0
         try:
             if self.verbose:
-                print """Starting simulations with {} plume model and {} decision policy.
+                print """Starting simulations with {} heat model and {} decision policy.
                 If you run out of patience, press <CTL>-C to stop generating simulations and
                 cut to the chase scene.""".format(
-                self.plume.plume_model, self.decision_policy)
+                self.heat.heat_model, self.decision_policy)
 
             while traj_i < n_trajectories:
                 # print updates
@@ -130,7 +130,7 @@ class Simulator:
         #     exec(key + " = vector_dict['" + key + "']")
         # unpack vector dict into nicer aliases
         in_plume = vector_dict['in_plume']
-        plume_signal = vector_dict['plume_signal']
+        heat_signal = vector_dict['heat_signal']
         position = vector_dict['position']
         velocity = vector_dict['velocity']
         acceleration = vector_dict['acceleration']
@@ -143,14 +143,14 @@ class Simulator:
         velocity[0] = self._set_init_velocity()
 
         for tsi in vector_dict['tsi']:
-            in_plume[tsi] = self.plume.check_in_plume_bounds(position[tsi])  # returns False for non-Bool plume
+            in_plume[tsi] = self.heat.check_in_plume_bounds(position[tsi])  # returns False for non-Bool plume
 
-            decision[tsi], plume_signal[tsi] = self.decisions.make_decision(in_plume[tsi], velocity[tsi][1])
+            decision[tsi], heat_signal[tsi] = self.decisions.make_decision(in_plume[tsi], velocity[tsi][1])
 
-            if plume_signal[tsi] == 'X':  # this is an awful hack telling us to look up the gradient
-                plume_signal[tsi] = self.plume.get_nearest_gradient(position[tsi])
+            if heat_signal[tsi] == 'X':  # this is an awful hack telling us to look up the gradient
+                heat_signal[tsi] = self.heat.get_nearest_gradient(position[tsi])
 
-            stim_f[tsi], random_f[tsi], total_f[tsi] = self.flight.calc_forces(velocity[tsi], decision[tsi], plume_signal[tsi])
+            stim_f[tsi], random_f[tsi], total_f[tsi] = self.flight.calc_forces(velocity[tsi], decision[tsi], heat_signal[tsi])
 
             # calculate current acceleration
             acceleration[tsi] = total_f[tsi] / m
@@ -291,7 +291,7 @@ class Simulator:
         V['tsi'] = np.arange(self.max_bins)
         V['times'] = np.linspace(0, self.time_max, self.max_bins)
         V['in_plume'] = np.zeros(self.max_bins, dtype=bool)
-        V['plume_signal'] = np.array([None] * self.max_bins)
+        V['heat_signal'] = np.array([None] * self.max_bins)
         V['decision'] = np.array([None] * self.max_bins)
 
         return V
