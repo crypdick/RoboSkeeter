@@ -21,12 +21,6 @@ class Environment(object):
         self.bounded = experiment.experiment_conditions['bounded']
         self.heat_model_name = experiment.experiment_conditions['heat_model_name'].lower()
 
-        if self.condition == 'Control' and self.heat_model_name != 'none':
-            print "{} plume model selected for control condition, but there is no setting instead to no plume.".format(self.heat_model_name)
-            print "TODO: make sure there isn't any Control temp recordings. If not, make Uniform plume"
-            self.heat_model_name = 'none'
-            print "TODO: make a uniform temp plume!!"
-
         self.windtunnel = WindTunnel(self.condition)
         try:
             self.heat = self._load_heat_model()
@@ -323,7 +317,7 @@ class TimeAvgTempModel(HeatModel):
             print "starting interpolation, resolution = {}".format(self.interpolation_resolution)
             self.grid_x, self.grid_y, self.grid_z = self._set_interpolation_coords(self.padded_data)
             print "WARNING: temporarily setting interpolation function by hand inside environment.py! ~line 317"
-            interp_func = self._interpolate_data_griddata  # options: self._interpolate_data_RBF self._interpolate_data_griddata
+            interp_func = self._interpolate_data_RBF  # options: self._interpolate_data_RBF self._interpolate_data_griddata
             self.data, self.grid_temp = interp_func()
             # self.data, self.grid_x, self.grid_y, self.grid_z, self.grid_temp = self._interpolate_data_RBF()
             print "calculating gradient"
@@ -378,7 +372,7 @@ class TimeAvgTempModel(HeatModel):
         data = self.get_nearest_prediction(position)
         return np.array([data['gradient_x'], data['gradient_y'], data['gradient_z']])
 
-    def show_scatter_data(self, selection = 'raw', temp_thresh=0):
+    def show_scatter_data(self, selection='raw', temp_thresh=0):
         print "selection={}".format(selection)
         data = self._select_data(selection)
         from roboskeeter.plotting.plot_environment import plot_windtunnel, plot_plume_recordings_scatter
@@ -586,17 +580,13 @@ class TimeAvgTempModel(HeatModel):
         interpolated_temps, (grid_x, grid_y, grid_z, grid_temps)
         """
         # TODO: review this function
-        if self.condition in 'controlControlCONTROL':
-            raise Exception("This code block shouldn't be running if Control is selected. \
-                            use uniform temp plume class instead")
-
         data = self.padded_data
 
         # useful aliases
         x, y, z, temps = data.x.values, data.y.values, data.z.values, data.avg_temp.values
 
         # calculate average 3D euclidean distance b/w observations
-        avg_distance = self.calc_euclidean_distance_neighbords(selection = 'raw')
+        avg_distance = self.calc_euclidean_distance_neighbords(selection = 'raw')  # use
 
 
         # init rbf interpolator
