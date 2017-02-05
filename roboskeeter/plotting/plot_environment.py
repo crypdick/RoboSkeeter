@@ -24,6 +24,7 @@ def set_windtunnel_bounds(ax):
 
 
 def draw_windtunnel_border(ax):
+    """"adds windtunnel box to an ax"""
     x_min = 0
     x_max = 1
     z_min = 0
@@ -35,6 +36,7 @@ def draw_windtunnel_border(ax):
 
 
 def draw_heaters(ax, windtunnel):
+    """adds heaters to an ax"""
     draw_heater(ax, windtunnel.heater_l)
     draw_heater(ax, windtunnel.heater_r)
 
@@ -51,6 +53,7 @@ def draw_heater(ax, heater):
 
 
 def draw_rectangular_prism(ax, x_min, x_max, y_min, y_max, z_min, z_max):
+    """draw a generic rectangular prism"""
     alpha = 1
     back = Rectangle((y_min, z_min), y_max - y_min, z_max, alpha=alpha, fill=None, linestyle='dotted')
     ax.add_patch(back)
